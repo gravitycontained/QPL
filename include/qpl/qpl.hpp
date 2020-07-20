@@ -35,7 +35,7 @@
 #include <qpl/window.hpp>
 #endif
 
-#ifdef QPL_USE_VULKAN
+#ifdef QPL_USE_SFML
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/framework.hpp>
@@ -46,4 +46,5 @@
 #ifdef _WIN32
 #include <qpl/winsys.hpp>
 #endif
+
 #endif
