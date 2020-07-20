@@ -15,7 +15,7 @@ there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` will h
 
 # Utilities
 
-simple fast random number generater.
+simple fast **random number generater**.
 it uses a good setup: a global instance's constructor fills all bits of `std::mt19937` types via `std::random_device` and seed_sequences.
 
 ```cpp
@@ -29,6 +29,8 @@ static_assert(qpl::is_same<decltype(c), float>());
   ```
   
 ----------
+
+**neural nets**:
 
 ```cpp
 qpl::neural_net net;
@@ -61,3 +63,49 @@ while (true) {
 ![possible output](https://i.imgur.com/sUflTEL.png)
 
     
+    **benchmarking**:
+
+```cpp
+template<typename T>
+bool is_prime(T value) {
+	qpl::begin_benchmark("is_prime", "< 5 check");
+	if (value < 5u) {
+		qpl::end_benchmark();
+		return value == 2u || value == 3u;
+	}
+	qpl::end_benchmark();
+
+	qpl::begin_benchmark("is_prime", "setup");
+	qpl::u32 add = 2u;
+	auto sqrt = std::sqrt(value);
+	qpl::end_benchmark();
+
+
+	for (qpl::u32 i = 5u; i < sqrt; i += add) {
+		qpl::begin_benchmark("is_prime", "divisibility check");
+		if (value % i == 0) {
+			qpl::end_benchmark();
+			return false;
+		}
+		qpl::end_benchmark();
+
+		qpl::begin_benchmark("is_prime", "subtract");
+		add = 6u - add;
+		qpl::end_benchmark();
+	}
+	return true;
+}
+
+
+int main() {
+	while (true) {
+		auto n = qpl::random(1, 100'000);
+		auto b = is_prime(n);
+
+		qpl::print_benchmark();
+		qpl::clear_console();
+	}
+}
+```
+
+![possible output](https://i.imgur.com/ROvgodZ.png)
