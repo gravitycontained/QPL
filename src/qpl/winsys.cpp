@@ -116,12 +116,12 @@ namespace qpl {
 			proc.window_name = wbuffer;
 			delete[] wbuffer;
 		}
-		BOOL qpl::winsys::impl::process_list_window_callback(HWND hWnd, LPARAM lparam) {
+		BOOL CALLBACK qpl::winsys::impl::process_list_window_callback(HWND hWnd, LPARAM lparam) {
 			qpl::winsys::impl::p_list.push_back(process{});
 			qpl::winsys::impl::set_process_information(qpl::winsys::impl::p_list.back(), hWnd);
 			return true;
 		}
-		BOOL qpl::winsys::impl::watch_list_window_callback(HWND hWnd, LPARAM lparam) {
+		BOOL CALLBACK qpl::winsys::impl::watch_list_window_callback(HWND hWnd, LPARAM lparam) {
 			for (unsigned i = 0u; i < qpl::winsys::impl::w_list.size(); ++i) {
 				if (qpl::winsys::impl::w_list[i].hwnd == hWnd) {
 					qpl::winsys::impl::set_process_information(qpl::winsys::impl::w_list[i], hWnd);
