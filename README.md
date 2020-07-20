@@ -30,6 +30,35 @@ static_assert(qpl::is_same<decltype(c), float>());
   
 ----------
 
+**any precision number arithmetic**.
+
+fixed precision `qpl::integer<BITS, SIGN>`:
+
+```cpp
+qpl::i512 a = 0; //using qpl::i512 = qpl::integer<512, 1>;
+qpl::i512 b = 0; 
+
+a.randomize_bits_logarithmic();
+b.randomize_bits_logarithmic();
+
+qpl_vprintln(a);
+qpl_vprintln(b);
+
+auto add = a + b; 
+auto sub = a - b; 
+auto mul = a * b; 
+auto div = a / b; 
+auto mod = a % b; 
+
+qpl_vprintln(add);
+qpl_vprintln(sub);
+qpl_vprintln(mul);
+qpl_vprintln(div);
+qpl_vprintln(mod);
+```
+
+----------
+
 **neural nets**:
 
 ```cpp
