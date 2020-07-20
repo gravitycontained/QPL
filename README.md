@@ -58,6 +58,6 @@ while (true) {
 }
 ```
     
-![possible output](https://i.imgur.com/1lNqbp9.png)
+![possible output](https://i.imgur.com/sUflTEL.png)
 
     
