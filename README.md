@@ -59,11 +59,13 @@ while (true) {
     }
 }
 ```
-    
+
+possible output:
+
 ![possible output](https://i.imgur.com/sUflTEL.png)
 
     
-    **benchmarking**:
+**benchmarking**:
 
 ```cpp
 template<typename T>
@@ -107,5 +109,6 @@ int main() {
 	}
 }
 ```
+possible output:
 
 ![possible output](https://i.imgur.com/ROvgodZ.png)
