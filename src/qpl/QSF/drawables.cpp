@@ -1,4 +1,5 @@
 #include <qpl/QSF/drawables.hpp>
+#ifdef QPL_USE_SFML
 #include <qpl/QSF/resources.hpp>
 
 namespace qsf {
@@ -1270,3 +1271,4 @@ namespace qsf {
 		return qsf::detail::rectangles[name];
 	}
 }
+#endif

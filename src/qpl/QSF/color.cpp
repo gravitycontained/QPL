@@ -1,4 +1,5 @@
 #include <qpl/QSF/color.hpp>
+#ifdef QPL_USE_SFML
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
 
@@ -269,3 +270,4 @@ namespace qsf {
 		return qsf::rgb::interpolation(rainbow, f);
 	}
 }
+#endif
