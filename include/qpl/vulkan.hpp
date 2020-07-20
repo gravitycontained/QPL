@@ -2,6 +2,7 @@
 #define QPL_VULKAN_HPP
 #pragma once
 
+#ifdef QPL_USE_VULKAN
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/objects.hpp>
@@ -1180,4 +1181,5 @@ namespace qpl {
 	}
 }
 
+#endif
 #endif

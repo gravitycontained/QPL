@@ -1,7 +1,7 @@
-
+#include <qpl/vulkan.hpp>
+#ifdef QPL_USE_VULKAN
 #include <qpl/filesys.hpp>
 #include <qpl/string.hpp>
-#include <qpl/vulkan.hpp>
 #include <algorithm>
 #include <set>
 #include <functional>
@@ -3463,6 +3463,7 @@ namespace qpl {
 }
 #pragma warning(pop) 
 
+#endif
 
 
 

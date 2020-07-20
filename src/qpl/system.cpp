@@ -1,4 +1,4 @@
-﻿#ifdef QPLBOOST
+﻿#ifdef QPL_USE_BOOST
 #include <boost/filesystem.hpp>
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
@@ -16,7 +16,7 @@
 
 namespace qpl {
 
-#ifdef QPLBOOST
+#ifdef QPL_USE_BOOST
     int qpl::execute(const std::string_view& what) {
         qpl::println(what);
         //qpl::begin_benchmark();

@@ -1,4 +1,5 @@
 #include <qpl/rgb.hpp>
+#ifdef QPL_USE_VULKAN
 #include <qpl/random.hpp>
 #include <qpl/string.hpp>
 
@@ -179,3 +180,4 @@ namespace qpl {
 		});
 	}
 }
+#endif

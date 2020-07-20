@@ -1,4 +1,5 @@
 #include <qpl/camera.hpp>
+#ifdef QPL_USE_VULKAN
 #include <cmath>
 #include <algorithm>
 
@@ -247,3 +248,4 @@ namespace qpl {
 		this->m_view_rotation.y = 0.0f;
 	}
 }
+#endif

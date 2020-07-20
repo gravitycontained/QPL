@@ -1,4 +1,6 @@
 #include <qpl/QSF/resources.hpp>
+
+#ifdef QPL_USE_SFML
 #include <qpl/string.hpp>
 
 namespace qsf {
@@ -75,3 +77,4 @@ namespace qsf {
 		return qsf::detail::resources.get_sprite(name);
 	}
 }
+#endif

@@ -2,6 +2,7 @@
 #define QPL_OBJECTS_HPP
 #pragma once
 
+#ifdef QPL_USE_VULKAN
 #include <glm/glm.hpp>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
@@ -76,4 +77,5 @@ namespace qpl {
 	}
 }
 
+#endif
 #endif
