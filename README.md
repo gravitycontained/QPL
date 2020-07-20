@@ -23,9 +23,23 @@ a simpler print to `cout` with some utilies.
 Example:
 
 ```cpp
-qpl::println(qpl::foreground::red, "hello world");
+	qpl::println(qpl::foreground::light_purple, qpl::background::blue, "Hello Word");
 ```
 
 ![possible output](https://i.imgur.com/JOq8M5I.png)
 
+----------
+
+simple fast random number generater:
+
+```cpp
+	auto a = qpl::random(-5, 10);
+	auto b = qpl::random(0.1, 0.7);
+	auto c = qpl::random(qpl::f32_min, 0.7f);
+
+	static_assert(qpl::is_same<decltype(a), int>());
+	static_assert(qpl::is_same<decltype(b), double>());
+	static_assert(qpl::is_same<decltype(c), float>());
+  ```
+  
 ----------
