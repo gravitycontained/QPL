@@ -27,17 +27,21 @@
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
 
+#ifdef QPL_USE_VULKAN
 #include <qpl/vulkan.hpp>
 #include <qpl/camera.hpp>
 #include <qpl/objects.hpp>
 #include <qpl/rgb.hpp>
 #include <qpl/window.hpp>
+#endif
 
+#ifdef QPL_USE_VULKAN
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/vector.hpp>
+#endif
 
 #ifdef _WIN32
 #include <qpl/winsys.hpp>
