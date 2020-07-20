@@ -1,4 +1,6 @@
 #include <qpl/window.hpp>
+
+#ifdef QPL_USE_VULKAN
 #include <stdexcept>
 #include <iostream>
 
@@ -213,3 +215,4 @@ namespace qpl {
 		qpl::window::destroy();
 	}
 }
+#endif

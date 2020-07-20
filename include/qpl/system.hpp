@@ -26,7 +26,7 @@ namespace qpl {
         return input_t{ qpl::to_string_space(args...) };
     }
 
-#ifdef QPLBOOST
+#ifdef QPL_USE_BOOST
     QPLDLL int execute(const std::string_view& what);
     QPLDLL int execute(const std::string_view& what, const input_t& input);
     QPLDLL int execute(const std::string_view& path, const std::vector<std::string>& arguments);

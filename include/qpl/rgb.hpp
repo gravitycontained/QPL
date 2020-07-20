@@ -2,6 +2,7 @@
 #define QPL_RGb_HPP
 #pragma once
 
+#ifdef QPL_USE_VULKAN
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 #include <string>
@@ -81,4 +82,5 @@ namespace qpl {
 
 	QPLDLL qpl::frgb random_color();
 }
+#endif
 #endif
