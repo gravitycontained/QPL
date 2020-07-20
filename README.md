@@ -15,31 +15,50 @@ there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` will h
 
 # Utilities
 
-----------
-
-`qpl::print` / `qpl::println`
-
-a simpler print to `cout` with some utilies.
-Example:
+simple fast random number generater.
+it uses a good setup: a global instance's constructor fills all bits of `std::mt19937` types via `std::random_device` and seed_sequences.
 
 ```cpp
-	qpl::println(qpl::foreground::light_purple, qpl::background::blue, "Hello Word");
-```
+auto a = qpl::random(-5, 10);
+auto b = qpl::random(0.1, 0.7);
+auto c = qpl::random(qpl::f32_min, 0.7f);
 
-![possible output](https://i.imgur.com/JOq8M5I.png)
-
-----------
-
-simple fast random number generater:
-
-```cpp
-	auto a = qpl::random(-5, 10);
-	auto b = qpl::random(0.1, 0.7);
-	auto c = qpl::random(qpl::f32_min, 0.7f);
-
-	static_assert(qpl::is_same<decltype(a), int>());
-	static_assert(qpl::is_same<decltype(b), double>());
-	static_assert(qpl::is_same<decltype(c), float>());
+static_assert(qpl::is_same<decltype(a), int>());
+static_assert(qpl::is_same<decltype(b), double>());
+static_assert(qpl::is_same<decltype(c), float>());
   ```
   
 ----------
+
+```cpp
+qpl::neural_net net;
+net.set_topology({ 2, 2, 1 });
+
+std::vector<qpl::f64> input(2);
+std::vector<qpl::f64> output(1);
+std::vector<qpl::f64> net_output(1);
+
+while (true) {
+
+    input[0] = qpl::random(0.0, 0.5);
+    input[1] = qpl::random(0.0, 0.5);
+    output[0] = input[0] + input[1];
+
+    net.feed(input);
+    net.get_output(net_output);
+    net.teach(output);
+
+    if (qpl::get_time_signal(0.001)) {
+        qpl::print(qpl::to_string_precision(5, input[0]), " + ");
+        qpl::print(qpl::to_string_precision(5, input[1]), " = ");
+        qpl::print(qpl::to_string_precision(5, net_output[0]));
+        qpl::print(" ", qpl::str_spaced(net.get_error() * 100, 10), "% wrong - ");
+        qpl::println(qpl::foreground::light_green, qpl::to_string_precision(5, net.get_average_accuracy() * 100), "% average accuracy");
+    }
+}
+
+![possible output](https://i.imgur.com/1lNqbp9.png)
+
+    ```
+    
+    
