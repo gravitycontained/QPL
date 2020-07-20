@@ -26,6 +26,6 @@ Example:
 qpl::println(qpl::foreground::red, "hello world");
 ```
 
-![possible output](https://imgur.com/a/JbvV37U)
+![possible output](https://imgur.com/JOq8M5I)
 
 ----------
