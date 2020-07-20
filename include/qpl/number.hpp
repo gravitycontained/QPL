@@ -9157,6 +9157,19 @@ namespace qpl {
 
 
 		template<typename T>
+		constexpr floating_point& operator^=(T value) {
+			this->pow(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr floating_point operator^(T value) const {
+			auto copy = *this;
+			copy.pow(value);
+			return copy;
+		}
+
+
+		template<typename T>
 		constexpr floating_point& operator<<=(T value) {
 			this->left_shift(qpl::i64_cast(value));
 			return *this;
