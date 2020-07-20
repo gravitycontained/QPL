@@ -57,8 +57,8 @@ namespace qpl {
 			extern watch_list w_list;
 
 			QPLDLL void set_process_information(process& proc, HWND hWnd);
-			QPLDLL BOOL process_list_window_callback(HWND hWnd, LPARAM lparam);
-			QPLDLL BOOL watch_list_window_callback(HWND hWnd, LPARAM lparam);
+			BOOL CALLBACK process_list_window_callback(HWND hWnd, LPARAM lparam);
+			BOOL CALLBACK watch_list_window_callback(HWND hWnd, LPARAM lparam);
 		}
 		QPLDLL process_list& get_process_list();
 
