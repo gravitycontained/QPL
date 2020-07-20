@@ -8199,6 +8199,8 @@ namespace qpl {
 		constexpr void arithmetic_mean(floating_point value) {
 			floating_point copy;
 
+			auto before = value;
+			auto less = value < *this;
 			while (true) {
 				copy = *this;
 				this->add(value);
@@ -8208,12 +8210,13 @@ namespace qpl {
 					break;
 				}
 
+				if (value < *this != less) {
+					break;
+				}
+				before = value;
 
-				qpl::begin_benchmark_end_previous("arithmetic_mean", "mul");
 				value.mul(copy);
-				qpl::begin_benchmark_end_previous("arithmetic_mean", "sqrt");
 				value.sqrt();
-				qpl::end_benchmark();
 			}
 		}
 
@@ -8228,7 +8231,6 @@ namespace qpl {
 				return;
 			}
 
-			qpl::begin_benchmark("ln", "prep");
 			floating_point m;
 			m.mantissa.set_bit(m.mantissa.bit_size() - 1, true);
 			floating_point div = *this;
@@ -8238,20 +8240,16 @@ namespace qpl {
 			s <<= 2;
 			s.div(div);
 
-			qpl::begin_benchmark_end_previous("ln", "arithmetic_mean");
 			m.arithmetic_mean(s);
 			m <<= 1;
 
 
-			qpl::begin_benchmark_end_previous("ln", "div pi");
 			*this = floating_point::pi();
 			this->div(m);
 
-			qpl::begin_benchmark_end_previous("ln", "mul ln2");
 			auto ln = floating_point::ln2();
 			ln.mul(bits);
 			this->sub(ln);
-			qpl::end_benchmark();
 		}
 		constexpr void ln() {
 			this->ln_precision();
@@ -8551,8 +8549,9 @@ namespace qpl {
 
 			auto dividend = *this;
 			floating_point last;
+			floating_point loop_last;
 
-			//qpl::print("sqrt( ", *this, " ) = ");
+			//qpl::println("sqrt( ", *this, " ) = ");
 
 			qpl::u32 ctr = 0u;
 			while (true) {
@@ -8564,9 +8563,10 @@ namespace qpl {
 				*this >>= 1;
 
 
-				if (*this == last) {
+				if (*this == last || *this == loop_last) {
 					break;
 				}
+				loop_last = last;
 				last = *this;
 
 			}
@@ -9157,19 +9157,6 @@ namespace qpl {
 
 
 		template<typename T>
-		constexpr floating_point& operator^=(T value) {
-			this->pow(value);
-			return *this;
-		}
-		template<typename T>
-		constexpr floating_point operator^(T value) const {
-			auto copy = *this;
-			copy.pow(value);
-			return copy;
-		}
-
-
-		template<typename T>
 		constexpr floating_point& operator<<=(T value) {
 			this->left_shift(qpl::i64_cast(value));
 			return *this;
@@ -9188,6 +9175,19 @@ namespace qpl {
 		constexpr floating_point operator>>(T value) const {
 			auto copy = *this;
 			return copy >>= value;
+		}
+
+
+		template<typename T>
+		constexpr floating_point& operator^=(T value) {
+			this->pow(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr floating_point operator^(T value) const {
+			auto copy = *this;
+			copy.pow(value);
+			return copy;
 		}
 
 
