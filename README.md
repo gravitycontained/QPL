@@ -105,11 +105,13 @@ int main() {
 		auto n = qpl::random(1, 100'000);
 		auto b = is_prime(n);
 
-		qpl::print_benchmark();
-		qpl::clear_console();
+		if (qpl::get_time_signal(0.2)) {
+			qpl::clear_console();
+			qpl::print_benchmark();
+		}
 	}
 }
 ```
 possible output:
 
-![possible output](https://i.imgur.com/ROvgodZ.png)
+![possible output](https://i.imgur.com/r4Qen97.png)
