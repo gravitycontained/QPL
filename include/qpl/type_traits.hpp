@@ -20,8 +20,6 @@ namespace qpl {
 	template<qpl::size bits, bool sign>
 	struct integer;
 
-	template<qpl::size bits, bool sign>
-	struct x64_integer;
 
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct floating_point;
@@ -79,6 +77,9 @@ namespace qpl {
 		return is_qpl_dynamic_integer_impl<T>{};
 	}
 
+#ifdef QPL_USE_INTRINSICS
+	template<qpl::size bits, bool sign>
+	struct x64_integer;
 
 	template<typename T>
 	struct is_qpl_x64_integer_impl : std::false_type
@@ -92,6 +93,8 @@ namespace qpl {
 	constexpr bool is_qpl_x64_integer() {
 		return is_qpl_x64_integer_impl<T>{};
 	}
+#endif
+
 
 
 	template<typename T>
@@ -113,24 +116,10 @@ namespace qpl {
 	constexpr bool is_stl_arithmetic() {
 		return std::is_arithmetic_v<T>;
 	}
+#ifdef QPL_USE_INTRINSICS
 	template<typename T>
 	constexpr bool is_arithmetic() {
 		return std::is_arithmetic_v<T> || is_qpl_integer<T>() || is_qpl_floating_point<T>() || is_qpl_x64_integer<T>();
-	}
-
-
-	template<typename T>
-	constexpr bool is_stl_floating_point() {
-		return std::is_floating_point_v<T>;
-	}
-	template<typename T>
-	constexpr bool is_floating_point() {
-		return std::is_floating_point_v<T> || is_qpl_floating_point<T>();
-	}
-
-	template<typename T>
-	constexpr bool is_stl_integer() {
-		return std::numeric_limits<T>::is_integer;
 	}
 	template<typename T>
 	constexpr bool is_integer() {
@@ -144,6 +133,39 @@ namespace qpl {
 	template<typename T>
 	constexpr bool is_signed() {
 		return std::numeric_limits<T>::is_signed || is_qpl_integer_signed<T>() || is_qpl_x64_integer_signed<T>();
+	}
+#else
+	template<typename T>
+	constexpr bool is_arithmetic() {
+		return std::is_arithmetic_v<T> || is_qpl_integer<T>() || is_qpl_floating_point<T>();
+	}
+	template<typename T>
+	constexpr bool is_integer() {
+		return std::numeric_limits<T>::is_integer || qpl::is_qpl_integer<T>();
+	}
+
+	template<typename T>
+	constexpr bool is_unsigned() {
+		return !std::numeric_limits<T>::is_signed || !is_qpl_integer_signed<T>();
+	}
+	template<typename T>
+	constexpr bool is_signed() {
+		return std::numeric_limits<T>::is_signed || is_qpl_integer_signed<T>();
+	}
+#endif
+
+	template<typename T>
+	constexpr bool is_stl_floating_point() {
+		return std::is_floating_point_v<T>;
+	}
+	template<typename T>
+	constexpr bool is_floating_point() {
+		return std::is_floating_point_v<T> || is_qpl_floating_point<T>();
+	}
+
+	template<typename T>
+	constexpr bool is_stl_integer() {
+		return std::numeric_limits<T>::is_integer;
 	}
 
 

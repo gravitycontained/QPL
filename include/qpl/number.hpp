@@ -414,6 +414,7 @@ namespace qpl {
 			}
 		}
 
+#ifdef QPL_USE_INTRINSICS
 		template<qpl::size bits, bool sign>
 		void set(x64_integer<bits, sign> integer) {
 			if (integer.is_negative()) {
@@ -450,6 +451,7 @@ namespace qpl {
 				helper.mul(mul);;
 			}
 		}
+#endif
 
 		template<qpl::u32 base2, bool sign2>
 		void set(dynamic_integer<base2, sign2> integer) {
@@ -2695,6 +2697,7 @@ namespace qpl {
 		}
 
 
+#ifdef QPL_USE_INTRINSICS
 		template<qpl::size bits2, bool sign2>
 		constexpr void set(qpl::x64_integer<bits2, sign2> other) {
 			if constexpr (this->bit_size() == other.bit_size()) {
@@ -2723,6 +2726,7 @@ namespace qpl {
 				}
 			}
 		}
+#endif
 
 		template<qpl::u32 base, bool sign2>
 		constexpr void set(qpl::dynamic_integer<base, sign2> value) {
@@ -4032,6 +4036,8 @@ namespace qpl {
 			}
 			return true;
 		}
+
+#ifdef QPL_USE_INTRINSICS
 		template<qpl::size bits2, bool sign2>
 		constexpr bool equals(qpl::x64_integer<bits2, sign2> other) const {
 			for (qpl::u32 i = 0u; i < other.memory_size() && ((i << 1) < this->memory_size()); ++i) {
@@ -4051,6 +4057,7 @@ namespace qpl {
 			}
 			return true;
 		}
+#endif
 
 		template<typename T>
 		constexpr bool less(T value) const {
@@ -5645,7 +5652,7 @@ namespace qpl {
 		return value >>= qpl::size_cast(other);
 	}
 
-
+#ifdef QPL_USE_INTRINSICS
 	template<qpl::size bits, bool sign>
 	struct x64_integer {
 		using holding_type =
@@ -7609,7 +7616,7 @@ namespace qpl {
 
 		holding_type memory;
 	};
-
+#endif
 
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct floating_point {
