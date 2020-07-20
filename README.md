@@ -56,9 +56,8 @@ while (true) {
         qpl::println(qpl::foreground::light_green, qpl::to_string_precision(5, net.get_average_accuracy() * 100), "% average accuracy");
     }
 }
-
+```
+    
 ![possible output](https://i.imgur.com/1lNqbp9.png)
 
-    ```
-    
     
