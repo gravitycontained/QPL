@@ -2,6 +2,7 @@
 #define QPLSF_VECTOR_HPP
 #pragma once
 
+#ifdef QPL_USE_SFML
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/string.hpp>
@@ -244,4 +245,5 @@ namespace qsf {
 
 }
 
+#endif
 #endif

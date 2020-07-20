@@ -2,6 +2,7 @@
 #define QPLSF_DRAWABLES_HPP
 #pragma once
 
+#ifdef QPL_USE_SFML
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/QSF/vector.hpp>
 #include <unordered_map>
@@ -635,4 +636,5 @@ namespace qsf {
 
 }
 
+#endif
 #endif

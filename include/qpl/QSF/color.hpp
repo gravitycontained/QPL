@@ -2,6 +2,7 @@
 #define QPLSF_COLOR_HPP
 #pragma once
 
+#ifdef QPL_USE_SFML
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>
@@ -262,4 +263,5 @@ namespace qsf {
 }
 
 
+#endif
 #endif

@@ -1,6 +1,7 @@
 #ifndef QPLSF_RESOURCES_HPP
 #define QPLSF_RESOURCES_HPP
 #pragma once
+#ifdef QPL_USE_SFML
 
 #include <qpl/qpldeclspec.hpp>
 #include <unordered_map>
@@ -42,4 +43,5 @@ namespace qsf {
 	QPLDLL sf::Sprite& get_sprite(const std::string& name);
 };
 
+#endif
 #endif
