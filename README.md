@@ -1,5 +1,5 @@
 # QPL 
-QPL (Quick Production Library) is a C++20 personal utility library with many purposes to help developement.
+QPL (Quick Production Library) is a (windows) C++20 personal utility library with many purposes to help developement.
 
 to use this library download the library and select the **include** folder as your include folder and then write `#include <qpl/qpl.hpp>` in your project.
 include the src foulder as source files into your project.
