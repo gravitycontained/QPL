@@ -4334,7 +4334,7 @@ namespace qpl {
 			}
 
 			if (mod) {
-				auto start = qpl::min(this->last_used_index() + div + 1, this->memory_size() - 1);
+				auto start = qpl::min(qpl::size_cast(this->last_used_index() + div + 1), this->memory_size() - 1);
 
 				for (qpl::i32 i = qpl::i32_cast(start); i > qpl::i32_cast(div); --i) {
 					this->memory[i] = qpl::u32_cast(((this->memory[i - div] << mod) | (this->memory[i - div - 1] >> (base_max_log() - mod))));
@@ -4343,7 +4343,7 @@ namespace qpl {
 			}
 			else {
 				if (div) {
-					auto start = qpl::min(this->last_used_index() + div + 1, this->memory_size() - 1);
+					auto start = qpl::min(qpl::size_cast(this->last_used_index() + div + 1), this->memory_size() - 1);
 
 					for (qpl::i32 i = qpl::i32_cast(start); i >= div; --i) {
 						this->memory[i] = this->memory[i - div];
@@ -9181,21 +9181,6 @@ namespace qpl {
 		friend std::ostream& operator<<(std::ostream& os, const floating_point<exponent_bits, mantissa_bits>& value) {
 			return (os << value.string());
 		}
-
-
-
-		//1 12 51
-		//85.125 = 0 10000000101     0101010010000000000000000000000000000000000000000000
-		//                   2^6 x 1.0101010010000000000000000000000000000000000000000000
-		//                   64  x  1010101.001
-		//                           1111110000000000000000000000000000000000000000000000
-		//                           010101
-		//                               85
-		//                           0000001111111111111111111111111111111111111111111111
-		//                                 0010000000000000000000000000000000000000000000
-		//                                 125
-		//                                 
-
 
 		qpl::integer<exponent_bits, 1> exponent;
 		qpl::integer<mantissa_bits, 0> mantissa;
