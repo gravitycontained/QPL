@@ -46,5 +46,4 @@
 #ifdef _WIN32
 #include <qpl/winsys.hpp>
 #endif
-
 #endif
