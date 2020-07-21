@@ -1,5 +1,5 @@
 # QPL 
-QPL (Quick Production Library) is a (windows) C++20 personal utility library with many purposes to help developement. Written by Daniel Rabl (danielrabl1999@gmail.com).
+QPL (Quick Production Library) is a (Windows) C++20 personal utility library with many purposes to help developement. Written by Daniel Rabl (danielrabl1999@gmail.com).
 
 # Setup
 
@@ -61,6 +61,7 @@ possible output:
 ![possible output](https://i.imgur.com/XnJuSly.png)
 
 (the multiplication overflowed here correctly, sign bit was overwritten)
+
 ----------
 
 **neural nets**:
