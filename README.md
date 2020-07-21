@@ -32,7 +32,7 @@ static_assert(qpl::is_same<decltype(c), float>());
 
 **any precision number arithmetic**.
 
-fixed precision `qpl::integer<BITS, SIGN>`:
+fixed precision signed / unsigned integer classes `qpl::integer<BITS, SIGN>`:
 
 ```cpp
 qpl::i512 a = 0; //using qpl::i512 = qpl::integer<512, 1>;
@@ -60,6 +60,7 @@ qpl_vprintln(mod);
 possible output:
 ![possible output](https://i.imgur.com/XnJuSly.png)
 
+(the multiplication overflowed here correctly, sign bit was overwritten)
 ----------
 
 **neural nets**:
