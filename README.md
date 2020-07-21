@@ -16,7 +16,7 @@ there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` will h
 # Utilities
 
 simple fast **random number generator**.
-it uses a global instance's constructor to fill randomize all bits of `std::mt19937` types via `std::random_device` and seed_sequences.
+it uses a global instance's constructor to randomize all bits of `std::mt19937` types via `std::random_device` and seed_sequences.
 
 ```cpp
 auto a = qpl::random(-5, 10);
