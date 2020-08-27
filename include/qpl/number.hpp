@@ -7711,6 +7711,7 @@ namespace qpl {
 			comma_position -= off;
 			qpl::i32 msb = 0;
 
+			this->exponent.clear();
 			if (comma_position >= 1) {
 				auto str = string.substr(off, comma_position);
 				if (str.length() >= this->mantissa.max_base_exponent(base)) {
@@ -7735,6 +7736,9 @@ namespace qpl {
 					this->mantissa <<= (this->mantissa.bit_size() - msb);
 					--msb;
 				}
+			}
+			else {
+				this->mantissa.clear();
 			}
 			this->exponent += (msb);
 
