@@ -2,7 +2,7 @@
 #define QPLSF_DRAWABLES_HPP
 #pragma once
 
-#ifdef QPL_USE_SFML
+#ifdef QPL_USE_SFML || QPL_USE_ALL
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/QSF/vector.hpp>
 #include <unordered_map>

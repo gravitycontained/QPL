@@ -1,7 +1,7 @@
 #ifndef QPLSF_FRAMEWORK_HPP
 #define QPLSF_FRAMEWORK_HPP
 #pragma once
-#ifdef QPL_USE_SFML
+#ifdef QPL_USE_SFML || QPL_USE_ALL
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>

@@ -1,5 +1,5 @@
 #include <qpl/QSF/color.hpp>
-#ifdef QPL_USE_SFML
+#ifdef QPL_USE_SFML || QPL_USE_ALL
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
 

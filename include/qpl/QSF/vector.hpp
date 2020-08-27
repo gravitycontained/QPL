@@ -2,7 +2,7 @@
 #define QPLSF_VECTOR_HPP
 #pragma once
 
-#ifdef QPL_USE_SFML
+#ifdef QPL_USE_SFML || QPL_USE_ALL
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/string.hpp>

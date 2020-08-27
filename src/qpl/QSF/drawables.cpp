@@ -1,5 +1,5 @@
 #include <qpl/QSF/drawables.hpp>
-#ifdef QPL_USE_SFML
+#ifdef QPL_USE_SFML || QPL_USE_ALL
 #include <qpl/QSF/resources.hpp>
 
 namespace qsf {

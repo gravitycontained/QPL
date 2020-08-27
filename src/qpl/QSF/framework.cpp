@@ -1,6 +1,6 @@
 #include <qpl/QSF/framework.hpp>
 
-#ifdef QPL_USE_SFML
+#ifdef QPL_USE_SFML || QPL_USE_ALL
 
 namespace qsf {
 	bool qsf::event_info::key_pressed(sf::Keyboard::Key key) const {
