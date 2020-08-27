@@ -67,66 +67,9 @@ namespace qsf {
 		std::set<sf::Keyboard::Key> m_keys_holding;
 		
 	};
-	struct framework;
+	struct base_state;
 
-	/* TO OVERLOAD:
-		void init() override {
-			
-		}
-		void updating() override {
-			
-		}
-		void drawing() override {
-			
-		}
-	*/
-	struct base_state {
-		virtual void init() = 0;
-		virtual void updating() = 0;
-		virtual void drawing() = 0;
-		
-		QPLDLL virtual void clear();
-		QPLDLL virtual void update_on_resize();
-
-		QPLDLL virtual void draw(const sf::Drawable& drawable, sf::RenderStates states = sf::RenderStates::Default);
-		QPLDLL void event_update();
-		QPLDLL void update_close_window();
-		QPLDLL void hide_cursor();
-		QPLDLL void show_cursor();
-		QPLDLL void set_cursor_position(qsf::vector2i position);
-
-		QPLDLL qsf::vector2i dimension() const;
-
-		template<typename C>
-		void add_state() {
-			this->framework->add_state<C>();
-		}
-		template<typename T>
-		QPLDLL void draw_graph(const std::vector<T>& data, const std::string& name = "") {
-			this->framework->draw_graph(data, name);
-		}
-		template<typename T>
-		QPLDLL void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
-			this->framework->draw_graph(data, color, thickness, name);
-		}
-		QPLDLL void set_graph_color(qsf::rgb color);
-		QPLDLL void set_graph_thickness(qpl::f64 thickness);
-		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
-		QPLDLL void set_graph_color(qsf::rgb color, const std::string& name);
-		QPLDLL void set_graph_thickness(qpl::f64 thickness, const std::string& name);
-		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name);
-		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
-		QPLDLL void set_graph_position(qsf::vector2f position);
-		QPLDLL void pop_this_state();
-		QPLDLL qpl::f64 frame_time() const;
-
-		qsf::framework* framework;
-		qsf::event_info event;
-
-		sf::Color clear_color = sf::Color::Black;
-		bool m_pop_this_state = false;
-	};
-
+	
 	/*
 	qsf::framework framework;
 	framework.set_dimension({ 1800, 720 });
@@ -194,6 +137,65 @@ namespace qsf {
 		qpl::f64 m_frametime;
 		bool m_created;
 	};
+	
+	/* TO OVERLOAD:
+		void init() override {
+			
+		}
+		void updating() override {
+			
+		}
+		void drawing() override {
+			
+		}
+	*/
+	struct base_state {
+		virtual void init() = 0;
+		virtual void updating() = 0;
+		virtual void drawing() = 0;
+		
+		QPLDLL virtual void clear();
+		QPLDLL virtual void update_on_resize();
+
+		QPLDLL virtual void draw(const sf::Drawable& drawable, sf::RenderStates states = sf::RenderStates::Default);
+		QPLDLL void event_update();
+		QPLDLL void update_close_window();
+		QPLDLL void hide_cursor();
+		QPLDLL void show_cursor();
+		QPLDLL void set_cursor_position(qsf::vector2i position);
+
+		QPLDLL qsf::vector2i dimension() const;
+
+		template<typename C>
+		void add_state() {
+			this->framework->add_state<C>();
+		}
+		template<typename T>
+		QPLDLL void draw_graph(const std::vector<T>& data, const std::string& name = "") {
+			this->framework->draw_graph(data, name);
+		}
+		template<typename T>
+		QPLDLL void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
+			this->framework->draw_graph(data, color, thickness, name);
+		}
+		QPLDLL void set_graph_color(qsf::rgb color);
+		QPLDLL void set_graph_thickness(qpl::f64 thickness);
+		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
+		QPLDLL void set_graph_color(qsf::rgb color, const std::string& name);
+		QPLDLL void set_graph_thickness(qpl::f64 thickness, const std::string& name);
+		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name);
+		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
+		QPLDLL void set_graph_position(qsf::vector2f position);
+		QPLDLL void pop_this_state();
+		QPLDLL qpl::f64 frame_time() const;
+
+		qsf::framework* framework;
+		qsf::event_info event;
+
+		sf::Color clear_color = sf::Color::Black;
+		bool m_pop_this_state = false;
+	};
+
 }
 
 #endif
