@@ -6,7 +6,7 @@ QPL (Quick Production Library) is a (Windows) C++20 personal utility library wit
 to use this library download the library and select the **include** folder as your include folder and then write `#include <qpl/qpl.hpp>` in your project.
 include the src foulder as source files into your project.
 
-there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` will have an effect:
+there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` or defined as a preprocessor define will have an effect:
 
 - `#define QPL_USE_INTRINSICS` enabled (Intel) intrinsics and let's you use the optimized `qpl::x64_integer` types.
 - `#define QPL_USE_VULKAN` this will enable the Vulkan utilites. You have to include and link the [Vulkan](https://www.khronos.org/vulkan/) library, [glm](https://glm.g-truc.net/0.9.9/index.html) and [GLFW](https://www.glfw.org/) in order to compile your program.
@@ -152,3 +152,52 @@ possible output:
 
 Benchmarks shouldn't be used inside of eachother at critical code pieces, as they have their own execution cost.
 They also could lead to branch prediction misses and therefore falsify the actual results.
+
+----------
+
+**2D - SFML example**:
+
+```cpp
+#include <qpl/qpl.hpp>
+
+struct game_state : qsf::base_state {
+
+	void init() override {
+		this->lines.thickness = 10;
+	}
+	void updating() override {
+		if (this->event.left_mouse_clicked()) {
+			auto pos = this->event.mouse_position();
+			auto radius = qpl::random(20, 30);
+			auto color = qsf::get_random_color();
+
+
+			this->lines.add_thick_line(pos, color);
+			this->circles.add_circle(pos, radius, color);
+		}
+	}
+	void drawing() override {
+		this->draw(this->lines);
+		this->draw(this->circles);
+	}
+
+	qsf::vcircles circles;
+	qsf::vthick_lines lines;
+};
+
+
+int main() {
+
+
+	qsf::framework framework;
+	framework.set_title("SFML lines & circles!");
+	framework.set_dimension({ 1280u, 720u });
+
+	framework.add_state<game_state>();
+	framework.gameloop();
+}
+```
+
+possible output:
+
+![possible output](https://imgur.com/Yek7ojA)
