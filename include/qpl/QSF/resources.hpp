@@ -1,7 +1,7 @@
 #ifndef QPLSF_RESOURCES_HPP
 #define QPLSF_RESOURCES_HPP
 #pragma once
-#ifdef QPL_USE_SFML || QPL_USE_ALL
+#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 
 #include <qpl/qpldeclspec.hpp>
 #include <unordered_map>

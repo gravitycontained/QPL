@@ -1,6 +1,6 @@
 #include <qpl/QSF/resources.hpp>
 
-#ifdef QPL_USE_SFML || QPL_USE_ALL
+#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/string.hpp>
 
 namespace qsf {

@@ -27,7 +27,7 @@
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
 
-#ifdef QPL_USE_VULKAN || QPL_USE_ALL
+#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/vulkan.hpp>
 #include <qpl/camera.hpp>
 #include <qpl/objects.hpp>
@@ -35,7 +35,7 @@
 #include <qpl/window.hpp>
 #endif
 
-#ifdef QPL_USE_SFML || QPL_USE_ALL
+#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/framework.hpp>
