@@ -155,7 +155,8 @@ They also could lead to branch prediction misses and therefore falsify the actua
 
 ----------
 
-**2D - SFML example**:
+**2D - SFML example**: 
+`QPL_USE_SFML` as preprocessor define
 
 ```cpp
 #include <qpl/qpl.hpp>
@@ -198,6 +199,6 @@ int main() {
 }
 ```
 
-possible output:
+clicking on screen addds connected cirlcles. possible output:
 
 ![possible output](https://i.imgur.com/Yek7ojA.png)
