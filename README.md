@@ -200,4 +200,4 @@ int main() {
 
 possible output:
 
-![possible output](https://imgur.com/Yek7ojA)
+![possible output](https://i.imgur.com/Yek7ojA.png)
