@@ -2589,7 +2589,7 @@ namespace qpl {
 				return *this;
 			}
 
-			auto div = bits / base_max_log();
+			auto div = (bits - 1) / base_max_log() + 1;
 			auto mod = bits % base_max_log();
 
 			auto size = (bits - 1) / base_max_log();
@@ -2604,6 +2604,7 @@ namespace qpl {
 			for (qpl::u32 i = div; i < this->memory_size(); ++i) {
 				result.memory[i] = qpl::u32{};
 			}
+
 			return result;
 		}
 
@@ -5652,7 +5653,7 @@ namespace qpl {
 		return value >>= qpl::size_cast(other);
 	}
 
-#ifdef QPL_USE_INTRINSICS
+#if defined(QPL_USE_INTRINSICS) || defined(QPL_USE_ALL)
 	template<qpl::size bits, bool sign>
 	struct x64_integer {
 		using holding_type =
@@ -8738,7 +8739,9 @@ namespace qpl {
 				precision = precision_digits(base);
 			}
 
+			
 			qpl::ub left = this->mantissa;
+
 			auto shift = ((qpl::i64_cast(this->exponent) + 1) - qpl::i64_cast(mantissa_bit_size()));
 			left <<= shift;
 
