@@ -128,7 +128,7 @@ namespace qpl {
         std::getline(std::cin, result);
         return result;
     }
-    std::string get_hidden_input(const std::string& replace) {
+    std::string get_hidden_input(const std::string_view& replace) {
         std::string result;
         char c;
         while (true) {
@@ -154,6 +154,20 @@ namespace qpl {
 
     void system_pause(qpl::u32 max_keyboard_latency_hz) {
         qpl::print("press enter to continue . . . ");
+        if (!std::cin.good()) {
+            std::cin.clear();
+        }
+        auto t1 = std::chrono::high_resolution_clock::now();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        auto t2 = std::chrono::high_resolution_clock::now();
+
+        double delta_t = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1e9;
+        if (delta_t < 1.0 / max_keyboard_latency_hz) {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    }
+    void system_pause(const std::string_view& message, qpl::u32 max_keyboard_latency_hz) {
+        qpl::print("press enter to ", message, " . . . ");
         if (!std::cin.good()) {
             std::cin.clear();
         }

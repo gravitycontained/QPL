@@ -36,9 +36,10 @@ namespace qpl {
 
     QPLDLL void hide_input(bool enable);
     QPLDLL std::string get_input();
-    QPLDLL std::string get_hidden_input(const std::string& replace = "*");
+    QPLDLL std::string get_hidden_input(const std::string_view& replace = "*");
 
     QPLDLL void system_pause(qpl::u32 max_keyboard_latency_hz = 50'000u);
+    QPLDLL void system_pause(const std::string_view& message, qpl::u32 max_keyboard_latency_hz = 50'000u);
     QPLDLL void system_pause_clear_console(qpl::u32 max_keyboard_latency_hz = 50'000u);
 
 
