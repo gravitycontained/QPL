@@ -71,6 +71,9 @@ namespace qpl {
 	};
 
 	struct double_content {
+		double_content() {
+
+		}
 		double_content(double value) {
 			memcpy(this, &value, sizeof(double));
 		}
@@ -95,6 +98,9 @@ namespace qpl {
 		}
 	};
 	struct float_content {
+		float_content() {
+
+		}
 		float_content(float value) {
 			memcpy(this, &value, sizeof(float));
 		}
