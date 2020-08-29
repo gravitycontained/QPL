@@ -36,7 +36,7 @@ fixed precision signed / unsigned integer classes `qpl::integer<BITS, SIGN>`:
 
 ```cpp
 qpl::i512 a = 0; //using qpl::i512 = qpl::integer<512, 1>;
-qpl::i512 b = 0; 
+qpl::i512 b = 0; //using qpl::i512 = qpl::integer<512, 1>;
 
 a.randomize_bits_logarithmic();
 b.randomize_bits_logarithmic();
@@ -68,7 +68,7 @@ fixed precision floating_point class `qpl::floating_point<EXPONENT_BITS, MANTISS
 
 ```cpp
 auto a = qpl::f512::random(0, 100); //using qpl::f512 = qpl::floating_point<32, 512>;
-auto b = qpl::f512::random(0, 100);
+auto b = qpl::f512::random(0, 100); //using qpl::f512 = qpl::floating_point<32, 512>;
 
 qpl_vprintln(a);
 qpl_vprintln(b);
