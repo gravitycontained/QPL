@@ -66,6 +66,7 @@ possible output:
 
 fixed precision floating_point class `qpl::floating_point<EXPONENT_BITS, MANTISSA_BITS>`:
 
+```cpp
 auto a = qpl::f512::random(0, 100);
 auto b = qpl::f512::random(0, 100);
 
@@ -91,6 +92,7 @@ qpl_vprintln(sqta);
 qpl_vprintln(sqtb);
 qpl_vprintln(inva);
 qpl_vprintln(invb);
+```
 
 possible output:
 ![possible output](https://i.imgur.com/kPAGnUM.png)
