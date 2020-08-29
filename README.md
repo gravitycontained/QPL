@@ -78,6 +78,8 @@ auto sub = a - b;
 auto mul = a * b;
 auto div = a / b;
 auto pow = a ^ b;
+auto sina = a.sined();
+auto cosb = b.cosed();
 auto sqta = a.sqrted();
 auto sqtb = b.sqrted();
 auto inva = a.inverted();
@@ -88,6 +90,8 @@ qpl_vprintln(sub);
 qpl_vprintln(mul);
 qpl_vprintln(div);
 qpl_vprintln(pow);
+qpl_vprintln(sina);
+qpl_vprintln(cosb);
 qpl_vprintln(sqta);
 qpl_vprintln(sqtb);
 qpl_vprintln(inva);
@@ -95,7 +99,7 @@ qpl_vprintln(invb);
 ```
 
 possible output:
-![possible output](https://i.imgur.com/kPAGnUM.png)
+![possible output](https://i.imgur.com/Ax0aVfd.png)
 
 ----------
 
