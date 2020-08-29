@@ -3255,6 +3255,7 @@ namespace qpl {
 		constexpr void mul_left_side(qpl::integer<bits2, sign2> other) {
 
 			qpl::integer<bits * 2, sign> result;
+			result.clear();
 
 			auto other_non_zero = other.last_used_index();
 			auto my_non_zero = this->last_used_index();
@@ -3286,6 +3287,7 @@ namespace qpl {
 
 
 			qpl::integer<bits * 2, sign> add;
+
 
 			if (other_non_zero < my_non_zero) {
 				qpl::integer<bits * 2, sign> mul = *this;
@@ -7927,6 +7929,13 @@ namespace qpl {
 			stream << "qpl::float_memory{ std::array" << qpl::container_to_hex_string(this->exponent.memory) << ", std::array" << qpl::container_to_hex_string(this->mantissa.memory) << ", " << qpl::bool_string(this->sign) << "}";
 			return stream.str();
 		}
+		constexpr double to_double() const {
+			qpl::double_content content;
+			content.sign = this->sign;
+			content.exponent = this->exponent + (1 << (qpl::double_content::exponent_size() - 1)) - 1;
+			content.mantissa = this->mantissa.last_n_bits(qpl::double_content::mantissa_size() + 1);
+			return content.to_double();
+		}
 
 		constexpr void normalize_mantissa() {
 			auto msb_diff = mantissa_bit_size() - this->mantissa.significant_bit();
@@ -8030,6 +8039,7 @@ namespace qpl {
 			this->mul(floating_point{ value });
 		}
 		constexpr void mul(floating_point other) {
+			
 			this->exponent += other.exponent + 1;
 
 			this->mantissa.mul_left_side(other.mantissa);
@@ -8204,8 +8214,8 @@ namespace qpl {
 		constexpr void arithmetic_mean(floating_point value) {
 			floating_point copy;
 
-			auto before = value;
-			auto less = value < *this;
+			//auto before = value;
+			//auto less = value < *this;
 			while (true) {
 				copy = *this;
 				this->add(value);
@@ -8215,14 +8225,17 @@ namespace qpl {
 					break;
 				}
 
-				if (value < *this != less) {
-					break;
-				}
-				before = value;
+				//if ((value < *this) != less) {
+				//	break;
+				//}
+				//before = value;
 
 				value.mul(copy);
 				value.sqrt();
 			}
+		}
+		constexpr floating_point arithmetic_meaned() const {
+			return floating_point::arithmetic_mean(*this);
 		}
 
 		constexpr void ln_precision(qpl::u32 bits = mantissa_bit_size()) {
@@ -8237,15 +8250,18 @@ namespace qpl {
 			}
 
 			floating_point m;
-			m.mantissa.set_bit(m.mantissa.bit_size() - 1, true);
+			m.clear_1();
+
 			floating_point div = *this;
 			div <<= bits;
 			floating_point s;
-			s.mantissa.set_bit(s.mantissa.bit_size() - 1, true);
+			s.clear_1();
 			s <<= 2;
 			s.div(div);
 
+
 			m.arithmetic_mean(s);
+
 			m <<= 1;
 
 
@@ -8262,6 +8278,9 @@ namespace qpl {
 		constexpr floating_point static ln(floating_point value, qpl::u32 bits = mantissa_bit_size()) {
 			value.ln_precision(bits);
 			return value;
+		}
+		constexpr floating_point lned(qpl::u32 bits = mantissa_bit_size()) const {
+			return floating_point::ln(*this, bits);
 		}
 
 		constexpr void exp_precision(qpl::u32 bits = mantissa_bit_size() >> 1) {
@@ -8341,6 +8360,9 @@ namespace qpl {
 			value.exp_precision(bits);
 			return value;
 		}
+		constexpr floating_point exped(qpl::u32 bits = mantissa_bit_size() >> 1) const {
+			return floating_point::exp(*this, bits);
+		}
 
 
 		constexpr void pow_precision(floating_point value, qpl::u32 bits = mantissa_bit_size()) {
@@ -8386,10 +8408,12 @@ namespace qpl {
 				value = value.floating_part();
 
 
+
 				if (integer) {
 					auto v = *this;
 
 					qpl::begin_benchmark_end_previous("pow", "ln");
+
 					this->ln_precision(bits);
 					qpl::begin_benchmark_end_previous("pow", "mul");
 					this->mul(value);
@@ -8418,6 +8442,9 @@ namespace qpl {
 		constexpr static floating_point pow(floating_point a, floating_point b, qpl::u32 bits = mantissa_bit_size()) {
 			a.pow_precision(b, bits);
 			return a;
+		}
+		constexpr floating_point powed(floating_point other, qpl::u32 bits = mantissa_bit_size()) const {
+			return floating_point::pow(*this, other, bits);
 		}
 
 		constexpr void sin() {
@@ -8478,6 +8505,9 @@ namespace qpl {
 		constexpr static floating_point sin(floating_point value) {
 			value.sin();
 			return value;
+		}
+		constexpr floating_point sined() const {
+			return floating_point::sin(*this);
 		}
 
 
@@ -8542,10 +8572,13 @@ namespace qpl {
 			value.cos();
 			return value;
 		}
+		constexpr floating_point cosed() const {
+			return floating_point::cos(*this);
+		}
 
 
 		constexpr void sqrt() {
-			if (this->is_zero()) {
+			if (this->is_zero() || this->is_negative()) {
 				this->clear();
 				return;
 			}
@@ -8558,15 +8591,13 @@ namespace qpl {
 
 			//qpl::println("sqrt( ", *this, " ) = ");
 
-			qpl::u32 ctr = 0u;
 			while (true) {
-				//qpl::println(*this);
 
 				auto div = dividend;
 				div.div(*this);
 				this->add(div);
-				*this >>= 1;
 
+				*this >>= 1;
 
 				if (*this == last || *this == loop_last) {
 					break;
@@ -8610,6 +8641,10 @@ namespace qpl {
 			value.sqrt();
 			return value;
 		}
+		constexpr floating_point sqrted() const {
+			return floating_point::sqrt(*this);
+		}
+
 
 		constexpr void invert() {
 			auto copy = *this;
@@ -8622,8 +8657,17 @@ namespace qpl {
 			value.invert();
 			return value;
 		}
-
-		floating_point static random(floating_point min, floating_point max) {
+		constexpr floating_point inverted() const {
+			return floating_point::invert(*this);
+		}
+		static floating_point random() {
+			floating_point result;
+			result.sign = qpl::random_b();
+			result.exponent.randomize();
+			result.mantissa.randomize();
+			return result;
+		}
+		static floating_point random(floating_point min, floating_point max) {
 			auto diff = max;
 			diff.sub(min);
 
@@ -8632,7 +8676,7 @@ namespace qpl {
 			result.add(min);
 			return result;
 		}
-		floating_point static random_0_1() {
+		static floating_point random_0_1() {
 			floating_point result;
 			result.mantissa.randomize();
 			result.mantissa.set_bit(mantissa_bit_size() - 1, true);
@@ -8641,7 +8685,7 @@ namespace qpl {
 			result.exponent = qpl::i32_cast(std::log(d) / std::log(2)) - 1;
 			return result;
 		}
-		floating_point static random_0_1_negative() {
+		static floating_point random_0_1_negative() {
 			auto r = floating_point::random_0_1();
 			r.sign = qpl::random_b();
 			return r;
@@ -8711,6 +8755,7 @@ namespace qpl {
 		constexpr void set_positive() {
 			this->sign = false;
 		}
+
 
 
 		constexpr floating_point operator-() const {
