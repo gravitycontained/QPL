@@ -67,7 +67,7 @@ possible output:
 fixed precision floating_point class `qpl::floating_point<EXPONENT_BITS, MANTISSA_BITS>`:
 
 ```cpp
-auto a = qpl::f512::random(0, 100);
+auto a = qpl::f512::random(0, 100); //using qpl::f512 = qpl::floating_point<32, 512>;
 auto b = qpl::f512::random(0, 100);
 
 qpl_vprintln(a);
