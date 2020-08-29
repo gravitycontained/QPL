@@ -64,6 +64,39 @@ possible output:
 
 ----------
 
+fixed precision floating_point class `qpl::floating_point<EXPONENT_BITS, MANTISSA_BITS>`:
+
+auto a = qpl::f512::random(0, 100);
+auto b = qpl::f512::random(0, 100);
+
+qpl_vprintln(a);
+qpl_vprintln(b);
+
+auto add = a + b;
+auto sub = a - b;
+auto mul = a * b;
+auto div = a / b;
+auto pow = a ^ b;
+auto sqta = a.sqrted();
+auto sqtb = b.sqrted();
+auto inva = a.inverted();
+auto invb = b.inverted();
+
+qpl_vprintln(add);
+qpl_vprintln(sub);
+qpl_vprintln(mul);
+qpl_vprintln(div);
+qpl_vprintln(pow);
+qpl_vprintln(sqta);
+qpl_vprintln(sqtb);
+qpl_vprintln(inva);
+qpl_vprintln(invb);
+
+possible output:
+![possible output](https://i.imgur.com/kPAGnUM.png)
+
+----------
+
 **neural nets**:
 
 ```cpp
