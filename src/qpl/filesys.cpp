@@ -1308,6 +1308,9 @@ namespace qpl {
         }
 
         void qpl::filesys::paths::print_tree() const {
+            if (this->m_paths.empty()) {
+                return;
+            }
             std::vector<std::string> widths;
             if (this->front().is_root()) {
                 widths.push_back(0);
