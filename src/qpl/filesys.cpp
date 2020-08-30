@@ -399,10 +399,10 @@ namespace qpl {
                 if (!path_destination.exists()) {
                     path_destination.create();
                 }
-                std::filesystem::copy(this->string(), (path_destination.string() + this->get_name()));
+                std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
             }
             else {
-                std::filesystem::copy(this->string(), path_destination.string());
+                std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
             }
         }
         void qpl::filesys::path::copy_overwrite(const qpl::filesys::path& path_destination) const {
@@ -410,22 +410,20 @@ namespace qpl {
                 if (!path_destination.exists()) {
                     path_destination.create();
                 }
-                auto file_path = path_destination;
-                file_path.go_into_directory(this->get_name());
 
-                if (file_path.exists()) {
-                    file_path.remove();
-                    std::filesystem::copy(this->string(), file_path.string());
+                if (path_destination.exists()) {
+                    path_destination.remove();
+                    std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
                 }
                 else {
-                    std::filesystem::copy(this->string(), path_destination.string());
+                    std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
                 }
             }
             else {
                 if (path_destination.exists()) {
                     path_destination.remove();
                 }
-                std::filesystem::copy(this->string(), path_destination.string());
+                std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
             }
         }
         void qpl::filesys::path::move(const qpl::filesys::path& path_destination) const {
