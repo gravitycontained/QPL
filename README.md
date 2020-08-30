@@ -8,7 +8,7 @@ include the src foulder as source files into your project.
 
 there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` or defined as a preprocessor define will have an effect. `QPL_USE_ALL` to use all of below.
 
-- `#define QPL_USE_INTRINSICS` enabled (Intel) intrinsics and let's you use the optimized `qpl::x64_integer` types.
+- `#define QPL_USE_INTRINSICS` enables (Intel) intrinsics and let's you use the optimized `qpl::x64_integer` types.
 - `#define QPL_USE_VULKAN` this will enable the Vulkan utilites. You have to include and link the [Vulkan](https://www.khronos.org/vulkan/) library, [glm](https://glm.g-truc.net/0.9.9/index.html), [GLFW](https://www.glfw.org/) and [stb_image](https://github.com/nothings/stb) in order to compile your program. (`glfw3.lib` `vulkan-1.lib` linker dependencies)
 - `#define QPL_USE_SFML` this will enable the SFML utilies. You have to inlcude and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. (`sfml-graphics.lib` `sfml-window.lib` `sfml-main.lib` `sfml-system.lib` `sfml-audio.lib` `sfml-network.lib` linker dependencies. `-d` before `.lib` for debug files)
 
@@ -30,7 +30,7 @@ static_assert(qpl::is_same<decltype(c), float>());
   
 ----------
 
-**any precision number arithmetic**.
+**any precision integer arithmetic**.
 
 fixed precision signed / unsigned integer classes `qpl::integer<BITS, SIGN>`:
 
@@ -63,6 +63,8 @@ possible output:
 (the multiplication overflowed here correctly, sign bit was overwritten)
 
 ----------
+
+**any precision floating point arithmetic**.
 
 fixed precision floating_point class `qpl::floating_point<EXPONENT_BITS, MANTISSA_BITS>`:
 
