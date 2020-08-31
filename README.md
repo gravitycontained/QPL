@@ -246,6 +246,7 @@ catch (std::exception& any) {
 ```
 
 possible output:
+
 ![possible output](https://i.imgur.com/cq0BtXG.png)
 
 ----------
