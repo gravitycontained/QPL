@@ -195,6 +195,60 @@ Benchmarks shouldn't be used inside of eachother at critical code pieces, as the
 They also could lead to branch prediction misses and therefore falsify the actual results.
 
 ----------
+    
+**filesys**:
+
+```cpp
+#include <qpl/qpl.hpp>
+
+int main() try {
+
+	auto path = qpl::filesys::path("c:/test/");
+	path.print_tree();
+	
+	qpl::println("\n copying c:/test/a/a1/ to c:/test/c/ ...\n");
+
+	path.go_into("a/a1/");
+	path.copy("c:/test/c/");
+
+	path.go_directories_back(2);
+	path.print_tree();
+
+	qpl::println("\nselecting where file_name contains \"a1\" and excluding folders not named /\"c\"/ ...\n");
+
+	auto list = path.search_recursively_where_file_name_contains("a1");
+	list.list_keep_where_lambda([](qpl::filesys::path p) {
+		return p.get_parent_branch().get_name() == "c";
+		});
+	list.print_tree();
+
+
+	qpl::println("\nfrom selection, renaming \"a1\" instances to \"c\" ...\n");
+
+	qpl::filesys::partially_rename_all(list, "a1", "c");
+	list.print_tree();
+
+	qpl::println("\nc:/test/\n");
+
+	path.print_tree();
+
+	qpl::println("\ndeleting content of c:/test/c/ ...\n");
+
+
+	qpl::filesys::remove_all(qpl::filesys::path("c:/test/c/").make_directory_range_tree());
+	path.print_tree();
+	qpl::system_pause();
+
+} 
+catch (std::exception& any) {
+	qpl::println(any.what());
+}
+```
+
+possible output:
+![possible output](https://i.imgur.com/cq0BtXG.png)
+
+----------
 
 **2D - SFML example**: 
 `QPL_USE_SFML` as preprocessor define
