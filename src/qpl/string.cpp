@@ -7,6 +7,18 @@ namespace qpl {
 		return qpl::prepended_to_string_to_fit(string, prepend, length);
 	}
 
+	bool qpl::string_equals_ignore_case(const std::string& a, const std::string& b) {
+		if (a.size() != b.size()) {
+			return false;
+		}
+		for (qpl::u32 i = 0u; i < a.size(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	std::wstring qpl::string_to_wstring(const std::string& s) {
 		int len;
 		int slength = (int)s.length() + 1;

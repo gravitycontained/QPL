@@ -73,6 +73,8 @@ namespace qpl {
 		return false;
 	}
 
+	QPLDLL bool string_equals_ignore_case(const std::string& a, const std::string& b);
+
 	template<typename... Args>
 	std::string to_string(Args&&... args) {
 		std::ostringstream stream;
