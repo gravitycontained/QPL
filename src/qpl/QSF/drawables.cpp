@@ -159,7 +159,7 @@ namespace qsf {
 		this->position = position;
 	}	
 	void qsf::vrectangle::set_center(qsf::vector2f position) {
-		this->position = position + this->dimension / 2;
+		this->position = position - this->dimension / 2;
 	}
 	void qsf::vrectangle::set_color(qsf::rgb color) {
 		this->color = color;
