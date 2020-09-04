@@ -345,8 +345,20 @@ namespace qsf {
 
 
 
+	void qsf::vcircle::set_position(qsf::vector2f position) {
+		this->point.position = position;
+	}
+	void qsf::vcircle::set_radius(qpl::f32 radius) {
+		this->radius = radius;
+	}
+	void qsf::vcircle::set_color(qsf::rgb color) {
+		this->point.color = color;
+	}
 	void qsf::vcircle::set_center(qsf::vector2f center) {
-		this->point.position = center + qsf::vector2f{ this->radius, this->radius };
+		this->point.position = center - qsf::vector2f{ this->radius, this->radius };
+	}
+	void qsf::vcircle::centerize() {
+		this->point.position -= qsf::vector2f{ this->radius, this->radius };
 	}
 	void qsf::vcircle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::circle = *this;
@@ -1246,6 +1258,34 @@ namespace qsf {
 				window.draw(i);
 			}
 		}
+	}
+
+	void qsf::vbutton::set_dimension(qsf::vector2f dimension) {
+		this->background.dimension = dimension;
+	}
+	void qsf::vbutton::set_position(qsf::vector2f position) {
+		this->background.position = position;
+	}
+	void qsf::vbutton::set_center(qsf::vector2f center) {
+		this->background.set_center(center);
+	}
+	void qsf::vbutton::set_background_color(qsf::rgb color) {
+		this->background.set_color(color);
+	}
+	void qsf::vbutton::set_text_color(qsf::rgb color) {
+		this->text.set_color(color);
+	}
+	void qsf::vbutton::set_text_font(std::string font) {
+		this->text.set_font(font);
+	}
+	void qsf::vbutton::set_text_character_size(qpl::u32 character_size) {
+		this->text.set_character_size(character_size);
+	}
+	void qsf::vbutton::set_text(std::string text) {
+		this->text.set_string(text);
+	}
+	void qsf::vbutton::centerize_text() {
+		this->text.set_position(this->background.center());
 	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;

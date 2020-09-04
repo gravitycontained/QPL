@@ -242,7 +242,11 @@ namespace qsf {
 			this->radius = radius;
 		}
 
+		QPLDLL void set_position(qsf::vector2f center);
+		QPLDLL void set_radius(qpl::f32 radius);
+		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_center(qsf::vector2f center);
+		QPLDLL void centerize();
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const override;
 
 		qsf::vpoint point;
@@ -623,6 +627,22 @@ namespace qsf {
 		std::vector<qsf::thick_lines> lines;
 
 		qsf::rectangle background;
+	};
+
+	struct vbutton : sf::Drawable {
+
+		QPLDLL void set_dimension(qsf::vector2f dimension);
+		QPLDLL void set_position(qsf::vector2f position);
+		QPLDLL void set_center(qsf::vector2f center);
+		QPLDLL void set_background_color(qsf::rgb color);
+		QPLDLL void set_text_color(qsf::rgb color);
+		QPLDLL void set_text_font(std::string font);
+		QPLDLL void set_text_character_size(qpl::u32 character_size);
+		QPLDLL void set_text(std::string text);
+		QPLDLL void centerize_text();
+
+		qsf::vtext text;
+		qsf::vrectangle background;
 	};
 
 	namespace detail {
