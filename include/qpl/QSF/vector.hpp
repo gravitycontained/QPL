@@ -63,6 +63,19 @@ namespace qsf {
 			return static_cast<T>(std::sqrt(this->x * this->x + this->y * this->y));
 		}
 
+		vector2 operator-() const {
+			auto copy = *this;
+			copy.x *= -1;
+			copy.y *= -1;
+			return copy;
+		}
+		vector2 operator+() const {
+			auto copy = *this;
+			copy.x = +copy.x;
+			copy.y = +copy.y;
+			return copy;
+		}
+
 		template<typename U>
 		vector2<U> t() const {
 			return qsf::vector2<U>(*this);

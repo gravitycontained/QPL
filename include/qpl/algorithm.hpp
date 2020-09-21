@@ -153,6 +153,7 @@ namespace qpl {
 
 	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
 	constexpr void reverse_bits(T& value) {
+
 		if constexpr (qpl::is_same<T, qpl::u32>()) {
 			value = ((value >> 1) & 0x55555555u) | ((value & 0x55555555u) << 1);
 			value = ((value >> 2) & 0x33333333u) | ((value & 0x33333333u) << 2);

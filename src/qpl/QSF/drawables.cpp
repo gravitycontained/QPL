@@ -1,11 +1,40 @@
 #include <qpl/QSF/drawables.hpp>
 #if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/QSF/resources.hpp>
+#include <qpl/QSF/event_info.hpp>
+
+#include <qpl/system.hpp>
+#include <qpl/memory.hpp>
+
 
 namespace qsf {
+
+	qsf::vrectangle qsf::text_hitbox(const sf::Text& text) {
+		qsf::vrectangle rectangle;
+		auto local_bounds = text.getLocalBounds();
+		auto global_bounds = text.getGlobalBounds();
+
+		rectangle.set_position({ global_bounds.left, global_bounds.top });
+		rectangle.set_dimension({ local_bounds.width, local_bounds.height });
+
+		return rectangle;
+	}
+	qsf::vrectangle qsf::text_hitbox(const qsf::text& text) {
+		return text.hitbox();
+	}
+	void qsf::centerize_text(sf::Text& text) {
+		auto rect = qsf::text_hitbox(text).dimension;
+		text.move(-rect / 2);
+	}
+	void qsf::centerize_text(qsf::text& text) {
+		text.centerize();
+	}
+
+
 	namespace detail {
 		qsf::text qsf::detail::text;
 		qsf::rectangle qsf::detail::rectangle;
+		qsf::rectangles qsf::detail::rectangles;
 		qsf::point qsf::detail::point;
 		qsf::points qsf::detail::points;
 		qsf::circle qsf::detail::circle;
@@ -15,8 +44,99 @@ namespace qsf {
 		qsf::thick_line qsf::detail::thick_line;
 		qsf::thick_lines qsf::detail::thick_lines;
 		qsf::graph qsf::detail::graph;
+		qsf::button qsf::detail::button;
 	}
 	qsf::vgraph qsf::drawing_graph;
+
+
+	void qsf::vertex::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		window.draw(reinterpret_cast<const sf::Vertex*>(this), 1, sf::PrimitiveType::Points, states);
+
+		//sf::Vertex v;
+		//v.position = this->position;
+		//v.color = this->color;
+		//v.texCoords = this->texCoords;
+		//
+		//
+		//
+		//auto mem1 = qpl::memory_to_u64_array(v);
+		//auto mem2 = qpl::memory_to_u64_array(*this);
+		//
+		//
+		//qpl::println_container_hex(mem1);
+		//qpl::println_container_hex(mem2);
+		//qpl::println();
+		//
+		//qpl::system_pause();
+		//
+		//window.draw(&v, 1, sf::PrimitiveType::Points, states);
+	}
+
+
+	void qsf::vertex_array::set_primitive_type(qsf::primitive_type primitive_type) {
+		this->primitive_type = primitive_type;
+	}
+
+	qpl::size qsf::vertex_array::size() const {
+		return this->vertices.size();
+	}
+	void qsf::vertex_array::resize(qpl::size new_size) {
+		this->vertices.resize(new_size);
+	}
+	void qsf::vertex_array::reserve(qpl::size new_size) {
+		this->vertices.reserve(new_size);
+	}
+	void qsf::vertex_array::add(const qsf::vertex& vertex) {
+		this->vertices.push_back(vertex);
+	}
+	void qsf::vertex_array::clear() {
+		this->vertices.clear();
+	}
+	qsf::vertex& qsf::vertex_array::operator[](qpl::u32 index) {
+		return this->vertices[index];
+	}
+	const qsf::vertex& qsf::vertex_array::operator[](qpl::u32 index) const {
+		return this->vertices[index];
+	}
+
+	qsf::vertex& qsf::vertex_array::front() {
+		return this->vertices.front();
+	}
+	const qsf::vertex& qsf::vertex_array::front() const {
+		return this->vertices.front();
+	}
+
+	qsf::vertex& qsf::vertex_array::back() {
+		return this->vertices.back();
+	}
+	const qsf::vertex& qsf::vertex_array::back() const {
+		return this->vertices.back();
+	}
+
+	std::vector<qsf::vertex>::iterator qsf::vertex_array::begin() {
+		return this->vertices.begin();
+	}
+	std::vector<qsf::vertex>::const_iterator qsf::vertex_array::begin() const {
+		return this->vertices.begin();
+	}
+	std::vector<qsf::vertex>::const_iterator qsf::vertex_array::cbegin() const {
+		return this->vertices.cbegin();
+	}
+
+	std::vector<qsf::vertex>::iterator qsf::vertex_array::end() {
+		return this->vertices.end();
+	}
+	std::vector<qsf::vertex>::const_iterator qsf::vertex_array::end() const {
+		return this->vertices.end();
+	}
+	std::vector<qsf::vertex>::const_iterator qsf::vertex_array::cend() const {
+		return this->vertices.cend();
+	}
+
+	void qsf::vertex_array::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		window.draw(reinterpret_cast<const sf::Vertex*>(this->vertices.data()), this->size(), static_cast<sf::PrimitiveType>(this->primitive_type), states);
+	}
+
 
 	void qsf::vtext::set_font(const std::string& font_name) {
 		this->font_name = font_name;
@@ -60,7 +180,7 @@ namespace qsf {
 	}
 	void qsf::vtext::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::text = *this;
-		window.draw(qsf::detail::text);
+		qsf::detail::text.draw(window, states);
 	}
 
 	void qsf::text::set_font(const std::string& font_name) {
@@ -86,6 +206,10 @@ namespace qsf {
 	}
 	void qsf::text::set_position(qsf::vector2f position) {
 		this->m_text.setPosition(position);
+	}
+	void qsf::text::set_center(qsf::vector2f position) {
+		this->set_position(position);
+		this->centerize();
 	}
 	void qsf::text::set_string(const std::string& string) {
 		this->m_string = string;
@@ -157,7 +281,7 @@ namespace qsf {
 	}
 	void qsf::vrectangle::set_position(qsf::vector2f position) {
 		this->position = position;
-	}	
+	}
 	void qsf::vrectangle::set_center(qsf::vector2f position) {
 		this->position = position - this->dimension / 2;
 	}
@@ -172,7 +296,7 @@ namespace qsf {
 	}
 	void qsf::vrectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::rectangle = *this;
-		window.draw(qsf::detail::rectangle);
+		qsf::detail::rectangle.draw(window, states);
 	}
 
 	qsf::vector2f qsf::vrectangle::center() const {
@@ -190,6 +314,10 @@ namespace qsf {
 		auto copy = *this;
 		copy.increase(delta);
 		return copy;
+	}
+	bool qsf::vrectangle::contains(qsf::vector2f position) const {
+		return (position.x > this->position.x && position.x < (this->position.x + this->dimension.x) &&
+			position.y > this->position.y && position.y < (this->position.y + this->dimension.y));
 	}
 
 
@@ -210,6 +338,12 @@ namespace qsf {
 	}
 	void qsf::rectangle::set_outline_color(qsf::rgb color) {
 		this->m_rect.setOutlineColor(color);
+	}
+	bool qsf::rectangle::contains(qsf::vector2f position) const {
+		auto pos = this->position();
+		auto dim = this->dimension();
+		return (position.x > pos.x && position.x < (pos.x + dim.x) &&
+			position.y > pos.y && position.y < (pos.y + dim.y));
 	}
 	void qsf::rectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		window.draw(this->m_rect);
@@ -254,11 +388,156 @@ namespace qsf {
 	}
 
 
+	qpl::size qsf::vrectangles::size() const {
+		return this->rectangles.size();
+	}
+	void qsf::vrectangles::resize(qpl::size new_size) {
+		this->rectangles.resize(new_size);
+	}
+	void qsf::vrectangles::reserve(qpl::size new_size) {
+		this->rectangles.reserve(new_size);
+	}
+	void qsf::vrectangles::clear() {
+		this->rectangles.clear();
+	}
+	qsf::vrectangle& qsf::vrectangles::operator[](qpl::u32 index) {
+		return this->rectangles[index];
+	}
+	const qsf::vrectangle& qsf::vrectangles::operator[](qpl::u32 index) const {
+		return this->rectangles[index];
+	}
+
+	qsf::vrectangle& qsf::vrectangles::front() {
+		return this->rectangles.front();
+	}
+	const qsf::vrectangle& qsf::vrectangles::front() const {
+		return this->rectangles.front();
+	}
+
+	qsf::vrectangle& qsf::vrectangles::back() {
+		return this->rectangles.back();
+	}
+	const qsf::vrectangle& qsf::vrectangles::back() const {
+		return this->rectangles.back();
+	}
+
+	std::vector<qsf::vrectangle>::iterator qsf::vrectangles::begin() {
+		return this->rectangles.begin();
+	}
+	std::vector<qsf::vrectangle>::const_iterator qsf::vrectangles::begin() const {
+		return this->rectangles.begin();
+	}
+	std::vector<qsf::vrectangle>::const_iterator qsf::vrectangles::cbegin() const {
+		return this->rectangles.cbegin();
+	}
+
+	std::vector<qsf::vrectangle>::iterator qsf::vrectangles::end() {
+		return this->rectangles.end();
+	}
+	std::vector<qsf::vrectangle>::const_iterator qsf::vrectangles::end() const {
+		return this->rectangles.end();
+	}
+	std::vector<qsf::vrectangle>::const_iterator qsf::vrectangles::cend() const {
+		return this->rectangles.cend();
+	}
+
+
+
+
+	void qsf::vrectangles::add_rectangle(vrectangle rectangle) {
+		this->rectangles.push_back(rectangle);
+	}
+	void qsf::vrectangles::add_rectangle(qsf::vector2f position, qsf::vector2f dimension) {
+		this->rectangles.push_back(qsf::vrectangle(position, dimension));
+	}
+	void qsf::vrectangles::add_rectangle(qsf::vector2f position, qsf::vector2f dimension, qsf::rgb color) {
+		this->rectangles.push_back(qsf::vrectangle(position, dimension, color));
+	}
+
+	qsf::vrectangles& qsf::vrectangles::operator=(const qsf::vrectangles& rectangles) {
+		this->rectangles = rectangles.rectangles;
+		return *this;
+	}
+	void qsf::vrectangles::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		qsf::detail::rectangles = *this;
+		qsf::detail::rectangles.draw(window, states);
+	}
+
+
+	qpl::size qsf::rectangles::size() const {
+		return this->rectangles_.size();
+	}
+	void qsf::rectangles::resize(qpl::size new_size) {
+		this->rectangles_.resize(new_size);
+	}
+	void qsf::rectangles::reserve(qpl::size new_size) {
+		this->rectangles_.reserve(new_size);
+	}
+	void qsf::rectangles::clear() {
+		this->rectangles_.clear();
+	}
+	qsf::rectangle& qsf::rectangles::operator[](qpl::u32 index) {
+		return this->rectangles_[index];
+	}
+	const qsf::rectangle& qsf::rectangles::operator[](qpl::u32 index) const {
+		return this->rectangles_[index];
+	}
+
+	qsf::rectangle& qsf::rectangles::front() {
+		return this->rectangles_.front();
+	}
+	const qsf::rectangle& qsf::rectangles::front() const {
+		return this->rectangles_.front();
+	}
+
+	qsf::rectangle& qsf::rectangles::back() {
+		return this->rectangles_.back();
+	}
+	const qsf::rectangle& qsf::rectangles::back() const {
+		return this->rectangles_.back();
+	}
+
+	std::vector<qsf::rectangle>::iterator qsf::rectangles::begin() {
+		return this->rectangles_.begin();
+	}
+	std::vector<qsf::rectangle>::const_iterator qsf::rectangles::begin() const {
+		return this->rectangles_.begin();
+	}
+	std::vector<qsf::rectangle>::const_iterator qsf::rectangles::cbegin() const {
+		return this->rectangles_.cbegin();
+	}
+
+	std::vector<qsf::rectangle>::iterator qsf::rectangles::end() {
+		return this->rectangles_.end();
+	}
+	std::vector<qsf::rectangle>::const_iterator qsf::rectangles::end() const {
+		return this->rectangles_.end();
+	}
+	std::vector<qsf::rectangle>::const_iterator qsf::rectangles::cend() const {
+		return this->rectangles_.cend();
+	}
+
+
+	qsf::rectangles& qsf::rectangles::operator=(const qsf::vrectangles& rectangles) {
+		this->rectangles_.resize(rectangles.size());
+		for (qpl::u32 i = 0u; i < this->rectangles_.size(); ++i) {
+			this->rectangles_[i] = rectangles[i];
+		}
+		return *this;
+	}
+	void qsf::rectangles::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		for (auto& i : this->rectangles_) {
+			i.draw(window, states);
+		}
+	}
+
+
+
 	vpoint& qsf::vpoint::operator=(qsf::vector2f position) {
 		this->position = position;
 		return *this;
 	}
-	bool qsf::vpoint::operator==(const vpoint& other) const{
+	bool qsf::vpoint::operator==(const vpoint& other) const {
 		return this->position == other.position && this->color == other.color;
 	}
 	bool qsf::vpoint::operator!=(const vpoint& other) const {
@@ -266,7 +545,7 @@ namespace qsf {
 	}
 	void qsf::vpoint::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::point = *this;
-		window.draw(qsf::detail::point);
+		qsf::detail::point.draw(window, states);
 	}
 
 	qsf::line& qsf::line::operator=(const qsf::vline& line) {
@@ -287,7 +566,59 @@ namespace qsf {
 		return *this;
 	}
 	void qsf::point::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		window.draw(&this->vertex, 1, sf::PrimitiveType::Points, states);
+		this->vertex.draw(window, states);
+	}
+
+
+	qpl::size qsf::vpoints::size() const {
+		return this->points.size();
+	}
+	void qsf::vpoints::resize(qpl::size new_size) {
+		this->points.resize(new_size);
+	}
+	void qsf::vpoints::reserve(qpl::size new_size) {
+		this->points.reserve(new_size);
+	}
+	qsf::vpoint& qsf::vpoints::operator[](qpl::u32 index) {
+		return this->points[index];
+	}
+	const qsf::vpoint& qsf::vpoints::operator[](qpl::u32 index) const {
+		return this->points[index];
+	}
+
+	qsf::vpoint& qsf::vpoints::front() {
+		return this->points.front();
+	}
+	const qsf::vpoint& qsf::vpoints::front() const {
+		return this->points.front();
+	}
+
+	qsf::vpoint& qsf::vpoints::back() {
+		return this->points.back();
+	}
+	const qsf::vpoint& qsf::vpoints::back() const {
+		return this->points.back();
+	}
+
+
+	std::vector<qsf::vpoint>::iterator qsf::vpoints::begin() {
+		return this->points.begin();
+	}
+	std::vector<qsf::vpoint>::const_iterator qsf::vpoints::begin() const {
+		return this->points.begin();
+	}
+	std::vector<qsf::vpoint>::const_iterator qsf::vpoints::cbegin() const {
+		return this->points.cbegin();
+	}
+
+	std::vector<qsf::vpoint>::iterator qsf::vpoints::end() {
+		return this->points.end();
+	}
+	std::vector<qsf::vpoint>::const_iterator qsf::vpoints::end() const {
+		return this->points.end();
+	}
+	std::vector<qsf::vpoint>::const_iterator qsf::vpoints::cend() const {
+		return this->points.cend();
 	}
 
 
@@ -305,18 +636,44 @@ namespace qsf {
 	}
 	void qsf::vpoints::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::points = *this;
-		window.draw(qsf::detail::points);
+		qsf::detail::points.draw(window, states);
 	}
 	void qsf::vpoints::clear() {
 		this->points.clear();
 	}
-	qpl::size qsf::vpoints::size() const {
-		return this->points.size();
+
+
+	void qsf::points::resize(qpl::size new_size) {
+		this->vertices.resize(new_size);
 	}
+	void qsf::points::reserve(qpl::size new_size) {
+		this->vertices.reserve(new_size);
+	}
+	qsf::vertex& qsf::points::operator[](qpl::u32 index) {
+		return this->vertices[index];
+	}
+	const qsf::vertex& qsf::points::operator[](qpl::u32 index) const {
+		return this->vertices[index];
+	}
+
+	qsf::vertex& qsf::points::front() {
+		return this->vertices[0u];
+	}
+	const qsf::vertex& qsf::points::front() const {
+		return this->vertices[0u];
+	}
+
+	qsf::vertex& qsf::points::back() {
+		return this->vertices[this->size() - 1];
+	}
+	const qsf::vertex& qsf::points::back() const {
+		return this->vertices[this->size() - 1];
+	}
+
 	qsf::vlines qsf::points::as_lines() const {
 		qsf::vlines result;
-	
-		result.points.resize(this->vertices.getVertexCount());
+
+		result.points.resize(this->vertices.size());
 		for (qpl::u32 i = 0u; i < result.points.size(); ++i) {
 			result.points[i].position = this->vertices[i].position;
 			result.points[i].color = this->vertices[i].color;
@@ -334,13 +691,13 @@ namespace qsf {
 		return *this;
 	}
 	void qsf::points::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		window.draw(this->vertices);
+		this->vertices.draw(window, states);
 	}
 	void qsf::points::clear() {
 		this->vertices.clear();
 	}
 	qpl::size qsf::points::size() const {
-		return this->vertices.getVertexCount();
+		return this->vertices.size();
 	}
 
 
@@ -362,7 +719,7 @@ namespace qsf {
 	}
 	void qsf::vcircle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::circle = *this;
-		window.draw(qsf::detail::circle);
+		qsf::detail::circle.draw(window, states);
 	}
 	void qsf::circle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		window.draw(this->circle_shape, states);
@@ -379,6 +736,38 @@ namespace qsf {
 		this->circle_shape.setFillColor(circle.circle_shape.getFillColor());
 		return *this;
 	}
+
+
+	void qsf::vcircles::resize(qpl::size new_size) {
+		this->circles.resize(new_size);
+	}
+	void qsf::vcircles::reserve(qpl::size new_size) {
+		this->circles.reserve(new_size);
+	}
+
+
+	qsf::vcircle& qsf::vcircles::operator[](qpl::u32 index) {
+		return this->circles[index];
+    }
+	const qsf::vcircle& qsf::vcircles::operator[](qpl::u32 index) const {
+		return this->circles[index];
+	}
+
+
+	qsf::vcircle& qsf::vcircles::front() {
+		return this->circles.front();
+	}
+	const qsf::vcircle& qsf::vcircles::front() const {
+		return this->circles.front();
+	}
+
+	qsf::vcircle& qsf::vcircles::back() {
+		return this->circles.back();
+	}
+	const qsf::vcircle& qsf::vcircles::back() const {
+		return this->circles.back();
+	}
+
 	void qsf::vcircles::add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color) {
 		this->circles.push_back(qsf::vcircle(point.position, radius, color));
 	}
@@ -394,10 +783,36 @@ namespace qsf {
 
 	void qsf::vcircles::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::circles = *this;
-		window.draw(qsf::detail::circles);
+		qsf::detail::circles.draw(window, states);
 	}
 
 
+	void qsf::circles::resize(qpl::size new_size) {
+		this->circles_.resize(new_size);
+	}
+	void qsf::circles::reserve(qpl::size new_size) {
+		this->circles_.reserve(new_size);
+	}
+	qsf::circle& qsf::circles::operator[](qpl::u32 index) {
+		return this->circles_[index];
+	}
+	const qsf::circle& qsf::circles::operator[](qpl::u32 index) const {
+		return this->circles_[index];
+	}
+
+	qsf::circle& qsf::circles::front() {
+		return this->circles_.front();
+	}
+	const qsf::circle& qsf::circles::front() const {
+		return this->circles_.front();
+	}
+
+	qsf::circle& qsf::circles::back() {
+		return this->circles_.back();
+	}
+	const qsf::circle& qsf::circles::back() const {
+		return this->circles_.back();
+	}
 
 	void qsf::circles::add_circle(const qsf::vcircle& circle) {
 		this->circles_.push_back(circle);
@@ -410,7 +825,7 @@ namespace qsf {
 	}
 	void qsf::circles::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		for (auto& i : this->circles_) {
-			window.draw(i, states);
+			i.draw(window, states);
 		}
 	}
 	qsf::circles& qsf::circles::operator=(const qsf::vcircles& circles) {
@@ -476,7 +891,7 @@ namespace qsf {
 	}
 	void qsf::vline::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::line = *this;
-		window.draw(qsf::detail::line);
+		qsf::detail::line.draw(window, states);
 	}
 
 	void qsf::line::set_a(qsf::vpoint point) {
@@ -519,6 +934,33 @@ namespace qsf {
 		//(x, y) + 
 	//}
 
+	void qsf::vlines::resize(qpl::size new_size) {
+		this->points.resize(new_size);
+	}
+	void qsf::vlines::reserve(qpl::size new_size) {
+		this->points.reserve(new_size);
+	}
+
+	qsf::vpoint& qsf::vlines::operator[](qpl::u32 index) {
+		return this->points[index];
+	}
+	const qsf::vpoint& qsf::vlines::operator[](qpl::u32 index) const {
+		return this->points[index];
+	}
+
+	qsf::vpoint& qsf::vlines::front() {
+		return this->points.front();
+	}
+	const qsf::vpoint& qsf::vlines::front() const {
+		return this->points.front();
+	}
+
+	qsf::vpoint& qsf::vlines::back() {
+		return this->points.back();
+	}
+	const qsf::vpoint& qsf::vlines::back() const {
+		return this->points.back();
+	}
 
 
 	void qsf::vlines::clear() {
@@ -539,8 +981,38 @@ namespace qsf {
 
 	void qsf::vlines::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::lines = *this;
-		window.draw(qsf::detail::lines);
+		qsf::detail::lines.draw(window, states);
 	}
+
+
+
+	void qsf::lines::resize(qpl::size new_size) {
+		this->vertices.resize(new_size);
+	}
+	void qsf::lines::reserve(qpl::size new_size) {
+		this->vertices.reserve(new_size);
+	}
+	qsf::vertex& qsf::lines::operator[](qpl::u32 index) {
+		return this->vertices[index];
+	}
+	const qsf::vertex& qsf::lines::operator[](qpl::u32 index) const {
+		return this->vertices[index];
+	}
+	
+	qsf::vertex& qsf::lines::front() {
+		return this->vertices[0u];
+	}
+	const qsf::vertex& qsf::lines::front() const {
+		return this->vertices[0u];
+	}
+	
+	qsf::vertex& qsf::lines::back() {
+		return this->vertices[this->size() - 1u];
+	}
+	const qsf::vertex& qsf::lines::back() const {
+		return this->vertices[this->size() - 1u];
+	}
+
 
 	void qsf::lines::complete() {
 		this->add_point(this->vertices[0].position, this->vertices[0].color);
@@ -549,7 +1021,7 @@ namespace qsf {
 	qsf::lines& qsf::lines::operator=(const qsf::vlines& lines) {
 		this->vertices.resize(lines.size());
 		for (qpl::u32 i = 0u; i < lines.points.size(); ++i) {
-			this->vertices[i] = sf::Vertex(lines.points[i].position, lines.points[i].color);
+			this->vertices[i] = qsf::vertex(lines.points[i].position, lines.points[i].color);
 		}
 		return *this;
 	}
@@ -557,16 +1029,16 @@ namespace qsf {
 		this->vertices.clear();
 	}
 	qpl::size qsf::lines::size() const {
-		return this->vertices.getVertexCount();
+		return this->vertices.size();
 	}
 	void qsf::lines::add_point(qsf::vpoint point) {
-		this->vertices.append(sf::Vertex(point.position, point.color));
+		this->vertices.add(qsf::vertex(point.position, point.color));
 	}
 	void qsf::lines::add_point(qsf::vector2f position, qsf::rgb color) {
-		this->vertices.append(sf::Vertex(position, color));
+		this->vertices.add(qsf::vertex(position, color));
 	}
 	void qsf::lines::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		window.draw(this->vertices);
+		this->vertices.draw(window, states);
 	}
 
 	void qsf::vthick_line::set_a(qsf::vpoint point) {
@@ -610,7 +1082,7 @@ namespace qsf {
 	}
 	void qsf::vthick_line::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::thick_line = *this;
-		window.draw(qsf::detail::thick_line);
+		qsf::detail::thick_line.draw(window, states);
 	}
 
 	void qsf::thick_line::set_a(qsf::vpoint point, qpl::f32 thickness) {
@@ -671,6 +1143,34 @@ namespace qsf {
 		window.draw(this->vertices.data(), this->vertices.size(), sf::PrimitiveType::Quads, states);
 	}
 
+	void qsf::vthick_lines::resize(qpl::size new_size) {
+		this->points.resize(new_size);
+	}
+	void qsf::vthick_lines::reserve(qpl::size new_size) {
+		this->points.reserve(new_size);
+	}
+
+	qsf::vpoint& qsf::vthick_lines::operator[](qpl::u32 index) {
+		return this->points[index];
+	}
+	const qsf::vpoint& qsf::vthick_lines::operator[](qpl::u32 index) const {
+		return this->points[index];
+	}
+
+	qsf::vpoint& qsf::vthick_lines::front() {
+		return this->points.front();
+	}
+	const qsf::vpoint& qsf::vthick_lines::front() const {
+		return this->points.front();
+	}
+
+	qsf::vpoint& qsf::vthick_lines::back() {
+		return this->points.back();
+	}
+	const qsf::vpoint& qsf::vthick_lines::back() const {
+		return this->points.back();
+	}
+
 
 	void qsf::vthick_lines::add_thick_line(qsf::vpoint point) {
 		this->points.add_point(point);
@@ -683,7 +1183,7 @@ namespace qsf {
 	}
 	void qsf::vthick_lines::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::thick_lines = *this;
-		window.draw(qsf::detail::thick_lines);
+		qsf::detail::thick_lines.draw(window, states);
 	}
 	void qsf::vthick_lines::clear() {
 		this->points.clear();
@@ -692,6 +1192,36 @@ namespace qsf {
 		return this->points.size();
 	}
 
+
+	void qsf::thick_lines::resize(qpl::size new_size) {
+		this->vertices.resize(new_size);
+	}
+	void qsf::thick_lines::reserve(qpl::size new_size) {
+		this->vertices.reserve(new_size);
+	}
+
+	qsf::vertex& qsf::thick_lines::operator[](qpl::u32 index) {
+		return this->vertices[index];
+	}
+	const qsf::vertex& qsf::thick_lines::operator[](qpl::u32 index) const {
+		return this->vertices[index];
+	}
+
+	qsf::vertex& qsf::thick_lines::front() {
+		return this->vertices[0u];
+	}
+	const qsf::vertex& qsf::thick_lines::front() const {
+		return this->vertices[0u];
+	}
+
+	qsf::vertex& qsf::thick_lines::back() {
+		return this->vertices[this->size() - 1u];
+	}
+	const qsf::vertex& qsf::thick_lines::back() const {
+		return this->vertices[this->size() - 1u];
+	}
+
+
 	void qsf::thick_lines::add_thick_line(qsf::vpoint point, qpl::f32 thickness) {
 		this->add_thick_line(point.position, point.color, thickness);
 	}
@@ -699,17 +1229,17 @@ namespace qsf {
 		auto last_point = position;
 		auto last_color = color;
 		auto last_thickness = thickness;
-		if (this->vertices.getVertexCount()) {
-			last_point = (this->vertices[this->vertices.getVertexCount() - 1].position + this->vertices[this->vertices.getVertexCount() - 2].position) / 2.0f;
+		if (this->vertices.size()) {
+			last_point = (this->vertices[this->vertices.size() - 1].position + this->vertices[this->vertices.size() - 2].position) / 2.0f;
 
-			last_color.c.r = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 1].color.r) + qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 2].color.r)) / 2);
-			last_color.c.g = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 1].color.g) + qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 2].color.g)) / 2);
-			last_color.c.b = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 1].color.b) + qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 2].color.b)) / 2);
-			last_color.c.a = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 1].color.a) + qpl::u32_cast(this->vertices[this->vertices.getVertexCount() - 2].color.a)) / 2);
+			last_color.c.r = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.r) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.r)) / 2);
+			last_color.c.g = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.g) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.g)) / 2);
+			last_color.c.b = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.b) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.b)) / 2);
+			last_color.c.a = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.a) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.a)) / 2);
 
 			qsf::vline line;
-			line.set_a(this->vertices[this->vertices.getVertexCount() - 1].position);
-			line.set_b(this->vertices[this->vertices.getVertexCount() - 2].position);
+			line.set_a(this->vertices[this->vertices.size() - 1].position);
+			line.set_b(this->vertices[this->vertices.size() - 2].position);
 			last_thickness = line.length() / 2;
 		}
 
@@ -724,32 +1254,32 @@ namespace qsf {
 			normal.y = 0.0;
 		}
 
-		if (this->vertices.getVertexCount() > 4u) {
-			this->vertices.resize(this->vertices.getVertexCount() + 8);
-			this->vertices[this->vertices.getVertexCount() - 8] = this->vertices[this->vertices.getVertexCount() - 10];
-			this->vertices[this->vertices.getVertexCount() - 7] = this->vertices[this->vertices.getVertexCount() - 9];
-			this->vertices[this->vertices.getVertexCount() - 6].position = last_point + normal * last_thickness;
-			this->vertices[this->vertices.getVertexCount() - 6].color = last_color;
-			this->vertices[this->vertices.getVertexCount() - 5].position = last_point - normal * last_thickness;
-			this->vertices[this->vertices.getVertexCount() - 5].color = last_color;
+		if (this->vertices.size() > 4u) {
+			this->vertices.resize(this->vertices.size() + 8);
+			this->vertices[this->vertices.size() - 8] = this->vertices[this->vertices.size() - 10];
+			this->vertices[this->vertices.size() - 7] = this->vertices[this->vertices.size() - 9];
+			this->vertices[this->vertices.size() - 6].position = last_point + normal * last_thickness;
+			this->vertices[this->vertices.size() - 6].color = last_color;
+			this->vertices[this->vertices.size() - 5].position = last_point - normal * last_thickness;
+			this->vertices[this->vertices.size() - 5].color = last_color;
 
-			this->vertices[this->vertices.getVertexCount() - 4] = this->vertices[this->vertices.getVertexCount() - 6];
-			this->vertices[this->vertices.getVertexCount() - 3] = this->vertices[this->vertices.getVertexCount() - 5];
-			this->vertices[this->vertices.getVertexCount() - 2].position = position - normal * thickness;
-			this->vertices[this->vertices.getVertexCount() - 2].color = color;
-			this->vertices[this->vertices.getVertexCount() - 1].position = position + normal * thickness;
-			this->vertices[this->vertices.getVertexCount() - 1].color = color;
+			this->vertices[this->vertices.size() - 4] = this->vertices[this->vertices.size() - 6];
+			this->vertices[this->vertices.size() - 3] = this->vertices[this->vertices.size() - 5];
+			this->vertices[this->vertices.size() - 2].position = position - normal * thickness;
+			this->vertices[this->vertices.size() - 2].color = color;
+			this->vertices[this->vertices.size() - 1].position = position + normal * thickness;
+			this->vertices[this->vertices.size() - 1].color = color;
 		}
 		else {
-			this->vertices.resize(this->vertices.getVertexCount() + 4);
-			this->vertices[this->vertices.getVertexCount() - 4].position = last_point + normal * last_thickness;
-			this->vertices[this->vertices.getVertexCount() - 4].color = last_color;
-			this->vertices[this->vertices.getVertexCount() - 3].position = last_point - normal * last_thickness;
-			this->vertices[this->vertices.getVertexCount() - 3].color = last_color;
-			this->vertices[this->vertices.getVertexCount() - 2].position = position - normal * thickness;
-			this->vertices[this->vertices.getVertexCount() - 2].color = color;
-			this->vertices[this->vertices.getVertexCount() - 1].position = position + normal * thickness;
-			this->vertices[this->vertices.getVertexCount() - 1].color = color;
+			this->vertices.resize(this->vertices.size() + 4);
+			this->vertices[this->vertices.size() - 4].position = last_point + normal * last_thickness;
+			this->vertices[this->vertices.size() - 4].color = last_color;
+			this->vertices[this->vertices.size() - 3].position = last_point - normal * last_thickness;
+			this->vertices[this->vertices.size() - 3].color = last_color;
+			this->vertices[this->vertices.size() - 2].position = position - normal * thickness;
+			this->vertices[this->vertices.size() - 2].color = color;
+			this->vertices[this->vertices.size() - 1].position = position + normal * thickness;
+			this->vertices[this->vertices.size() - 1].color = color;
 		}
 
 		//qpl::println(this->vertices[this->vertices.getVertexCount() - 2].position.x, ", ", this->vertices[this->vertices.getVertexCount() - 2].position.y);
@@ -764,13 +1294,13 @@ namespace qsf {
 		return *this;
 	}
 	void qsf::thick_lines::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		window.draw(this->vertices, states);
+		this->vertices.draw(window, states);
 	}
 	void qsf::thick_lines::clear() {
 		this->vertices.clear();
 	}
 	qpl::size qsf::thick_lines::size() const {
-		return this->vertices.getVertexCount();
+		return this->vertices.size();
 	}
 
 
@@ -795,7 +1325,7 @@ namespace qsf {
 		if (!this->positions_set) {
 			this->positions_set = true;
 
-			if (this->vertices.getVertexCount()) {
+			if (this->vertices.size()) {
 				for (qpl::u32 y = 0u; y < this->array_dimension.y - 1; ++y) {
 					for (qpl::u32 x = 0u; x < this->array_dimension.x - 1; ++x) {
 						auto index = (y * (this->array_dimension.x - 1) + x);
@@ -814,27 +1344,27 @@ namespace qsf {
 		auto index = (y * this->array_dimension.y + x);
 
 		auto above_index = ((qpl::signed_cast(y) - 1) * (qpl::signed_cast(this->array_dimension.x) - 1) + qpl::signed_cast(x)) * 4;
-		if (above_index - 2 >= 0 && above_index - 2 < this->vertices.getVertexCount()) {
+		if (above_index - 2 >= 0 && above_index - 2 < this->vertices.size()) {
 			this->vertices[above_index - 2].color = color;
 		}
-		if (above_index + 1 >= 0 && above_index + 1 < this->vertices.getVertexCount()) {
+		if (above_index + 1 >= 0 && above_index + 1 < this->vertices.size()) {
 			this->vertices[above_index + 1].color = color;
 		}
 		auto below_index = ((qpl::signed_cast(y)) * (qpl::signed_cast(this->array_dimension.x) - 1) + qpl::signed_cast(x)) * 4;
-		if (below_index >= 0 && below_index < this->vertices.getVertexCount()) {
+		if (below_index >= 0 && below_index < this->vertices.size()) {
 			this->vertices[below_index].color = color;
 		}
-		if (below_index - 1 >= 0 && below_index - 1 < this->vertices.getVertexCount()) {
+		if (below_index - 1 >= 0 && below_index - 1 < this->vertices.size()) {
 			this->vertices[below_index - 1].color = color;
 		}
 	}
 	void qsf::pixel_image::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		window.draw(this->vertices);
+		this->vertices.draw(window, states);
 	}
 
 	void qsf::vgraph::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::graph = *this;
-		window.draw(qsf::detail::graph);
+		qsf::detail::graph.draw(window, states);
 	}
 
 	void qsf::vgraph::graph_line::add_data(qpl::f64 data) {
@@ -981,7 +1511,7 @@ namespace qsf {
 		this->circles.resize(graph.graphs.size());
 
 		qpl::size interpolation_steps;
-		qsf::vgraph::interpolation_type interpolation;
+		qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
 
 		for (auto& g : graph.graphs) {
 			qsf::vgraph::data_point min, max;
@@ -1236,26 +1766,26 @@ namespace qsf {
 	void qsf::graph::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 
 		if (this->background.m_rect.getFillColor().a) {
-			window.draw(this->background);
+			this->background.draw(window, states);
 		}
 
 		for (qpl::u32 i = 0u; i < this->y_lines.size(); ++i) {
-			window.draw(this->y_lines[i]);
+			this->y_lines[i].draw(window, states);
 		}
 		for (qpl::u32 i = 0u; i < this->x_lines.size(); ++i) {
-			window.draw(this->x_lines[i]);
+			this->x_lines[i].draw(window, states);
 		}
 		for (qpl::u32 i = 0u; i < this->y_texts.size(); ++i) {
-			window.draw(this->y_texts[i]);
+			this->y_texts[i].draw(window, states);
 		}
 		for (qpl::u32 i = 0u; i < this->x_texts.size(); ++i) {
-			window.draw(this->x_texts[i]);
+			this->x_texts[i].draw(window, states);
 		}
 		for (qpl::u32 i = 0u; i < this->lines.size(); ++i) {
-			window.draw(this->lines[i]);
-			window.draw(this->circles[i]);
+			this->lines[i].draw(window, states);
+			this->circles[i].draw(window, states);
 			for (auto& i : this->circle_texts[i]) {
-				window.draw(i);
+				i.draw(window, states);
 			}
 		}
 	}
@@ -1281,15 +1811,95 @@ namespace qsf {
 	void qsf::vbutton::set_text_character_size(qpl::u32 character_size) {
 		this->text.set_character_size(character_size);
 	}
+	void qsf::vbutton::set_text_style(qpl::u32 character_style) {
+		this->text.set_style(character_style);
+	}
 	void qsf::vbutton::set_text(std::string text) {
 		this->text.set_string(text);
 	}
 	void qsf::vbutton::centerize_text() {
 		this->text.set_position(this->background.center());
 	}
+	bool qsf::vbutton::is_hovering() const {
+		return this->hovering;
+	}
+	bool qsf::vbutton::is_clicked() const {
+		return this->clicked;
+	}
+	void qsf::vbutton::update(const event_info& event_info) {
+		auto pos = event_info.mouse_position();
+		this->hovering = this->background.contains(pos);
+
+		this->clicked = this->hovering && event_info.left_mouse_clicked();
+	}
+
+
+
+	void qsf::vbutton::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		qsf::detail::button = *this;
+		qsf::detail::button.draw(window, states);
+	}
+	qsf::vbutton& qsf::vbutton::operator=(const qsf::vbutton& button) {
+		this->background = button.background;
+		this->text = button.text;
+		return *this;
+	}
+
+	void qsf::button::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		this->background.draw(window, states);
+		this->text.draw(window, states);
+	}
+	qsf::button& qsf::button::operator=(const qsf::vbutton& button) {
+		this->background = button.background;
+		this->text = button.text;
+		this->text.set_center(this->background.center());
+		return *this;
+	}
+
+	void qsf::button::set_dimension(qsf::vector2f dimension) {
+		this->background.set_dimension(dimension);
+	}
+	void qsf::button::set_position(qsf::vector2f position) {
+		this->background.set_position(position);
+	}
+	void qsf::button::set_center(qsf::vector2f center) {
+		this->background.set_center(center);
+	}
+	void qsf::button::set_background_color(qsf::rgb color) {
+		this->background.set_color(color);
+	}
+	void qsf::button::set_text_color(qsf::rgb color) {
+		this->text.set_color(color);
+	}
+	void qsf::button::set_text_font(std::string font) {
+		this->text.set_font(font);
+	}
+	void qsf::button::set_text_character_size(qpl::u32 character_size) {
+		this->text.set_character_size(character_size);
+	}
+	void qsf::button::set_text_style(qpl::u32 character_style) {
+		this->text.set_style(character_style);
+	}
+	void qsf::button::set_text(std::string text) {
+		this->text.set_string(text);
+	}
+	void qsf::button::centerize_text() {
+		this->text.set_position(this->background.center());
+	}
+	bool qsf::button::is_hovering() const {
+		return this->hovering;
+	}
+	bool qsf::button::is_clicked() const {
+		return this->clicked;
+	}
+	void qsf::button::update(const event_info& event_info) {
+		auto pos = event_info.mouse_position();
+		this->hovering = this->background.contains(pos);
+
+		this->clicked = this->hovering && event_info.left_mouse_clicked();
+	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;
-	std::unordered_map<std::string, qsf::rectangle> qsf::detail::rectangles;
 
 	qsf::text& qsf::get_text(const std::string& name) {
 		if (qsf::detail::texts.find(name) == qsf::detail::texts.cend()) {
@@ -1301,14 +1911,6 @@ namespace qsf {
 			}
 		}
 		return qsf::detail::texts[name];
-	}
-	qsf::rectangle& qsf::get_rectangle(const std::string& name) {
-		if (qsf::detail::rectangles.find(name) == qsf::detail::rectangles.cend()) {
-			if (qsf::detail::rectangles.size()) {
-				qsf::detail::rectangles[name] = qsf::detail::rectangles.begin()->second;
-			}
-		}
-		return qsf::detail::rectangles[name];
 	}
 }
 #endif

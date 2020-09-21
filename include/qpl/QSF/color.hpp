@@ -154,10 +154,10 @@ namespace qsf {
 		}
 
 		struct {
-			qpl::u8 a;
-			qpl::u8 b;
-			qpl::u8 g;
 			qpl::u8 r;
+			qpl::u8 g;
+			qpl::u8 b;
+			qpl::u8 a;
 		} c;
 		qpl::u32 uint;
 

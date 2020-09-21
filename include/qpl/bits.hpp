@@ -53,21 +53,196 @@ namespace qpl {
 	template<qpl::u64 bits>
 	class bitset {
 	public:
+
 		using holding_type = qpl::conditional<
-			qpl::if_true<(bits <= 64)>, qpl::ubit<bits>,
+			qpl::if_true<(bits <= 64u)>, qpl::ubit<bits>,
 			qpl::default_type, std::array<qpl::u64, qpl::approximate_multiple_up(bits, qpl::u64{ 64 })>>;
-		
-		constexpr static qpl::u64 actual_bit_size() {
+
+
+		class bitset_proxy {
+		public:
+			bitset_proxy(bitset& data, qpl::u32 index) {
+				this->ptr = &data;
+				this->index = index;
+			}
+
+			bool get() const {
+				return this->ptr->get(this->index);
+			}
+
+			operator bool() const {
+				return this->get();
+			}
+			bitset_proxy operator=(bool value) const {
+				this->ptr->set(this->index, value);
+				return *this;
+			}
+		private:
+			bitset* ptr;
+			qpl::u32 index;
+		};
+
+		class bitset_const_proxy {
+		public:
+			bitset_const_proxy(bitset& data, qpl::u32 index) {
+				this->ptr = &data;
+				this->index = index;
+			}
+
+			bool get() const {
+				return this->ptr->get(this->index);
+			}
+
+			operator bool() const {
+				return this->get();
+			}
+		private:
+			const bitset* ptr;
+			qpl::u32 index;
+		};
+
+		class bitset_iterator {
+		public:
+			bitset_iterator(bitset& data, qpl::u32 index) {
+				this->ptr = &data;
+				this->index = index;
+			}
+
+			bitset_iterator& operator++() {
+				++this->index;
+				return *this;
+			}
+			bitset_iterator operator++(int dummy) {
+				auto copy = *this;
+				++this->index;
+				return copy;
+			}
+
+			bool operator==(const bitset_iterator& other) const {
+				return (this->ptr == other.ptr && this->index == other.index);
+			}
+
+			bool operator!=(const bitset_iterator& other) const {
+				return !(*this == other);
+			}
+
+			const bitset_proxy& operator*() {
+				return bitset_proxy(*ptr, index);
+			}
+			const bitset_const_proxy& operator*() const {
+				return bitset_const_proxy(*ptr, index);
+			}
+
+		private:
+			bitset* ptr;
+			qpl::u32 index;
+		};
+
+		class bitset_const_iterator {
+		public:
+			bitset_const_iterator(bitset& data, qpl::u32 index) {
+				this->ptr = &data;
+				this->index = index;
+			}
+
+			bitset_const_iterator& operator++() {
+				++this->index;
+			}
+			bitset_const_iterator operator++(int dummy) {
+				auto copy = *this;
+				++this->index;
+				return copy;
+			}
+
+			bool operator==(const bitset_iterator& other) const {
+				return (this->ptr == other.ptr && this->index == other.index);
+			}
+
+			bool operator!=(const bitset_iterator& other) const {
+				return !(*this == other);
+			}
+
+			bitset_const_proxy& operator*() const {
+				return bitset_const_proxy(*ptr, index);
+			}
+
+		private:
+			const bitset* ptr;
+			qpl::u32 index;
+		};
+
+		constexpr static qpl::u64 memory_size() {
 			return sizeof(holding_type) * qpl::bits_in_byte();
 		}
-		constexpr static qpl::u64 bit_size() {
+		constexpr static qpl::u64 size() {
 			return bits;
 		}
 		constexpr static bool is_array() {
-			return bits > 64;
+			return bits > 64u;
 		}
+
+		constexpr bitset() {
+			this->clear();
+		}
+
+		constexpr void clear() {
+			if constexpr (is_array()) {
+				for (auto& i : this->m_data) {
+					i = 0u;
+				}
+			}
+			else {
+				this->data = 0u;
+			}
+		}
+
+		constexpr bool get(qpl::u32 index) const {
+			if constexpr (is_array()) {
+				return qpl::get_bit(this->data[index / 64u], index % 64u);
+			}
+			else {
+				return qpl::get_bit(this->data, index);
+			}
+		}
+		constexpr void set(qpl::u32 index, bool value) {
+			if constexpr (is_array()) {
+				qpl::set_bit(this->data[index / 64u], index % 64u, value);
+			}
+			else {
+				qpl::set_bit(this->data, index, value);
+			}
+		}
+
+		bitset_iterator begin() {
+			return bitset_iterator(*this, 0u);
+		}
+		bitset_const_iterator begin() const {
+			return bitset_const_iterator(*this, 0u);
+		}
+		bitset_const_iterator cbegin() const {
+			return bitset_const_iterator(*this, 0u);
+		}
+
+		bitset_iterator end() {
+			return bitset_iterator(*this, this->size());
+		}
+		bitset_const_iterator end() const {
+			return bitset_const_iterator(*this, this->size());
+		}
+		bitset_const_iterator cend() const {
+			return bitset_const_iterator(*this, this->size());
+		}
+
+
+		bitset_proxy operator[](qpl::u32 index) {
+			return bitset_proxy(*this, index);
+		}
+		bitset_const_proxy operator[](qpl::u32 index) const {
+			return bitset_const_proxy(*this, index);
+		}
+
 	private:
-		holding_type m_data;
+		holding_type data;
 	};
 
 	struct double_content {

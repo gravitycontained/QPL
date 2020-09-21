@@ -107,6 +107,14 @@ namespace qpl {
 		memcpy(result.data(), &source, qpl::bytes_in_type<T>());
 		return result;
 	}
+	template<typename T>
+	constexpr inline std::array<qpl::u64, qpl::approximate_multiple_up(qpl::bytes_in_type<T>(), qpl::bytes_in_type<qpl::u64>())> memory_to_u64_array(const T& source) {
+		std::array<qpl::u64, qpl::approximate_multiple_up(qpl::bytes_in_type<T>(), qpl::bytes_in_type<qpl::u64>())> result;
+		result.fill(qpl::u64{ 0u });
+		memcpy(result.data(), &source, qpl::bytes_in_type<T>());
+		return result;
+	}
+
 
 	QPLDLL void print_character_bool_table(std::string_view characters);
 

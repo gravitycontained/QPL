@@ -112,11 +112,14 @@ namespace qsf {
 		return *this;
 	}
 	qsf::rgb& qsf::rgb::operator=(qpl::u32 uint) {
-		if (uint < (qpl::u32_max / 0xFFu)) {
+
+		if (uint <= (qpl::u32_max >> 8)) {
 			uint <<= 8;
 			uint |= 0xFFu;
 		}
-		this->uint = uint;
+
+		this->uint = ((uint & 0xFF000000u) >> 24) | ((uint & 0x000000FFu) << 24) | ((uint & 0x00FF0000u) >> 8) | ((uint & 0x0000FF00u) << 8);
+
 		return *this;
 	}
 	bool qsf::rgb::operator==(const rgb& other) const {

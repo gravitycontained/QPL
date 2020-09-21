@@ -7,66 +7,14 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
-#include <set>
 
+#include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/time.hpp>
 
 namespace qsf {
-	struct event_info {
-		QPLDLL bool key_pressed(sf::Keyboard::Key key) const;
-		QPLDLL bool keys_pressed(const std::vector<sf::Keyboard::Key>& keys) const;
-		QPLDLL bool key_released(sf::Keyboard::Key key) const;
-		QPLDLL bool keys_released(const std::vector<sf::Keyboard::Key>& keys) const;
-		QPLDLL bool key_holding(sf::Keyboard::Key key) const;
-		QPLDLL bool keys_holding(const std::vector<sf::Keyboard::Key>& keys) const;
-
-		QPLDLL bool left_mouse_clicked() const;
-		QPLDLL bool left_mouse_released() const;
-		QPLDLL bool right_mouse_clicked() const;
-		QPLDLL bool right_mouse_released() const;
-		QPLDLL bool scrolled_up() const;
-		QPLDLL bool scrolled_down() const;
-		QPLDLL bool key_pressed() const;
-		QPLDLL bool key_released() const;
-		QPLDLL bool key_holding() const;
-
-		QPLDLL bool resized() const;
-		QPLDLL bool window_closed() const;
-
-		QPLDLL bool holding_left_mouse() const;
-		QPLDLL bool holding_right_mouse() const;
-		QPLDLL bool holding_key() const;
-
-		QPLDLL qsf::vector2i resized_size() const;
-		QPLDLL qsf::vector2i mouse_position() const;
-		
-		bool m_left_mouse_clicked;
-		bool m_left_mouse_released;
-		bool m_right_mouse_clicked;
-		bool m_right_mouse_released;
-		bool m_scrolled_up;
-		bool m_scrolled_down;
-		bool m_key_pressed;
-		bool m_key_released;
-		bool m_key_holding;
-		bool m_mouse_moved;
-		bool m_window_closed;
-		bool m_resized;
-
-		bool m_holding_left_mouse;
-		bool m_holding_right_mouse;
-		bool m_holding_key;
-
-		qsf::vector2i m_resized_size;
-		qsf::vector2i m_mouse_position;
-		std::set<sf::Keyboard::Key> m_keys_pressed;
-		std::set<sf::Keyboard::Key> m_keys_released;
-		std::set<sf::Keyboard::Key> m_keys_holding;
-		
-	};
 	struct base_state;
 
 	
@@ -93,6 +41,18 @@ namespace qsf {
 			this->states.back()->framework = this;
 			this->states.back()->init();
 		}
+
+		QPLDLL void add_font(const std::string& name, const std::string& path);
+		QPLDLL void add_texture(const std::string& name, const std::string& path);
+		QPLDLL void add_sprite(const std::string& name, const std::string& path);
+
+		QPLDLL sf::Font& get_font(const std::string& name);
+		QPLDLL sf::Texture& get_texture(const std::string& name);
+		QPLDLL sf::Sprite& get_sprite(const std::string& name);
+
+		QPLDLL const sf::Font& get_font(const std::string& name) const;
+		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
+		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
 
 		QPLDLL void create();
 		QPLDLL bool is_created() const;
@@ -158,6 +118,10 @@ namespace qsf {
 		QPLDLL virtual void update_on_resize();
 
 		QPLDLL virtual void draw(const sf::Drawable& drawable, sf::RenderStates states = sf::RenderStates::Default);
+		template<typename T>
+		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
+			drawable.draw(this->framework->window, states);
+		}
 		QPLDLL void event_update();
 		QPLDLL void update_close_window();
 		QPLDLL void hide_cursor();

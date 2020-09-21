@@ -38,6 +38,7 @@
 #if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
+#include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/vector.hpp>
