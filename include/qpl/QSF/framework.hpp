@@ -45,14 +45,17 @@ namespace qsf {
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
+		QPLDLL void add_text(const std::string& name);
 
 		QPLDLL sf::Font& get_font(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
+		QPLDLL qsf::text& get_text(const std::string& name);
 
 		QPLDLL const sf::Font& get_font(const std::string& name) const;
 		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
+		QPLDLL const qsf::text& get_text(const std::string& name) const;
 
 		QPLDLL void create();
 		QPLDLL bool is_created() const;
@@ -61,9 +64,11 @@ namespace qsf {
 		QPLDLL void set_dimension(qsf::vector2u dimension);
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void hide_cursor();
+		QPLDLL void set_window_position(qsf::vector2u position);
+		QPLDLL qsf::vector2u get_window_position() const;
 		QPLDLL void show_cursor();
 		QPLDLL void set_cursor_position(qsf::vector2i position);
-		QPLDLL void gameloop();
+		QPLDLL void game_loop();
 
 		template<typename T>
 		QPLDLL void draw_graph(const std::vector<T>& data, const std::string name = "") {
@@ -116,19 +121,42 @@ namespace qsf {
 		
 		QPLDLL virtual void clear();
 		QPLDLL virtual void update_on_resize();
+		QPLDLL virtual void update_on_close();
 
-		QPLDLL virtual void draw(const sf::Drawable& drawable, sf::RenderStates states = sf::RenderStates::Default);
 		template<typename T>
 		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
-			drawable.draw(this->framework->window, states);
+			if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->framework->window.draw(drawable, states);
+			}
+			else {
+				drawable.draw(this->framework->window, states);
+			}
 		}
 		QPLDLL void event_update();
 		QPLDLL void update_close_window();
 		QPLDLL void hide_cursor();
 		QPLDLL void show_cursor();
 		QPLDLL void set_cursor_position(qsf::vector2i position);
+		QPLDLL void set_window_position(qsf::vector2u position);
+		QPLDLL qsf::vector2u get_window_position() const;
 
 		QPLDLL qsf::vector2i dimension() const;
+
+		QPLDLL void add_font(const std::string& name, const std::string& path);
+		QPLDLL void add_texture(const std::string& name, const std::string& path);
+		QPLDLL void add_sprite(const std::string& name, const std::string& path);
+		QPLDLL void add_text(const std::string& name);
+
+		QPLDLL sf::Font& get_font(const std::string& name);
+		QPLDLL sf::Texture& get_texture(const std::string& name);
+		QPLDLL sf::Sprite& get_sprite(const std::string& name);
+		QPLDLL qsf::text& get_text(const std::string& name);
+
+		QPLDLL const sf::Font& get_font(const std::string& name) const;
+		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
+		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
+		QPLDLL const qsf::text& get_text(const std::string& name) const;
+
 
 		template<typename C>
 		void add_state() {
@@ -151,6 +179,9 @@ namespace qsf {
 		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
 		QPLDLL void set_graph_position(qsf::vector2f position);
 		QPLDLL void pop_this_state();
+		QPLDLL void allow_exit();
+		QPLDLL void disallow_exit();
+		QPLDLL bool is_exit_allowed() const;
 		QPLDLL qpl::f64 frame_time() const;
 
 		qsf::framework* framework;
@@ -158,6 +189,7 @@ namespace qsf {
 
 		sf::Color clear_color = sf::Color::Black;
 		bool m_pop_this_state = false;
+		bool m_allow_exit = true;
 	};
 
 }

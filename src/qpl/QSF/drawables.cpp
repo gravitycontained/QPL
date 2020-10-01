@@ -1801,9 +1801,14 @@ namespace qsf {
 	}
 	void qsf::vbutton::set_background_color(qsf::rgb color) {
 		this->background.set_color(color);
+		this->background_color = color;
+	}
+	void qsf::vbutton::set_hover_background_color(qsf::rgb color) {
+		this->hover_background_color = color;
 	}
 	void qsf::vbutton::set_text_color(qsf::rgb color) {
 		this->text.set_color(color);
+		this->text_color = color;
 	}
 	void qsf::vbutton::set_text_font(std::string font) {
 		this->text.set_font(font);
@@ -1828,7 +1833,30 @@ namespace qsf {
 	}
 	void qsf::vbutton::update(const event_info& event_info) {
 		auto pos = event_info.mouse_position();
-		this->hovering = this->background.contains(pos);
+
+		auto new_hovering = this->background.contains(pos);
+		if (new_hovering != this->hovering) {
+			if (this->invert_on_hover) {
+				if (new_hovering) {
+					this->background.set_color(this->background_color.inverted());
+					this->text.set_color(this->text_color.inverted());
+				}
+				else {
+					this->background.set_color(this->background_color);
+					this->text.set_color(this->text_color);
+				}
+			}
+			else {
+				if (new_hovering) {
+					this->background.set_color(this->hover_background_color);
+				}
+				else {
+					this->background.set_color(this->background_color);
+				}
+			}
+		}
+
+		this->hovering = new_hovering;
 
 		this->clicked = this->hovering && event_info.left_mouse_clicked();
 	}
@@ -1840,8 +1868,16 @@ namespace qsf {
 		qsf::detail::button.draw(window, states);
 	}
 	qsf::vbutton& qsf::vbutton::operator=(const qsf::vbutton& button) {
-		this->background = button.background;
+		this->outline_on_hover = button.outline_on_hover;
+		this->invert_on_hover = button.invert_on_hover;
+		this->text_color = button.text_color;
+		this->hover_background_color = button.hover_background_color;
+		this->background_color = button.background_color;
 		this->text = button.text;
+		this->background = button.background;
+		this->hovering = button.hovering;
+		this->clicked = button.clicked;
+
 		return *this;
 	}
 
@@ -1867,9 +1903,14 @@ namespace qsf {
 	}
 	void qsf::button::set_background_color(qsf::rgb color) {
 		this->background.set_color(color);
+		this->background_color = color;
+	}
+	void qsf::button::set_hover_background_color(qsf::rgb color) {
+		this->hover_background_color = color;
 	}
 	void qsf::button::set_text_color(qsf::rgb color) {
 		this->text.set_color(color);
+		this->text_color = color;
 	}
 	void qsf::button::set_text_font(std::string font) {
 		this->text.set_font(font);
@@ -1884,7 +1925,7 @@ namespace qsf {
 		this->text.set_string(text);
 	}
 	void qsf::button::centerize_text() {
-		this->text.set_position(this->background.center());
+		this->text.set_center(this->background.center());
 	}
 	bool qsf::button::is_hovering() const {
 		return this->hovering;
@@ -1894,14 +1935,44 @@ namespace qsf {
 	}
 	void qsf::button::update(const event_info& event_info) {
 		auto pos = event_info.mouse_position();
-		this->hovering = this->background.contains(pos);
+
+		auto new_hovering = this->background.contains(pos);
+		if (new_hovering != this->hovering) {
+			if (this->invert_on_hover) {
+				if (new_hovering) {
+					this->background.set_color(this->background_color.inverted());
+					this->text.set_color(this->text_color.inverted());
+				}
+				else {
+					this->background.set_color(this->background_color);
+					this->text.set_color(this->text_color);
+				}
+			}
+			else {
+				if (new_hovering) {
+					this->background.set_color(this->hover_background_color);
+				}
+				else {
+					this->background.set_color(this->background_color);
+				}
+			}
+		}
+
+		this->hovering = new_hovering;
 
 		this->clicked = this->hovering && event_info.left_mouse_clicked();
+
 	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;
 
 	qsf::text& qsf::get_text(const std::string& name) {
+		if (qsf::detail::texts.find(name) == qsf::detail::texts.cend()) {
+			qsf::add_text();
+		}
+		return qsf::detail::texts[name];
+	}
+	void qsf::add_text(const std::string& name) {
 		if (qsf::detail::texts.find(name) == qsf::detail::texts.cend()) {
 			if (qsf::detail::texts.size()) {
 				qsf::detail::texts[name] = qsf::detail::texts.begin()->second;
@@ -1910,7 +1981,6 @@ namespace qsf {
 				qsf::detail::texts[name].set_font(qsf::detail::resources.fonts.begin()->first);
 			}
 		}
-		return qsf::detail::texts[name];
 	}
 }
 #endif

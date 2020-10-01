@@ -11,8 +11,8 @@ namespace qsf {
 	void qsf::base_state::update_on_resize() {
 
 	}
-	void qsf::base_state::draw(const sf::Drawable& drawable, sf::RenderStates states) {
-		this->framework->window.draw(drawable, states);
+	void qsf::base_state::update_on_close() {
+
 	}
 	void qsf::base_state::event_update() {
 		sf::Event event;
@@ -78,10 +78,12 @@ namespace qsf {
 			}
 		}
 		this->event.m_mouse_position = sf::Mouse::getPosition(this->framework->window);
+		this->event.m_mouse_position_desktop = sf::Mouse::getPosition();
 	}
 	void qsf::base_state::update_close_window() {
-		if (this->event.window_closed()) {
+		if (this->event.window_closed() && this->m_allow_exit) {
 			this->framework->window.close();
+			this->update_on_close();
 		}
 	}
 	void qsf::base_state::hide_cursor(){
@@ -93,9 +95,56 @@ namespace qsf {
 	void qsf::base_state::set_cursor_position(qsf::vector2i position) {
 		this->framework->set_cursor_position(position);
 	}
+	void qsf::base_state::set_window_position(qsf::vector2u position) {
+		this->framework->set_window_position(position);
+	}
+	qsf::vector2u qsf::base_state::get_window_position() const {
+		return this->framework->get_window_position();
+	}
 	qsf::vector2i qsf::base_state::dimension() const {
 		return this->framework->m_dimension;
 	}
+	void qsf::base_state::add_font(const std::string& name, const std::string& path) {
+		qsf::add_font(name, path);
+	}
+	void qsf::base_state::add_texture(const std::string& name, const std::string& path) {
+		qsf::add_font(name, path);
+	}
+	void qsf::base_state::add_sprite(const std::string& name, const std::string& path) {
+		qsf::add_font(name, path);
+	}
+	void qsf::base_state::add_text(const std::string& name) {
+		qsf::add_text(name);
+	}
+
+
+	sf::Font& qsf::base_state::get_font(const std::string& name) {
+		return qsf::get_font(name);
+	}
+	sf::Texture& qsf::base_state::get_texture(const std::string& name) {
+		return qsf::get_texture(name);
+	}
+	sf::Sprite& qsf::base_state::get_sprite(const std::string& name) {
+		return qsf::get_sprite(name);
+	}
+	qsf::text& qsf::base_state::get_text(const std::string& name) {
+		return qsf::get_text(name);
+	}
+
+	const sf::Font& qsf::base_state::get_font(const std::string& name) const {
+		return qsf::get_font(name);
+	}
+	const sf::Texture& qsf::base_state::get_texture(const std::string& name) const {
+		return qsf::get_texture(name);
+	}
+	const sf::Sprite& qsf::base_state::get_sprite(const std::string& name) const {
+		return qsf::get_sprite(name);
+	}
+	const qsf::text& qsf::base_state::get_text(const std::string& name) const {
+		return qsf::get_text(name);
+	}
+
+
 	void qsf::base_state::set_graph_color(qsf::rgb color) {
 		this->framework->set_graph_color(color);
 	}
@@ -123,11 +172,20 @@ namespace qsf {
 	void qsf::base_state::pop_this_state() {
 		this->m_pop_this_state = true;
 	}
+	void qsf::base_state::allow_exit() {
+		this->m_allow_exit = true;
+	}
+	void qsf::base_state::disallow_exit() {
+		this->m_allow_exit = false;
+	}
+	bool qsf::base_state::is_exit_allowed() const {
+		return this->m_allow_exit;
+	}
 	qpl::f64 qsf::base_state::frame_time() const {
 		return this->framework->frame_time();
 	}
 
-	void qsf::framework::gameloop() {
+	void qsf::framework::game_loop() {
 		if (!this->is_created()) {
 			this->create();
 		}
@@ -198,6 +256,9 @@ namespace qsf {
 	void qsf::framework::add_sprite(const std::string& name, const std::string& path) {
 		qsf::add_font(name, path);
 	}
+	void qsf::framework::add_text(const std::string& name) {
+		qsf::add_text(name);
+	}
 
 
 	sf::Font& qsf::framework::get_font(const std::string& name) {
@@ -209,6 +270,9 @@ namespace qsf {
 	sf::Sprite& qsf::framework::get_sprite(const std::string& name) {
 		return qsf::get_sprite(name);
 	}
+	qsf::text& qsf::framework::get_text(const std::string& name) {
+		return qsf::get_text(name);
+	}
 
 	const sf::Font& qsf::framework::get_font(const std::string& name) const {
 		return qsf::get_font(name);
@@ -218,6 +282,9 @@ namespace qsf {
 	}
 	const sf::Sprite& qsf::framework::get_sprite(const std::string& name) const {
 		return qsf::get_sprite(name);
+	}
+	const qsf::text& qsf::framework::get_text(const std::string& name) const {
+		return qsf::get_text(name);
 	}
 
 	void qsf::framework::create() {
@@ -238,7 +305,12 @@ namespace qsf {
 		this->set_style(style);
 	}
 	void qsf::framework::set_title(const std::string& title) {
-		this->m_title = title;
+		if (this->m_created) {
+			this->window.setTitle(title);
+		}
+		else {
+			this->m_title = title;
+		}
 	}
 	void qsf::framework::set_dimension(qsf::vector2u dimension) {
 		this->m_dimension = dimension;
@@ -249,6 +321,12 @@ namespace qsf {
 	void qsf::framework::hide_cursor() {
 		this->window.setMouseCursorVisible(false);
 		//todo
+	}
+	void qsf::framework::set_window_position(qsf::vector2u position) {
+		this->window.setPosition(sf::Vector2i(position));
+	}
+	qsf::vector2u qsf::framework::get_window_position() const {
+		return qsf::vector2u(this->window.getPosition());
 	}
 	void qsf::framework::show_cursor() {
 		this->window.setMouseCursorVisible(true);

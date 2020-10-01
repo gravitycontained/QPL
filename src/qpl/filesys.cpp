@@ -580,12 +580,8 @@ namespace qpl {
             return { list };
         }
         void qpl::filesys::path::print_current_directory() const {
-            auto str = this->is_directory() ? this->string() : this->get_parent_branch().string();
-            qpl::println(this->string());
-            for (auto i : std::filesystem::directory_iterator(str, std::filesystem::directory_options::skip_permission_denied)) {
-                auto path = qpl::filesys::path(i.path().string());
-                qpl::println(path.branch_size() ? "|" : "", qpl::to_string_repeat("-", (path.branch_size() - 1) * 4), path);
-            }
+            auto list = this->list_current_directory();
+            list.print_tree();
         }
         void qpl::filesys::path::print_tree() const {
             auto str = this->is_directory() ? this->string() : this->get_parent_branch().string();

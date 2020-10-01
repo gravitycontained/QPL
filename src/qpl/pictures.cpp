@@ -53,7 +53,7 @@ namespace qpl {
 		return file_header;
 	}
 
-	void qpl::generate_bmp(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height, const std::string& filename) {
+	std::string qpl::generate_bmp_string(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height) {
 
 		char padding[3] = { 0, 0, 0 };
 		int padding_size = (4 - (width * qpl::pixel_rgb::bytes()) % 4) % 4;
@@ -69,10 +69,16 @@ namespace qpl {
 			stream.write(reinterpret_cast<const char*>(image.data()) + (i * qpl::pixel_rgb::bytes() * width), qpl::pixel_rgb::bytes() * width);
 			stream.write(padding, padding_size);
 		}
+		return stream.str();
+	}
+
+	void qpl::generate_bmp(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height, const std::string& filename) {
+		auto str = qpl::generate_bmp_string(image, width, height);
+
 		FILE* file;
 		fopen_s(&file, filename.c_str(), "wb");
 
-		fwrite(stream.str().c_str(), 1, stream.str().size(), file);
+		fwrite(str.c_str(), 1, str.size(), file);
 
 		fclose(file);
 	}

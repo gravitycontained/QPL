@@ -530,6 +530,29 @@ namespace qpl {
 		return result;
 	}
 
+	std::vector<qpl::u64> split_numbers(const std::string& string) {
+		std::vector<qpl::u64> result;
+		std::smatch smatch;
+		static std::regex reg{ "[0-9]+" };
+		auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
+		while (s != std::sregex_iterator()) {
+			result.push_back(qpl::string_cast<qpl::u64>(s->str()));
+			++s;
+		}
+		return result;
+	}
+	std::vector<qpl::f64> split_floats(const std::string& string) {
+		std::vector<qpl::f64> result;
+		std::smatch smatch;
+		static std::regex reg{ "[0-9.e+]+" };
+		auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
+		while (s != std::sregex_iterator()) {
+			result.push_back(qpl::string_cast<qpl::f64>(s->str()));
+			++s;
+		}
+		return result;
+	}
+
 	std::string qpl::string_first_n_characters(const std::string& string, qpl::size n) {
 		return string.substr(0, n);
 	}
@@ -590,6 +613,14 @@ namespace qpl {
 			}
 		}
 		return stream.str();
+	}
+
+	bool qpl::is_string_floating_point(std::string string) {
+		std::istringstream iss(string);
+		qpl::f64 f;
+		iss >> std::noskipws >> f; // noskipws considers leading whitespace invalid
+		// Check the entire string was consumed and if either failbit or badbit is set
+		return iss.eof() && !iss.fail();
 	}
 
 	std::string qpl::random_string_full_range(qpl::size length) {

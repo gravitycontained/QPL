@@ -5,6 +5,7 @@
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/algorithm.hpp>
 #include <qpl/type_traits.hpp>
+#include <qpl/maths.hpp>
 #include <qpl/vardef.hpp>
 
 #include <string>
@@ -136,6 +137,7 @@ namespace qpl {
 		}
 		QPLDLL void reset();
 		QPLDLL void pause();
+		QPLDLL void reset_pause();
 		QPLDLL void resume();
 		QPLDLL bool is_running() const;
 		QPLDLL bool is_paused() const;
@@ -172,11 +174,57 @@ namespace qpl {
 	QPLDLL std::ostream& operator<<(std::ostream& os, const qpl::halted_clock& clock);
 
 
+	struct fps_counter {
+		fps_counter() {
+			this->ema.reset();
+			this->ema.time_period = 100u;
+			this->clock.reset();
+			this->start = false;
+		}
+
+		void set_time_period(qpl::u32 time_period) {
+			this->ema.time_period = time_period;
+		}
+		qpl::u32 get_time_period() const {
+			return this->ema.time_period;
+		}
+
+		void measure() {
+			if (!this->start) {
+				this->start = true;
+				this->clock.reset();
+			}
+			else {
+				this->ema.add_value(this->clock.elapsed_f_reset());
+			}
+		}
+
+		qpl::u32 get_fps_u32() const {
+			if (!this->ema.get_average()) {
+				return 0u;
+			}
+			return qpl::u32_cast(1.0 / this->ema.get_average());
+		}
+		qpl::f64 get_fps() const {
+			if (!this->ema.get_average()) {
+				return 0.0;
+			}
+			return 1.0 / this->ema.get_average();
+		}
+
+		bool start;
+		qpl::clock clock;
+		qpl::ema ema;
+	};
+
 	QPLDLL void wait(qpl::time duration);
 	QPLDLL void wait(double seconds);
 
 	//YYYY-MM-DD-HH-MM-SS
 	QPLDLL std::string get_current_time_string();
+	QPLDLL std::string get_current_time_string_ms();
+	QPLDLL std::string get_current_time_string_ymd_hmsms();
+	QPLDLL std::string get_current_time_string_ymd_hmsms_compact();
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
 
 

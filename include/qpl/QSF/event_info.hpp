@@ -37,6 +37,7 @@ namespace qsf {
 
 		QPLDLL qsf::vector2i resized_size() const;
 		QPLDLL qsf::vector2i mouse_position() const;
+		QPLDLL qsf::vector2i mouse_position_desktop() const;
 
 		bool m_left_mouse_clicked;
 		bool m_left_mouse_released;
@@ -57,6 +58,7 @@ namespace qsf {
 
 		qsf::vector2i m_resized_size;
 		qsf::vector2i m_mouse_position;
+		qsf::vector2i m_mouse_position_desktop;
 		std::set<sf::Keyboard::Key> m_keys_pressed;
 		std::set<sf::Keyboard::Key> m_keys_released;
 		std::set<sf::Keyboard::Key> m_keys_holding;

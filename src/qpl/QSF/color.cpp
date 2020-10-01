@@ -187,8 +187,9 @@ namespace qsf {
 	}
 
 	qsf::rgb& qsf::rgb::invert() {
-		auto alpha = this->c.a;
-		this->uint = ((~(this->uint >> 8)) << 8) | alpha;
+		this->c.r = 255 - this->c.r;
+		this->c.g = 255 - this->c.g;
+		this->c.b = 255 - this->c.b;
 		return *this;
 	}
 	qsf::rgb qsf::rgb::inverted() const {

@@ -53,6 +53,7 @@ namespace qpl {
 		QPLDLL std::array<char, info_header_size> create_bitmap_info_header(qpl::size width, qpl::size height);
 		QPLDLL std::array<char, file_header_size> create_bitmap_file_header(qpl::size width, qpl::size height, qpl::size padding_size);
 	}
+	QPLDLL std::string generate_bmp_string(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height);
 	QPLDLL void generate_bmp(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height, const std::string& filename);
 }
 

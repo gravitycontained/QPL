@@ -89,6 +89,9 @@ namespace qsf {
 	qsf::vector2i qsf::event_info::mouse_position() const {
 		return this->m_mouse_position;
 	}
+	qsf::vector2i qsf::event_info::mouse_position_desktop() const {
+		return this->m_mouse_position_desktop;
+	}
 
 }
 

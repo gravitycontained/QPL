@@ -558,9 +558,10 @@ namespace qpl {
 		return this->m_neurons.back();
 	}
 
+	//-------------------------------------------------------------------------------
 
 	qpl::f64 qpl::NN2::activation_function(qpl::f64 n) {
-		return 1.0 / (1.0 + std::pow(qpl::e, -n));
+		return 1.0 / (1.0 + std::exp(-n));
 	}
 	qpl::f64 qpl::NN2::normal_distribution() {
 		return std::sin(2.0 * qpl::pi * qpl::random(std::numeric_limits<double>::epsilon(), 1.0)) * std::sqrt(-2.0 * std::log(qpl::random(std::numeric_limits<double>::epsilon(), 1.0)));
@@ -647,6 +648,7 @@ namespace qpl {
 		//set input
 		for (qpl::u32 n = 0u; n < this->input_layer().neurons.size(); ++n) {
 			this->input_layer().neurons[n].output = input[n];
+			this->input_layer().neurons[n].output = 0.0;
 		}
 
 		//feed forward
@@ -686,7 +688,6 @@ namespace qpl {
 				this->neurons[n].synapses[s].delta_weight = this->neurons[n].gradient * previous_layer.neurons[s].output + this->neurons[n].synapses[s].delta_weight * alpha;
 				this->neurons[n].synapses[s].weight += eta * this->neurons[n].synapses[s].delta_weight;
 
-				//todo: civ if it's bad to include momentum in delta_weight
 			}
 			this->neurons[n].momentum = this->neurons[n].gradient + this->neurons[n].momentum * alpha;
 			this->neurons[n].bias += eta * this->neurons[n].gradient;

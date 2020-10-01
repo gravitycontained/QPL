@@ -907,6 +907,7 @@ namespace qsf {
 		QPLDLL void set_position(qsf::vector2f position);
 		QPLDLL void set_center(qsf::vector2f center);
 		QPLDLL void set_background_color(qsf::rgb color);
+		QPLDLL void set_hover_background_color(qsf::rgb color);
 		QPLDLL void set_text_color(qsf::rgb color);
 		QPLDLL void set_text_font(std::string font);
 		QPLDLL void set_text_character_size(qpl::u32 character_size);
@@ -920,6 +921,11 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL qsf::vbutton& operator=(const qsf::vbutton& button);
 
+		bool outline_on_hover = true;
+		bool invert_on_hover = true;
+		qsf::rgb text_color;
+		qsf::rgb hover_background_color;
+		qsf::rgb background_color;
 		qsf::vtext text;
 		qsf::vrectangle background;
 		bool hovering;
@@ -937,6 +943,7 @@ namespace qsf {
 		QPLDLL void set_position(qsf::vector2f position);
 		QPLDLL void set_center(qsf::vector2f center);
 		QPLDLL void set_background_color(qsf::rgb color);
+		QPLDLL void set_hover_background_color(qsf::rgb color);
 		QPLDLL void set_text_color(qsf::rgb color);
 		QPLDLL void set_text_font(std::string font);
 		QPLDLL void set_text_character_size(qpl::u32 character_size);
@@ -947,6 +954,11 @@ namespace qsf {
 		QPLDLL bool is_clicked() const;
 		QPLDLL void update(const event_info& event_info);
 
+		bool outline_on_hover = true;
+		bool invert_on_hover = true;
+		qsf::rgb text_color = qsf::rgb::white;
+		qsf::rgb hover_background_color = qsf::rgb::white;
+		qsf::rgb background_color = qsf::rgb::black;
 		qsf::text text;
 		qsf::rectangle background;
 		bool hovering;
@@ -958,7 +970,7 @@ namespace qsf {
 	}
 
 	QPLDLL qsf::text& get_text(const std::string& name = "QSF_DEFAULT");
-
+	QPLDLL void add_text(const std::string& name = "QSF_DEFAULT");
 
 }
 

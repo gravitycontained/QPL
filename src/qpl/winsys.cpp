@@ -4,6 +4,7 @@
 #include <qpl/string.hpp>
 
 #include <iostream>
+#include <exception>
 #include <sstream>
 #include <regex>
 
@@ -56,6 +57,17 @@ namespace qpl {
 
 		process_list qpl::winsys::impl::p_list;
 		watch_list qpl::winsys::impl::w_list;
+		bool qpl::winsys::impl::make_colors_clear = false;
+		bool qpl::winsys::impl::init = false;
+		qpl::winsys::point qpl::winsys::impl::dim;
+		HWND qpl::winsys::impl::hDesktopWnd;
+		HDC qpl::winsys::impl::hDesktopDC;
+		HDC qpl::winsys::impl::hCaptureDC;
+		HBITMAP qpl::winsys::impl::hCaptureBitmap;
+		BITMAPINFO qpl::winsys::impl::bmi;
+		RGBQUAD* qpl::winsys::impl::pPixels;
+		std::vector<qpl::pixel_rgb> qpl::winsys::impl::pixels;
+		qpl::u32 qpl::winsys::impl::thread_count = 1u;
 
 		void qpl::winsys::impl::set_process_information(process& proc, HWND hWnd) {
 			auto check = [](DWORD code, int n) {
@@ -130,6 +142,45 @@ namespace qpl {
 			}
 			return true;
 		}
+
+
+		bool qpl::winsys::find_window(std::string name) {
+			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
+
+			if (!IsWindow(handle)) {
+				return false;
+			}
+			return true;
+		}
+		void qpl::winsys::close_window(std::string name) {
+			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
+
+			if (!IsWindow(handle)) {
+				return;
+			}
+
+			CloseWindow(handle);
+		}
+		bool qpl::winsys::set_window_position(std::string name, qpl::winsys::rect rectangle, bool on_top, bool show) {
+
+			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
+			if (!IsWindow(handle)) {
+				qpl::println("qpl::winsys::set_window_position: couldn't find \"", name, "\"");
+				return false;
+			}
+
+			auto result = SetWindowPos(handle, on_top ? HWND_TOPMOST : 0, rectangle.top_left.x, rectangle.top_left.y, rectangle.width(), rectangle.height(), 0);
+			if (!result) {
+				qpl::println("SetWindowPos failed");
+			}
+
+			if (show) {
+				ShowWindow(handle, SW_RESTORE);
+			}
+
+			return true;
+		}
+
 		process_list& qpl::winsys::get_process_list() {
 			qpl::winsys::impl::p_list.clear();
 			EnumWindows(qpl::winsys::impl::process_list_window_callback, NULL);
@@ -200,7 +251,7 @@ namespace qpl {
 			// Call GetDIBits to copy the bits from the device dependent bitmap
 			// into the buffer allocated above, using the pixel format you
 			// chose in the BITMAPINFO.
-			::GetDIBits(hCaptureDC,
+			GetDIBits(hCaptureDC,
 				hCaptureBitmap,
 				0,  // starting scanline
 				dim.y,  // scanlines to copy
@@ -210,37 +261,136 @@ namespace qpl {
 
 			std::vector<qpl::pixel_rgb> pixels(rectangle.width() * rectangle.height());
 
-			unsigned ctr = 0u;
+
+			qpl::u32 ctr = 0u;
 			for (int y = 0; y < rectangle.height(); ++y) {
 				for (int x = 0; x < rectangle.width(); ++x) {
 					auto pi = (rectangle.height() - y - 1) * rectangle.width() + x;
 					auto wi = (dim.y - (y + rectangle.top_left.y) - 1) * dim.x + (x + rectangle.top_left.x);
-
-					if (pi > pixels.size()) {
-						//
-					}
-					if (wi > dim.x * dim.y) {
-						//
-					}
 
 					pixels[pi].r = pPixels[wi].rgbRed;
 					pixels[pi].g = pPixels[wi].rgbGreen;
 					pixels[pi].b = pPixels[wi].rgbBlue;
 				}
 			}
-			// You can now access the raw pixel data in pPixels.  Note that they are
-			// stored from the bottom scanline to the top, so pPixels[0] is the lower
-			// left pixel, pPixels[1] is the next pixel to the right,
-			// pPixels[nScreenWidth] is the first pixel on the second row from the
-			// bottom, etc.
 
-			// Don't forget to free the pixel buffer.
+			DeleteDC(hDesktopDC);
+			DeleteDC(hCaptureDC);
 			delete[] pPixels;
 			return pixels;
 		}
 		std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels() {
 			return qpl::winsys::get_screen_pixels(qpl::winsys::rect{ {0, 0}, qpl::get_screen_dimension() });
 		}
+		std::string qpl::winsys::get_screen_pixels_bmp_string() {
+			auto pixels = qpl::winsys::get_screen_pixels();
+			return qpl::generate_bmp_string(pixels, qpl::get_screen_dimension().x, qpl::get_screen_dimension().y);
+		}
+		std::string qpl::winsys::get_screen_pixels_bmp_string(qpl::winsys::rect rectangle) {
+			auto pixels = qpl::winsys::get_screen_pixels(rectangle);
+			return qpl::generate_bmp_string(pixels, rectangle.width(), rectangle.height());
+		}
+
+		void qpl::winsys::enable_screen_pixels_stream_clear_colors() {
+			qpl::winsys::impl::make_colors_clear = true;
+		}
+		void qpl::winsys::disable_screen_pixels_stream_clear_colors() {
+			qpl::winsys::impl::make_colors_clear = false;
+		}
+		void qpl::winsys::init_screen_pixel_stream() {
+			qpl::winsys::impl::dim = qpl::get_screen_dimension();
+			qpl::winsys::impl::hDesktopWnd = GetDesktopWindow();
+			qpl::winsys::impl::hDesktopDC = GetDC(qpl::winsys::impl::hDesktopWnd);
+			qpl::winsys::impl::hCaptureDC = CreateCompatibleDC(qpl::winsys::impl::hDesktopDC);
+			qpl::winsys::impl::hCaptureBitmap = CreateCompatibleBitmap(qpl::winsys::impl::hDesktopDC, qpl::winsys::impl::dim.x, qpl::winsys::impl::dim.y);
+			qpl::winsys::impl::pPixels = new RGBQUAD[qpl::winsys::impl::dim.x * qpl::winsys::impl::dim.y];
+			qpl::winsys::impl::pixels.resize(qpl::winsys::impl::dim.x * qpl::winsys::impl::dim.y);
+
+			qpl::winsys::impl::bmi.bmiHeader.biSize = sizeof(qpl::winsys::impl::bmi.bmiHeader);
+			qpl::winsys::impl::bmi.bmiHeader.biWidth = qpl::winsys::impl::dim.x;
+			qpl::winsys::impl::bmi.bmiHeader.biHeight = qpl::winsys::impl::dim.y;
+			qpl::winsys::impl::bmi.bmiHeader.biPlanes = 1;
+			qpl::winsys::impl::bmi.bmiHeader.biBitCount = 32;
+			qpl::winsys::impl::bmi.bmiHeader.biCompression = BI_RGB;
+
+
+			qpl::winsys::impl::init = true;
+
+			//SelectObject(qpl::winsys::impl::hCaptureDC, qpl::winsys::impl::hCaptureBitmap);
+			//
+			//BitBlt(qpl::winsys::impl::hCaptureDC, 0, 0, qpl::winsys::impl::dim.x, qpl::winsys::impl::dim.y, qpl::winsys::impl::hDesktopDC, 0, 0, SRCCOPY | CAPTUREBLT);
+		}
+		std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels_stream(qpl::winsys::rect rectangle) {
+			if (!qpl::winsys::impl::init) {
+				throw std::exception("qpl::winsys::screen_pixels_stream was not initialized");
+			}
+			if (qpl::winsys::impl::pixels.size() != (rectangle.width() * rectangle.height())) {
+				qpl::winsys::impl::pixels.resize((rectangle.width() * rectangle.height()));
+			}
+
+			SelectObject(qpl::winsys::impl::hCaptureDC, qpl::winsys::impl::hCaptureBitmap);
+
+			BitBlt(qpl::winsys::impl::hCaptureDC, 0, 0, qpl::winsys::impl::dim.x, qpl::winsys::impl::dim.y, qpl::winsys::impl::hDesktopDC, 0, 0, SRCCOPY | CAPTUREBLT);
+
+			GetDIBits(qpl::winsys::impl::hCaptureDC,
+				qpl::winsys::impl::hCaptureBitmap,
+				0,  // starting scanline
+				qpl::winsys::impl::dim.y,  // scanlines to copy
+				qpl::winsys::impl::pPixels,  // buffer for your copy of the pixels
+				&qpl::winsys::impl::bmi,  // format you want the data in
+				DIB_RGB_COLORS);  // actual pixels, not palette references
+
+			if (qpl::winsys::impl::make_colors_clear) {
+				qpl::u32 ctr = 0u;
+				for (int y = 0; y < rectangle.height(); ++y) {
+					for (int x = 0; x < rectangle.width(); ++x) {
+						auto pi = (rectangle.height() - y - 1) * rectangle.width() + x;
+						auto wi = (qpl::winsys::impl::dim.y - (y + rectangle.top_left.y) - 1) * qpl::winsys::impl::dim.x + (x + rectangle.top_left.x);
+
+
+						auto average = (qpl::winsys::impl::pPixels[wi].rgbRed + qpl::winsys::impl::pPixels[wi].rgbGreen + qpl::winsys::impl::pPixels[wi].rgbBlue) / 3;
+
+						average = qpl::i32_cast(qpl::f64_cast(average) * 7);
+						average = qpl::min(255, average);
+
+						qpl::winsys::impl::pixels[pi].r = average;
+						qpl::winsys::impl::pixels[pi].g = average;
+						qpl::winsys::impl::pixels[pi].b = average;
+					}
+				}
+			}
+			else {
+				qpl::u32 ctr = 0u;
+				for (int y = 0; y < rectangle.height(); ++y) {
+					for (int x = 0; x < rectangle.width(); ++x) {
+						auto pi = (rectangle.height() - y - 1) * rectangle.width() + x;
+						auto wi = (qpl::winsys::impl::dim.y - (y + rectangle.top_left.y) - 1) * qpl::winsys::impl::dim.x + (x + rectangle.top_left.x);
+
+						qpl::winsys::impl::pixels[pi].r = qpl::winsys::impl::pPixels[wi].rgbRed;
+						qpl::winsys::impl::pixels[pi].g = qpl::winsys::impl::pPixels[wi].rgbGreen;
+						qpl::winsys::impl::pixels[pi].b = qpl::winsys::impl::pPixels[wi].rgbBlue;
+					}
+				}
+			}
+
+			return qpl::winsys::impl::pixels;
+		}
+		void qpl::winsys::clear_screen_pixel_stream() {
+			DeleteDC(qpl::winsys::impl::hDesktopDC);
+			DeleteDC(qpl::winsys::impl::hCaptureDC);
+			delete[] qpl::winsys::impl::pPixels;
+		}
+	}
+	std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels_stream() {
+		return qpl::winsys::get_screen_pixels_stream(qpl::winsys::rect{ {0, 0}, qpl::get_screen_dimension() });
+	}
+	std::string qpl::winsys::get_screen_pixels_stream_bmp_string() {
+		auto pixels = qpl::winsys::get_screen_pixels_stream();
+		return qpl::generate_bmp_string(pixels, qpl::get_screen_dimension().x, qpl::get_screen_dimension().y);
+	}
+	std::string qpl::winsys::get_screen_pixels_stream_bmp_string(qpl::winsys::rect rectangle) {
+		auto pixels = qpl::winsys::get_screen_pixels_stream(rectangle);
+		return qpl::generate_bmp_string(pixels, rectangle.width(), rectangle.height());
 	}
 	qpl::winsys::point qpl::get_screen_dimension() {
 		RECT desktop;
@@ -258,6 +408,19 @@ namespace qpl {
 		auto dim = qpl::get_screen_dimension();
 		auto screen = qpl::winsys::get_screen_pixels();
 		qpl::generate_bmp(screen, dim.x, dim.y, file_name);
+	}
+	void qpl::screen_shot(const std::string& file_name, qpl::winsys::rect rectangle) {
+		auto screen = qpl::winsys::get_screen_pixels(rectangle);
+		qpl::generate_bmp(screen, rectangle.width(), rectangle.height(), file_name);
+	}
+	void qpl::screen_shot_stream(const std::string& file_name) {
+		auto dim = qpl::get_screen_dimension();
+		auto screen = qpl::winsys::get_screen_pixels_stream();
+		qpl::generate_bmp(screen, dim.x, dim.y, file_name);
+	}
+	void qpl::screen_shot_stream(const std::string& file_name, qpl::winsys::rect rectangle) {
+		auto screen = qpl::winsys::get_screen_pixels_stream(rectangle);
+		qpl::generate_bmp(screen, rectangle.width(), rectangle.height(), file_name);
 	}
 	void qpl::clear_console() {
 		system("cls");

@@ -1601,6 +1601,9 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> split(const std::wstring& string, const std::wstring& expression);
 	QPLDLL std::vector<std::wstring> split(const std::wstring& string);
 
+	QPLDLL std::vector<qpl::u64> split_numbers(const std::string& string);
+	QPLDLL std::vector<qpl::f64> split_floats(const std::string& string);
+
 	QPLDLL std::string string_first_n_characters(const std::string& string, qpl::size n);
 	constexpr std::string_view string_first_n_characters(const std::string_view& string, qpl::size n) {
 		return string.substr(0, n);
@@ -1703,6 +1706,7 @@ namespace qpl {
 	constexpr bool is_character_arithmetic_special(char c) {
 		return qpl::detail::arithmetic_special_table[c];
 	}
+	QPLDLL bool is_string_floating_point(std::string string);
 
 
 	constexpr operator_type get_operator_type(const std::string_view& expression) {

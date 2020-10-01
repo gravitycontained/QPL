@@ -278,6 +278,7 @@ namespace qpl {
 	void qpl::clock::reset() {
 		this->m_begin = qpl::time::clock_time();
 		this->m_running = true;
+		this->m_pause_sum = qpl::u64{};
 	}
 	void qpl::clock::pause() {
 		if (this->is_running()) {
@@ -285,6 +286,15 @@ namespace qpl {
 		}
 		this->m_running = false;
 		this->m_pause = qpl::time::clock_time();
+	}
+	void qpl::clock::reset_pause() {
+		if (this->is_running()) {
+			this->measure();
+		}
+		this->m_begin = qpl::time::clock_time();
+		this->m_running = false;
+		this->m_pause = qpl::time::clock_time();
+		this->m_pause_sum = qpl::u64{};
 	}
 	qpl::time qpl::clock::elapsed() const {
 		if (this->is_running()) {
@@ -414,6 +424,69 @@ namespace qpl {
 		std::strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", timeinfo);
 		return { buffer };
 	}
+	std::string get_current_time_string_ms() {
+		auto current_time = std::chrono::system_clock::now();
+		
+		auto transformed = current_time.time_since_epoch().count() / 10000;
+		
+		auto millis = transformed % 1000;
+		
+		auto str = get_current_time_string();
+		return qpl::to_string(str, "-", qpl::prepended_to_string_to_fit(millis, '0', 3));
+	}
+
+
+	std::string get_current_time_string_ymd_hmsms() {
+		std::time_t rawtime;
+		std::tm* timeinfo;
+		char buffer[80];
+
+		std::time(&rawtime);
+
+
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		timeinfo = std::localtime(&rawtime);
+#pragma warning( pop ) 
+
+
+
+		std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
+
+		auto current_time = std::chrono::system_clock::now();
+
+		auto transformed = current_time.time_since_epoch().count() / 10000;
+
+		auto millis = transformed % 1000;
+
+		return qpl::to_string(buffer, ":", qpl::prepended_to_string_to_fit(millis, '0', 3));
+	}
+	std::string get_current_time_string_ymd_hmsms_compact() {
+		std::time_t rawtime;
+		std::tm* timeinfo;
+		char buffer[80];
+
+		std::time(&rawtime);
+
+
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		timeinfo = std::localtime(&rawtime);
+#pragma warning( pop ) 
+
+
+
+		std::strftime(buffer, 80, "%Y%m%d %H%M%S", timeinfo);
+
+		auto current_time = std::chrono::system_clock::now();
+
+		auto transformed = current_time.time_since_epoch().count() / 10000;
+
+		auto millis = transformed % 1000;
+
+		return qpl::to_string(buffer, qpl::prepended_to_string_to_fit(millis, '0', 3));
+	}
+
 	std::unordered_map<std::string, std::unordered_map<std::string, qpl::halted_clock>> qpl::detail::sub_benchmark_clocks;
 	std::unordered_map<std::string, qpl::halted_clock> qpl::detail::benchmark_clocks;
 	std::string qpl::detail::last_benchmark_name;

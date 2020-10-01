@@ -80,6 +80,17 @@ namespace qpl {
 		}
 		return ctr;
 	}
+
+
+	struct ema {
+		qpl::f64 time_period;
+		qpl::size time_ctr = 0u;
+		qpl::f64 last_ma = 0.0;
+
+		QPLDLL void reset();
+		QPLDLL void add_value(double value);
+		QPLDLL double get_average() const;
+	};
 }
 
 #endif

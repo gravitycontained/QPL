@@ -28,6 +28,20 @@ namespace qpl {
 			QPLDLL point operator-(point point) const;
 		};
 		struct rect {
+			rect() {
+
+			}
+			rect(int x1, int y1, int x2, int y2) {
+				this->top_left.x = x1;
+				this->top_left.y = y1;
+				this->bottom_right.x = x2;
+				this->bottom_right.y = y2;
+			}
+			rect(point top_left, point bottom_right) {
+				this->top_left = top_left;
+				this->bottom_right = bottom_right;
+			}
+
 			point top_left;
 			point bottom_right;
 			QPLDLL std::string string();
@@ -59,7 +73,27 @@ namespace qpl {
 			QPLDLL void set_process_information(process& proc, HWND hWnd);
 			QPLDLL BOOL CALLBACK process_list_window_callback(HWND hWnd, LPARAM lparam);
 			QPLDLL BOOL CALLBACK watch_list_window_callback(HWND hWnd, LPARAM lparam);
+
+			extern bool make_colors_clear;
+			extern bool init;
+			extern qpl::winsys::point dim;
+			extern HWND hDesktopWnd;
+			extern HDC hDesktopDC;
+			extern HDC hCaptureDC;
+			extern HBITMAP hCaptureBitmap;
+			extern BITMAPINFO bmi;
+			extern RGBQUAD* pPixels;
+			extern std::vector<qpl::pixel_rgb> pixels;
+			extern qpl::u32 thread_count;
+
 		}
+
+		QPLDLL bool find_window(std::string name);
+		QPLDLL void close_window(std::string name);
+		QPLDLL bool set_window_position(std::string name, qpl::winsys::rect rectangle, bool on_top = true, bool show = true);
+
+
+
 		QPLDLL process_list& get_process_list();
 
 		QPLDLL void clear_watchlist();
@@ -71,8 +105,24 @@ namespace qpl {
 
 		QPLDLL std::vector<qpl::pixel_rgb> get_screen_pixels(qpl::winsys::rect rectangle);
 		QPLDLL std::vector<qpl::pixel_rgb> get_screen_pixels();
+		QPLDLL std::string get_screen_pixels_bmp_string();
+		QPLDLL std::string get_screen_pixels_bmp_string(qpl::winsys::rect rectangle);
+
+		QPLDLL void enable_screen_pixels_stream_clear_colors();
+		QPLDLL void disable_screen_pixels_stream_clear_colors();
+		QPLDLL void init_screen_pixel_stream();
+		QPLDLL std::vector<qpl::pixel_rgb> get_screen_pixels_stream(qpl::winsys::rect rectangle);
+		QPLDLL std::vector<qpl::pixel_rgb> get_screen_pixels_stream();
+		QPLDLL std::string get_screen_pixels_stream_bmp_string();
+		QPLDLL std::string get_screen_pixels_stream_bmp_string(qpl::winsys::rect rectangle);
+		QPLDLL void clear_screen_pixel_stream();
 	}
 	QPLDLL void screen_shot(const std::string& file_name);
+	QPLDLL void screen_shot(const std::string& file_name, qpl::winsys::rect rectangle);
+	QPLDLL void screen_shot_stream(const std::string& file_name);
+	QPLDLL void screen_shot_stream(const std::string& file_name, qpl::winsys::rect rectangle);
+
+
 	QPLDLL qpl::winsys::point get_screen_dimension();
 	QPLDLL void clear_console();
 
