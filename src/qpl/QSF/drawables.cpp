@@ -328,7 +328,7 @@ namespace qsf {
 		this->m_rect.setPosition(position);
 	}
 	void qsf::rectangle::set_center(qsf::vector2f position) {
-		this->m_rect.setPosition(position + this->dimension() / 2);
+		this->m_rect.setPosition(position - this->dimension() / 2);
 	}
 	void qsf::rectangle::set_color(qsf::rgb color) {
 		this->m_rect.setFillColor(color);
