@@ -2,6 +2,7 @@
 #include <fstream>
 #include <qpl/string.hpp>
 #include <qpl/type_traits.hpp>
+#include <qpl/system.hpp>
 
 namespace qpl {
 
@@ -140,6 +141,10 @@ namespace qpl {
 
         bool qpl::filesys::path::exists() const {
             this->check_update();
+            return this->m_exists;
+        } 
+        bool qpl::filesys::path::exists_system() const {
+            this->m_exists = std::filesystem::exists(this->string());
             return this->m_exists;
         }
         bool qpl::filesys::path::is_file() const {
@@ -404,20 +409,10 @@ namespace qpl {
                 if (!path_destination.exists()) {
                     path_destination.create();
                 }
-
-                if (path_destination.exists()) {
-                    path_destination.remove();
-                    std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
-                }
-                else {
-                    std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
-                }
+                std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
             }
             else {
-                if (path_destination.exists()) {
-                    path_destination.remove();
-                }
-                std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::recursive);
+                std::filesystem::copy(this->string(), path_destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
             }
         }
         void qpl::filesys::path::move(const qpl::filesys::path& path_destination) const {
@@ -440,13 +435,13 @@ namespace qpl {
 
         qpl::size qpl::filesys::path::branch_size() const {
             qpl::size ctr = 0u;
-            if (this->m_string.back() != '/') {
-                ++ctr;
-            }
             for (auto& i : this->m_string) {
                 if (i == '/') {
                     ++ctr;
                 }
+            }
+            if (this->is_directory() && this->m_string.back() != '/') {
+                ++ctr;
             }
             return ctr;
         }
@@ -554,7 +549,14 @@ namespace qpl {
                 this->m_string.pop_back();
             }
             this->m_string.append(directory_name);
+
+            if (this->m_string.back() != '/') {
+                this->m_string.push_back('/');
+            }
             this->m_update = true;
+            this->m_exists = false;
+
+            this->check_update();
         }
         void qpl::filesys::path::go_into(const std::string& entry) {
             this->go_into_directory(entry);
@@ -572,6 +574,9 @@ namespace qpl {
             return { list };
         }
         qpl::filesys::paths qpl::filesys::path::list_current_directory_tree() const {
+            if (!this->exists_system()) {
+                return {};
+            }
             qpl::filesys::paths list;
             auto str = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(str, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1333,6 +1338,243 @@ namespace qpl {
             return this->m_paths.rend();
         }
 
+        void qpl::filesys::paths::copy_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::recursive);
+            }
+        }
+        void qpl::filesys::paths::move_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::recursive);
+                i.remove();
+            }
+        }
+        void qpl::filesys::paths::copy_overwrite_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
+            }
+        }
+        void qpl::filesys::paths::move_overwrite_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
+                i.remove();
+            }
+        }
+
+        void qpl::filesys::paths::copy_files_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                if (i.is_file()) {
+                    std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::recursive);
+                }
+            }
+        }
+        void qpl::filesys::paths::move_files_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                if (i.is_file()) {
+                    std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::recursive);
+                    i.remove();
+                }
+            }
+        }
+        void qpl::filesys::paths::copy_overwrite_files_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                if (i.is_file()) {
+                    std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
+                }
+            }
+        }
+        void qpl::filesys::paths::move_overwrite_files_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                if (i.is_file()) {
+                    std::filesystem::copy(i.string(), destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
+                    i.remove();
+                }
+            }
+        }
+
+        void qpl::filesys::paths::copy_as_tree_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            qpl::filesys::path tree_destination = destination;
+            auto levels = this->m_paths.front().branch_size() - 1;
+            qpl::u32 depth_ctr = levels;
+
+            for (auto& i : this->m_paths) {
+
+                auto branch_size = i.branch_size();
+
+                if (depth_ctr != branch_size) {
+                    tree_destination = destination;
+                    depth_ctr = levels;
+                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                        tree_destination.go_into(i.branch_at(l).get_name());
+                        ++depth_ctr;
+                    }
+                }
+
+
+                if (i.is_directory()) {
+                    tree_destination.create();
+                }
+                else if (i.is_file()) {
+                    std::filesystem::copy(i.string(), tree_destination.string(), std::filesystem::copy_options::recursive);
+                }
+            }
+        }
+        void qpl::filesys::paths::move_as_tree_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            qpl::filesys::path tree_destination = destination;
+            auto levels = this->m_paths.front().branch_size() - 1;
+            qpl::u32 depth_ctr = levels;
+
+            for (auto& i : this->m_paths) {
+
+                auto branch_size = i.branch_size();
+
+                if (depth_ctr != branch_size) {
+                    tree_destination = destination;
+                    depth_ctr = levels;
+                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                        tree_destination.go_into(i.branch_at(l).get_name());
+                        ++depth_ctr;
+                    }
+                }
+
+
+                if (i.is_directory()) {
+                    tree_destination.create();
+                }
+                else if (i.is_file()) {
+                    std::filesystem::copy(i.string(), tree_destination.string(), std::filesystem::copy_options::recursive);
+                    i.remove();
+                }
+            }
+        }
+        void qpl::filesys::paths::copy_overwrite_as_tree_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            qpl::filesys::path tree_destination = destination;
+            auto levels = this->m_paths.front().branch_size() - 1;
+            qpl::u32 depth_ctr = levels;
+
+            for (auto& i : this->m_paths) {
+
+                auto branch_size = i.branch_size();
+
+                if (depth_ctr != branch_size) {
+                    tree_destination = destination;
+                    depth_ctr = levels;
+                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                        tree_destination.go_into(i.branch_at(l).get_name());
+                        ++depth_ctr;
+                    }
+                }
+
+
+                if (i.is_directory()) {
+                    tree_destination.create();
+                }
+                else if (i.is_file()) {
+                    std::filesystem::copy(i.string(), tree_destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
+                }
+            }
+        }
+        void qpl::filesys::paths::move_overwrite_as_tree_to(qpl::filesys::path destination) {
+            if (destination.is_directory()) {
+                if (!destination.exists()) {
+                    destination.create();
+                }
+            }
+
+            qpl::filesys::path tree_destination = destination;
+            auto levels = this->m_paths.front().branch_size() - 1;
+            qpl::u32 depth_ctr = levels;
+
+            for (auto& i : this->m_paths) {
+
+                auto branch_size = i.branch_size();
+
+                if (depth_ctr != branch_size) {
+                    tree_destination = destination;
+                    depth_ctr = levels;
+                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                        tree_destination.go_into(i.branch_at(l).get_name());
+                        ++depth_ctr;
+                    }
+                }
+
+
+                if (i.is_directory()) {
+                    tree_destination.create();
+                }
+                else if (i.is_file()) {
+                    std::filesystem::copy(i.string(), tree_destination.string(), std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
+                    i.remove();
+                }
+            }
+        }
+
         qpl::size qpl::filesys::paths::size() const {
             return this->m_paths.size();
         }
@@ -1504,6 +1746,37 @@ namespace qpl {
             for (auto& i : copy) {
                 if (!i.is_file()) {
                     this->emplace_back(i);
+                }
+            }
+        }
+
+        void qpl::filesys::paths::list_remove_where_directory_matches(const std::string& str) {
+
+            qpl::u32 level = 0u;
+            bool remove = false;
+
+
+            auto copy = this->m_paths;
+            this->clear();
+            for (auto& i : copy) {
+                if (i.get_name() == str) {
+                    remove = true;
+                    level = i.branch_size() - 1;
+                }
+                else if (remove) {
+                    if (i.branch_at(level).get_name() != str) {
+                        this->emplace_back(i);
+                        remove = false;
+                    }
+                }
+                else {
+                    this->emplace_back(i);
+                }
+            }
+
+            for (auto& i : this->m_paths) {
+                if (i.get_name() == str) {
+
                 }
             }
         }
@@ -2128,6 +2401,10 @@ namespace qpl {
             auto p = qpl::filesys::list_current_directory_tree();
             p.print_tree();
         }
+        void qpl::filesys::print_tree(qpl::filesys::path path) {
+            auto p = qpl::filesys::list_directory_tree(path);
+            p.print_tree();
+        }
 
         void qpl::filesys::cd(qpl::filesys::path& path, const qpl::filesys::path& target) {
             path.go_into_directory(target);
@@ -2327,6 +2604,7 @@ namespace qpl {
                 i.remove();
             }
         }
+
         void qpl::filesys::move_all(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination) {
             for (auto& i : files) {
                 i.move(path_destination);
@@ -2344,9 +2622,41 @@ namespace qpl {
         }
         void qpl::filesys::copy_all_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination) {
             for (auto& i : files) {
-                i.copy_overwrite(path_destination);
+                qpl::println(i);
             }
         }
+
+        void qpl::filesys::move_all_files(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination) {
+            for (auto& i : files) {
+                if (i.is_file()) {
+                    i.move(path_destination);
+                }
+            }
+        }
+        void qpl::filesys::copy_all_files(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination) {
+            for (auto& i : files) {
+                if (i.is_file()) {
+                    i.copy(path_destination);
+                }
+            }
+        }
+        void qpl::filesys::move_all_files_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination) {
+            for (auto& i : files) {
+                if (i.is_file()) {
+                    i.move_overwrite(path_destination);
+                }
+            }
+        }
+        void qpl::filesys::copy_all_files_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination) {
+            for (auto& i : files) {
+                if (i.is_file()) {
+                    i.copy_overwrite(path_destination);
+                }
+            }
+        }
+
+
+
         std::string qpl::filesys::read_file(const std::string& path) {
             std::ifstream file(path, std::ios::ate | std::ios::binary);
 

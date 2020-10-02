@@ -64,6 +64,7 @@ namespace qpl {
             QPLDLL std::filesystem::file_time_type last_write_time() const;
 
             QPLDLL bool exists() const;
+            QPLDLL bool exists_system() const;
             QPLDLL bool is_file() const;
             QPLDLL bool is_directory() const;
 
@@ -279,6 +280,22 @@ namespace qpl {
             QPLDLL std::vector<qpl::filesys::path>::reverse_iterator rend();
 
 
+            QPLDLL void copy_to(qpl::filesys::path destination);
+            QPLDLL void move_to(qpl::filesys::path destination);
+            QPLDLL void copy_overwrite_to(qpl::filesys::path destination);
+            QPLDLL void move_overwrite_to(qpl::filesys::path destination);
+
+            QPLDLL void copy_files_to(qpl::filesys::path destination);
+            QPLDLL void move_files_to(qpl::filesys::path destination);
+            QPLDLL void copy_overwrite_files_to(qpl::filesys::path destination);
+            QPLDLL void move_overwrite_files_to(qpl::filesys::path destination);
+            
+            QPLDLL void copy_as_tree_to(qpl::filesys::path destination);
+            QPLDLL void move_as_tree_to(qpl::filesys::path destination);
+            QPLDLL void copy_overwrite_as_tree_to(qpl::filesys::path destination);
+            QPLDLL void move_overwrite_as_tree_to(qpl::filesys::path destination);
+
+
             QPLDLL qpl::size size() const;
             QPLDLL qpl::size capacity() const;
             QPLDLL void resize(qpl::size new_size);
@@ -313,6 +330,8 @@ namespace qpl {
             QPLDLL void list_add_files(const qpl::filesys::path& directory);
             QPLDLL void list_recursively_add_files(const qpl::filesys::path& directory);
             QPLDLL void list_remove_files();
+
+            QPLDLL void list_remove_where_directory_matches(const std::string& str);
 
             QPLDLL void list_remove_where_extension_equals(const std::string& extension);
             QPLDLL void list_add_where_extension_equals(const qpl::filesys::path& directory, const std::string& extension);
@@ -462,6 +481,7 @@ namespace qpl {
             QPLDLL void list_keep_where_file_name_contains(const char* file_name);
             QPLDLL void list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const char* str);
             QPLDLL void list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const char* str);
+
         private:
             std::vector<qpl::filesys::path> m_paths;
         };
@@ -482,6 +502,7 @@ namespace qpl {
         QPLDLL qpl::filesys::paths list_directory_tree(const qpl::filesys::path& path);
         QPLDLL qpl::filesys::paths list_current_directory_tree();
         QPLDLL void print_current_tree();
+        QPLDLL void print_tree(qpl::filesys::path path);
 
         QPLDLL void cd(qpl::filesys::path& path, const qpl::filesys::path& target);
 
@@ -533,10 +554,16 @@ namespace qpl {
         QPLDLL void copy_unpack_directory(const qpl::filesys::path& path);
         QPLDLL void move_unpack_directory(const qpl::filesys::path& path);
         QPLDLL void remove_all(const qpl::filesys::paths& files);
+
         QPLDLL void move_all(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
         QPLDLL void copy_all(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
         QPLDLL void move_all_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
         QPLDLL void copy_all_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
+
+        QPLDLL void move_all_files(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
+        QPLDLL void copy_all_files(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
+        QPLDLL void move_all_files_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
+        QPLDLL void copy_all_files_overwrite(const qpl::filesys::paths& files, const qpl::filesys::path& path_destination);
 
         QPLDLL qpl::filesys::paths search_where_extension_equals(const qpl::filesys::path& directory, const std::string& extension);
         QPLDLL qpl::filesys::paths search_where_extension_contains(const qpl::filesys::path& directory, const std::string& regex);
