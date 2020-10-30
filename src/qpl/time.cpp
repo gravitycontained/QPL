@@ -173,6 +173,68 @@ namespace qpl {
 		stream << qpl::string_to_fit(qpl::to_string(this->nsecs_mod()), '0', qpl::number_of_digits(this->nsecs_in_usec - 1)) << this->nsecs_mod() << "ns]";
 		return stream.str();
 	}
+
+	std::string qpl::time::string_until_sec() const {
+		std::ostringstream stream;
+		bool found = false;
+
+		stream << '[';
+		if (this->years() || found) {
+			found = true;
+			stream << this->years() << "y : ";
+		}
+		if (this->days_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->days_mod()), '0', qpl::number_of_digits(this->days_in_year - 1)) << this->days_mod() << "d : ";
+		}
+		if (this->hours_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->hours_mod()), '0', qpl::number_of_digits(this->hours_in_day - 1)) << this->hours_mod() << "h : ";
+		}
+		if (this->mins_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->mins_mod()), '0', qpl::number_of_digits(this->mins_in_hour - 1)) << this->mins_mod() << "m : ";
+		}
+		if (this->secs_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->secs_mod()), '0', qpl::number_of_digits(this->secs_in_min - 1)) << this->secs_mod() << "s";
+		}
+		stream << "]";
+		return stream.str();
+	}
+
+	std::string qpl::time::string_until_ms() const {
+		std::ostringstream stream;
+		bool found = false;
+
+		stream << '[';
+		if (this->years() || found) {
+			found = true;
+			stream << this->years() << "y : ";
+		}
+		if (this->days_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->days_mod()), '0', qpl::number_of_digits(this->days_in_year - 1)) << this->days_mod() << "d : ";
+		}
+		if (this->hours_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->hours_mod()), '0', qpl::number_of_digits(this->hours_in_day - 1)) << this->hours_mod() << "h : ";
+		}
+		if (this->mins_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->mins_mod()), '0', qpl::number_of_digits(this->mins_in_hour - 1)) << this->mins_mod() << "m : ";
+		}
+		if (this->secs_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->secs_mod()), '0', qpl::number_of_digits(this->secs_in_min - 1)) << this->secs_mod() << "s : ";
+		}
+		if (this->msecs_mod() || found) {
+			found = true;
+			stream << qpl::string_to_fit(qpl::to_string(this->msecs_mod()), '0', qpl::number_of_digits(this->msecs_in_sec - 1)) << this->msecs_mod() << "ms";
+		}
+		stream << "]";
+		return stream.str();
+	}
 	std::string qpl::time::string_full() const {
 		std::ostringstream stream;
 
@@ -424,6 +486,15 @@ namespace qpl {
 		std::strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", timeinfo);
 		return { buffer };
 	}
+
+	qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed) {
+		qpl::time f = 0;
+		if (progress) {
+			f = elapsed.nsecs() / progress;
+		}
+		return f.nsecs() * (1 - progress);
+	}
+
 	std::string get_current_time_string_ms() {
 		auto current_time = std::chrono::system_clock::now();
 		
@@ -598,6 +669,9 @@ namespace qpl {
 		}
 	}
 
+	void qpl::print_benchmark(const std::string& name) {
+		qpl::println(name, " took ", qpl::detail::benchmark_clocks[name].elapsed_reset().string());
+	}
 
 
 	void qpl::reset_time_signal() {

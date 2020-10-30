@@ -39,6 +39,9 @@ namespace qpl {
 			stream << this->top_left.string() << ", " << this->bottom_right.string();
 			return stream.str();
 		}
+		bool qpl::winsys::rect::unset() const {
+			return this->top_left.x == 0 && this->top_left.y == 0 && this->bottom_right.x == 0 && this->bottom_right.y == 0;
+		}
 		int qpl::winsys::rect::width() const {
 			return this->bottom_right.x - this->top_left.x;
 		}
@@ -55,19 +58,96 @@ namespace qpl {
 			return point.x > this->top_left.x && point.x < this->bottom_right.x&& point.y > this->top_left.y && point.y < this->bottom_right.y;
 		}
 
+
+		void qpl::winsys::monitor_capture::_init(HDC hdcMonitor, LPRECT lprcMonitor) {
+			if (this->rect.unset()) {
+				this->rect.bottom_right.x = lprcMonitor->right - lprcMonitor->left;
+				this->rect.bottom_right.y = lprcMonitor->bottom - lprcMonitor->top;
+			}
+			this->_update_hdc(hdcMonitor, lprcMonitor);
+
+			this->pixels.set_dimension(this->rect.width(), this->rect.height());
+
+			this->bmi.biSize = sizeof(BITMAPINFOHEADER);
+			this->bmi.biWidth = this->rect.width();
+			this->bmi.biHeight = this->rect.height();
+			this->bmi.biPlanes = 1;
+			this->bmi.biBitCount = 24;
+			this->bmi.biCompression = BI_RGB;
+			this->bmi.biSizeImage = 0;
+			this->bmi.biXPelsPerMeter = 0;
+			this->bmi.biYPelsPerMeter = 0;
+			this->bmi.biClrUsed = 0;
+			this->bmi.biClrImportant = 0;
+
+
+			this->initialized = true;
+		}
+
+		qpl::winsys::point qpl::winsys::monitor_capture::relative_top_left_corner() const {
+			return qpl::winsys::point(this->rc_client.left, this->rc_client.top);
+		}
+		bool qpl::winsys::monitor_capture::needs_hdc_update() const {
+			return !qpl::winsys::impl::looping_monitors;
+		}
+		void qpl::winsys::monitor_capture::set_rectangle(qpl::winsys::rect rect) {
+			this->rect = rect;
+			this->hCaptureBitmap = CreateCompatibleBitmap(this->hDesktopDC, this->rect.width(), this->rect.height());
+			this->pixels.set_dimension(this->rect.width(), this->rect.height());
+			this->bmi.biWidth = this->rect.width();
+			this->bmi.biHeight = this->rect.height();
+		}
+		void qpl::winsys::monitor_capture::_update_hdc(HDC hdcMonitor, LPRECT lprcMonitor) {
+			bool new_monitor = this->hDesktopDC != hdcMonitor;
+			if (new_monitor || !this->hDesktopDC) {
+				if (this->hDesktopDC) {
+					DeleteObject(this->hDesktopDC);
+				}
+				DeleteObject(this->hCaptureDC);
+				DeleteObject(this->hCaptureBitmap);
+				this->hDesktopDC = hdcMonitor;
+				this->rc_client = *lprcMonitor;
+				this->hCaptureDC = CreateCompatibleDC(this->hDesktopDC);
+				this->hCaptureBitmap = CreateCompatibleBitmap(this->hDesktopDC, this->rect.width(), this->rect.height());
+			}
+		}
+		void qpl::winsys::monitor_capture::update() {
+			qpl::winsys::scan_monitor(this->index);
+		}
+		void qpl::winsys::monitor_capture::scan() {
+			if (!this->initialized) {
+				throw std::exception("qpl::winsys::screen_pixels_stream was not initialized");
+			}
+
+			if (this->needs_hdc_update()) {
+				this->update();
+				return;
+			}
+			
+			SelectObject(this->hCaptureDC, this->hCaptureBitmap);
+
+			BitBlt(this->hCaptureDC, 0, 0, this->rect.width(), this->rect.height(), this->hDesktopDC, this->rc_client.left + this->rect.top_left.x, this->rc_client.top + this->rect.top_left.y, SRCCOPY);
+
+			GetDIBits(this->hCaptureDC, this->hCaptureBitmap, 0, this->rect.height(), this->pixels.data.data(), (BITMAPINFO*)&this->bmi, DIB_RGB_COLORS);
+
+		}
+		qpl::pixels qpl::winsys::monitor_capture::scan_and_get_pixels() {
+			this->scan();
+			return this->pixels;
+		}
+		void qpl::winsys::monitor_capture::scan_and_generate_bmp(std::string file_name) {
+			this->scan();
+			this->generate_bmp(file_name);
+		}
+		qpl::pixels qpl::winsys::monitor_capture::get_pixels() const {
+			return this->pixels;
+		}
+		void qpl::winsys::monitor_capture::generate_bmp(std::string file_name) const {
+			this->pixels.generate_bmp(file_name);
+		}
+
 		process_list qpl::winsys::impl::p_list;
 		watch_list qpl::winsys::impl::w_list;
-		bool qpl::winsys::impl::make_colors_clear = false;
-		bool qpl::winsys::impl::init = false;
-		qpl::winsys::point qpl::winsys::impl::dim;
-		HWND qpl::winsys::impl::hDesktopWnd;
-		HDC qpl::winsys::impl::hDesktopDC;
-		HDC qpl::winsys::impl::hCaptureDC;
-		HBITMAP qpl::winsys::impl::hCaptureBitmap;
-		BITMAPINFO qpl::winsys::impl::bmi;
-		RGBQUAD* qpl::winsys::impl::pPixels;
-		std::vector<qpl::pixel_rgb> qpl::winsys::impl::pixels;
-		qpl::u32 qpl::winsys::impl::thread_count = 1u;
 
 		void qpl::winsys::impl::set_process_information(process& proc, HWND hWnd) {
 			auto check = [](DWORD code, int n) {
@@ -142,7 +222,56 @@ namespace qpl {
 			}
 			return true;
 		}
+		BOOL CALLBACK qpl::winsys::impl::capture_monitor_init_callback(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+			if (qpl::winsys::impl::monitor_captures.size() <= qpl::winsys::impl::loop_monitor_index) {
+				qpl::winsys::impl::monitor_captures.push_back({});
+			}
+			if (!qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].initialized) {
+				qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index]._init(hdcMonitor, lprcMonitor);
+			}
+			qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].index = qpl::winsys::impl::loop_monitor_index;
+			
+			++qpl::winsys::impl::loop_monitor_index;
+			return true;
+		}
+		BOOL CALLBACK qpl::winsys::impl::capture_monitor_scan_callback(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+			if (qpl::winsys::impl::monitor_captures.size() <= qpl::winsys::impl::loop_monitor_index) {
+				qpl::winsys::impl::monitor_captures.push_back({});
+			}
+			if (!qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].initialized) {
+				qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index]._init(hdcMonitor, lprcMonitor);
+			}
+			qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].index = qpl::winsys::impl::loop_monitor_index;
+			qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index]._update_hdc(hdcMonitor, lprcMonitor);
+			qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].scan();
 
+
+			++qpl::winsys::impl::loop_monitor_index;
+			return true;
+		}
+		BOOL CALLBACK qpl::winsys::impl::capture_monitor_scan_single_callback(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+			if (qpl::winsys::impl::loop_monitor_index == qpl::winsys::impl::update_monitor_index) {
+
+				if (qpl::winsys::impl::monitor_captures.size() <= qpl::winsys::impl::loop_monitor_index) {
+					qpl::winsys::impl::monitor_captures.push_back({});
+				}
+				if (!qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].initialized) {
+					qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index]._init(hdcMonitor, lprcMonitor);
+				}
+				qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].index = qpl::winsys::impl::loop_monitor_index;
+				qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index]._update_hdc(hdcMonitor, lprcMonitor);
+				qpl::winsys::impl::monitor_captures[qpl::winsys::impl::loop_monitor_index].scan();
+			}
+
+			++qpl::winsys::impl::loop_monitor_index;
+			return true;
+		}
+
+
+		qpl::u32 qpl::winsys::impl::update_monitor_index = 0u;
+		qpl::u32 qpl::winsys::impl::loop_monitor_index = 0u;
+		bool qpl::winsys::impl::looping_monitors = false;
+		std::vector<monitor_capture> qpl::winsys::impl::monitor_captures;
 
 		bool qpl::winsys::find_window(std::string name) {
 			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
@@ -186,10 +315,10 @@ namespace qpl {
 			EnumWindows(qpl::winsys::impl::process_list_window_callback, NULL);
 			return qpl::winsys::impl::p_list;
 		}
-		void clear_watchlist() {
+		void qpl::winsys::clear_watchlist() {
 			qpl::winsys::impl::w_list.clear();
 		}
-		bool add_to_watchlist(std::wstring window_name) {
+		bool qpl::winsys::add_to_watchlist(std::wstring window_name) {
 			bool found = false;
 			for (auto i : qpl::winsys::impl::p_list) {
 				if (i.window_name == window_name) {
@@ -199,17 +328,17 @@ namespace qpl {
 			}
 			return found;
 		}
-		watch_list& get_watchlist() {
+		watch_list& qpl::winsys::get_watchlist() {
 			EnumWindows(qpl::winsys::impl::watch_list_window_callback, NULL);
 			return qpl::winsys::impl::w_list;
 		}
 
-		point get_mouse_position() {
+		point qpl::winsys::get_mouse_position() {
 			POINT p;
 			GetCursorPos(&p);
 			return { p.x, p.y };
 		}
-		bool mouse_left_clicked() {
+		bool qpl::winsys::mouse_left_clicked() {
 			static bool before = false;
 			auto down = (GetKeyState(VK_LBUTTON) & 0x80) != 0;
 			if (down && !before) {
@@ -221,206 +350,120 @@ namespace qpl {
 				return false;
 			}
 		}
+		void qpl::winsys::set_cursor_hand() {
+			SetCursor(LoadCursor(NULL, IDC_HAND));
+		}
+		void qpl::winsys::set_cursor_normal() {
+			SetCursor(LoadCursor(NULL, IDC_ARROW));
+		}
 
 
-		std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels(qpl::winsys::rect rectangle) {
-			auto dim = qpl::get_screen_dimension();
+		qpl::pixels qpl::winsys::get_screen_pixels(qpl::winsys::rect rectangle) {
 			HWND hDesktopWnd = GetDesktopWindow();
 			HDC hDesktopDC = GetDC(hDesktopWnd);
 			HDC hCaptureDC = CreateCompatibleDC(hDesktopDC);
-			HBITMAP hCaptureBitmap = CreateCompatibleBitmap(hDesktopDC, dim.x, dim.y);
+			HBITMAP hCaptureBitmap = CreateCompatibleBitmap(hDesktopDC, rectangle.width(), rectangle.height());
 			SelectObject(hCaptureDC, hCaptureBitmap);
 
-			BitBlt(hCaptureDC, 0, 0, dim.x, dim.y, hDesktopDC, 0, 0, SRCCOPY | CAPTUREBLT);
+			BitBlt(hCaptureDC, 0, 0, rectangle.width(), rectangle.height(), hDesktopDC, rectangle.top_left.x, rectangle.top_left.y, SRCCOPY | CAPTUREBLT);
 
 
-			// Create a BITMAPINFO specifying the format you want the pixels in.
-			// To keep this simple, we'll use 32-bits per pixel (the high byte isn't
-			// used).
-			BITMAPINFO bmi = { 0 };
-			bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
-			bmi.bmiHeader.biWidth = dim.x;
-			bmi.bmiHeader.biHeight = dim.y;
-			bmi.bmiHeader.biPlanes = 1;
-			bmi.bmiHeader.biBitCount = 32;
-			bmi.bmiHeader.biCompression = BI_RGB;
+			BITMAPINFOHEADER bi;
 
-			// Allocate a buffer to receive the pixel data.
-			RGBQUAD* pPixels = new RGBQUAD[dim.x * dim.y];
+			bi.biSize = sizeof(BITMAPINFOHEADER);
+			bi.biWidth = rectangle.width();
+			bi.biHeight = rectangle.height();
+			bi.biPlanes = 1;
+			bi.biBitCount = 24;
+			bi.biCompression = BI_RGB;
+			bi.biSizeImage = 0;
+			bi.biXPelsPerMeter = 0;
+			bi.biYPelsPerMeter = 0;
+			bi.biClrUsed = 0;
+			bi.biClrImportant = 0;
 
-			// Call GetDIBits to copy the bits from the device dependent bitmap
-			// into the buffer allocated above, using the pixel format you
-			// chose in the BITMAPINFO.
-			GetDIBits(hCaptureDC,
-				hCaptureBitmap,
-				0,  // starting scanline
-				dim.y,  // scanlines to copy
-				pPixels,  // buffer for your copy of the pixels
-				&bmi,  // format you want the data in
-				DIB_RGB_COLORS);  // actual pixels, not palette references
+			qpl::pixels pixels;
+			pixels.set_dimension(rectangle.width(), rectangle.height());
 
-			std::vector<qpl::pixel_rgb> pixels(rectangle.width() * rectangle.height());
+			GetDIBits(hCaptureDC, hCaptureBitmap, 0, rectangle.height(), pixels.data.data(), (BITMAPINFO*)&bi, DIB_RGB_COLORS);
 
 
-			qpl::u32 ctr = 0u;
-			for (int y = 0; y < rectangle.height(); ++y) {
-				for (int x = 0; x < rectangle.width(); ++x) {
-					auto pi = (rectangle.height() - y - 1) * rectangle.width() + x;
-					auto wi = (dim.y - (y + rectangle.top_left.y) - 1) * dim.x + (x + rectangle.top_left.x);
+			DeleteObject(hDesktopDC);
+			DeleteObject(hCaptureDC);
 
-					pixels[pi].r = pPixels[wi].rgbRed;
-					pixels[pi].g = pPixels[wi].rgbGreen;
-					pixels[pi].b = pPixels[wi].rgbBlue;
-				}
-			}
-
-			DeleteDC(hDesktopDC);
-			DeleteDC(hCaptureDC);
-			delete[] pPixels;
 			return pixels;
 		}
-		std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels() {
+		qpl::pixels qpl::winsys::get_screen_pixels() {
 			return qpl::winsys::get_screen_pixels(qpl::winsys::rect{ {0, 0}, qpl::get_screen_dimension() });
 		}
 		std::string qpl::winsys::get_screen_pixels_bmp_string() {
 			auto pixels = qpl::winsys::get_screen_pixels();
-			return qpl::generate_bmp_string(pixels, qpl::get_screen_dimension().x, qpl::get_screen_dimension().y);
-		}
-		std::string qpl::winsys::get_screen_pixels_bmp_string(qpl::winsys::rect rectangle) {
-			auto pixels = qpl::winsys::get_screen_pixels(rectangle);
-			return qpl::generate_bmp_string(pixels, rectangle.width(), rectangle.height());
+			return pixels.generate_bmp_string();
 		}
 
-		void qpl::winsys::enable_screen_pixels_stream_clear_colors() {
-			qpl::winsys::impl::make_colors_clear = true;
+		monitor_capture& qpl::winsys::get_capture_monitor(qpl::u32 index) {
+			return qpl::winsys::impl::monitor_captures[index];
 		}
-		void qpl::winsys::disable_screen_pixels_stream_clear_colors() {
-			qpl::winsys::impl::make_colors_clear = false;
+		void qpl::winsys::scan_monitor(qpl::u32 index) {
+			qpl::winsys::impl::loop_monitor_index = 0u;
+			qpl::winsys::impl::looping_monitors = true;
+			qpl::winsys::impl::update_monitor_index = index;
+			HDC hdc = GetDC(NULL);
+			EnumDisplayMonitors(hdc, NULL, qpl::winsys::impl::capture_monitor_scan_single_callback, 0);
+			ReleaseDC(NULL, hdc);
+			qpl::winsys::impl::looping_monitors = false;
 		}
-		void qpl::winsys::init_screen_pixel_stream() {
-			qpl::winsys::impl::dim = qpl::get_screen_dimension();
-			qpl::winsys::impl::hDesktopWnd = GetDesktopWindow();
-			qpl::winsys::impl::hDesktopDC = GetDC(qpl::winsys::impl::hDesktopWnd);
-			qpl::winsys::impl::hCaptureDC = CreateCompatibleDC(qpl::winsys::impl::hDesktopDC);
-			qpl::winsys::impl::hCaptureBitmap = CreateCompatibleBitmap(qpl::winsys::impl::hDesktopDC, qpl::winsys::impl::dim.x, qpl::winsys::impl::dim.y);
-			qpl::winsys::impl::pPixels = new RGBQUAD[qpl::winsys::impl::dim.x * qpl::winsys::impl::dim.y];
-			qpl::winsys::impl::pixels.resize(qpl::winsys::impl::dim.x * qpl::winsys::impl::dim.y);
-
-			qpl::winsys::impl::bmi.bmiHeader.biSize = sizeof(qpl::winsys::impl::bmi.bmiHeader);
-			qpl::winsys::impl::bmi.bmiHeader.biWidth = qpl::winsys::impl::dim.x;
-			qpl::winsys::impl::bmi.bmiHeader.biHeight = qpl::winsys::impl::dim.y;
-			qpl::winsys::impl::bmi.bmiHeader.biPlanes = 1;
-			qpl::winsys::impl::bmi.bmiHeader.biBitCount = 32;
-			qpl::winsys::impl::bmi.bmiHeader.biCompression = BI_RGB;
-
-
-			qpl::winsys::impl::init = true;
-
-			//SelectObject(qpl::winsys::impl::hCaptureDC, qpl::winsys::impl::hCaptureBitmap);
-			//
-			//BitBlt(qpl::winsys::impl::hCaptureDC, 0, 0, qpl::winsys::impl::dim.x, qpl::winsys::impl::dim.y, qpl::winsys::impl::hDesktopDC, 0, 0, SRCCOPY | CAPTUREBLT);
+		void qpl::winsys::init_monitor_captures() {
+			qpl::winsys::impl::loop_monitor_index = 0u;
+			qpl::winsys::impl::looping_monitors = true;
+			HDC hdc = GetDC(NULL);
+			EnumDisplayMonitors(hdc, NULL, qpl::winsys::impl::capture_monitor_init_callback, 0);
+			ReleaseDC(NULL, hdc);
+			qpl::winsys::impl::looping_monitors = false;
 		}
-		std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels_stream(qpl::winsys::rect rectangle) {
-			if (!qpl::winsys::impl::init) {
-				throw std::exception("qpl::winsys::screen_pixels_stream was not initialized");
+		void qpl::winsys::scan_monitor_captures() {
+			qpl::winsys::impl::loop_monitor_index = 0u;
+			qpl::winsys::impl::looping_monitors = true;
+			HDC hdc = GetDC(NULL);
+			EnumDisplayMonitors(hdc, NULL, qpl::winsys::impl::capture_monitor_scan_callback, 0);
+			ReleaseDC(NULL, hdc);
+			qpl::winsys::impl::looping_monitors = false;
+
+
+		}
+		void qpl::winsys::screen_shot_monitors() {
+			qpl::winsys::impl::loop_monitor_index = 0u;
+			qpl::winsys::impl::looping_monitors = true;
+			HDC hdc = GetDC(NULL);
+			EnumDisplayMonitors(hdc, NULL, qpl::winsys::impl::capture_monitor_scan_callback, 0);
+			ReleaseDC(NULL, hdc);
+
+			for (auto& i : qpl::winsys::impl::monitor_captures) {
+				i.pixels.generate_bmp(qpl::get_current_time_string_ms() + ".bmp");
 			}
-			if (qpl::winsys::impl::pixels.size() != (rectangle.width() * rectangle.height())) {
-				qpl::winsys::impl::pixels.resize((rectangle.width() * rectangle.height()));
-			}
-
-			SelectObject(qpl::winsys::impl::hCaptureDC, qpl::winsys::impl::hCaptureBitmap);
-
-			BitBlt(qpl::winsys::impl::hCaptureDC, 0, 0, qpl::winsys::impl::dim.x, qpl::winsys::impl::dim.y, qpl::winsys::impl::hDesktopDC, 0, 0, SRCCOPY | CAPTUREBLT);
-
-			GetDIBits(qpl::winsys::impl::hCaptureDC,
-				qpl::winsys::impl::hCaptureBitmap,
-				0,  // starting scanline
-				qpl::winsys::impl::dim.y,  // scanlines to copy
-				qpl::winsys::impl::pPixels,  // buffer for your copy of the pixels
-				&qpl::winsys::impl::bmi,  // format you want the data in
-				DIB_RGB_COLORS);  // actual pixels, not palette references
-
-			if (qpl::winsys::impl::make_colors_clear) {
-				qpl::u32 ctr = 0u;
-				for (int y = 0; y < rectangle.height(); ++y) {
-					for (int x = 0; x < rectangle.width(); ++x) {
-						auto pi = (rectangle.height() - y - 1) * rectangle.width() + x;
-						auto wi = (qpl::winsys::impl::dim.y - (y + rectangle.top_left.y) - 1) * qpl::winsys::impl::dim.x + (x + rectangle.top_left.x);
-
-
-						auto average = (qpl::winsys::impl::pPixels[wi].rgbRed + qpl::winsys::impl::pPixels[wi].rgbGreen + qpl::winsys::impl::pPixels[wi].rgbBlue) / 3;
-
-						average = qpl::i32_cast(qpl::f64_cast(average) * 7);
-						average = qpl::min(255, average);
-
-						qpl::winsys::impl::pixels[pi].r = average;
-						qpl::winsys::impl::pixels[pi].g = average;
-						qpl::winsys::impl::pixels[pi].b = average;
-					}
-				}
-			}
-			else {
-				qpl::u32 ctr = 0u;
-				for (int y = 0; y < rectangle.height(); ++y) {
-					for (int x = 0; x < rectangle.width(); ++x) {
-						auto pi = (rectangle.height() - y - 1) * rectangle.width() + x;
-						auto wi = (qpl::winsys::impl::dim.y - (y + rectangle.top_left.y) - 1) * qpl::winsys::impl::dim.x + (x + rectangle.top_left.x);
-
-						qpl::winsys::impl::pixels[pi].r = qpl::winsys::impl::pPixels[wi].rgbRed;
-						qpl::winsys::impl::pixels[pi].g = qpl::winsys::impl::pPixels[wi].rgbGreen;
-						qpl::winsys::impl::pixels[pi].b = qpl::winsys::impl::pPixels[wi].rgbBlue;
-					}
-				}
-			}
-
-			return qpl::winsys::impl::pixels;
+			qpl::winsys::impl::looping_monitors = false;
 		}
-		void qpl::winsys::clear_screen_pixel_stream() {
-			DeleteDC(qpl::winsys::impl::hDesktopDC);
-			DeleteDC(qpl::winsys::impl::hCaptureDC);
-			delete[] qpl::winsys::impl::pPixels;
+		qpl::size qpl::winsys::monitor_capture_size() {
+			return qpl::winsys::impl::monitor_captures.size();
 		}
-	}
-	std::vector<qpl::pixel_rgb> qpl::winsys::get_screen_pixels_stream() {
-		return qpl::winsys::get_screen_pixels_stream(qpl::winsys::rect{ {0, 0}, qpl::get_screen_dimension() });
-	}
-	std::string qpl::winsys::get_screen_pixels_stream_bmp_string() {
-		auto pixels = qpl::winsys::get_screen_pixels_stream();
-		return qpl::generate_bmp_string(pixels, qpl::get_screen_dimension().x, qpl::get_screen_dimension().y);
-	}
-	std::string qpl::winsys::get_screen_pixels_stream_bmp_string(qpl::winsys::rect rectangle) {
-		auto pixels = qpl::winsys::get_screen_pixels_stream(rectangle);
-		return qpl::generate_bmp_string(pixels, rectangle.width(), rectangle.height());
 	}
 	qpl::winsys::point qpl::get_screen_dimension() {
 		RECT desktop;
-		// Get a handle to the desktop window
 		const HWND hDesktop = GetDesktopWindow();
-		// Get the size of screen to the variable desktop
 		GetWindowRect(hDesktop, &desktop);
-		// The top left corner will have coordinates (0,0)
-		// and the bottom right corner will have coordinates
-		// (horizontal, vertical)
 
 		return { desktop.right, desktop.bottom };
 	}
 	void qpl::screen_shot(const std::string& file_name) {
-		auto dim = qpl::get_screen_dimension();
 		auto screen = qpl::winsys::get_screen_pixels();
-		qpl::generate_bmp(screen, dim.x, dim.y, file_name);
+		screen.generate_bmp(file_name);
 	}
 	void qpl::screen_shot(const std::string& file_name, qpl::winsys::rect rectangle) {
 		auto screen = qpl::winsys::get_screen_pixels(rectangle);
-		qpl::generate_bmp(screen, rectangle.width(), rectangle.height(), file_name);
+		screen.generate_bmp(file_name);
 	}
 	void qpl::screen_shot_stream(const std::string& file_name) {
-		auto dim = qpl::get_screen_dimension();
-		auto screen = qpl::winsys::get_screen_pixels_stream();
-		qpl::generate_bmp(screen, dim.x, dim.y, file_name);
-	}
-	void qpl::screen_shot_stream(const std::string& file_name, qpl::winsys::rect rectangle) {
-		auto screen = qpl::winsys::get_screen_pixels_stream(rectangle);
-		qpl::generate_bmp(screen, rectangle.width(), rectangle.height(), file_name);
+
 	}
 	void qpl::clear_console() {
 		system("cls");

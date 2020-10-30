@@ -18,6 +18,7 @@ namespace qsf {
 		QPLDLL bool key_holding(sf::Keyboard::Key key) const;
 		QPLDLL bool keys_holding(const std::vector<sf::Keyboard::Key>& keys) const;
 
+		QPLDLL bool mouse_moved() const;
 		QPLDLL bool left_mouse_clicked() const;
 		QPLDLL bool left_mouse_released() const;
 		QPLDLL bool right_mouse_clicked() const;

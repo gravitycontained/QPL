@@ -478,7 +478,13 @@ namespace qpl {
 	}
 	void qpl::NN1::neural_net::feed(const std::vector<double>& input) {
 		for (std::size_t i = 0; i < input.size(); ++i) {
-			this->input_layer()[i].set_output(input[i]);
+			if (std::isnan(input[i])) {
+				qpl::println("nan");
+				this->input_layer()[i].set_output(0);
+			}
+			else {
+				this->input_layer()[i].set_output(input[i]);
+			}
 		}
 		for (std::size_t i = 1; i < this->m_neurons.size(); ++i) {
 			auto& prev_layer = this->m_neurons[i - 1];
@@ -507,6 +513,8 @@ namespace qpl {
 		this->m_error /= (this->output_layer().size() - 1);
 		this->m_error = std::sqrt(this->m_error);
 
+		this->accuracy_sum += (1.0 - this->m_error);
+
 		for (std::size_t i = 0; i < this->output_layer().size() - 1; ++i) {
 			this->output_layer()[i].show_excpected_output(excpected_outputs[i]);
 		}
@@ -531,6 +539,9 @@ namespace qpl {
 	}
 	double qpl::NN1::neural_net::get_accuracy() const {
 		return 1.0 - this->m_error;
+	}
+	double qpl::NN1::neural_net::get_average_accuracy() const {
+		return this->accuracy_sum / this->m_generation_counter;
 	}
 	std::size_t qpl::NN1::neural_net::get_generation_count() const {
 		return this->m_generation_counter;
@@ -652,7 +663,7 @@ namespace qpl {
 		}
 
 		//feed forward
-		for (qpl::u32 l = 1u; l < this->layers.size(); ++l) {
+		for (qpl::u32 l = 0u; l < this->layers.size(); ++l) {
 			for (qpl::u32 n = 0u; n < this->layers[l].neurons.size(); ++n) {
 				qpl::f64 sum = 0.0;
 				for (qpl::u32 s = 0u; s < this->layers[l].neurons[n].synapses.size(); ++s) {
@@ -721,6 +732,168 @@ namespace qpl {
 		}
 	}
 
+
+	//-------------------------------------------------------------------------------
+
+	qpl::f64 qpl::NN3::activation_function(qpl::f64 n) {
+		return 1.0 / (1.0 + std::exp(-n));
+	}
+	qpl::f64 qpl::NN3::normal_distribution() {
+		return std::sin(2.0 * qpl::pi * qpl::random(std::numeric_limits<double>::epsilon(), 1.0)) * std::sqrt(-2.0 * std::log(qpl::random(std::numeric_limits<double>::epsilon(), 1.0)));
+	}
+
+	qpl::f64 qpl::NN3::neural_net::get_accuracy() const {
+		return this->accuracy;
+	}
+	qpl::f64 qpl::NN3::neural_net::get_average_accuracy() const {
+		return this->accuracy_sum / this->generation_ctr;
+	}
+
+	std::vector<qpl::u32> qpl::NN3::neural_net::get_topology() const {
+		return this->topology;
+	}
+
+	void qpl::NN3::neural_net::set_topology(const std::vector<qpl::u32>& topology) {
+		this->topology = topology;
+		this->layers.resize(topology.size());
+
+		for (qpl::u32 l = 0u; l < this->layers.size(); ++l) {
+			this->layers[l].neurons.resize(topology[l]);
+		}
+
+		this->randomize_weights_and_biases();
+	}
+
+	void qpl::NN3::neural_net::randomize_weights_and_biases() {
+		this->accuracy_sum = 0.0;
+		this->generation_ctr = 0u;
+
+
+		for (qpl::u32 l = 1u; l < this->layers.size(); ++l) {
+
+			for (auto& neuron : this->layers[l].neurons) {
+				neuron.gradient = neuron.output = 0.0;
+				neuron.bias = qpl::NN3::normal_distribution() * std::sqrt(1.0 / (this->layers[l - 1].neurons.size() + 1));
+				neuron.bias *= 0.2;
+
+				//neuron.bias = qpl::random(-1.0, 1.0);
+
+				neuron.synapses.resize(this->layers[l - 1].neurons.size());
+
+				for (qpl::u32 s = 0u; s < neuron.synapses.size(); ++s) {
+					neuron.synapses[s].delta_weight = 0.0;
+					//neuron.synapses[s].weight = qpl::random(-1.0, 1.0);
+					neuron.synapses[s].weight = qpl::NN3::normal_distribution() * std::sqrt(1.0 / (this->layers[l - 1].neurons.size() + 1));
+
+				}
+			}
+		}
+
+
+	}
+	void qpl::NN3::neural_net::observe_test() const {
+		qpl::size l_ctr = 0u;
+		for (auto& l : this->layers) {
+			qpl::println_repeat("- ", 40);
+			qpl::println("<layer ", l_ctr++, ">");
+			qpl::size n_ctr = 0u;
+			for (auto& n : l.neurons) {
+				qpl::print("\n<neuron ", n_ctr++, "> ");
+				qpl::println("output = ", n.output, ", gradient = ", n.gradient, ", bias = ", n.bias);
+				qpl::size s_ctr = 0u;
+				for (auto& s : n.synapses) {
+					qpl::print("<synapse ", s_ctr++, "> ");
+					qpl::println("weight = ", s.weight, ", delta_weight = ", s.delta_weight);
+				}
+			}
+		}
+	}
+	qpl::size qpl::NN3::neural_net::generation_count() const {
+		return this->generation_ctr;
+	}
+
+	qpl::NN3::layer& qpl::NN3::neural_net::input_layer() {
+		return this->layers.front();
+	}
+	qpl::NN3::layer& qpl::NN3::neural_net::output_layer() {
+		return this->layers.back();
+	}
+
+	void qpl::NN3::neural_net::feed(const std::vector<qpl::f64>& input) {
+		//set input
+		for (qpl::u32 n = 0u; n < this->input_layer().neurons.size(); ++n) {
+			this->input_layer().neurons[n].output = input[n];
+		}
+
+		//feed forward
+		for (qpl::u32 l = 1u; l < this->layers.size(); ++l) {
+			for (qpl::u32 n = 0u; n < this->layers[l].neurons.size(); ++n) {
+				qpl::f64 sum = 0.0;
+				for (qpl::u32 s = 0u; s < this->layers[l].neurons[n].synapses.size(); ++s) {
+					sum += (this->layers[l].neurons[n].synapses[s].weight * this->layers[l - 1].neurons[s].output);
+				}
+				this->layers[l].neurons[n].output = qpl::NN3::activation_function(sum + this->layers[l].neurons[n].bias);
+			}
+		}
+	}
+
+
+	void qpl::NN3::neural_net::show_expected_output(const std::vector<qpl::f64>& expected_output) {
+		for (qpl::u32 n = 0u; n < this->output_layer().neurons.size(); ++n) {
+			auto momentum = this->output_layer().neurons[n].gradient * alpha;
+			this->output_layer().neurons[n].gradient = expected_output[n] - this->output_layer().neurons[n].output + momentum;
+
+		}
+	}
+
+	void qpl::NN3::layer::calculate_gradients(layer& previous_layer) {
+		for (auto& neuron : previous_layer.neurons) {
+			neuron.gradient = 0.0;
+		}
+		for (qpl::u32 n = 0u; n < this->neurons.size(); ++n) {
+			for (qpl::u32 s = 0u; s < this->neurons[n].synapses.size(); ++s) {
+				previous_layer.neurons[s].gradient += this->neurons[n].gradient * this->neurons[n].synapses[s].weight;
+			}
+		}
+	}
+	void qpl::NN3::layer::calculate_weights(const layer& previous_layer, qpl::f64 eta, qpl::f64 alpha) {
+		for (qpl::u32 n = 0u; n < this->neurons.size(); ++n) {
+			for (qpl::u32 s = 0u; s < this->neurons[n].synapses.size(); ++s) {
+				this->neurons[n].synapses[s].delta_weight = this->neurons[n].gradient * previous_layer.neurons[s].output + this->neurons[n].synapses[s].delta_weight * alpha;
+				this->neurons[n].synapses[s].weight += eta * this->neurons[n].synapses[s].delta_weight;
+
+			}
+			this->neurons[n].momentum = this->neurons[n].gradient + this->neurons[n].momentum * alpha;
+			this->neurons[n].bias += eta * this->neurons[n].gradient;
+		}
+	}
+
+
+	void qpl::NN3::neural_net::get_output(std::vector<qpl::f64>& destination) {
+		for (qpl::u32 n = 0u; n < this->output_layer().neurons.size(); ++n) {
+			destination[n] = this->output_layer().neurons[n].output;
+		}
+	}
+	void qpl::NN3::neural_net::teach(const std::vector<qpl::f64>& expected_output) {
+		this->show_expected_output(expected_output);
+
+		qpl::f64 error_sum = 0.0;
+		for (auto& neuron : this->output_layer().neurons) {
+			error_sum += neuron.gradient * neuron.gradient;
+		}
+		error_sum /= this->output_layer().neurons.size();
+		error_sum = std::sqrt(error_sum);
+		this->accuracy = (1 - error_sum);
+		this->accuracy_sum += this->accuracy;
+		++this->generation_ctr;
+
+		for (qpl::u32 l = this->layers.size() - 1; l > 1u; --l) {
+			this->layers[l].calculate_gradients(this->layers[l - 1]);
+		}
+		for (qpl::u32 l = this->layers.size() - 1; l > 0u; --l) {
+			this->layers[l].calculate_weights(this->layers[l - 1], this->eta, this->alpha);
+		}
+	}
 
 
 

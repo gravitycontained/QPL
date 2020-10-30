@@ -37,6 +37,9 @@ namespace qsf {
 		return true;
 	}
 
+	bool qsf::event_info::mouse_moved() const {
+		return this->m_mouse_moved;
+	}
 	bool qsf::event_info::left_mouse_clicked() const {
 		return this->m_left_mouse_clicked;
 	}

@@ -6,6 +6,9 @@
 #include <qpl/vardef.hpp>
 #include <vector>
 #include <array>
+#include <memory>
+#include <qpl/time.hpp>
+#include <functional>
 
 namespace qpl {
 	class cubic_generator {
@@ -74,6 +77,89 @@ namespace qpl {
 		double m_prog;
 		double m_a, m_b, m_c, m_d;
 		double m_speed;
+	};
+
+	template<typename T>
+	struct smooth_value {
+		void start(T& value, T end, qpl::time duration = qpl::secs(1)) {
+			if (this->is_running()) {
+				this->clock.reset();
+			}
+			else {
+				this->clock.resume();
+			}
+			this->pointer = &value;
+			this->start_value = value;
+			this->end_value = end;
+			this->duration = duration;
+		}
+		void update() {
+			if (!this->is_running()) {
+				return;
+			}
+
+			if (this->clock.has_elapsed(this->duration)) {
+				this->clock.reset_pause();
+				*this->pointer = this->end_value;
+			}
+			else {
+				*this->pointer = this->start_value + (this->end_value - this->start_value) * qpl::smooth_progression(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f());
+			}
+		}
+		bool is_running() const {
+			return this->clock.is_running();
+		}
+
+		qpl::time duration = qpl::secs(1);
+		qpl::halted_clock clock;
+
+		T start_value;
+		T end_value;
+		T* pointer;
+	};
+
+
+	template<typename C, typename T>
+	struct smooth_value_setter {
+
+		void start(T start, std::function<void(C*, T)> set_function, T end, qpl::time duration = qpl::secs(1)) {
+			if (this->is_running()) {
+				this->clock.reset();
+			}
+			else {
+				this->clock.resume();
+			}
+			this->set_function = set_function;
+			this->start_value = start;
+			this->end_value = end;
+			this->duration = duration;
+		}
+
+		void update() {
+			if (!this->is_running()) {
+				return;
+			}
+
+			if (this->clock.has_elapsed(this->duration)) {
+				this->clock.reset_pause();
+				this->set_function(this->end_value);
+			}
+			else {
+				this->set_function(this->start_value + (this->end_value - this->start_value) * qpl::smooth_progression(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f()));
+			}
+
+		}
+		bool is_running() const {
+			return this->clock.is_running();
+		}
+
+		qpl::time duration = qpl::secs(1);
+		qpl::halted_clock clock;
+
+		std::function<void(C*, T)> set_function;
+		T start_value;
+		T end_value;
+		T* pointer;
 	};
 }
 

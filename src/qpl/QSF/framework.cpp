@@ -8,11 +8,23 @@ namespace qsf {
 	void qsf::base_state::clear() {
 		this->framework->window.clear(this->clear_color);
 	}
-	void qsf::base_state::update_on_resize() {
+	void qsf::base_state::call_on_resize() {
 
 	}
-	void qsf::base_state::update_on_close() {
+	void qsf::base_state::call_on_close() {
 
+	}
+	void qsf::base_state::call_after_window_create() {
+
+	}
+	void qsf::base_state::draw_call() {
+		this->framework->draw_call();
+	}
+	bool qsf::base_state::game_loop_segment() {
+		return this->framework->game_loop_segment();
+	}
+	bool qsf::base_state::is_open() const {
+		return this->framework->is_open();
 	}
 	void qsf::base_state::event_update() {
 		sf::Event event;
@@ -83,7 +95,7 @@ namespace qsf {
 	void qsf::base_state::update_close_window() {
 		if (this->event.window_closed() && this->m_allow_exit) {
 			this->framework->window.close();
-			this->update_on_close();
+			this->call_on_close();
 		}
 	}
 	void qsf::base_state::hide_cursor(){
@@ -181,52 +193,68 @@ namespace qsf {
 	bool qsf::base_state::is_exit_allowed() const {
 		return this->m_allow_exit;
 	}
-	qpl::f64 qsf::base_state::frame_time() const {
+	qpl::time qsf::base_state::frame_time() const {
 		return this->framework->frame_time();
 	}
+	qpl::time qsf::base_state::run_time() const {
+		return this->framework->run_time();
+	}
 
+	void qsf::framework::draw_call() {
+		this->states.back()->clear();
+		this->states.back()->drawing();
+		this->window.display();
+	}
+	bool qsf::framework::game_loop_segment() {
+		if (!this->is_created()) {
+			this->create();
+		}
+
+		this->m_frametime = this->m_frametime_clock.elapsed_reset();
+
+		this->states.back()->event_update();
+
+		if (this->states.back()->event.resized()) {
+			auto new_dimension = this->states.back()->event.resized_size();
+			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
+			this->window.setView(sf::View(view));
+			this->m_dimension = new_dimension;
+			this->states.back()->call_on_resize();
+		}
+		this->states.back()->updating();
+		this->states.back()->update_close_window();
+
+		if (this->states.back()->m_pop_this_state) {
+			this->states.pop_back();
+			if (this->states.empty()) {
+				return false;
+			}
+		}
+		this->draw_call();
+		return true;
+	}
 	void qsf::framework::game_loop() {
 		if (!this->is_created()) {
 			this->create();
 		}
 
-		while (this->window.isOpen()) {
-			this->m_frametime = this->m_frametime_clock.elapsed_f_reset();
-
-			this->states.back()->event_update();
-
-			if (this->states.back()->event.resized()) {
-				auto new_dimension = this->states.back()->event.resized_size();
-				sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
-				this->window.setView(sf::View(view));
-				this->m_dimension = new_dimension;
-				this->states.back()->update_on_resize();
+		while (this->is_open()) {
+			if (!this->game_loop_segment()) {
+				break;
 			}
-			this->states.back()->updating();
-			this->states.back()->update_close_window();
-
-			if (this->states.back()->m_pop_this_state) {
-				this->states.pop_back();
-				if (this->states.empty()) {
-					break;
-				}
-			}
-			this->states.back()->clear();
-			this->states.back()->drawing();
-			this->window.display();
 		}
 	}
 	void qsf::framework::set_graph_axis_font(const std::string& font_name) {
 		qsf::drawing_graph.y_axis_text.font_name = font_name;
 	}
 	void qsf::framework::set_graph_color(qsf::rgb color, const std::string& name) {
-		qsf::drawing_graph[name].color = color;
+		qsf::drawing_graph.get_simple_graph(name).color = color;
 	}
 	void qsf::framework::set_graph_thickness(qpl::f64 thickness, const std::string& name) {
-		qsf::drawing_graph[name].thickness = thickness;
+		qsf::drawing_graph.get_simple_graph(name).thickness = thickness;
 	}
 	void qsf::framework::set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name) {
-		qsf::drawing_graph[name].interpolation_steps = interpolation_steps;
+		qsf::drawing_graph.get_simple_graph(name).interpolation_steps = interpolation_steps;
 	}
 	void qsf::framework::set_graph_color(qsf::rgb color) {
 		qsf::drawing_graph.color = color;
@@ -238,12 +266,15 @@ namespace qsf {
 		qsf::drawing_graph.interpolation_steps = interpolation_steps;
 	}
 	void qsf::framework::set_graph_dimension(qsf::vector2f dimension) {
-		qsf::drawing_graph.hitbox.dimension = dimension;
+		qsf::drawing_graph.dimension = dimension;
 	}
 	void qsf::framework::set_graph_position(qsf::vector2f position) {
-		qsf::drawing_graph.hitbox.position = position;
+		qsf::drawing_graph.position = position;
 	}
-	qpl::f64 qsf::framework::frame_time() const {
+	qpl::time qsf::framework::run_time() const {
+		return this->m_run_time_clock.elapsed();
+	}
+	qpl::time qsf::framework::frame_time() const {
 		return this->m_frametime;
 	}
 
@@ -294,7 +325,14 @@ namespace qsf {
 
 			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), this->m_title, this->m_style, settings);
 			this->m_created = true;
+
+			if (this->states.size()) {
+				this->states.back()->call_after_window_create();
+			}
 		}
+	}
+	bool qsf::framework::is_open() const {
+		return this->window.isOpen();
 	}
 	bool qsf::framework::is_created() const {
 		return this->m_created;

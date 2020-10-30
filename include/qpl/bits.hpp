@@ -56,7 +56,7 @@ namespace qpl {
 
 		using holding_type = qpl::conditional<
 			qpl::if_true<(bits <= 64u)>, qpl::ubit<bits>,
-			qpl::default_type, std::array<qpl::u64, qpl::approximate_multiple_up(bits, qpl::u64{ 64 })>>;
+			qpl::default_type, std::array<qpl::u64, qpl::approximate_multiple_up(bits, qpl::u64{ 64 }) / 64>>;
 
 
 		class bitset_proxy {
@@ -84,9 +84,9 @@ namespace qpl {
 
 		class bitset_const_proxy {
 		public:
-			bitset_const_proxy(bitset& data, qpl::u32 index) {
-				this->ptr = &data;
-				this->index = index;
+
+			bitset_const_proxy(const bitset& data, qpl::u32 index) : ptr(&data), index(index) {
+
 			}
 
 			bool get() const {
@@ -126,10 +126,10 @@ namespace qpl {
 				return !(*this == other);
 			}
 
-			const bitset_proxy& operator*() {
+			const bitset_proxy&& operator*() {
 				return bitset_proxy(*ptr, index);
 			}
-			const bitset_const_proxy& operator*() const {
+			const bitset_const_proxy&& operator*() const {
 				return bitset_const_proxy(*ptr, index);
 			}
 
@@ -140,9 +140,8 @@ namespace qpl {
 
 		class bitset_const_iterator {
 		public:
-			bitset_const_iterator(bitset& data, qpl::u32 index) {
-				this->ptr = &data;
-				this->index = index;
+			bitset_const_iterator(const bitset& data, qpl::u32 index) : ptr(&data), index(index) {
+
 			}
 
 			bitset_const_iterator& operator++() {
@@ -167,7 +166,7 @@ namespace qpl {
 			}
 
 		private:
-			const bitset* ptr;
+			const bitset* const ptr;
 			qpl::u32 index;
 		};
 
@@ -187,7 +186,7 @@ namespace qpl {
 
 		constexpr void clear() {
 			if constexpr (is_array()) {
-				for (auto& i : this->m_data) {
+				for (auto& i : this->data) {
 					i = 0u;
 				}
 			}
@@ -213,6 +212,34 @@ namespace qpl {
 			}
 		}
 
+		std::string string() const {
+			if constexpr (is_array()) {
+				std::ostringstream stream;
+				stream << qpl::prepended_to_string_to_fit(qpl::binary_string(this->data.back()), '0', this->size() % qpl::bits_in_type<qpl::u64>());
+				for (qpl::u32 i = 0u; i < this->data.size() - 1; ++i) {
+					stream << qpl::binary_string_full(this->data[this->data.size() - 2 - i]);
+				}
+				return stream.str();
+			}
+			else {
+				auto str = qpl::binary_string(this->data);
+				return qpl::prepended_to_string_to_fit(str, '0', this->size());
+			}
+		}
+		std::string string_full() const {
+			if constexpr (is_array()) {
+				std::ostringstream stream;
+				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+					stream << qpl::binary_string_full(this->data[this->data.size() - 1 - i]);
+				}
+				return stream.str();
+			}
+			else {
+				auto str = qpl::binary_string(this->data);
+				return qpl::prepended_to_string_to_fit(str, '0', this->size());
+			}
+		}
+
 		bitset_iterator begin() {
 			return bitset_iterator(*this, 0u);
 		}
@@ -234,11 +261,27 @@ namespace qpl {
 		}
 
 
+
 		bitset_proxy operator[](qpl::u32 index) {
 			return bitset_proxy(*this, index);
 		}
 		bitset_const_proxy operator[](qpl::u32 index) const {
-			return bitset_const_proxy(*this, index);
+			bitset_const_proxy result(*this, index);
+			return result;
+		}
+
+		bitset_proxy front() {
+			return bitset_proxy(*this, 0u);
+		}
+		bitset_const_proxy front() const {
+			return bitset_const_proxy(*this, 0u);
+		}
+
+		bitset_proxy back() {
+			return bitset_proxy(*this, this->size() - 1);
+		}
+		bitset_const_proxy back() const {
+			return bitset_const_proxy(*this, this->size() - 1);
 		}
 
 	private:

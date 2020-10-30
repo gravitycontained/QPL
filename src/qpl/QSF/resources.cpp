@@ -16,6 +16,15 @@ namespace qsf {
 		}
 		this->sprites[name].setTexture(this->textures[name]);
 	}
+	bool qsf::resources::find_font(const std::string& name) const {
+		return this->fonts.find(name) != this->fonts.cend();
+	}
+	bool qsf::resources::find_texture(const std::string& name) const {
+		return this->textures.find(name) != this->textures.cend();
+	}
+	bool qsf::resources::find_sprite(const std::string& name) const {
+		return this->sprites.find(name) != this->sprites.cend();
+	}
 
 	sf::Font& qsf::resources::get_font(const std::string& name) {
 		if (this->fonts.find(name) == this->fonts.cend()) {
@@ -75,6 +84,16 @@ namespace qsf {
 	}
 	sf::Sprite& qsf::get_sprite(const std::string& name) {
 		return qsf::detail::resources.get_sprite(name);
+	}
+
+	bool qsf::find_font(const std::string& name) {
+		return qsf::detail::resources.find_font(name);
+	}
+	bool qsf::find_texture(const std::string& name) {
+		return qsf::detail::resources.find_texture(name);
+	}
+	bool qsf::find_sprite(const std::string& name){
+		return qsf::detail::resources.find_sprite(name);
 	}
 }
 #endif

@@ -11,12 +11,12 @@
 
 namespace qpl {
 	template<qpl::size bits, qpl::size N>
-	class perlin_noise {
+	class perlin_noise_N {
 	public:
-		perlin_noise() {
+		perlin_noise_N() {
 			this->construct();
 		}
-		perlin_noise(qpl::u32 seed) {
+		perlin_noise_N(qpl::u32 seed) {
 			this->set_seed(seed);
 		}
 		void set_seed(qpl::u32 seed) {
@@ -94,9 +94,30 @@ namespace qpl {
 			}
 		}
 
+
 		qpl::u32 m_seed;
 		qpl::random_engine<64> m_engine;
 		std::array<qpl::ibit<bits>, N> m_hash;
+	};
+
+	using perlin_noise = perlin_noise_N<64, 256>;
+
+	struct perlin_noise_generator {
+		perlin_noise_generator() {
+			this->noise.set_seed_random();
+		}
+
+		QPLDLL qpl::f64 get() const;
+		QPLDLL qpl::f64 update(qpl::f64 fx, qpl::f64 fy = 0.0);
+		QPLDLL void set_octaves(qpl::f64 octaves);
+		QPLDLL void set_frequency(qpl::f64 frequency);
+
+		qpl::f64 value = 0.0;
+		qpl::f64 progress_x = 0.0;
+		qpl::f64 progress_y = 0.0;
+		qpl::f64 octaves = 12;
+		qpl::f64 frequency = 3.0;
+		perlin_noise noise;
 	};
 }
 

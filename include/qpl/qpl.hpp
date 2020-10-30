@@ -8,6 +8,7 @@
 #include <qpl/bigint.hpp>
 #include <qpl/bits.hpp>
 #include <qpl/date.hpp>
+#include <qpl/decision_tree.hpp>
 #include <qpl/filesys.hpp>
 #include <qpl/intrinsics.hpp>
 #include <qpl/lut.hpp>
@@ -41,6 +42,7 @@
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
+#include <qpl/QSF/socket.hpp>
 #include <qpl/QSF/vector.hpp>
 #endif
 

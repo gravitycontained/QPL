@@ -43,6 +43,8 @@ namespace qpl {
 
 		QPLDLL std::string string_non_zero() const;
 		QPLDLL std::string string() const;
+		QPLDLL std::string string_until_sec() const;
+		QPLDLL std::string string_until_ms() const;
 		QPLDLL std::string string_full() const;
 		QPLDLL static time clock_time();
 		QPLDLL qpl::f64 frequency() const;
@@ -227,6 +229,7 @@ namespace qpl {
 	QPLDLL std::string get_current_time_string_ymd_hmsms_compact();
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
 
+	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed);
 
 	namespace detail {
 		QPLDLL extern std::unordered_map<std::string, std::unordered_map<std::string, qpl::halted_clock>> sub_benchmark_clocks;
@@ -249,6 +252,7 @@ namespace qpl {
 
 	QPLDLL void begin_benchmark_segments();
 	QPLDLL void print_benchmark();
+	QPLDLL void print_benchmark(const std::string& name);
 
 	QPLDLL void reset_time_signal();
 	QPLDLL bool get_time_signal(double seconds);

@@ -188,46 +188,46 @@ namespace qpl {
 			qpl::if_true<bits == 64u>, qpl::mt19937_64>;
 
 		void seed(qpl::u64 value) {
-			this->m_engine.seed(value);
+			this->engine.seed(value);
 		}
 		void seed(const std::seed_seq& seq) {
-			this->m_engine.seed(seq);
+			this->engine.seed(seq);
 		}
 		void seed_time() {
-			this->m_engine.seed(static_cast<qpl::u32>(qpl::time::clock_time()));
+			this->engine.seed(static_cast<qpl::u32>(qpl::time::clock_time()));
 		}
 		auto get_current() const {
-			return this->m_engine.get_current();
+			return this->engine.get_current();
 		}
 		void discard(qpl::u64 count) {
-			this->m_engine.discard(count);
+			this->engine.discard(count);
 		}
 		void seed_random() {
 			std::array<qpl::u32, random_engine::type::state_size * random_engine::type::word_size / qpl::bits_in_type<qpl::u32>()> random_data;
 			std::random_device source;
 			std::generate(std::begin(random_data), std::end(random_data), std::ref(source));
 			std::seed_seq seeds(std::begin(random_data), std::end(random_data));
-			this->m_engine.seed(seeds);
+			this->engine.seed(seeds);
 		}
 		template<typename T>
 		T generate(const qpl::distribution<T>& dist) {
-			return dist.m_dist(this->m_engine);
+			return dist.m_dist(this->engine);
 		}
 		template<typename T>
 		T generate(T min, T max) {
 			qpl::distribution<T> dist(min, max);
-			return dist.m_dist(this->m_engine);
+			return dist.m_dist(this->engine);
 		}
 		template<typename T>
 		T generate(T max) {
 			qpl::distribution<T> dist(max);
-			return dist.m_dist(this->m_engine);
+			return dist.m_dist(this->engine);
 		}
 		auto generate() {
-			return this->m_engine.generate();
+			return this->engine.generate();
 		}
-	private:
-		type m_engine;
+
+		type engine;
 	};
 
 	namespace detail {
@@ -283,8 +283,8 @@ namespace qpl {
 
 	template<typename C>
 	void shuffle(C& data) {
-		auto rnd = std::default_random_engine{};
-		std::shuffle(data.begin(), data.end(), rnd);
+		
+		std::shuffle(data.begin(), data.end(), qpl::detail::rng.rng.engine);
 	}
 
 	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>

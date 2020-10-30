@@ -14,6 +14,10 @@ namespace qsf {
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
 
+		QPLDLL bool find_font(const std::string& name) const;
+		QPLDLL bool find_texture(const std::string& name) const;
+		QPLDLL bool find_sprite(const std::string& name) const;
+
 		QPLDLL sf::Font& get_font(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
@@ -41,6 +45,10 @@ namespace qsf {
 	QPLDLL sf::Font& get_font(const std::string& name);
 	QPLDLL sf::Texture& get_texture(const std::string& name);
 	QPLDLL sf::Sprite& get_sprite(const std::string& name);
+
+	QPLDLL bool find_font(const std::string& name);
+	QPLDLL bool find_texture(const std::string& name);
+	QPLDLL bool find_sprite(const std::string& name);
 };
 
 #endif

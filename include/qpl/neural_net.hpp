@@ -204,6 +204,7 @@ namespace qpl {
 
 			QPLDLL double get_error() const;
 			QPLDLL double get_accuracy() const;
+			QPLDLL double get_average_accuracy() const;
 			QPLDLL std::size_t get_generation_count() const;
 
 			QPLDLL std::vector<neuron>& operator[](unsigned index);
@@ -224,6 +225,7 @@ namespace qpl {
 			double m_error;
 			bool m_neurons_created;
 			std::size_t m_generation_counter;
+			qpl::f64 accuracy_sum = 0.0;
 		};
 	}
 
@@ -283,6 +285,62 @@ namespace qpl {
 		};
 	}
 
+
+	namespace NN3 {
+		qpl::f64 activation_function(qpl::f64 n);
+		qpl::f64 normal_distribution();
+
+		struct synapse {
+			qpl::f64 weight;
+			qpl::f64 delta_weight;
+		};
+
+		struct neuron {
+			qpl::f64 gradient;
+			qpl::f64 output;
+			qpl::f64 bias;
+			qpl::f64 momentum = 0.0;
+
+			std::vector<synapse> synapses;
+		};
+
+		struct layer {
+			std::vector<neuron> neurons;
+
+
+			QPLDLL void calculate_gradients(layer& previous_layer);
+			QPLDLL void calculate_weights(const layer& previous_layer, qpl::f64 eta, qpl::f64 alpha);
+		};
+
+		struct neural_net {
+			std::vector<qpl::u32> topology;
+			std::vector<layer> layers;
+			qpl::f64 eta;
+			qpl::f64 alpha;
+			qpl::size generation_ctr = 0u;
+			qpl::f64 accuracy = 0.0;
+			qpl::f64 accuracy_sum = 0.0;
+
+			QPLDLL qpl::f64 get_accuracy() const;
+			QPLDLL qpl::f64 get_average_accuracy() const;
+
+			QPLDLL std::vector<qpl::u32> get_topology() const;
+			QPLDLL void set_topology(const std::vector<qpl::u32>& topology);
+			QPLDLL void randomize_weights_and_biases();
+
+			QPLDLL void observe_test() const;
+			QPLDLL qpl::size generation_count() const;
+
+			QPLDLL layer& input_layer();
+			QPLDLL layer& output_layer();
+
+			QPLDLL void show_expected_output(const std::vector<qpl::f64>& expected_output);
+
+			QPLDLL void feed(const std::vector<qpl::f64>& input);
+			QPLDLL void get_output(std::vector<qpl::f64>& destination);
+			QPLDLL void teach(const std::vector<qpl::f64>& expected_output);
+		};
+	}
 
 	namespace NNT {
 		template<typename T>
@@ -438,6 +496,7 @@ namespace qpl {
 				//set input
 				for (qpl::u32 n = 0u; n < this->input_layer().neurons.size(); ++n) {
 					this->input_layer().neurons[n].output = input[n];
+
 				}
 
 				//feed forward

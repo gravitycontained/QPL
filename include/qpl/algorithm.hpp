@@ -6,9 +6,12 @@
 #include <qpl/vardef.hpp>
 #include <cmath>
 #include <vector>
+#include <iostream>
 #include <numeric>
 #include <algorithm>
+#include <iterator>
 #include <iostream>
+#include <span>
 
 namespace qpl {
 	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
@@ -26,6 +29,10 @@ namespace qpl {
 	template<typename T, typename U, typename R = qpl::superior_arithmetic_type<T, U>>
 	constexpr R pow(T a, U b) {
 		return b == U{} ? R{ 1 } : static_cast<R>(a * qpl::pow(a, b - T{ 1 }));
+	}
+	template<typename T>
+	constexpr T square(T value) {
+		return value * value;
 	}
 	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
 	constexpr T factorial(T a) {
@@ -364,6 +371,10 @@ namespace qpl {
 		return result;
 	}
 
+	template<typename It>
+	constexpr auto make_span(It begin, It end) {
+		return std::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
+	}
 
 	template<typename T>
 	std::vector<T> vector_0_to_n(T n, T shift = T{}) {
@@ -439,6 +450,17 @@ namespace qpl {
 		return qpl::max(qpl::max(a, b), rest...);
 	}
 
+
+
+	template<typename T>
+	constexpr T abs(T n) {
+		if constexpr (qpl::is_signed<T>()) {
+			return (n < T{} ? -n : n);
+		}
+		else {
+			return n;
+		}
+	}
 	template<typename T>
 	constexpr T clamp(T min, T value, T max) {
 		return qpl::min(max, qpl::max(min, value));
@@ -503,27 +525,30 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<T> linear_vector_interpolation(const std::vector<T>& data, qpl::size interpolations, qpl::f64 offset = 0.0) {
-		offset = qpl::clamp_0_1(offset);
+	std::vector<std::decay_t<T>> linear_vector_interpolation(std::span<T> data, qpl::size interpolations, qpl::u32 index_skip_size = 1u) {
+		if (data.empty()) {
+			return {};
+		}
+		if (data.size() == 1u) {
+			return std::vector<std::decay_t<T>>{ data[0] };
+		}
 
-		auto index_offset = offset * interpolations;
+		std::vector<std::decay_t<T>> result(qpl::size_cast(data.size() / index_skip_size * interpolations));
 
-		std::vector<T> result(qpl::size_cast(data.size() * interpolations - index_offset));
-
-		T a, b;
+		std::decay_t<T> a, b;
 
 		for (qpl::u32 i = 0u; i < result.size(); ++i) {
-			auto f = (i + index_offset) / static_cast<qpl::f64>(result.size() - 1);
+			auto f = i / static_cast<qpl::f64>(result.size() - 1);
 
-			auto index = static_cast<qpl::u32>(f * (data.size() - 1));
+			auto index = static_cast<qpl::u32>(f * (data.size() / index_skip_size - 1)) * index_skip_size;
 
-			a = b = data[index];
+			a = b = data[index * index_skip_size];
 
-			if (index < data.size() - 1) {
-				b = data[index + 1];
+			if (index < data.size() / index_skip_size - 1) {
+				b = data[(index * index_skip_size) + 1];
 			}
 
-			auto left_over = ((data.size() - 1) * f) - index;
+			auto left_over = ((data.size() / index_skip_size - 1) * f) - index;
 
 			result[i] = qpl::linear_interpolation(a, b, left_over);
 		}
@@ -565,35 +590,38 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<T> cubic_vector_interpolation(const std::vector<T>& data, qpl::size interpolations, qpl::f64 offset = 0.0) {
-		offset = qpl::clamp_0_1(offset);
+	std::vector<std::decay_t<T>> cubic_vector_interpolation(std::span<T> data, qpl::size interpolations, qpl::u32 index_skip_size = 1u) {
+		if (data.empty()) {
+			return {};
+		}
+		if (data.size() == 1u) {
+			return std::vector<std::decay_t<T>>{ data[0] };
+		}
 
-		auto index_offset = offset * interpolations;
-
-		std::vector<T> result(qpl::size_cast(data.size() * interpolations - index_offset));
+		std::vector<std::decay_t<T>> result(qpl::size_cast(data.size() / index_skip_size * interpolations));
 		
-		T a, b, c, d;
+		std::decay_t<T> a, b, c, d;
 
 		for (qpl::u32 i = 0u; i < result.size(); ++i) {
-			auto f = (i + index_offset) / static_cast<qpl::f64>(result.size() - 1);
+			auto f = i / static_cast<qpl::f64>(result.size() - 1);
 
-			auto index = static_cast<qpl::u32>(f * (data.size() - 1));
+			auto index = static_cast<qpl::u32>(f * (data.size() / index_skip_size - 1));
 
-			c = a = b = data[index];
+			c = a = b = data[index * index_skip_size];
 			if (index >= 1u) {
-				a = data[index - 1];
+				a = data[(index - 1) * index_skip_size];
 			}
 
-			if (index < data.size() - 1) {
-				c = data[index + 1];
+			if (index < (data.size() - 1) / index_skip_size) {
+				c = data[(index + 1) * index_skip_size];
 			}
 			d = c;
 
-			if (index < data.size() - 2) {
-				d = data[index + 2];
+			if (index < (data.size() - 2) / index_skip_size) {
+				d = data[(index + 2) * index_skip_size];
 			}
 
-			auto left_over = ((data.size() - 1) * f) - index;
+			auto left_over = ((data.size() / index_skip_size - 1) * f) - index;
 
 			result[i] = qpl::cubic_interpolation(a, b, c, d, left_over);
 		}
@@ -603,37 +631,44 @@ namespace qpl {
 
 
 	template<typename T>
-	std::pair<T, T> cubic_vector_interpolation_min_max(const std::vector<T>& data, qpl::size interpolations, qpl::f64 offset = 0.0) {
-		offset = qpl::clamp_0_1(offset);
+	std::pair<std::decay_t<T>, std::decay_t<T>> cubic_vector_interpolation_min_max(std::span<T> data, qpl::size interpolations, qpl::f64 interpolation_offset = 0.0, qpl::u32 index_skip_size = 1u, std::decay_t<T> low = qpl::type_max<T>(), std::decay_t<T> high = qpl::type_min<T>()) {
+		if (data.empty()) {
+			return std::make_pair(T{}, T{});
+		}
+		if (data.size() == 1u) {
+			return std::make_pair(data[0], data[0]);
+		}
+		
+		interpolation_offset = qpl::clamp_0_1(interpolation_offset);
+		
 
-		auto index_offset = offset * interpolations;
+		auto index_offset = interpolation_offset * interpolations;
 
-		T low = qpl::type_max<T>();
-		T high = qpl::type_min<T>();
+		std::decay_t<T> a, b, c, d;
 
-		T a, b, c, d;
-
-		auto size = qpl::size_cast(data.size() * interpolations - index_offset);
+		auto size = qpl::size_cast(data.size() / index_skip_size * interpolations - index_offset);
 		for (qpl::u32 i = 0u; i < size; ++i) {
 			auto f = (i + index_offset) / static_cast<qpl::f64>(size - 1);
 
-			auto index = static_cast<qpl::u32>(f * (data.size() - 1));
+			auto index = static_cast<qpl::u32>(f * (data.size() / index_skip_size - 1));
 
-			c = a = b = data[index];
+
+
+			c = a = b = data[index * index_skip_size];
 			if (index >= 1u) {
-				a = data[index - 1];
+				a = data[(index - 1) * index_skip_size];
 			}
 
-			if (index < data.size() - 1) {
-				c = data[index + 1];
+			if (index < (data.size() - 1) / index_skip_size) {
+				c = data[(index + 1) * index_skip_size];
 			}
 			d = c;
 
-			if (index < data.size() - 2) {
-				d = data[index + 2];
+			if (index < (data.size() - 2) / index_skip_size) {
+				d = data[(index + 2) * index_skip_size];
 			}
 
-			auto left_over = ((data.size() - 1) * f) - index;
+			auto left_over = ((data.size() / index_skip_size - 1) * f) - index;
 
 			auto point = qpl::cubic_interpolation(a, b, c, d, left_over);
 			

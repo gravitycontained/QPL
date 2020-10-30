@@ -4,7 +4,13 @@
 
 namespace qpl {
 	std::string qpl::str_spaced(const std::string& string, qpl::size length, char prepend) {
+		return qpl::str_rspaced(string, length, prepend);
+	}
+	std::string qpl::str_rspaced(const std::string& string, qpl::size length, char prepend) {
 		return qpl::prepended_to_string_to_fit(string, prepend, length);
+	}
+	std::string qpl::str_lspaced(const std::string& string, qpl::size length, char prepend) {
+		return qpl::appended_to_string_to_fit(string, prepend, length);
 	}
 
 	bool qpl::string_equals_ignore_case(const std::string& a, const std::string& b) {

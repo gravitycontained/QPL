@@ -171,6 +171,7 @@ namespace qsf {
 
 		QPLDLL std::string string() const;
 		QPLDLL std::string hex_string() const;
+		QPLDLL bool is_unset() const;
 
 		QPLDLL qsf::rgb& interpolate(qsf::rgb color, qpl::f64 strength = qpl::f64{ 1 });
 		QPLDLL qsf::rgb interpolated(qsf::rgb color, qpl::f64 strength = qpl::f64{ 1 }) const;

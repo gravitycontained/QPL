@@ -59,6 +59,7 @@ namespace qsf {
 
 		QPLDLL void create();
 		QPLDLL bool is_created() const;
+		QPLDLL bool is_open() const;
 		QPLDLL void set_info(const std::string& title, qsf::vector2u dimension, qpl::u32 style);
 		QPLDLL void set_title(const std::string& title);
 		QPLDLL void set_dimension(qsf::vector2u dimension);
@@ -68,7 +69,10 @@ namespace qsf {
 		QPLDLL qsf::vector2u get_window_position() const;
 		QPLDLL void show_cursor();
 		QPLDLL void set_cursor_position(qsf::vector2i position);
+		QPLDLL void draw_call();
+		QPLDLL bool game_loop_segment();
 		QPLDLL void game_loop();
+
 
 		template<typename T>
 		QPLDLL void draw_graph(const std::vector<T>& data, const std::string name = "") {
@@ -90,16 +94,18 @@ namespace qsf {
 		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
 		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
 		QPLDLL void set_graph_position(qsf::vector2f position);
+		QPLDLL qpl::time run_time() const;
+		QPLDLL qpl::time frame_time() const;
 
-		QPLDLL qpl::f64 frame_time() const;
 
 		std::vector<std::unique_ptr<qsf::base_state>> states;
 		sf::RenderWindow window;
 		std::string m_title;
 		qsf::vector2u m_dimension;
 		qpl::u32 m_style;
+		qpl::clock m_run_time_clock;
 		qpl::clock m_frametime_clock;
-		qpl::f64 m_frametime;
+		qpl::time m_frametime;
 		bool m_created;
 	};
 	
@@ -120,9 +126,12 @@ namespace qsf {
 		virtual void drawing() = 0;
 		
 		QPLDLL virtual void clear();
-		QPLDLL virtual void update_on_resize();
-		QPLDLL virtual void update_on_close();
+		QPLDLL virtual void call_on_resize();
+		QPLDLL virtual void call_on_close();
+		QPLDLL virtual void call_after_window_create();
 
+		QPLDLL void draw_call();
+		QPLDLL bool game_loop_segment();
 		template<typename T>
 		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
@@ -132,6 +141,11 @@ namespace qsf {
 				drawable.draw(this->framework->window, states);
 			}
 		}
+		template<typename T>
+		QPLDLL void update(T& updatable) {
+			updatable.update(this->event);
+		}
+		QPLDLL bool is_open() const;
 		QPLDLL void event_update();
 		QPLDLL void update_close_window();
 		QPLDLL void hide_cursor();
@@ -182,7 +196,8 @@ namespace qsf {
 		QPLDLL void allow_exit();
 		QPLDLL void disallow_exit();
 		QPLDLL bool is_exit_allowed() const;
-		QPLDLL qpl::f64 frame_time() const;
+		QPLDLL qpl::time frame_time() const;
+		QPLDLL qpl::time run_time() const;
 
 		qsf::framework* framework;
 		qsf::event_info event;

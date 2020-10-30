@@ -159,6 +159,9 @@ namespace qsf {
 		}
 		return stream.str();
 	}
+	bool qsf::rgb::is_unset() const {
+		return (*this == qsf::rgb::unset);
+	}
 
 
 	qsf::rgb& qsf::rgb::interpolate(qsf::rgb color, qpl::f64 strength) {

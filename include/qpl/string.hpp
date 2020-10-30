@@ -15,6 +15,7 @@
 #include <array>
 #include <vector>
 #include <iomanip>
+#include <bitset>
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -50,9 +51,19 @@ namespace qpl {
 	QPLDLL std::string to_string(const std::string& first);
 	//todo: add charconv
 	QPLDLL std::string str_spaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
+	QPLDLL std::string str_rspaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
+	QPLDLL std::string str_lspaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
 	template<typename T>
 	std::string str_spaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
 		return qpl::str_spaced(qpl::to_string(n), length, prepend);
+	}
+	template<typename T>
+	std::string str_rspaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
+		return qpl::str_rspaced(qpl::to_string(n), length, prepend);
+	}
+	template<typename T>
+	std::string str_lspaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
+		return qpl::str_lspaced(qpl::to_string(n), length, prepend);
 	}
 
 
@@ -80,6 +91,12 @@ namespace qpl {
 		std::ostringstream stream;
 		((stream << args), ...);
 		return stream.str();
+	}
+	template<typename... Args>
+	const char* to_cstring(Args&&... args) {
+		std::ostringstream stream;
+		((stream << args), ...);
+		return stream.str().c_str();
 	}
 	template<typename T, typename... Args>
 	std::string to_string_dash(const T& first, Args&&... args) {
@@ -1231,6 +1248,7 @@ namespace qpl {
 		}
 
 		std::ostringstream stream;
+		std::ostringstream digits;
 
 		if constexpr (qpl::is_signed<T>()) {
 			if (value < T{}) {
@@ -1238,13 +1256,12 @@ namespace qpl {
 				value *= T{ -1 };
 			}
 		}
+		stream << prefix;
+
 
 		auto logapprox = qpl::log_approximation(base, value);
 		T mod;
 
-		stream << prefix;
-
-		std::ostringstream digits;
 		switch (base_format) {
 		case base_format::base36l:
 			while (logapprox) {

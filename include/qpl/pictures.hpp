@@ -41,9 +41,24 @@ namespace qpl {
 
 		}
 
-		constexpr static qpl::size bytes() {
+		constexpr static qpl::size pixel_bytes() {
 			return qpl::size{ 3 };
 		}
+	};
+
+	struct pixels {
+		QPLDLL void load(std::string_view sv);
+		QPLDLL void load_bmp(std::string_view sv);
+		QPLDLL void set_dimension(qpl::u32 width, qpl::u32 height);
+		QPLDLL pixels rectangle(qpl::u32 x, qpl::u32 y, qpl::u32 width, qpl::u32 height) const;
+		qpl::size size() const;
+
+		QPLDLL std::string generate_bmp_string() const;
+		QPLDLL void generate_bmp(std::string filename) const;
+		
+		std::vector<pixel_rgb> data;
+		qpl::u32 width = 0u;
+		qpl::u32 height = 0u;
 	};
 
 	namespace detail {
@@ -53,8 +68,6 @@ namespace qpl {
 		QPLDLL std::array<char, info_header_size> create_bitmap_info_header(qpl::size width, qpl::size height);
 		QPLDLL std::array<char, file_header_size> create_bitmap_file_header(qpl::size width, qpl::size height, qpl::size padding_size);
 	}
-	QPLDLL std::string generate_bmp_string(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height);
-	QPLDLL void generate_bmp(const std::vector<qpl::pixel_rgb>& image, qpl::size width, qpl::size height, const std::string& filename);
 }
 
 #endif
