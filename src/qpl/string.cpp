@@ -69,10 +69,6 @@ namespace qpl {
 			return string;
 		}
 
-		//abcabcabc
-		//....... 
-		//         x
-
 		auto multiple = ((string.length() - 1) / prepend.length() + 1) * prepend.length();
 		auto left = multiple - string.length();
 		auto full = length < multiple ? 0u : ((length - multiple) / prepend.length());

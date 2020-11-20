@@ -70,6 +70,8 @@ namespace qsf {
 		QPLDLL void show_cursor();
 		QPLDLL void set_cursor_position(qsf::vector2i position);
 		QPLDLL void draw_call();
+		QPLDLL void display();
+		QPLDLL bool game_loop_basic_segment();
 		QPLDLL bool game_loop_segment();
 		QPLDLL void game_loop();
 
@@ -131,6 +133,8 @@ namespace qsf {
 		QPLDLL virtual void call_after_window_create();
 
 		QPLDLL void draw_call();
+		QPLDLL void display();
+		QPLDLL bool game_loop_basic_segment();
 		QPLDLL bool game_loop_segment();
 		template<typename T>
 		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
@@ -145,6 +149,7 @@ namespace qsf {
 		QPLDLL void update(T& updatable) {
 			updatable.update(this->event);
 		}
+		QPLDLL void create();
 		QPLDLL bool is_open() const;
 		QPLDLL void event_update();
 		QPLDLL void update_close_window();

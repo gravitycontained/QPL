@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <qpl/algorithm.hpp>
 #include <qpl/type_traits.hpp>
+#include <qpl/string.hpp>
 #include <qpl/vardef.hpp>
 #include <array>
 

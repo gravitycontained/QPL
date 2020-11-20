@@ -20,14 +20,24 @@ namespace qsf {
 	void qsf::base_state::draw_call() {
 		this->framework->draw_call();
 	}
+	void qsf::base_state::display() {
+		this->framework->display();
+	}
+	bool qsf::base_state::game_loop_basic_segment() {
+		return this->framework->game_loop_basic_segment();
+	}
 	bool qsf::base_state::game_loop_segment() {
 		return this->framework->game_loop_segment();
+	}
+	void qsf::base_state::create() {
+		return this->framework->create();
 	}
 	bool qsf::base_state::is_open() const {
 		return this->framework->is_open();
 	}
 	void qsf::base_state::event_update() {
 		sf::Event event;
+
 
 		this->event.m_left_mouse_clicked = false;
 		this->event.m_left_mouse_released = false;
@@ -205,6 +215,9 @@ namespace qsf {
 		this->states.back()->drawing();
 		this->window.display();
 	}
+	void qsf::framework::display() {
+		this->window.display();
+	}
 	bool qsf::framework::game_loop_segment() {
 		if (!this->is_created()) {
 			this->create();
@@ -231,6 +244,34 @@ namespace qsf {
 			}
 		}
 		this->draw_call();
+		return true;
+	}
+
+	bool qsf::framework::game_loop_basic_segment() {
+		if (!this->is_created()) {
+			this->create();
+		}
+
+		this->m_frametime = this->m_frametime_clock.elapsed_reset();
+
+		this->states.back()->event_update();
+
+		if (this->states.back()->event.resized()) {
+			auto new_dimension = this->states.back()->event.resized_size();
+			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
+			this->window.setView(sf::View(view));
+			this->m_dimension = new_dimension;
+			this->states.back()->call_on_resize();
+		}
+
+		this->states.back()->update_close_window();
+
+		if (this->states.back()->m_pop_this_state) {
+			this->states.pop_back();
+			if (this->states.empty()) {
+				return false;
+			}
+		}
 		return true;
 	}
 	void qsf::framework::game_loop() {

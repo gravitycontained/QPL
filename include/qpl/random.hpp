@@ -296,6 +296,46 @@ namespace qpl {
 		}
 	}
 
+	
+
+	template<typename T>
+	qpl::u32 random_index_biased(std::vector<T> weights) {
+		std::decay_t<T> sum = 0;
+		for (auto& i : weights) {
+			sum += i;
+		}
+
+		auto index = qpl::random(std::decay_t<T>{}, sum - 1);
+		std::decay_t<T> target_sum = 0;
+		for (qpl::u32 i = 0u; i < weights.size(); ++i) {
+			target_sum += weights[i];
+			if (index < target_sum) {
+				return i;
+			}
+		}
+		return weights.size();
+	}
+
+	template<typename T>
+	qpl::u32 random_index_biased(std::span<T> weights) {
+		std::decay_t<T> sum = 0;
+		for (auto& i : weights) {
+			sum += i;
+		}
+		if (sum == 0) {
+			return 0u;
+		}
+		auto index = qpl::random(T{}, sum - 1);
+		std::decay_t<T> target_sum = 0;
+		for (qpl::u32 i = 0u; i < weights.size(); ++i) {
+			target_sum += weights[i];
+			if (index < target_sum) {
+				return i;
+			}
+		}
+		return weights.size();
+	}
+
 	template<typename T, typename U, typename ...Args>
 	T random_element(T&& first, U&& second, Args&&... n) {
 		return qpl::random_element(std::vector<T>{ first, second, n... });
