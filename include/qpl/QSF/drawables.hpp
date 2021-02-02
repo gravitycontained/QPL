@@ -5,13 +5,13 @@
 #if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/QSF/vector.hpp>
-#include <unordered_map>
-#include <SFML/Graphics.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/string.hpp>
+
 #include <functional>
 #include <string>
-
+#include <unordered_map>
+#include <SFML/Graphics.hpp>
 
 namespace qsf {
 	struct vtext;
@@ -167,6 +167,7 @@ namespace qsf {
 		QPLDLL void centerize();
 		QPLDLL void centerize_x();
 		QPLDLL void centerize_y();
+		QPLDLL void move(qsf::vector2f delta);
 
 		qsf::text() {
 
@@ -759,6 +760,26 @@ namespace qsf {
 		bool positions_set = false;
 	};
 
+	struct tile_map {
+
+		QPLDLL void set_texture_ptr(sf::Texture& texture, qsf::vector2u texture_tile_dimension);
+		QPLDLL void set_texture_ptr(sf::Texture& texture, qpl::u32 texture_tile_width);
+		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qsf::rgb color);
+		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width);
+		QPLDLL void zoom(qpl::f32 delta, qsf::vector2f screen_position);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		sf::VertexArray vertices;
+		const sf::Texture* texture_ptr;
+		bool texture_ptr_set = false;
+		qsf::vector2u texture_tile_dimension;
+
+		qsf::vector2f position = { 0, 0 };
+		qsf::vector2f scale = { 1, 1 };
+		qpl::f32 rotation = 0;
+
+	};
+
 	struct vgraph {
 		
 		vgraph() {
@@ -771,7 +792,6 @@ namespace qsf {
 
 
 		struct data_point_info {
-
 			qpl::f64 data = 0.0;
 			qpl::f64 thickness = qpl::f64_min;
 			qsf::frgb color = qsf::rgb::unset;
@@ -1126,6 +1146,9 @@ namespace qsf {
 
 	struct vbutton {
 
+		vbutton() {
+			this->background.set_color(qsf::rgb::black);
+		}
 		QPLDLL void set_dimension(qsf::vector2f dimension);
 		QPLDLL void set_position(qsf::vector2f position);
 		QPLDLL void set_center(qsf::vector2f center);
@@ -1151,8 +1174,8 @@ namespace qsf {
 		qsf::rgb background_color;
 		qsf::vtext text;
 		qsf::vrectangle background;
-		bool hovering;
-		bool clicked;
+		bool hovering = false;
+		bool clicked = false;
 	};
 
 	struct button {
@@ -1161,6 +1184,9 @@ namespace qsf {
 		QPLDLL qsf::button& operator=(const qsf::vbutton& button);
 
 
+		button() {
+			this->background.set_color(qsf::rgb::black);
+		}
 
 		QPLDLL void set_dimension(qsf::vector2f dimension);
 		QPLDLL void set_position(qsf::vector2f position);
@@ -1184,8 +1210,8 @@ namespace qsf {
 		qsf::rgb background_color = qsf::rgb::black;
 		qsf::text text;
 		qsf::rectangle background;
-		bool hovering;
-		bool clicked;
+		bool hovering = false;
+		bool clicked = false;
 	};
 
 	namespace detail {

@@ -43,6 +43,7 @@
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/socket.hpp>
+#include <qpl/QSF/utility.hpp>
 #include <qpl/QSF/vector.hpp>
 #endif
 

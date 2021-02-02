@@ -12,6 +12,7 @@
 #include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
+#include <qpl/QSF/utility.hpp>
 #include <qpl/time.hpp>
 
 namespace qsf {
@@ -152,6 +153,17 @@ namespace qsf {
 			}
 		}
 		template<typename T>
+		QPLDLL void draw(const T& drawable, qsf::view_rectangle view) {
+			sf::RenderStates states;
+			states.transform.scale(qsf::vector2f(1, 1) / view.scale).translate(-view.position).rotate(view.rotation);
+			if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->framework->window.draw(drawable, states);
+			}
+			else {
+				drawable.draw(this->framework->window, states);
+			}
+		}
+		template<typename T>
 		QPLDLL void update(T& updatable) {
 			updatable.update(this->event);
 		}
@@ -166,6 +178,7 @@ namespace qsf {
 		QPLDLL qsf::vector2u get_window_position() const;
 
 		QPLDLL qsf::vector2i dimension() const;
+		QPLDLL qsf::vector2f center() const;
 
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);

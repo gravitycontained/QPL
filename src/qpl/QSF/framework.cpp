@@ -126,6 +126,9 @@ namespace qsf {
 	qsf::vector2i qsf::base_state::dimension() const {
 		return this->framework->m_dimension;
 	}
+	qsf::vector2f qsf::base_state::center() const {
+		return qsf::vector2f(this->framework->m_dimension) / 2;
+	}
 	void qsf::base_state::add_font(const std::string& name, const std::string& path) {
 		qsf::add_font(name, path);
 	}

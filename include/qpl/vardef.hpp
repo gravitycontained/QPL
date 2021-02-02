@@ -364,6 +364,19 @@ namespace qpl {
 	constexpr qpl::f64 e_32 = 2.7182818284590452353602874713526624977572f;
 	constexpr qpl::f64 ln2 = 0.69314718055994530941723212145817;
 	constexpr qpl::f64 log2_log10 = 3.3219280948873623478703194294894;
+
+	constexpr qpl::size f32_mantissa_size() {
+		return 23;
+	}
+	constexpr qpl::size f32_exponent_size() {
+		return 8;
+	}		
+	constexpr qpl::size f64_mantissa_size() {
+		return 52;
+	}
+	constexpr qpl::size f64_exponent_size() {
+		return 11;
+	}
 }
 
 #endif 

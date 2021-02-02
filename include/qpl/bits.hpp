@@ -394,10 +394,10 @@ namespace qpl {
 			memcpy(this, &value, sizeof(double));
 		}
 		constexpr static qpl::size mantissa_size() {
-			return 52;
+			return qpl::f64_mantissa_size();
 		}
 		constexpr static qpl::size exponent_size() {
-			return 11;
+			return qpl::f64_exponent_size();
 		}
 
 		qpl::u64 mantissa : 52;
@@ -420,11 +420,12 @@ namespace qpl {
 		float_content(float value) {
 			memcpy(this, &value, sizeof(float));
 		}
+
 		constexpr static qpl::size mantissa_size() {
-			return 23;
+			return qpl::f32_mantissa_size();
 		}
 		constexpr static qpl::size exponent_size() {
-			return 8;
+			return qpl::f32_exponent_size();
 		}
 		float to_float() const {
 			float result;

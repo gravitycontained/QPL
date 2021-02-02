@@ -9,6 +9,7 @@
 #include <array>
 
 namespace qpl {
+
 	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
 	constexpr inline C string_to_container_memory(const std::string& data) {
 		C result;

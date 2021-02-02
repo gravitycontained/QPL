@@ -488,17 +488,14 @@ namespace qpl {
 		std::decay_t<decltype(*(std::declval<C>().begin()))>, 
 		qpl::default_error>;
 
-	struct double_content;
-	struct float_content;
-
 	template<class F>
 	constexpr qpl::size mantissa_bit_size() {
 		if constexpr (qpl::is_stl_floating_point<F>()) {
 			if constexpr (qpl::is_same<F, float>()) {
-				return qpl::float_content::mantissa_size();
+				return qpl::f32_mantissa_size();
 			}
 			else if constexpr (qpl::is_same<F, double>()) {
-				return qpl::double_content::mantissa_size();
+				return qpl::f64_mantissa_size();
 			}
 		}
 		else if constexpr (qpl::is_qpl_floating_point<F>()) {
@@ -512,10 +509,10 @@ namespace qpl {
 	constexpr qpl::size exponent_bit_size() {
 		if constexpr (qpl::is_stl_floating_point<F>()) {
 			if constexpr (qpl::is_same<F, float>()) {
-				return qpl::float_content::exponent_size();
+				return qpl::f32_exponent_size();
 			}
 			else if constexpr (qpl::is_same<F, double>()) {
-				return qpl::double_content::exponent_size();
+				return qpl::f64_exponent_size();
 			}
 		}
 		else if constexpr (qpl::is_qpl_floating_point<F>()) {

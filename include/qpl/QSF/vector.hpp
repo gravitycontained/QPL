@@ -3,6 +3,7 @@
 #pragma once
 
 #if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/string.hpp>
@@ -147,8 +148,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator+(const vector2<U>& other) const {
-			auto copy = *this;
+		auto operator+(const vector2<U>& other) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy += other;
 			return copy;
 		}
@@ -159,8 +160,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator+(U u) const {
-			auto copy = *this;
+		auto operator+(U u) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy += u;
 			return copy;
 		}
@@ -172,8 +173,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator-(const vector2<U>& other) const {
-			auto copy = *this;
+		auto operator-(const vector2<U>& other) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy -= other;
 			return copy;
 		}
@@ -184,8 +185,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator-(U u) const {
-			auto copy = *this;
+		auto operator-(U u) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy -= u;
 			return copy;
 		}
@@ -197,8 +198,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator/(const vector2<U>& other) const {
-			auto copy = *this;
+		auto operator/(const vector2<U>& other) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy /= other;
 			return copy;
 		}
@@ -209,8 +210,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator/(U u) const {
-			auto copy = *this;
+		auto operator/(U u) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy /= u;
 			return copy;
 		}
@@ -222,8 +223,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator*(const vector2<U>& other) const {
-			auto copy = *this;
+		auto operator*(const vector2<U>& other) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy *= other;
 			return copy;
 		}
@@ -234,8 +235,8 @@ namespace qsf {
 			return *this;
 		}
 		template<typename U>
-		vector2<T> operator*(U u) const {
-			auto copy = *this;
+		auto operator*(U u) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy *= u;
 			return copy;
 		}

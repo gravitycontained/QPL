@@ -243,6 +243,9 @@ namespace qsf {
 		this->m_text.setOrigin(0.0f, textRect.top + textRect.height / 2.0f);
 		this->m_text.setPosition(pos);
 	}
+	void qsf::text::move(qsf::vector2f delta) {
+		this->m_text.move(delta);
+	}
 	qsf::vrectangle qsf::text::hitbox() const {
 		qsf::vrectangle rectangle;
 		auto local_bounds = this->m_text.getLocalBounds();
@@ -1408,6 +1411,82 @@ namespace qsf {
 	void qsf::pixel_image::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		this->vertices.draw(window, states);
 	}
+
+
+	void qsf::tile_map::set_texture_ptr(sf::Texture& texture, qsf::vector2u texture_tile_dimension) {
+		this->texture_ptr = &texture;
+		this->texture_tile_dimension = texture_tile_dimension;
+		this->texture_ptr_set = true;
+	}
+	void qsf::tile_map::set_texture_ptr(sf::Texture& texture, qpl::u32 texture_tile_width) {
+		this->set_texture_ptr(texture, qsf::vector2u(texture_tile_width, texture_tile_width));
+	}
+	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::u32 width, qsf::rgb color) {
+		if (!this->texture_ptr_set) {
+			qpl::println("tile_map::create: texture_ptr not set"); 
+			return;
+		}
+
+		this->vertices.setPrimitiveType(sf::Quads);
+		this->vertices.resize(indices.size() * 4);
+		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+		if (color == qsf::rgb::white) {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto [y, x] = qpl::div_mod(i, width);
+				auto index = indices[i];
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				this->vertices[i * 4 + 0].position = sf::Vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 1].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 2].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 3].position = sf::Vector2f(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				this->vertices[i * 4 + 0].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 1].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 2].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 3].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+			}
+		}
+		else {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto [y, x] = qpl::div_mod(i, width);
+				auto index = indices[i];
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				this->vertices[i * 4 + 0].position = sf::Vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 1].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 2].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 3].position = sf::Vector2f(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				this->vertices[i * 4 + 0].color = color;
+				this->vertices[i * 4 + 1].color = color;
+				this->vertices[i * 4 + 2].color = color;
+				this->vertices[i * 4 + 3].color = color;
+
+				this->vertices[i * 4 + 0].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 1].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 2].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				this->vertices[i * 4 + 3].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+			}
+		}
+		
+	}
+	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::u32 width) {
+		this->create(indices, width, qsf::rgb::white);
+	}
+	void qsf::tile_map::zoom(qpl::f32 delta, qsf::vector2f screen_position) {
+		this->scale *= (1 + delta);
+		this->position += (screen_position * delta) / (this->scale);
+	}
+	void qsf::tile_map::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		states.transform.scale(this->scale).translate(-this->position).rotate(this->rotation);
+		states.texture = this->texture_ptr;
+		window.draw(this->vertices, states);
+	}
+
 
 	void qsf::vgraph::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::graph = *this;
