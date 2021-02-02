@@ -230,6 +230,16 @@ namespace qpl {
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
 
 	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed);
+	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::clock timer);
+
+	template<typename T, typename U, QPLCONCEPT(qpl::is_integer<T>() && qpl::is_integer<U>())>
+	qpl::time get_remaining_time(T start, U end, qpl::time elapsed) {
+		return qpl::get_remaining_time(qpl::f64_cast(start) / end, elapsed);
+	}
+	template<typename T, typename U, QPLCONCEPT(qpl::is_integer<T>() && qpl::is_integer<U>())>
+	qpl::time get_remaining_time(T start, U end, qpl::clock timer) {
+		return qpl::get_remaining_time(qpl::f64_cast(start) / end, timer.elapsed());
+	}
 
 	namespace detail {
 		QPLDLL extern std::unordered_map<std::string, std::unordered_map<std::string, qpl::halted_clock>> sub_benchmark_clocks;
@@ -244,7 +254,8 @@ namespace qpl {
 
 	QPLDLL void begin_benchmark_end_previous(const std::string& name);
 	QPLDLL void begin_benchmark_end_previous(const std::string& sub, const std::string& name);
-	QPLDLL void begin_benchmark(const std::string& name);
+	QPLDLL qpl::halted_clock get_benchmark(const std::string& name = "");
+	QPLDLL void begin_benchmark(const std::string& name = "");
 	QPLDLL void begin_benchmark(const std::string& sub, const std::string& name);
 	QPLDLL void end_benchmark();
 	QPLDLL void end_benchmark(const std::string& name);

@@ -41,6 +41,12 @@ namespace qsf {
 			this->states.back()->framework = this;
 			this->states.back()->init();
 		}
+		template<typename C>
+		void add_state(C& state) {
+			this->states.push_back(std::make_unique<C>(state));
+			this->states.back()->framework = this;
+			this->states.back()->init();
+		}
 
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
@@ -201,6 +207,12 @@ namespace qsf {
 		QPLDLL void allow_exit();
 		QPLDLL void disallow_exit();
 		QPLDLL bool is_exit_allowed() const;
+		QPLDLL void allow_clear();
+		QPLDLL void disallow_clear();
+		QPLDLL bool is_clear_allowed() const;
+		QPLDLL void allow_display();
+		QPLDLL void disallow_display();
+		QPLDLL bool is_display_allowed() const;
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::time run_time() const;
 
@@ -210,6 +222,8 @@ namespace qsf {
 		sf::Color clear_color = sf::Color::Black;
 		bool m_pop_this_state = false;
 		bool m_allow_exit = true;
+		bool m_allow_clear = true;
+		bool m_allow_display = true;
 	};
 
 }

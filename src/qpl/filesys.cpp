@@ -1578,6 +1578,9 @@ namespace qpl {
         qpl::size qpl::filesys::paths::size() const {
             return this->m_paths.size();
         }
+        bool qpl::filesys::paths::empty() const {
+            return this->m_paths.empty();
+        }
         qpl::size qpl::filesys::paths::capacity() const {
             return this->m_paths.capacity();
         }
@@ -2384,6 +2387,30 @@ namespace qpl {
             return static_cast<qpl::f64>(ctr) / sum;
         }
 
+        void qpl::filesys::split_file(const qpl::filesys::path& path, qpl::u32 bytes) {
+            auto content = qpl::filesys::read_file(path);
+            auto splits = (content.size() - 1) / bytes + 1;
+
+            for (int i = 0; i < splits; ++i) {
+                auto file_name = qpl::to_string(path.string(), ".PART", qpl::prepended_to_string_to_fit(i, '0', std::log(splits) / std::log(10) + 1));
+                std::ofstream file(file_name.c_str(), std::ios::binary);
+                if (!file.good()) {
+                    qpl::println("there was a problem creating \"", file_name, "\"");
+                }
+                file << content.substr(i * bytes, bytes);
+                file.flush();
+            }
+        }
+        void qpl::filesys::combine_files(const qpl::filesys::paths& paths, const qpl::filesys::path& destination) {
+            std::ofstream file(destination.c_str(), std::ios::binary);
+            if (!file.good()) {
+                qpl::println("there was a problem creating \"", destination.string(), "\"");
+            }
+            for (auto& i : paths) {
+               file << i.read();
+            }
+            file.flush();
+        }
 
         qpl::filesys::paths qpl::filesys::list_directory(const qpl::filesys::path& path) {
             return path.list_current_directory();

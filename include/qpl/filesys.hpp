@@ -297,6 +297,7 @@ namespace qpl {
 
 
             QPLDLL qpl::size size() const;
+            QPLDLL bool empty() const;
             QPLDLL qpl::size capacity() const;
             QPLDLL void resize(qpl::size new_size);
             QPLDLL void reserve(qpl::size new_cap);
@@ -496,6 +497,9 @@ namespace qpl {
 
         QPLDLL std::vector<qpl::size> file_line_differences(const qpl::filesys::path& path1, const qpl::filesys::path& path2);
         QPLDLL qpl::f64 file_lines_difference_percentage(const qpl::filesys::path& path1, const qpl::filesys::path& path2);
+
+        QPLDLL void split_file(const qpl::filesys::path& path, qpl::u32 bytes);
+        QPLDLL void combine_files(const qpl::filesys::paths& paths, const qpl::filesys::path& destination);
 
         QPLDLL qpl::filesys::paths list_directory(const qpl::filesys::path& path);
         QPLDLL qpl::filesys::paths list_current_directory();

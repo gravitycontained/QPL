@@ -1,9 +1,13 @@
 #include <qpl/pictures.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/memory.hpp>
+#include <qpl/string.hpp>
 #include <sstream>
 
 namespace qpl {
+	std::string qpl::pixel_rgb::string() const {
+		return qpl::to_string("(", qpl::i32_cast(this->r), ", ", qpl::i32_cast(this->g), ", ", qpl::i32_cast(this->b), ")");
+	}
 
 	void qpl::pixels::load(std::string_view sv) {
 		qpl::string_to_vector_memory(sv, this->data);

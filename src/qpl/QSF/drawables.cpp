@@ -747,6 +747,9 @@ namespace qsf {
 	void qsf::vcircle::set_center(qsf::vector2f center) {
 		this->point.position = center - qsf::vector2f{ this->radius, this->radius };
 	}
+	qsf::vector2f qsf::vcircle::center() const {
+		return this->point.position + qsf::vector2f{ this->radius, this->radius };
+	}
 	void qsf::vcircle::centerize() {
 		this->point.position -= qsf::vector2f{ this->radius, this->radius };
 	}
@@ -801,6 +804,9 @@ namespace qsf {
 		return this->circles.back();
 	}
 
+	void qsf::vcircles::add_circle(qsf::vcircle circle) {
+		this->circles.push_back(circle);
+	}
 	void qsf::vcircles::add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color) {
 		this->circles.push_back(qsf::vcircle(point.position, radius, color));
 	}
@@ -1413,6 +1419,8 @@ namespace qsf {
 		this->data = other.data;
 		this->color = other.color;
 		this->thickness = other.thickness;
+		this->circle = other.circle;
+		this->text = other.text;
 		return *this;
 	}
 	qsf::vgraph::data_point_info qsf::vgraph::data_point_info::operator*(qpl::f64 n) const {
@@ -1427,6 +1435,7 @@ namespace qsf {
 		copy.color *= other.color;
 		copy.thickness *= other.thickness;
 		copy.data *= other.data;
+
 		return copy;
 	}
 	qsf::vgraph::data_point_info qsf::vgraph::data_point_info::operator-(qsf::vgraph::data_point_info other) const {
@@ -1525,6 +1534,24 @@ namespace qsf {
 		return this->data > other.data;
 	}
 
+	void qsf::vgraph::info_graph::set_font(const std::string& font) {
+		this->text.font_name = font;
+	}
+	void qsf::vgraph::info_graph::set_text_color(qsf::rgb text_color) {
+		this->text.set_color(text_color);
+	}
+	void qsf::vgraph::info_graph::set_text_character_size(qpl::u32 character_size) {
+		this->text.character_size = character_size;
+	}
+	void qsf::vgraph::info_graph::set_text_style(qpl::u32 text_style) {
+		this->text.style = text_style;
+	}
+	void qsf::vgraph::info_graph::set_text_outline_thickness(qpl::f32 thickness) {
+		this->text.outline_thickness = thickness;
+	}
+	void qsf::vgraph::info_graph::set_text_outline_color(qsf::rgb color) {
+		this->text.outline_color = color;
+	}
 
 	qpl::f64 qsf::vgraph::info_graph::get_percentage_height_at(qpl::size index) const {
 		auto [low, high] = this->get_low_high();
@@ -1543,6 +1570,17 @@ namespace qsf {
 		this->data.back().color = color;
 		this->data.back().thickness = thickness;
 	}
+	void qsf::vgraph::info_graph::add_data(qpl::f64 data, std::string string) {
+		this->add_data(data, this->color, this->thickness);
+		this->data.back().text = this->text;
+		this->data.back().text.set_string(string);
+	}
+	void qsf::vgraph::info_graph::add_data(qpl::f64 data, std::string string, qsf::rgb color) {
+		this->add_data(data, this->color, this->thickness);
+		this->data.back().text = this->text;
+		this->data.back().text.set_string(string);
+		this->data.back().text.set_color(color);
+	}
 	std::pair<qsf::vgraph::data_point_info, qsf::vgraph::data_point_info> qsf::vgraph::info_graph::get_low_high() const {
 		return qpl::min_max_vector(this->data);
 	}
@@ -1554,6 +1592,18 @@ namespace qsf {
 	}
 	const qsf::vgraph::data_point_info& qsf::vgraph::info_graph::operator[](qpl::size index) const {
 		return this->data[index];
+	}
+	qsf::vgraph::data_point_info& qsf::vgraph::info_graph::back() {
+		return this->data.back();
+	}
+	const qsf::vgraph::data_point_info& qsf::vgraph::info_graph::back() const {
+		return this->data.back();
+	}
+	qsf::vgraph::data_point_info& qsf::vgraph::info_graph::front() {
+		return this->data.front();
+	}
+	const qsf::vgraph::data_point_info& qsf::vgraph::info_graph::front() const {
+		return this->data.front();
 	}
 	std::vector<qsf::vgraph::data_point_info>::iterator qsf::vgraph::info_graph::begin() {
 		return this->data.begin();
@@ -1604,6 +1654,18 @@ namespace qsf {
 	const qsf::vgraph::data_point& qsf::vgraph::standard_graph::operator[](qpl::size index) const {
 		return this->data[index];
 	}
+	qsf::vgraph::data_point& qsf::vgraph::standard_graph::back() {
+		return this->data.back();
+	}
+	const qsf::vgraph::data_point& qsf::vgraph::standard_graph::back() const {
+		return this->data.back();
+	}
+	qsf::vgraph::data_point& qsf::vgraph::standard_graph::front() {
+		return this->data.front();
+	}
+	const qsf::vgraph::data_point& qsf::vgraph::standard_graph::front() const {
+		return this->data.front();
+	}
 	std::vector<qsf::vgraph::data_point>::iterator qsf::vgraph::standard_graph::begin() {
 		return this->data.begin();
 	}
@@ -1643,6 +1705,18 @@ namespace qsf {
 	}
 	const qsf::vgraph::data_point_simple& qsf::vgraph::simple_graph::operator[](qpl::size index) const {
 		return this->data[index];
+	}	
+	qsf::vgraph::data_point_simple& qsf::vgraph::simple_graph::back() {
+		return this->data.back();
+	}
+	const qsf::vgraph::data_point_simple& qsf::vgraph::simple_graph::back() const {
+		return this->data.back();
+	}
+	qsf::vgraph::data_point_simple& qsf::vgraph::simple_graph::front() {
+		return this->data.front();
+	}
+	const qsf::vgraph::data_point_simple& qsf::vgraph::simple_graph::front() const {
+		return this->data.front();
 	}
 	std::vector<qsf::vgraph::data_point_simple>::iterator qsf::vgraph::simple_graph::begin() {
 		return this->data.begin();
@@ -1664,14 +1738,13 @@ namespace qsf {
 	}
 
 	void qsf::vgraph::check_x_axis() {
-		auto size = this->visible_element_size() / this->x_axis_line_frequency;
-		if (size < this->desired_x_axis_lines / 2) {
+		while (this->visible_element_size() / this->x_axis_line_frequency < this->desired_x_axis_lines / 2) {
 			this->x_axis_line_frequency /= 2;
 			if (!this->x_axis_line_frequency) {
 				this->x_axis_line_frequency = 1u;
 			}
 		}
-		else if (size > this->desired_x_axis_lines * 2) {
+		while (this->visible_element_size() / this->x_axis_line_frequency > this->desired_x_axis_lines * 2) {
 			this->x_axis_line_frequency *= 2;
 		}
 
@@ -1705,26 +1778,28 @@ namespace qsf {
 				this->click_position = event_info.mouse_position();
 			}
 		}
-		if (this->drag && event_info.mouse_moved()) {
-			auto diff = this->click_position - event_info.mouse_position();
 
-			auto size = this->visible_element_size();
-			auto index_f = (diff.x / this->true_graph_width()) * size;
-			auto index_delta = qpl::i32_cast(index_f);
+		if (event_info.mouse_moved()) {
+			if (this->drag) {
+				auto diff = this->click_position - event_info.mouse_position();
 
-			if (index_delta) {
-				this->click_position = event_info.mouse_position();
-				this->click_position.x += ((index_f - index_delta) / size) * this->true_graph_width();
+				auto size = this->visible_element_size();
+				auto index_f = (diff.x / this->true_graph_width()) * size;
+				auto index_delta = qpl::i32_cast(index_f);
 
-				this->index_start = qpl::max(qpl::i32_cast(0), qpl::i32_cast(this->visible_index_start()) + index_delta);
-				this->index_end = this->index_start + size;
-				auto over = qpl::i32_cast(this->index_end) - qpl::i32_cast(this->graph_element_size());
-				if (this->index_end >= this->graph_element_size()) {
-					this->index_end = this->graph_element_size();
-					this->index_start -= over;
+				if (index_delta) {
+					this->click_position = event_info.mouse_position();
+					this->click_position.x += ((index_f - index_delta) / size) * this->true_graph_width();
+
+					this->index_start = qpl::max(qpl::i32_cast(0), qpl::i32_cast(this->visible_index_start()) + index_delta);
+					this->index_end = this->index_start + size;
+					auto over = qpl::i32_cast(this->index_end) - qpl::i32_cast(this->graph_element_size());
+					if (this->index_end >= this->graph_element_size()) {
+						this->index_end = this->graph_element_size();
+						this->index_start -= over;
+					}
 				}
 			}
-
 		}
 		if (event_info.left_mouse_released()) {
 			this->drag = false;
@@ -1786,6 +1861,7 @@ namespace qsf {
 				}
 				this->index_start = qpl::u32_cast(start);
 				this->index_end = qpl::u32_cast(end);
+
 				this->check_x_axis();
 			}
 		}
@@ -2006,8 +2082,9 @@ namespace qsf {
 				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
 			}
 			else {
+				auto span = graph.get_info_graph_span(g.first);
 
-				auto result = qpl::min_max_vector(g.second.data);
+				auto result = qpl::min_max_vector(span, graph.index_skip_size);
 
 				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
 			}
@@ -2038,7 +2115,9 @@ namespace qsf {
 				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
 			}
 			else {
-				auto result = qpl::min_max_vector(g.second.data);
+				auto span = graph.get_standard_graph_span(g.first);
+
+				auto result = qpl::min_max_vector(span, graph.index_skip_size);
 
 				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
 			}
@@ -2070,9 +2149,12 @@ namespace qsf {
 				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
 			}
 			else {
-				auto result = qpl::min_max_vector(g.second.data);
+				auto span = graph.get_simple_graph_span(g.first);
+
+				auto result = qpl::min_max_vector(span, graph.index_skip_size);
 
 				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+
 			}
 
 
@@ -2090,14 +2172,6 @@ namespace qsf {
 		for (auto& g : graph.info_graphs) {
 			std::vector<qsf::vgraph::data_point_info> interpolated_data;
 
-			//1.6 - 1.1 -> 0.5
-			//1.1 - 1.3 - 1.5
-			//1.2 - 1.4 - 1.6
-
-			//0.05 -> std::log(0.05) / std::log(10)
-
-
-			//1.6 / 0.5 -> (3) * 0.5 -> 1.5
 			auto span = graph.get_info_graph_span(g.first);
 
 			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
@@ -2122,35 +2196,8 @@ namespace qsf {
 					use_interpolated_color = true;
 				}
 
-				auto progress = i / qpl::f64_cast(span.size() - 1);
-				qsf::vector2f position;
-				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * progress + graph.y_axis_text_space;
-
-				auto y_progress = (span[i].data - low) / (high - low);
-				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
-				position.y = graph.position.y + graph.dimension.y * y_progress;
-
-				if (progress > 0) {
-					if (span[i].circle.radius > 0.0) {
-
-						//graph.data[i].circle.point.position = position;
-
-						this->circles[u].add_circle(position, span[i].circle.radius, span[i].circle.point.color);
-					}
-					if (!span[i].text.string.empty()) {
-						this->circle_texts[u].push_back(span[i].text);
-						if (span[i].text.font_name.empty()) {
-							this->circle_texts[u].back().set_font(used_font);
-						}
-						else {
-							if (used_font.empty()) {
-								used_font = span[i].text.font_name;
-							}
-							this->circle_texts[u].back().set_font(span[i].text.font_name);
-						}
-						this->circle_texts[u].back().set_position(position);
-						this->circle_texts[u].back().centerize();
-					}
+				if (!use_interpolated_thickness && !use_interpolated_color) {
+					break;
 				}
 			}
 
@@ -2162,7 +2209,6 @@ namespace qsf {
 			if (using_color == qsf::frgb::unset) {
 				using_color = graph.color;
 			}
-
 
 			this->lines[u].clear();
 			for (qpl::u32 i = 0u; i < interpolated_data.size(); ++i) {
@@ -2178,6 +2224,32 @@ namespace qsf {
 				auto color = use_interpolated_color ? interpolated_data[i].color : using_color;
 				auto thickness = use_interpolated_thickness ? interpolated_data[i].thickness : using_thickness;
 				this->lines[u].add_thick_line(position, color, thickness);
+
+
+				if (g.second.only_draw_if_close && graph.index_skip_size == 1) {
+					if (interpolated_data[i].circle.radius > 0.0) {
+
+						//graph.data[i].circle.point.position = position;
+
+						this->circles[u].add_circle(position, interpolated_data[i].circle.radius, interpolated_data[i].circle.point.color);
+					}
+
+					if (!interpolated_data[i].text.string.empty()) {
+						this->circle_texts[u].push_back(interpolated_data[i].text);
+						if (interpolated_data[i].text.font_name.empty()) {
+							this->circle_texts[u].back().set_font(used_font);
+						}
+						else {
+							if (used_font.empty()) {
+								used_font = interpolated_data[i].text.font_name;
+							}
+							this->circle_texts[u].back().set_font(interpolated_data[i].text.font_name);
+						}
+						this->circle_texts[u].back().set_position(position);
+						this->circle_texts[u].back().centerize();
+					}
+				}
+				
 			}
 
 			++u;
@@ -2282,6 +2354,7 @@ namespace qsf {
 
 			++u;
 		}
+
 
 		if (u) {
 			qsf::rgb use_color = graph.axis_color;
@@ -2446,6 +2519,7 @@ namespace qsf {
 			}
 
 		}
+
 
 		this->background.set_position(graph.position);
 		this->background.set_dimension(graph.dimension);

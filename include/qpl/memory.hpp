@@ -144,13 +144,13 @@ namespace qpl {
 		circular_array() {
 			this->index = 0u;
 			this->rotation_finished = false;
-			if constexpr (this->is_array()) {
+			if constexpr (this->is_array() && qpl::is_arithmetic<T>()) {
 				this->data.fill(0u);
 			}
 		}
 
 		void clear() {
-			if constexpr (is_array()) {
+			if constexpr (is_array() && qpl::is_arithmetic<T>()) {
 				this->data.fill(0u);
 			}
 			else {
@@ -223,7 +223,7 @@ namespace qpl {
 			if (this->rotation_finished) {
 
 				for (auto& i : this->data) {
-					if (i > min) {
+					if (i > max) {
 						max = i;
 					}
 				}

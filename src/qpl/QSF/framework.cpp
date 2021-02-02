@@ -203,6 +203,24 @@ namespace qsf {
 	bool qsf::base_state::is_exit_allowed() const {
 		return this->m_allow_exit;
 	}
+	void qsf::base_state::allow_clear() {
+		this->m_allow_clear = true;
+	}
+	void qsf::base_state::disallow_clear() {
+		this->m_allow_clear = false;
+	}
+	bool qsf::base_state::is_clear_allowed() const {
+		return this->m_allow_clear;
+	}
+	void qsf::base_state::allow_display() {
+		this->m_allow_display = true;
+	}
+	void qsf::base_state::disallow_display() {
+		this->m_allow_display = false;
+	}
+	bool qsf::base_state::is_display_allowed() const {
+		return this->m_allow_display;
+	}
 	qpl::time qsf::base_state::frame_time() const {
 		return this->framework->frame_time();
 	}
@@ -211,9 +229,13 @@ namespace qsf {
 	}
 
 	void qsf::framework::draw_call() {
-		this->states.back()->clear();
+		if (this->states.back()->is_clear_allowed()) {
+			this->states.back()->clear();
+		}
 		this->states.back()->drawing();
-		this->window.display();
+		if (this->states.back()->is_display_allowed()) {
+			this->window.display();
+		}
 	}
 	void qsf::framework::display() {
 		this->window.display();

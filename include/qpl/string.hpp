@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <bitset>
 
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -38,7 +39,7 @@ namespace qpl {
 	template<typename T>
 	std::string to_string(const T& first) {
 		std::ostringstream stream;
-		if constexpr (std::is_same_v<std::wstring, T>) {
+		if constexpr (qpl::is_same_decayed<std::wstring, T>()) {
 			stream << qpl::wstring_to_string(first);
 		}
 		else {
@@ -48,18 +49,42 @@ namespace qpl {
 		//return std::to_string(first);
 	}
 
+	template<typename T>
+	std::wstring to_wstring(const T& first) {
+		std::wostringstream stream;
+		if constexpr (qpl::is_same_decayed<std::string, T>()) {
+			stream << qpl::string_to_wstring(first);
+		}
+		else {
+			stream << first;
+		}
+		return stream.str();
+		//return std::to_string(first);
+	}
 	QPLDLL std::string to_string(const std::string& first);
-	//todo: add charconv
+	QPLDLL std::wstring to_wstring(const std::wstring& first);
+
 	QPLDLL std::string str_spaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
+	QPLDLL std::wstring wstr_spaced(const std::wstring& string, qpl::size length = 10u, wchar_t prepend = ' ');
 	QPLDLL std::string str_rspaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
+	QPLDLL std::wstring wstr_rspaced(const std::wstring& string, qpl::size length = 10u, wchar_t prepend = ' ');
 	QPLDLL std::string str_lspaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
+	QPLDLL std::wstring wstr_lspaced(const std::wstring& string, qpl::size length = 10u, wchar_t prepend = ' ');
 	template<typename T>
 	std::string str_spaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
 		return qpl::str_spaced(qpl::to_string(n), length, prepend);
+	}	
+	template<typename T>
+	std::wstring wstr_spaced(const T& n, qpl::size length = 10u, wchar_t prepend = ' ') {
+		return qpl::wstr_spaced(qpl::to_wstring(n), length, prepend);
 	}
 	template<typename T>
 	std::string str_rspaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
 		return qpl::str_rspaced(qpl::to_string(n), length, prepend);
+	}
+	template<typename T>
+	std::wstring wstr_rspaced(const T& n, qpl::size length = 10u, wchar_t prepend = ' ') {
+		return qpl::wstr_rspaced(qpl::to_wstring(n), length, prepend);
 	}
 	template<typename T>
 	std::string str_lspaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
@@ -116,6 +141,26 @@ namespace qpl {
 	std::string to_string_space(Args&&... args) {
 		std::ostringstream stream;
 		((stream << qpl::str_spaced(args, N)), ...);
+		return stream.str();
+	}
+	template<qpl::size N = 10, typename... Args>
+	std::string to_stringln_space(Args&&... args) {
+		std::ostringstream stream;
+		((stream << qpl::str_spaced(args, N)), ...);
+		stream << '\n';
+		return stream.str();
+	}
+	template<qpl::size N = 10, typename... Args>
+	std::string to_string_rspace(Args&&... args) {
+		std::ostringstream stream;
+		((stream << qpl::str_rspaced(args, N)), ...);
+		return stream.str();
+	}
+	template<qpl::size N = 10, typename... Args>
+	std::string to_stringln_rspace(Args&&... args) {
+		std::ostringstream stream;
+		((stream << qpl::str_rspaced(args, N)), ...);
+		stream << '\n';
 		return stream.str();
 	}
 
@@ -223,6 +268,15 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	template<typename T>
+	std::string to_stringln_repeat(T&& value, qpl::size repeat) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < repeat; ++i) {
+			stream << value;
+		}
+		stream << '\n';
+		return stream.str();
+	}
 	template<typename... Args>
 	std::string to_string_precision(qpl::size precision, Args&&... args) {
 		std::ostringstream stream;
@@ -237,18 +291,7 @@ namespace qpl {
 	}
 
 
-	template<typename T>
-	std::wstring to_wstring(const T& first) {
-		std::wostringstream stream;
-		if constexpr (std::is_same_v<std::string, T>) {
-			stream << qpl::string_to_wstring(first);
-		}
-		else {
-			stream << first;
-		}
-		return stream.str();
-		//return std::to_string(first);
-	}
+
 	template<typename T, typename... Args>
 	std::wstring to_wstring(const T& first, Args&&... args) {
 		return qpl::to_wstring(first) + qpl::to_wstring(args...);
@@ -575,15 +618,30 @@ namespace qpl {
 			}
 
 			if (backslashn) {
-				std::cout << value;
-			}
-			else {
-				if (qpl::detail::next_print_space) {
-					std::cout << qpl::str_spaced(value, qpl::detail::next_print_space);
-					qpl::detail::next_print_space = qpl::detail::println_space;
+				if constexpr (qpl::is_same_decayed<T, std::wstring>() || qpl::is_same_decayed<T, wchar_t>()) {
+					std::wcout << value;
 				}
 				else {
 					std::cout << value;
+				}
+			}
+			else {
+				if (qpl::detail::next_print_space) {
+					if constexpr (qpl::is_same_decayed<T, std::wstring>() || qpl::is_same_decayed<T, wchar_t>()) {
+						std::wcout << qpl::wstr_spaced(value, qpl::detail::next_print_space);
+					}
+					else {
+						std::cout << qpl::str_spaced(value, qpl::detail::next_print_space);
+					}
+					qpl::detail::next_print_space = qpl::detail::println_space;
+				}
+				else {
+					if constexpr (qpl::is_same_decayed<T, std::wstring>() || qpl::is_same_decayed<T, wchar_t>()) {
+						std::wcout << value;
+					}
+					else {
+						std::cout << value;
+					}
 				}
 				if (qpl::detail::next_print_color) {
 					qpl::set_console_color(qpl::detail::println_color);
@@ -682,6 +740,10 @@ namespace qpl {
 	template<qpl::size N = 10, typename... Args>
 	inline void print_space(Args&&... args) {
 		qpl::print(qpl::to_string_space<N>(args...));
+	}
+	template<qpl::size N = 10, typename... Args>
+	inline void print_rspace(Args&&... args) {
+		qpl::print(qpl::to_string_rspace<N>(args...));
 	}
 	template<qpl::size N = 10, typename T, typename... Args>
 	inline void print_dash_space(T&& first, Args&&... args) {
@@ -790,6 +852,11 @@ namespace qpl {
 		qpl::print_space<N>(args...);
 		qpl::print('\n');
 	}
+	template<qpl::size N = 10, typename... Args>
+	inline void println_rspace(Args&&... args) {
+		qpl::print_rspace<N>(args...);
+		qpl::print('\n');
+	}
 	template<typename T, typename... Args>
 	inline void println_seq(T&& first, Args&&... args) {
 		qpl::print_seq(first, args...);
@@ -836,85 +903,6 @@ namespace qpl {
 	}
 
 
-	template<typename... Args>
-	inline void wprint(Args&&... args) {
-		((std::wcout << args), ...);
-	}
-	template<typename T, typename... Args>
-	inline void wprint_ln(T&& first, Args&&... args) {
-		qpl::wprint(first);
-		(qpl::wprint('\n', args), ...);
-	}
-	template<typename T, typename... Args>
-	inline void wprint_s(T&& first, Args&&... args) {
-		qpl::wprint(first);
-		(qpl::wprint(' ', args), ...);
-	}
-	template<typename T, typename... Args>
-	inline void wprint_seq(T&& first, Args&&... args) {
-		qpl::wprint(first);
-		(qpl::wprint(", ", args), ...);
-	}
-	template<typename T, typename... Args>
-	inline void wprint_par(T&& first, Args&&... args) {
-		qpl::wprint('(', first);
-		(qpl::wprint(", ", args), ...);
-		qpl::wprint(')');
-	}
-	template<typename T, typename... Args>
-	inline void wprint_sq(T&& first, Args&&... args) {
-		qpl::wprint('[', first);
-		(qpl::wprint(", ", args), ...);
-		qpl::wprint(']');
-	}
-	template<typename T>
-	inline void wprint_repeat(T&& value, qpl::size repeat) {
-		qpl::wprint(qpl::to_string_repeat(value, repeat));
-	}
-	template<typename... Args>
-	inline void wprint_precision(qpl::size precision, Args&&... args) {
-		qpl::wprint(qpl::to_wstring_precision(precision, args...));
-	}
-
-	template<typename... Args>
-	inline void wprintln(Args&&... args) {
-		((std::wcout << args), ...);
-		qpl::wprint('\n');
-	}
-	template<typename T, typename... Args>
-	inline void wprintln_ln(T&& first, Args&&... args) {
-		qpl::wprint_ln(first, args...);
-		qpl::wprint('\n');
-	}
-	template<typename T, typename... Args>
-	inline void wprintln_s(T&& first, Args&&... args) {
-		qpl::wprint_s(first, args...);
-		qpl::wprint('\n');
-	}
-	template<typename T, typename... Args>
-	inline void wprintln_seq(T&& first, Args&&... args) {
-		qpl::wprint_seq(first, args...);
-		qpl::wprint('\n');
-	}
-	template<typename T, typename... Args>
-	inline void wprintln_par(T&& first, Args&&... args) {
-		qpl::wprint_par(first, args...);
-		qpl::wprint('\n');
-	}
-	template<typename T, typename... Args>
-	inline void wprintln_sq(T&& first, Args&&... args) {
-		qpl::wprint_sq(first, args...);
-		qpl::wprint('\n');
-	}
-	template<typename T>
-	inline void wprintln_repeat(T&& value, qpl::size repeat) {
-		qpl::wprint_repeat(value, repeat);
-		qpl::wprint('\n');
-	}
-	template<typename... Args>
-	inline void wprintln_precision(qpl::size precision, Args&&... args) {
-		qpl::wprintln(qpl::to_wstring_precision(precision, args...));
-	}
 #ifdef _WIN32
 	//template<typename ... Args>
 	//void dprintln(Args&&... args) {
@@ -1337,11 +1325,14 @@ namespace qpl {
 
 	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
 	constexpr T from_string(const std::string_view& string) {
-		if constexpr (qpl::is_same<T, qpl::f64>()) {
-			return std::strtod(string.data(), string.data() + string.size());
+		if constexpr (qpl::is_same_decayed<T, std::string>()) {
+			return string;
 		}
-		else if constexpr (qpl::is_same<T, qpl::f32>()) {
-			return std::strtof(string.data(), string.data() + string.size());
+		else if constexpr (qpl::is_same_decayed<T, qpl::f64>()) {
+			return std::strtod(string.data(), nullptr);
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::f32>()) {
+			return std::strtof(string.data(), nullptr);
 		}
 		else if constexpr (qpl::is_qpl_integer<T>()) {
 			return T{ string };
@@ -1349,6 +1340,10 @@ namespace qpl {
 		else {
 			return static_cast<T>(std::atoll(string.data()));
 		}
+	}
+	template<typename T, QPLCONCEPT((qpl::is_same_decayed<T, std::string>()))>
+	constexpr T from_string(const std::string& string) {
+		return string;
 	}
 
 	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
@@ -1611,6 +1606,9 @@ namespace qpl {
 	QPLDLL std::string random_string_full_range(qpl::size length);
 	QPLDLL std::wstring random_wstring_full_range(qpl::size length);
 
+	QPLDLL std::string to_lower(const std::string& string);
+	QPLDLL std::string to_upper(const std::string& string);
+
 	QPLDLL std::vector<std::string> split(const std::string& string, char by_what);
 	QPLDLL std::vector<std::string> split(const std::string& string, const std::string& expression);
 	QPLDLL std::vector<std::string> split(const std::string& string);
@@ -1724,6 +1722,7 @@ namespace qpl {
 		return qpl::detail::arithmetic_special_table[c];
 	}
 	QPLDLL bool is_string_floating_point(std::string string);
+	QPLDLL bool is_string_number(std::string string);
 
 
 	constexpr operator_type get_operator_type(const std::string_view& expression) {

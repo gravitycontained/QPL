@@ -7,6 +7,7 @@
 #include <qpl/algorithm.hpp>
 #include <qpl/bigint.hpp>
 #include <qpl/bits.hpp>
+#include <qpl/config.hpp>
 #include <qpl/date.hpp>
 #include <qpl/filesys.hpp>
 #include <qpl/intrinsics.hpp>

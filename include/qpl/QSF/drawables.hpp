@@ -341,6 +341,9 @@ namespace qsf {
 			this->position = position;
 			this->color = color;
 		}
+		vpoint(qsf::vector2f position) {
+			this->position = position;
+		}
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL vpoint& operator=(qsf::vector2f position);
@@ -446,6 +449,7 @@ namespace qsf {
 		QPLDLL void set_radius(qpl::f32 radius);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_center(qsf::vector2f center);
+		QPLDLL qsf::vector2f center() const;
 		QPLDLL void centerize();
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
@@ -483,6 +487,7 @@ namespace qsf {
 		QPLDLL qsf::vcircle& back();
 		QPLDLL const qsf::vcircle& back() const;
 
+		QPLDLL void add_circle(qsf::vcircle circle);
 		QPLDLL void add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color);
 		QPLDLL void add_circle(qsf::vector2f position, qpl::f32 radius, qsf::rgb color);
 
@@ -782,7 +787,11 @@ namespace qsf {
 				this->data = value;
 			}
 			data_point_info(const data_point_info& other) {
-				*this = other;
+				this->data = other.data;
+				this->color = other.color;
+				this->thickness = other.thickness;
+				this->circle = other.circle;
+				this->text = other.text;
 			}
 			QPLDLL data_point_info& operator=(const data_point_info& other);
 
@@ -806,7 +815,9 @@ namespace qsf {
 
 			}
 			data_point(const data_point& other) {
-				*this = other;
+				this->data = other.data;
+				this->color = other.color;
+				this->thickness = other.thickness;
 			}
 			QPLDLL data_point& operator=(const data_point& other);
 
@@ -828,7 +839,7 @@ namespace qsf {
 
 			}
 			data_point_simple(const data_point_simple& other) {
-				*this = other;
+				this->data = other.data;
 			}
 			QPLDLL data_point_simple& operator=(const data_point_simple& other);
 
@@ -916,13 +927,26 @@ namespace qsf {
 			QPLDLL void add_data(qpl::f64 data);
 			QPLDLL void add_data(qpl::f64 data, qsf::rgb color);
 			QPLDLL void add_data(qpl::f64 data, qsf::rgb color, qpl::f64 thickness);
+			QPLDLL void add_data(qpl::f64 data, std::string string);
+			QPLDLL void add_data(qpl::f64 data, std::string string, qsf::rgb color	);
 
+			QPLDLL void set_font(const std::string& font);
+			QPLDLL void set_text_color(qsf::rgb text_color);
+			QPLDLL void set_text_character_size(qpl::u32 character_size);
+			QPLDLL void set_text_style(qpl::u32 text_style);
+			QPLDLL void set_text_outline_thickness(qpl::f32 thickness);
+			QPLDLL void set_text_outline_color(qsf::rgb color);
 
 			QPLDLL qpl::f64 get_percentage_height_at(qpl::size index) const;
 			QPLDLL std::pair<data_point_info, data_point_info> get_low_high() const;
 			QPLDLL qpl::size size() const;
 			QPLDLL data_point_info& operator[](qpl::size index);
 			QPLDLL const data_point_info& operator[](qpl::size index) const;
+
+			QPLDLL data_point_info& back();
+			QPLDLL const data_point_info& back() const;
+			QPLDLL data_point_info& front();
+			QPLDLL const data_point_info& front() const;
 
 			QPLDLL std::vector<data_point_info>::iterator begin();
 			QPLDLL std::vector<data_point_info>::const_iterator begin() const;
@@ -936,10 +960,12 @@ namespace qsf {
 			qsf::rgb color = qsf::rgb::unset;
 			qpl::f64 thickness = qpl::f64_min;
 			qpl::size interpolation_steps = qpl::size_max;
-
+			qsf::vtext text;
+			bool only_draw_if_close = true;
 
 			std::vector<data_point_info> data;
 		};
+
 
 		struct standard_graph {
 			template<typename T>
@@ -966,6 +992,11 @@ namespace qsf {
 			QPLDLL qpl::size size() const;
 			QPLDLL data_point& operator[](qpl::size index);
 			QPLDLL const data_point& operator[](qpl::size index) const;
+
+			QPLDLL data_point& back();
+			QPLDLL const data_point& back() const;
+			QPLDLL data_point& front();
+			QPLDLL const data_point& front() const;
 
 			QPLDLL std::vector<data_point>::iterator begin();
 			QPLDLL std::vector<data_point>::const_iterator begin() const;
@@ -1006,6 +1037,11 @@ namespace qsf {
 			QPLDLL data_point_simple& operator[](qpl::size index);
 			QPLDLL const data_point_simple& operator[](qpl::size index) const;
 
+			QPLDLL data_point_simple& back();
+			QPLDLL const data_point_simple& back() const;
+			QPLDLL data_point_simple& front();
+			QPLDLL const data_point_simple& front() const;
+
 			QPLDLL std::vector<data_point_simple>::iterator begin();
 			QPLDLL std::vector<data_point_simple>::const_iterator begin() const;
 			QPLDLL std::vector<data_point_simple>::const_iterator cbegin();
@@ -1025,7 +1061,6 @@ namespace qsf {
 
 		bool drag = false;
 		qsf::vector2f click_position;
-
 
 		QPLDLL void check_x_axis();
 		QPLDLL void enable_track_new_entries();

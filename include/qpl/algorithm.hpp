@@ -2,6 +2,7 @@
 #define QPL_ALGORITHM_HPP
 #pragma once
 
+
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
 #include <cmath>
@@ -13,7 +14,34 @@
 #include <iostream>
 #include <span>
 
+
 namespace qpl {
+
+	template<typename T>
+	constexpr T min(T a, T b) {
+		return (a < b ? a : b);
+	}
+	template<typename T, typename ...Args>
+	constexpr T min(T a, T b, Args... rest) {
+		return qpl::min(qpl::min(a, b), rest...);
+	}
+
+	template<typename T>
+	constexpr T max(T a, T b) {
+		return (a > b ? a : b);
+	}
+	template<typename T, typename ...Args>
+	constexpr T max(T a, T b, Args... rest) {
+		return qpl::max(qpl::max(a, b), rest...);
+	}
+
+	template<typename T, typename U>
+	constexpr auto div_mod(T a, U b) {
+		auto div = a / b;
+		auto mod = a % b;
+		return std::make_pair(div, mod);
+	}
+
 	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
 	constexpr qpl::size number_of_digits(T value, T base = T{ 10 }) {
 		return value < base ? 1 : 1 + number_of_digits(value / base, base);
@@ -344,6 +372,7 @@ namespace qpl {
 	}
 
 
+
 	template<typename C>
 	auto container_sum(const C& data) {
 		if constexpr (!qpl::is_container<C>()) {
@@ -358,22 +387,51 @@ namespace qpl {
 		}
 	}
 
+
 	template<typename C1, typename C2>
 	void combine_containers(C1& destination, const C2& source) {
 		destination.reserve(destination.size() + source.size());
 		destination.insert(destination.end(), source.cbegin(), source.cend());
 	}
-	template<typename C>
-	std::vector<qpl::container_subtype<C>> convert_to_vector(const C& source) {
-		std::vector<qpl::container_subtype<C>> result;
-		result.reserve(source.size());
-		result.insert(result.end(), source.cbegin(), source.cend());
+
+	template<typename T, typename R>
+	std::vector<R> vector_subtype_conversion(const std::vector<T>& source) {
+		std::vector<R> result;
+		result.resize(source.size());
+		for (qpl::u32 i = 0; i < source.size(); ++i) {
+			result[i] = static_cast<R>(source[i]);
+		}
+		return result;
+	}
+	template<typename R, typename T>
+	std::vector<R> vector_subtype_reinterpret(const std::vector<T>& source) {
+		std::vector<R> result;
+		result.resize(source.size());
+		memcpy(result.data(), source.data(), source.size() * sizeof(T));
 		return result;
 	}
 
+	template<typename R, typename T, qpl::size N>
+	std::array<R, N> array_subtype_conversion(const std::array<T, N>& source) {
+		std::array<R, N> result;
+		for (qpl::u32 i = 0; i < source.size(); ++i) {
+			result[i] = static_cast<R>(source[i]);
+		}
+		return result;
+	}
+	template<typename R, typename T, qpl::size N>
+	std::array<R, N> array_subtype_reinterpret(const std::array<T, N>& source) {
+		std::array<R, N> result;
+		memcpy(result.data(), source.data(), source.size() * sizeof(T));
+		return result;
+	}
 	template<typename It>
 	constexpr auto make_span(It begin, It end) {
 		return std::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
+	}
+	template<typename C>
+	constexpr auto make_span(const C& container) {
+		return qpl::make_span(container.begin(), container.end());
 	}
 
 	template<typename T>
@@ -388,6 +446,21 @@ namespace qpl {
 		auto v = std::minmax_element(data.cbegin(), data.cend());
 		return { *(v.first), *(v.second) };
 	}
+
+	template<typename T>
+	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const std::span<T>& data, qpl::u32 skip_size) {
+		if (data.empty()) {
+			return std::make_pair(std::decay_t<T>{}, std::decay_t<T>{});
+		}
+		std::decay_t<T> min = data.front();
+		std::decay_t<T> max = data.front();
+		for (int i = 0; i < data.size(); i += skip_size) {
+			min = qpl::min(min, data[i]);
+			max = qpl::min(max, data[i]);
+		}
+		return std::make_pair(min, max);
+	}
+
 
 	template<typename T>
 	std::vector<T> vector_including_values(const std::vector<T>& target, const std::vector<T>& compare) {
@@ -431,25 +504,6 @@ namespace qpl {
 		}
 		return sum;
 	}
-
-	template<typename T>
-	constexpr T min(T a, T b) {
-		return (a < b ? a : b);
-	}
-	template<typename T, typename ...Args>
-	constexpr T min(T a, T b, Args... rest) {
-		return qpl::min(qpl::min(a, b), rest...);
-	}
-
-	template<typename T>
-	constexpr T max(T a, T b) {
-		return (a > b ? a : b);
-	}
-	template<typename T, typename ...Args>
-	constexpr T max(T a, T b, Args... rest) {
-		return qpl::max(qpl::max(a, b), rest...);
-	}
-
 
 
 	template<typename T>
@@ -533,7 +587,14 @@ namespace qpl {
 			return std::vector<std::decay_t<T>>{ data[0] };
 		}
 
+
 		std::vector<std::decay_t<T>> result(qpl::size_cast(data.size() / index_skip_size * interpolations));
+		if (result.size() == data.size()) {
+			for (qpl::u32 i = 0; i < result.size(); ++i) {
+				result[i] = data[i];
+			}
+			return result;
+		}
 
 		std::decay_t<T> a, b;
 
@@ -597,9 +658,15 @@ namespace qpl {
 		if (data.size() == 1u) {
 			return std::vector<std::decay_t<T>>{ data[0] };
 		}
-
 		std::vector<std::decay_t<T>> result(qpl::size_cast(data.size() / index_skip_size * interpolations));
-		
+
+		//if (result.size() == data.size()) {
+		//	for (qpl::u32 i = 0; i < result.size(); ++i) {
+		//		result[i] = data[i];
+		//	}
+		//	return result;
+		//}
+
 		std::decay_t<T> a, b, c, d;
 
 		for (qpl::u32 i = 0u; i < result.size(); ++i) {

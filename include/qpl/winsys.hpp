@@ -13,6 +13,7 @@
 #include <Windows.h>
 #include <vector>
 #include <string_view>
+#include <unordered_map>
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/pictures.hpp>
@@ -127,9 +128,15 @@ namespace qpl {
 			extern std::vector<monitor_capture> monitor_captures;
 		}
 
+		QPLDLL BOOL CALLBACK call_save_window_names(HWND hwnd, LPARAM lParam);
+		QPLDLL std::vector<std::wstring> get_all_open_window_names();
+		QPLDLL void print_all_open_window_names();
 		QPLDLL bool find_window(std::string name);
+		QPLDLL bool find_window(std::wstring name);
 		QPLDLL void close_window(std::string name);
+		QPLDLL void close_window(std::wstring name);
 		QPLDLL bool set_window_position(std::string name, qpl::winsys::rect rectangle, bool on_top = true, bool show = true);
+		QPLDLL bool set_window_position(std::wstring name, qpl::winsys::rect rectangle, bool on_top = true, bool show = true);
 
 
 
@@ -284,8 +291,41 @@ namespace qpl {
 	QPLDLL void set_console_color(qpl::background background);
 	QPLDLL void set_console_color(qpl::cc color);
 	QPLDLL void set_console_color_default();
+
 	QPLDLL void copy_to_clipboard(const std::string& string);
 
+	struct shared_memory {
+		HANDLE hMapFile;
+		void* ptr;
+
+		~shared_memory() {
+			this->destroy();
+		}
+
+		template <typename T>
+		T* get() {
+			return reinterpret_cast<T*>(ptr);
+		}
+		QPLDLL bool create(const std::string& name, qpl::u32 size);
+		QPLDLL bool open(const std::string& name, qpl::u32 size);
+		QPLDLL void destroy();
+	};
+
+	namespace detail {
+		extern std::unordered_map<std::string, shared_memory> shared_memories;
+	}
+
+	void create_shared_memory(std::string name, qpl::u32 size);
+	void open_shared_memory(std::string name, qpl::u32 size);
+	template <typename T>
+	T* get_shared_memory(std::string name) {
+		return qpl::detail::shared_memories[name].get<T>();
+	}
+	template <typename T>
+	T* make_shared_memory(std::string name) {
+		qpl::create_shared_memory(name, sizeof(T));
+		return qpl::detail::shared_memories[name].get<T>();
+	}
 }
 
 #endif

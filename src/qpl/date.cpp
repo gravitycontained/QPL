@@ -1,6 +1,37 @@
 #include <qpl/date.hpp>
+#include <qpl/time.hpp>
 
 namespace qpl {
+
+
+	void qpl::date_ms::set(std::string string) {
+		auto nums = qpl::split_numbers(string);
+
+		this->years = nums[0];
+		this->months = nums[1];
+		this->days = nums[2];
+		this->hours = nums[3];
+		this->minutes = nums[4];
+		this->seconds = nums[5];
+		this->milliseconds = nums[6];
+	}
+	std::string qpl::date_ms::string() const {
+		std::ostringstream stream;
+		stream << qpl::i32_cast(this->years) << "-";
+		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->months), '0', 2) << "-";
+		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->days), '0', 2) << " ";
+		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->hours), '0', 2) << ":";
+		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->minutes), '0', 2) << ":";
+		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->seconds), '0', 2) << ":";
+		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->milliseconds), '0', 3);
+		return stream.str();
+	}
+	date_ms qpl::get_current_time() {
+		qpl::date_ms result;
+		auto str = qpl::get_current_time_string_ms();
+		result.set(str);
+		return result;
+	}
 
 	qpl::week_days qpl::year_month_day::get_week_day() const {
 		int rst =
@@ -138,10 +169,27 @@ namespace qpl {
 		return qpl::to_string(this->hour < 10 ? "0" : "", (int)this->hour, ":", this->minute < 10 ? "0" : "", (int)this->minute);
 	}
 
+	void qpl::date::set(const date_ms& date) {
+		this->ymd.year = date.years;
+		this->ymd.month = date.months;
+		this->ymd.day = date.days;
+		this->hm.hour = date.hours;
+		this->hm.minute = date.minutes;
+	}
+	date& qpl::date::operator=(const date_ms& date) {
+		this->set(date);
+		return *this;
+	}
+	date& qpl::date::operator=(const date& other) {
+		this->ymd = other.ymd;
+		this->hm = other.hm;
+		return *this;
+	}
 	double qpl::date::days() const {
 		return this->ymd.days() + this->hm.days();
 	}
 	std::string qpl::date::string() const {
 		return this->ymd.string() + " " + this->hm.string();
 	}
+
 }

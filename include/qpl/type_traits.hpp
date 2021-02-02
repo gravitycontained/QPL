@@ -203,6 +203,10 @@ namespace qpl {
 	constexpr bool is_same() {
 		return std::is_same_v<T, U>;
 	}
+	template<typename T, typename U>
+	constexpr bool is_same_decayed() {
+		return std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
+	}
 
 	template<class compare, class... Args>
 	constexpr bool is_equal_to_any() {

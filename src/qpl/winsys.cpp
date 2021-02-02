@@ -119,10 +119,10 @@ namespace qpl {
 				throw std::exception("qpl::winsys::screen_pixels_stream was not initialized");
 			}
 
-			if (this->needs_hdc_update()) {
-				this->update();
-				return;
-			}
+			//if (this->needs_hdc_update()) {
+			//	this->update();
+			//}
+			this->update();
 			
 			SelectObject(this->hCaptureDC, this->hCaptureBitmap);
 
@@ -273,8 +273,46 @@ namespace qpl {
 		bool qpl::winsys::impl::looping_monitors = false;
 		std::vector<monitor_capture> qpl::winsys::impl::monitor_captures;
 
+
+		BOOL CALLBACK call_save_window_names(HWND hwnd, LPARAM lParam) {
+			const DWORD TITLE_SIZE = 1024;
+			WCHAR windowTitle[TITLE_SIZE];
+
+			GetWindowTextW(hwnd, windowTitle, TITLE_SIZE);
+
+			int length = ::GetWindowTextLength(hwnd);
+			std::wstring title(&windowTitle[0]);
+			if (!IsWindowVisible(hwnd) || length == 0 || title == L"Program Manager") {
+				return TRUE;
+			}
+
+			// Retrieve the pointer passed into this callback, and re-'type' it.
+			// The only way for a C API to pass arbitrary data is by means of a void*.
+			std::vector<std::wstring>& titles =
+				*reinterpret_cast<std::vector<std::wstring>*>(lParam);
+			titles.push_back(title);
+
+			return TRUE;
+		}
+
+		std::vector<std::wstring> qpl::winsys::get_all_open_window_names() {
+			std::vector<std::wstring> titles;
+			EnumWindows(call_save_window_names, reinterpret_cast<LPARAM>(&titles));
+			return titles;
+		}
+		void qpl::winsys::print_all_open_window_names() {
+			auto titles = qpl::winsys::get_all_open_window_names();
+			qpl::println(titles.size(), " windows open --- ");
+			for (auto& i : titles) {
+				qpl::println("\"", i, "\"");
+			}
+			qpl::println("--------");
+		}
 		bool qpl::winsys::find_window(std::string name) {
-			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
+			return qpl::winsys::find_window(qpl::string_to_wstring(name));
+		}
+		bool qpl::winsys::find_window(std::wstring name) {
+			HWND handle = FindWindow(NULL, name.c_str());
 
 			if (!IsWindow(handle)) {
 				return false;
@@ -282,7 +320,10 @@ namespace qpl {
 			return true;
 		}
 		void qpl::winsys::close_window(std::string name) {
-			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
+			qpl::winsys::close_window(qpl::string_to_wstring(name));
+		}
+		void qpl::winsys::close_window(std::wstring name) {
+			HWND handle = FindWindow(NULL, name.c_str());
 
 			if (!IsWindow(handle)) {
 				return;
@@ -291,8 +332,11 @@ namespace qpl {
 			CloseWindow(handle);
 		}
 		bool qpl::winsys::set_window_position(std::string name, qpl::winsys::rect rectangle, bool on_top, bool show) {
+			return qpl::winsys::set_window_position(qpl::string_to_wstring(name), rectangle, on_top, show);
+		}
+		bool qpl::winsys::set_window_position(std::wstring name, qpl::winsys::rect rectangle, bool on_top, bool show) {
 
-			HWND handle = FindWindow(NULL, qpl::string_to_wstring(name).c_str());
+			HWND handle = FindWindow(NULL, name.c_str());
 			if (!IsWindow(handle)) {
 				qpl::println("qpl::winsys::set_window_position: couldn't find \"", name, "\"");
 				return false;
@@ -541,4 +585,77 @@ namespace qpl {
 		SetClipboardData(CF_TEXT, hMem);
 		CloseClipboard();
 	}
+
+
+	bool qpl::shared_memory::create(const std::string& name, qpl::u32 size) {
+		this->hMapFile = CreateFileMapping(
+			INVALID_HANDLE_VALUE,    // use paging file
+			NULL,                    // default security
+			PAGE_READWRITE,          // read/write access
+			0,                       // maximum object size (high-order DWORD)
+			size,                // maximum object size (low-order DWORD)
+			qpl::string_to_wstring(name).c_str());                 // name of mapping object
+
+		if (this->hMapFile == nullptr) {
+			qpl::println("qpl::shared_memory::create: could not create file mapping object (", GetLastError(), ")");
+			return false;
+		}
+		this->ptr = MapViewOfFile(this->hMapFile,   
+			FILE_MAP_ALL_ACCESS, 
+			0,
+			0,
+			size);
+
+		if (this->ptr == nullptr) {
+			qpl::println("qpl::shared_memory::create: could not map view of file (", GetLastError(), ")");
+
+			CloseHandle(this->hMapFile);
+
+			return false;
+		}
+		return true;
+	}
+
+	bool qpl::shared_memory::open(const std::string& name, qpl::u32 size) {
+		this->hMapFile = OpenFileMapping(
+			FILE_MAP_ALL_ACCESS,   // read/write access
+			FALSE,                 // do not inherit the name
+			qpl::string_to_wstring(name).c_str());               // name of mapping object
+
+		if (this->hMapFile == nullptr) {
+			qpl::println("qpl::shared_memory::create: could not open file mapping object (", GetLastError(), ")");
+			return false;
+		}
+
+		this->ptr = MapViewOfFile(hMapFile, // handle to map object
+			FILE_MAP_ALL_ACCESS,  // read/write permission
+			0,
+			0,
+			size);
+
+		if (this->ptr == nullptr) {
+			qpl::println("qpl::shared_memory::create: could not map view of file (", GetLastError(), ")");
+
+			CloseHandle(this->hMapFile);
+
+			return false;
+		}
+		return true;
+	}
+
+	void qpl::shared_memory::destroy() {
+		UnmapViewOfFile(this->ptr);
+		CloseHandle(this->hMapFile);
+	}
+	namespace detail {
+		std::unordered_map<std::string, qpl::shared_memory> qpl::detail::shared_memories;
+	}
+
+	void qpl::create_shared_memory(std::string name, qpl::u32 size) {
+		qpl::detail::shared_memories[name].create(name, size);
+	}
+	void qpl::open_shared_memory(std::string name, qpl::u32 size) {
+		qpl::detail::shared_memories[name].open(name, size);
+	}
+
 }

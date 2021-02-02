@@ -44,6 +44,7 @@ namespace qpl {
 		constexpr static qpl::size pixel_bytes() {
 			return qpl::size{ 3 };
 		}
+		QPLDLL std::string string() const;
 	};
 
 	struct pixels {

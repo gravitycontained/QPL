@@ -4,13 +4,22 @@
 
 namespace qpl {
 	std::string qpl::str_spaced(const std::string& string, qpl::size length, char prepend) {
-		return qpl::str_rspaced(string, length, prepend);
+		return qpl::str_lspaced(string, length, prepend);
+	}
+	std::wstring qpl::wstr_spaced(const std::wstring& string, qpl::size length, wchar_t prepend) {
+		return qpl::wstr_lspaced(string, length, prepend);
 	}
 	std::string qpl::str_rspaced(const std::string& string, qpl::size length, char prepend) {
 		return qpl::prepended_to_string_to_fit(string, prepend, length);
 	}
+	std::wstring qpl::wstr_rspaced(const std::wstring& string, qpl::size length, wchar_t prepend) {
+		return qpl::prepended_to_wstring_to_fit(string, prepend, length);
+	}
 	std::string qpl::str_lspaced(const std::string& string, qpl::size length, char prepend) {
 		return qpl::appended_to_string_to_fit(string, prepend, length);
+	}
+	std::wstring qpl::wstr_lspaced(const std::wstring& string, qpl::size length, wchar_t prepend) {
+		return qpl::appended_to_wstring_to_fit(string, prepend, length);
 	}
 
 	bool qpl::string_equals_ignore_case(const std::string& a, const std::string& b) {
@@ -49,6 +58,9 @@ namespace qpl {
 
 
 	std::string qpl::to_string(const std::string& first) {
+		return first;
+	}
+	std::wstring qpl::to_wstring(const std::wstring& first) {
 		return first;
 	}
 	std::string qpl::bool_string(bool b) {
@@ -465,14 +477,41 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	std::string qpl::to_lower(const std::string& string) {
+		auto result = string;
+		for (auto& i : result) {
+			i = std::tolower(i);
+		}
+		return result;
+	}
+	std::string qpl::to_upper(const std::string& string) {
+		auto result = string;
+		for (auto& i : result) {
+			i = std::toupper(i);
+		}
+		return result;
+	}
 	std::vector<std::string> qpl::split(const std::string& string, char by_what) {
 		std::vector<std::string> result;
-		std::smatch smatch;
-		std::regex reg{ "[^" + qpl::to_string(by_what) + "]+" };
-		auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
-		while (s != std::sregex_iterator()) {
-			result.push_back(s->str());
-			++s;
+
+		int before = 0;
+		for (int i = 0; i < string.length(); ) {
+			if (string[i] == by_what) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
 		}
 		return result;
 	}
@@ -489,12 +528,25 @@ namespace qpl {
 	}
 	std::vector<std::string> qpl::split(const std::string& string) {
 		std::vector<std::string> result;
-		std::smatch smatch;
-		std::regex reg{ "[^\\s]+" };
-		auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
-		while (s != std::sregex_iterator()) {
-			result.push_back(s->str());
-			++s;
+
+		int before = 0;
+		for (int i = 0; i < string.length(); ) {
+			if (std::isspace(string[i])) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && std::isspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
 		}
 		return result;
 	}
@@ -621,6 +673,13 @@ namespace qpl {
 		std::istringstream iss(string);
 		qpl::f64 f;
 		iss >> std::noskipws >> f; // noskipws considers leading whitespace invalid
+		// Check the entire string was consumed and if either failbit or badbit is set
+		return iss.eof() && !iss.fail();
+	}
+	bool qpl::is_string_number(std::string string) {
+		std::istringstream iss(string);
+		qpl::i64 i;
+		iss >> std::noskipws >> i; // noskipws considers leading whitespace invalid
 		// Check the entire string was consumed and if either failbit or badbit is set
 		return iss.eof() && !iss.fail();
 	}

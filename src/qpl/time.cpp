@@ -494,6 +494,9 @@ namespace qpl {
 		}
 		return f.nsecs() * (1 - progress);
 	}
+	qpl::time get_remaining_time(qpl::f64 progress, qpl::clock timer) {
+		return qpl::get_remaining_time(progress, timer.elapsed());
+	}
 
 	std::string get_current_time_string_ms() {
 		auto current_time = std::chrono::system_clock::now();
@@ -532,7 +535,7 @@ namespace qpl {
 
 		return qpl::to_string(buffer, ":", qpl::prepended_to_string_to_fit(millis, '0', 3));
 	}
-	std::string get_current_time_string_ymd_hmsms_compact() {
+	std::string qpl::get_current_time_string_ymd_hmsms_compact() {
 		std::time_t rawtime;
 		std::tm* timeinfo;
 		char buffer[80];
@@ -573,6 +576,9 @@ namespace qpl {
 	void qpl::begin_benchmark_end_previous(const std::string& sub, const std::string& name) {
 		qpl::end_benchmark();
 		qpl::begin_benchmark(sub, name);
+	}
+	qpl::halted_clock qpl::get_benchmark(const std::string& name) {
+		return qpl::detail::benchmark_clocks[name];
 	}
 	void qpl::begin_benchmark(const std::string& name) {
 		qpl::detail::last_benchmark_name = name;
