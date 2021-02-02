@@ -1,5 +1,5 @@
 # QPL 
-QPL (Quick Production Library) is a (Windows) C++20 personal utility library with many purposes to help developement. Written by Daniel Rabl (danielrabl1999@gmail.com).
+QPL (Quick Production Library) is a C++20 personal utility library with many purposes to help developement. Written by Daniel Rabl (danielrabl1999@gmail.com).
 
 # Setup
 
