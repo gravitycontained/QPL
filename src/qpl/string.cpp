@@ -44,6 +44,18 @@ namespace qpl {
 		delete[] buf;
 		return r;
 	}
+	std::wstring qpl::string_to_unicode_wstring(const std::string& str) {
+		wchar_t* wc = new wchar_t[str.size()];
+
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		mbstowcs(wc, str.data(), str.size());
+#pragma warning( pop ) 
+		std::wstring result = wc;
+		delete[] wc;
+		return result;
+	}
+	
 
 	std::string qpl::wstring_to_string(const std::wstring& s) {
 		int len;

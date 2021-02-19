@@ -178,10 +178,7 @@ namespace qpl {
 
 	struct fps_counter {
 		fps_counter() {
-			this->ema.reset();
-			this->ema.time_period = 100u;
-			this->clock.reset();
-			this->start = false;
+			this->reset();
 		}
 
 		void set_time_period(qpl::u32 time_period) {
@@ -189,6 +186,13 @@ namespace qpl {
 		}
 		qpl::u32 get_time_period() const {
 			return this->ema.time_period;
+		}
+
+		void reset() {
+			this->ema.reset();
+			this->ema.time_period = 100u;
+			this->clock.reset();
+			this->start = false;
 		}
 
 		void measure() {

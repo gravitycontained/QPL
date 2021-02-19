@@ -42,7 +42,7 @@ namespace qpl {
 		stream.write(file_header.data(), file_header.size());
 		stream.write(info_header.data(), info_header.size());
 
-		for (int i = 0; i < this->height; ++i) {
+		for (qpl::u32 i = 0u; i < this->height; ++i) {
 			stream.write(reinterpret_cast<const char*>(this->data.data()) + (i * qpl::pixel_rgb::pixel_bytes() * this->width), qpl::pixel_rgb::pixel_bytes() * this->width);
 			stream.write(padding, padding_size);
 		}

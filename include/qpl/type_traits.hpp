@@ -212,6 +212,11 @@ namespace qpl {
 	constexpr bool is_equal_to_any() {
 		return (qpl::is_same<compare, Args>() || ...);
 	}
+	template<class compare, class... Args>
+	constexpr bool is_equal_to_any_decayed() {
+		return (qpl::is_same_decayed<compare, Args>() || ...);
+	}
+
 
 
 

@@ -37,6 +37,52 @@ namespace qsf {
 		return true;
 	}
 
+	bool qsf::event_info::mouse_button_clicked(sf::Mouse::Button button) const {
+		if (button == sf::Mouse::Button::Left) {
+			return this->m_left_mouse_clicked;
+		}
+		else if (button == sf::Mouse::Button::Middle) {
+			return this->m_middle_mouse_clicked;
+		}
+		else if (button == sf::Mouse::Button::Right) {
+			return this->m_right_mouse_clicked;
+		}
+		return false;
+	}
+	bool qsf::event_info::mouse_button_released(sf::Mouse::Button button) const {
+		if (button == sf::Mouse::Button::Left) {
+			return this->m_left_mouse_released;
+		}
+		else if (button == sf::Mouse::Button::Middle) {
+			return this->m_middle_mouse_released;
+		}
+		else if (button == sf::Mouse::Button::Right) {
+			return this->m_right_mouse_released;
+		}
+		return false;
+	}
+	bool qsf::event_info::mouse_button_holding(sf::Mouse::Button button) const {
+		if (button == sf::Mouse::Button::Left) {
+			return this->m_holding_left_mouse;
+		}
+		else if (button == sf::Mouse::Button::Middle) {
+			return this->m_holding_middle_mouse;
+		}
+		else if (button == sf::Mouse::Button::Right) {
+			return this->m_holding_right_mouse;
+		}
+		return false;
+	}
+	bool qsf::event_info::mouse_button_clicked() const {
+		return this->m_mouse_clicked;
+	}
+	bool qsf::event_info::mouse_button_released() const {
+		return this->m_mouse_released;
+	}
+	bool qsf::event_info::mouse_button_holding() const {
+		return this->m_mouse_holding;
+	}
+
 	bool qsf::event_info::mouse_moved() const {
 		return this->m_mouse_moved;
 	}
@@ -51,6 +97,12 @@ namespace qsf {
 	}
 	bool qsf::event_info::right_mouse_released() const {
 		return this->m_right_mouse_released;
+	}
+	bool qsf::event_info::middle_mouse_clicked() const {
+		return this->m_middle_mouse_clicked;
+	}
+	bool qsf::event_info::middle_mouse_released() const {
+		return this->m_middle_mouse_released;
 	}
 	bool qsf::event_info::scrolled_up() const {
 		return this->m_scrolled_up;
@@ -80,6 +132,9 @@ namespace qsf {
 	}
 	bool qsf::event_info::holding_right_mouse() const {
 		return this->m_holding_right_mouse;
+	}
+	bool qsf::event_info::holding_middle_mouse() const {
+		return this->m_holding_middle_mouse;
 	}
 	bool qsf::event_info::holding_key() const {
 		return this->m_holding_key;

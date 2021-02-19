@@ -96,6 +96,7 @@ namespace qsf {
 		QPLDLL void set_primitive_type(qsf::primitive_type primitive_type);
 
 		QPLDLL qpl::size size() const;
+		QPLDLL bool empty() const;
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
@@ -147,13 +148,22 @@ namespace qsf {
 		qsf::rgb color = qsf::rgb::black;
 		qpl::f32 outline_thickness;
 		qsf::rgb outline_color;
-		qpl::f32 letter_spacing;
+		qpl::f32 letter_spacing = 1.0f;
 		qsf::vector2f position;
 		std::string string;
 	};
 
 	struct text {
 		QPLDLL std::string get_font() const;
+		QPLDLL qpl::u32 get_style() const;
+		QPLDLL qpl::u32 get_character_size() const;
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qpl::f32 get_outline_thickness() const;
+		QPLDLL qsf::rgb get_outline_color() const;
+		QPLDLL qpl::f32 get_letter_spacing() const;
+		QPLDLL qsf::vector2f get_position() const;
+		QPLDLL qsf::vector2f get_center() const;
+		QPLDLL std::string get_string() const;
 		QPLDLL void set_font(const std::string& font_name);
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void set_character_size(qpl::u32 character_size);
@@ -176,7 +186,10 @@ namespace qsf {
 			*this = other;
 		}
 
-		QPLDLL qsf::vrectangle hitbox() const;
+		QPLDLL qsf::vrectangle visible_hitbox() const;
+		QPLDLL qsf::vrectangle standard_hitbox() const;
+		QPLDLL qsf::vector2f offset() const;
+
 		
 
 		QPLDLL std::string string() const;
@@ -187,12 +200,228 @@ namespace qsf {
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
+		QPLDLL void draw_if_visible(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
 
 		std::string m_font;
 		std::string m_string;
 		sf::Text m_text;
 	};
 
+	struct endl_type {
+
+	};
+
+	QPLDLL extern endl_type endl;
+
+	struct text_stream {
+		enum class duration_type {
+			next_entry, end_of_line, until_end
+		};
+
+		constexpr static duration_type next_entry = duration_type::next_entry;
+		constexpr static duration_type end_of_line = duration_type::end_of_line;
+		constexpr static duration_type until_end = duration_type::until_end;
+
+		struct font {
+			font(const std::string& font, duration_type duration = next_entry) {
+				this->value = font;
+				this->duration = duration;
+			}
+			std::string value;
+			duration_type duration;
+		};
+		text_stream() {
+			this->states.push_back({});
+		}
+		struct color {
+			color(qsf::rgb color, duration_type duration = next_entry) {
+				this->value = color;
+				this->duration = duration;
+			}
+			qsf::rgb value;
+			duration_type duration;
+		};
+		struct character_size {
+			character_size(qpl::u32 character_size, duration_type duration = next_entry) {
+				this->value = character_size;
+				this->duration = duration;
+			}
+			qpl::u32 value;
+			duration_type duration;
+		};
+		struct style {
+			style(qpl::u32 style, duration_type duration = next_entry) {
+				this->duration = duration;
+				this->value = style;
+			}
+			qpl::u32 value;
+			duration_type duration;
+		};
+		struct outline_thickness {
+			outline_thickness(qpl::f32 outline_thickness, duration_type duration = next_entry) {
+				this->value = outline_thickness;
+				this->duration = duration;
+			}
+			qpl::u32 value;
+			duration_type duration;
+		};
+		struct outline_color {
+			outline_color(qsf::rgb outline_color, duration_type duration = next_entry) {
+				this->value = outline_color;
+				this->duration = duration;
+			}
+			qsf::rgb value;
+			duration_type duration;
+		};
+		struct letter_spacing {
+			letter_spacing(qpl::f32 spacing, duration_type duration = next_entry) {
+				this->value = spacing;
+				this->duration = duration;
+			}
+			qpl::u32 value;
+			duration_type duration;
+		};
+
+		
+
+		template<typename T>
+		text_stream& operator<<(const T& value) {
+			return this->operator<<(qpl::to_auto_string(value));
+		}
+		template<>
+		text_stream& operator<<(const text_stream::font& font) {
+			if (this->states.back().duration == font.duration) {
+				this->states.back().font = font.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().font = font.value;
+				this->states.back().duration = font.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const text_stream::color& color) {
+			if (this->states.back().duration == color.duration) {
+				this->states.back().color = color.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().color = color.value;
+				this->states.back().duration = color.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const text_stream::character_size& character_size) {
+			if (this->states.back().duration == character_size.duration) {
+				this->states.back().character_size = character_size.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().character_size = character_size.value;
+				this->states.back().duration = character_size.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const text_stream::style& style) {
+			if (this->states.back().duration == style.duration) {
+				this->states.back().style = style.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().style = style.value;
+				this->states.back().duration = style.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const text_stream::outline_thickness& outline_thickness) {
+			if (this->states.back().duration == outline_thickness.duration) {
+				this->states.back().outline_thickness = outline_thickness.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().outline_thickness = outline_thickness.value;
+				this->states.back().duration = outline_thickness.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const text_stream::outline_color& outline_color) {
+			if (this->states.back().duration == outline_color.duration) {
+				this->states.back().outline_color = outline_color.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().outline_color = outline_color.value;
+				this->states.back().duration = outline_color.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const text_stream::letter_spacing& letter_spacing) {
+			if (this->states.back().duration == letter_spacing.duration) {
+				this->states.back().letter_spacing = letter_spacing.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().letter_spacing = letter_spacing.value;
+				this->states.back().duration = letter_spacing.duration;
+			}
+			return *this;
+		}
+		template<>
+		text_stream& operator<<(const qsf::endl_type& end) {
+			this->new_line();
+			return *this;
+		}
+
+		QPLDLL void apply_state();
+		QPLDLL void new_line();
+		QPLDLL void clear();
+		QPLDLL text_stream& operator<<(const std::string& string);
+		QPLDLL text_stream& operator<<(const std::wstring& string);
+		QPLDLL text_stream& add_string(const std::string& string, bool has_no_newline = false);
+		QPLDLL text_stream& add_string(const std::wstring& string, bool has_no_newline = false);
+		QPLDLL qsf::vrectangle line_hitbox(qpl::u32 index) const;
+		QPLDLL void centerize_line(qpl::u32 index);
+		QPLDLL void centerize_lines();
+		QPLDLL qpl::size size() const;
+		QPLDLL qpl::size lines() const;
+		QPLDLL qsf::text& operator[](qpl::u32 index);
+		QPLDLL const qsf::text& operator[](qpl::u32 index) const;
+		QPLDLL std::vector<qsf::text>& line(qpl::u32 index);
+		QPLDLL const std::vector<qsf::text>& line(qpl::u32 index) const;
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL void set_font(const std::string& font);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_style(qpl::u32 style);
+		QPLDLL void set_character_size(qpl::u32 character_size);
+		QPLDLL void set_outline_thickness(qpl::f32 thickness);
+		QPLDLL void set_outline_color(qsf::rgb color);
+		QPLDLL void set_letter_spacing(qpl::f32 spacing);
+		QPLDLL void set_position(qsf::vector2f position);
+		QPLDLL qsf::vrectangle get_visible_hitbox() const;
+
+		struct state {
+			std::string font;
+			qsf::rgb color = qsf::rgb::white;
+			qpl::u32 style = sf::Text::Style::Regular;
+			qpl::u32 character_size = 20u;
+			qpl::f32 outline_thickness;
+			qsf::rgb outline_color;
+			qpl::f32 letter_spacing = 1.0f;
+			duration_type duration = duration_type::until_end;
+		};
+		std::vector<state> states;
+		std::vector<std::vector<qsf::text>> texts;
+		qpl::f32 line_spacing = 5.0f;
+
+		qsf::vector2f position = { 20, 20 };
+	};
 
 	struct vrectangle {
 		vrectangle() {
@@ -235,7 +464,7 @@ namespace qsf {
 		qsf::vector2f dimension;
 		qsf::vector2f position;
 		qsf::rgb color;
-		qpl::f32 outline_thickness;
+		qpl::f32 outline_thickness = 0.0f;
 		qsf::rgb outline_color;
 	};
 
@@ -708,6 +937,7 @@ namespace qsf {
 		QPLDLL void clear();
 		QPLDLL qpl::size size() const;
 
+		qsf::vector2f position;
 		qsf::vpoints points;
 		qpl::f32 thickness = 1.0f;
 	};
@@ -735,6 +965,7 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL void clear();
 		QPLDLL qpl::size size() const;
+		QPLDLL bool empty() const;
 
 		qsf::vertex_array vertices;
 	};
@@ -762,23 +993,55 @@ namespace qsf {
 
 	struct tile_map {
 
-		QPLDLL void set_texture_ptr(sf::Texture& texture, qsf::vector2u texture_tile_dimension);
-		QPLDLL void set_texture_ptr(sf::Texture& texture, qpl::u32 texture_tile_width);
+		QPLDLL void set_texture_ptr(const sf::Texture& texture, qsf::vector2u texture_tile_dimension);
+		QPLDLL void set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width);
+
+		//pair.first = index - pair.second = rotation (0-7)
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color);
+		//pair.first = index - pair.second = rotation (0-7)
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width);
+
+
+		//pair.first = index - pair.second = rotation (0-360)
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color);
+		//pair.first = index - pair.second = rotation (0-360)
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width);
+
+
 		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qsf::rgb color);
 		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width);
-		QPLDLL void zoom(qpl::f32 delta, qsf::vector2f screen_position);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
-		sf::VertexArray vertices;
+		//pair.first = index - pair.second = rotation (0-7)
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
+		//pair.first = index - pair.second = rotation (0-7)
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qpl::u32 skip_index = 0u);
+
+		//pair.first = index - pair.second = rotation (0-360)
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
+		//pair.first = index - pair.second = rotation (0-360)
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width, qpl::u32 skip_index = 0u);
+
+		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qpl::u32 skip_index = 0u);
+
+		QPLDLL void set_color(qsf::rgb color);
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL qpl::size size() const;
+		QPLDLL qpl::size chunk_count() const;
+		QPLDLL void set_chunk_dimension(qpl::u32 x, qpl::u32 y);
+		QPLDLL void clear();
+
+		qsf::vector2u max_chunk_size = { qpl::u32_max, qpl::u32_max };
+		qpl::u32 chunk_width_count = 0u;
+		std::vector<sf::VertexArray> chunks;
 		const sf::Texture* texture_ptr;
 		bool texture_ptr_set = false;
 		qsf::vector2u texture_tile_dimension;
-
-		qsf::vector2f position = { 0, 0 };
-		qsf::vector2f scale = { 1, 1 };
-		qpl::f32 rotation = 0;
-
+		qsf::rgb color;
 	};
+
+
 
 	struct vgraph {
 		
@@ -884,8 +1147,11 @@ namespace qsf {
 		qsf::vtext y_axis_text;
 		bool y_axis_text_left = true;
 		bool y_axis_text_percent = false;
+		bool y_axis_text_integer = false;
 		qpl::size y_axis_text_precision = 5u;
 		bool use_y_axis = false;
+		bool y_axis_start_at_0 = false;
+		qpl::f64 y_axis_padding = 0.1;
 
 		qpl::f64 x_axis_text_space = 5.0;
 		qpl::size x_axis_line_frequency = 200u;
@@ -1144,6 +1410,7 @@ namespace qsf {
 		qsf::rectangle background;
 	};
 
+	struct view_rectangle;
 	struct vbutton {
 
 		vbutton() {
@@ -1163,6 +1430,7 @@ namespace qsf {
 		QPLDLL bool is_hovering() const;
 		QPLDLL bool is_clicked() const;
 		QPLDLL void update(const event_info& event_info);
+		QPLDLL void update(const event_info& event_info, qsf::view_rectangle view);
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL qsf::vbutton& operator=(const qsf::vbutton& button);
@@ -1202,6 +1470,7 @@ namespace qsf {
 		QPLDLL bool is_hovering() const;
 		QPLDLL bool is_clicked() const;
 		QPLDLL void update(const event_info& event_info);
+		QPLDLL void update(const event_info& event_info, qsf::view_rectangle view);
 
 		bool outline_on_hover = true;
 		bool invert_on_hover = true;
@@ -1213,6 +1482,8 @@ namespace qsf {
 		bool hovering = false;
 		bool clicked = false;
 	};
+
+
 
 	namespace detail {
 		QPLDLL extern std::unordered_map<std::string, qsf::text> texts;

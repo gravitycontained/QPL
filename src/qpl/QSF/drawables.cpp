@@ -2,6 +2,7 @@
 #if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/event_info.hpp>
+#include <qpl/QSF/utility.hpp>
 #include <qpl/algorithm.hpp>
 
 #include <qpl/time.hpp>
@@ -23,7 +24,7 @@ namespace qsf {
 		return rectangle;
 	}
 	qsf::vrectangle qsf::text_hitbox(const qsf::text& text) {
-		return text.hitbox();
+		return text.visible_hitbox();
 	}
 	void qsf::centerize_text(sf::Text& text) {
 		auto rect = qsf::text_hitbox(text).dimension;
@@ -82,6 +83,9 @@ namespace qsf {
 
 	qpl::size qsf::vertex_array::size() const {
 		return this->vertices.size();
+	}
+	bool qsf::vertex_array::empty() const {
+		return this->vertices.empty();
 	}
 	void qsf::vertex_array::resize(qpl::size new_size) {
 		this->vertices.resize(new_size);
@@ -189,10 +193,40 @@ namespace qsf {
 	std::string qsf::text::get_font() const {
 		return this->m_font;
 	}
+	qpl::u32 qsf::text::get_style() const {
+		return this->m_text.getStyle();
+	}
+	qpl::u32 qsf::text::get_character_size() const {
+		return this->m_text.getCharacterSize();
+	}
+	qsf::rgb qsf::text::get_color() const {
+		return this->m_text.getFillColor();
+	}
+	qpl::f32 qsf::text::get_outline_thickness() const {
+		return this->m_text.getOutlineThickness();
+	}
+	qsf::rgb qsf::text::get_outline_color() const {
+		return this->m_text.getOutlineColor();
+	}
+	qpl::f32 qsf::text::get_letter_spacing() const {
+		return this->m_text.getLetterSpacing();
+	}
+	qsf::vector2f qsf::text::get_position() const {
+		return this->m_text.getPosition();
+	}
+	qsf::vector2f qsf::text::get_center() const {
+		return this->standard_hitbox().get_center();
+	}
+	std::string qsf::text::get_string() const {
+		return this->m_string;
+	}
 	void qsf::text::set_font(const std::string& font_name) {
 		this->m_font = font_name;
 		if (qsf::find_font(font_name)) {
 			this->m_text.setFont(qsf::get_font(font_name));
+		}
+		else {
+			qpl::println("couldn't find font \"", font_name, "\"");
 		}
 	}
 	void qsf::text::set_style(qpl::u32 style) {
@@ -246,7 +280,7 @@ namespace qsf {
 	void qsf::text::move(qsf::vector2f delta) {
 		this->m_text.move(delta);
 	}
-	qsf::vrectangle qsf::text::hitbox() const {
+	qsf::vrectangle qsf::text::visible_hitbox() const {
 		qsf::vrectangle rectangle;
 		auto local_bounds = this->m_text.getLocalBounds();
 		auto global_bounds = this->m_text.getGlobalBounds();
@@ -255,6 +289,22 @@ namespace qsf {
 		rectangle.set_dimension({ local_bounds.width, local_bounds.height });
 
 		return rectangle;
+	}
+	qsf::vrectangle qsf::text::standard_hitbox() const {
+		qsf::vrectangle rectangle;
+		auto local_bounds = this->m_text.getLocalBounds();
+		//auto global_bounds = this->m_text.getGlobalBounds();
+
+		rectangle.set_position(this->m_text.getPosition());
+		rectangle.set_dimension({ local_bounds.width, local_bounds.height });
+
+		
+
+		return rectangle;
+	}
+	qsf::vector2f qsf::text::offset() const {
+		auto visible = this->visible_hitbox();
+		return visible.position - this->get_position();
 	}
 
 	std::string qsf::text::string() const {
@@ -284,9 +334,296 @@ namespace qsf {
 	}
 
 	void qsf::text::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		//qpl::println_dash(this->string(), this->m_text.getCharacterSize(), this->m_text.getPosition().x, this->m_text.getPosition().y);
-		window.draw(this->m_text);
+		window.draw(this->m_text, states);
 	}
+
+	void qsf::text::draw_if_visible(sf::RenderTarget& window, sf::RenderStates states) const {
+
+		auto hb = this->visible_hitbox();
+
+		auto rect = states.transform.transformRect(sf::FloatRect(hb.position.x, hb.position.y, hb.dimension.x, hb.dimension.y));
+		auto fov = sf::FloatRect(0, 0, window.getSize().x, window.getSize().y);
+
+
+		if (rect.intersects(fov)) {
+			window.draw(this->m_text, states);
+		}
+	}
+
+
+	qsf::endl_type endl;
+
+	void qsf::text_stream::apply_state() {
+		this->texts.back().back().set_character_size(this->states.back().character_size);
+		this->texts.back().back().set_font(this->states.back().font);
+		this->texts.back().back().set_style(this->states.back().style);
+		this->texts.back().back().set_color(this->states.back().color);
+		this->texts.back().back().set_letter_spacing(this->states.back().letter_spacing);
+		this->texts.back().back().set_outline_thickness(this->states.back().outline_thickness);
+		this->texts.back().back().set_outline_color(this->states.back().outline_color);
+	}
+	void qsf::text_stream::new_line() {
+		auto hitbox = this->line_hitbox(this->lines() - 1);
+		this->texts.push_back({});
+		this->texts.back().push_back({});
+		this->texts.back().back().set_position(qsf::vector2f(hitbox.position + qsf::vector2f(0, hitbox.dimension.y + this->line_spacing)));
+		this->apply_state();
+
+
+		if (this->states.size() > 1) {
+			if (this->states.back().duration == qsf::text_stream::duration_type::next_entry || this->states.back().duration == qsf::text_stream::duration_type::end_of_line) {
+				this->states.pop_back();
+			}
+		}
+	}
+	void qsf::text_stream::clear() {
+		this->texts.clear();
+		this->states.resize(1);
+	}
+	text_stream& qsf::text_stream::operator<<(const std::string& string) {
+		return this->add_string(string);
+	}
+	text_stream& qsf::text_stream::operator<<(const std::wstring& string) {
+		return this->add_string(string);
+	}
+
+	text_stream& qsf::text_stream::add_string(const std::string& string, bool has_no_newline) {
+		if (!has_no_newline) {
+			qpl::u32 last = 0u;
+			for (qpl::u32 i = 0u; !has_no_newline && i < string.size(); ++i) {
+				if (string[i] == '\n') {
+					qpl::i32 size = qpl::i32_cast(i) - 1 - qpl::i32_cast(last);
+					if (size > 0) {
+						std::string sub = std::string(string.begin() + last, string.begin() + i);
+						this->add_string(sub, true);
+					}
+					while (i < string.length() && string[i] == '\n') {
+						this->new_line();
+						++i;
+					}
+					last = i;
+				}
+			}
+			std::string sub = std::string(string.begin() + last, string.end());
+			return this->add_string(sub, true);
+		}
+		if (this->texts.empty()) {
+			this->texts.push_back({});
+			this->texts.back().push_back({});
+			this->texts.back().back().set_position(this->position);
+		}
+		else {
+			this->texts.back().push_back(this->texts.back().back());
+		}
+		auto hitbox = this->line_hitbox(this->lines() - 1);
+		this->apply_state();
+		this->texts.back().back().set_string(string);
+		this->texts.back().back().set_position(hitbox.position + hitbox.dimension.just_x() + qsf::vector2f(this->states.back().letter_spacing, -this->texts.back().back().offset().y));
+
+		this->centerize_line(this->lines() - 1);
+
+
+		if (this->states.size() > 1) {
+			if (this->states.back().duration == qsf::text_stream::duration_type::next_entry) {
+				this->states.pop_back();
+			}
+		}
+		return *this;
+	}
+
+	text_stream& qsf::text_stream::add_string(const std::wstring& string, bool has_no_newline) {
+		if (!has_no_newline) {
+			qpl::u32 last = 0u;
+			for (qpl::u32 i = 0u; !has_no_newline && i < string.size(); ++i) {
+				if (string[i] == L'\n') {
+					qpl::i32 size = qpl::i32_cast(i) - 1 - qpl::i32_cast(last);
+					if (size > 0) {
+						std::wstring sub = std::wstring(string.begin() + last, string.begin() + i);
+						this->add_string(sub, true);
+					}
+					while (i < string.length() && string[i] == L'\n') {
+						this->new_line();
+						++i;
+					}
+					last = i;
+				}
+			}
+			std::wstring sub = std::wstring(string.begin() + last, string.end());
+			return this->add_string(sub, true);
+		}
+		if (this->texts.empty()) {
+			this->texts.push_back({});
+			this->texts.back().push_back({});
+			this->texts.back().back().set_position(this->position);
+		}
+		else {
+			this->texts.back().push_back(this->texts.back().back());
+		}
+		auto hitbox = this->line_hitbox(this->lines() - 1);
+		this->apply_state();
+		this->texts.back().back().m_string = qpl::wstring_to_string(string);
+		this->texts.back().back().m_text.setString(string);
+		this->texts.back().back().set_position(hitbox.position + hitbox.dimension.just_x() + qsf::vector2f(this->states.back().letter_spacing, -this->texts.back().back().offset().y));
+
+		this->centerize_line(this->lines() - 1);
+
+		if (this->states.size() > 1) {
+			if (this->states.back().duration == qsf::text_stream::duration_type::next_entry) {
+				this->states.pop_back();
+			}
+		}
+
+		return *this;
+	}
+	qsf::vrectangle qsf::text_stream::line_hitbox(qpl::u32 index) const {
+		if (index >= this->texts.size()) {
+			return {};
+		}
+		auto front_hitbox = this->texts[index].front().visible_hitbox();
+		qpl::f32 min_y = front_hitbox.position.y;
+		qpl::f32 max_y = front_hitbox.position.y + front_hitbox.dimension.y;
+
+		for (qpl::u32 i = 1u; i < this->texts[index].size(); ++i) {
+			auto hitbox = this->texts[index][i].visible_hitbox();
+			if (min_y > hitbox.position.y) {
+				min_y = hitbox.position.y;
+			}
+			if (max_y < hitbox.position.y + hitbox.dimension.y) {
+				max_y = hitbox.position.y + hitbox.dimension.y;
+			}
+		}
+
+		qsf::vrectangle hitbox;
+		hitbox.position.x = front_hitbox.position.x;
+		hitbox.position.y = min_y;
+		hitbox.dimension.y = max_y - min_y;
+		auto back_hitbox = this->texts[index].back().visible_hitbox();
+		hitbox.dimension.x = (back_hitbox.position.x + back_hitbox.dimension.x) - hitbox.position.x;
+
+		if (this->texts[index].size() == 1 && this->texts[index].front().get_string().empty()) {
+			hitbox.dimension.y = this->texts[index].back().get_character_size();
+		}
+		return hitbox;
+
+	}
+	void qsf::text_stream::centerize_line(qpl::u32 index) {
+		auto hitbox = this->line_hitbox(index);
+		
+		for (auto& line : this->texts[index]) {
+			auto diff = hitbox.dimension.y - line.visible_hitbox().dimension.y;
+			line.set_position(qsf::vector2f(line.get_position().x, hitbox.position.y - line.offset().y) + qsf::vector2f(0, diff / 2));
+		}
+	}
+	void qsf::text_stream::centerize_lines() {
+		for (qpl::u32 i = 0; i < this->lines(); ++i) {
+			this->centerize_line(i);
+		}
+	}
+	qpl::size qsf::text_stream::size() const {
+		qpl::size result = 0u;
+		for (auto& i : this->texts) {
+			result += i.size();
+		}
+		return result;
+	}
+	qpl::size qsf::text_stream::lines() const {
+		return this->texts.size();
+	}
+	qsf::text& qsf::text_stream::operator[](qpl::u32 index) {
+		qpl::size result = 0u;
+		for (auto& i : this->texts) {
+			if (index >= result && index < result + i.size()) {
+				return i[index - result];
+			}
+			result += i.size();
+		}
+		return this->texts.back().back();
+	}
+	const qsf::text& qsf::text_stream::operator[](qpl::u32 index) const {
+		qpl::size result = 0u;
+		for (auto& i : this->texts) {
+			if (index >= result && index < result + i.size()) {
+				return i[index - result];
+			}
+			result += i.size();
+		}
+		return this->texts.back().back();
+	}
+	std::vector<qsf::text>& qsf::text_stream::line(qpl::u32 index) {
+		return this->texts[index];
+	}
+	const std::vector<qsf::text>& qsf::text_stream::line(qpl::u32 index) const {
+		return this->texts[index];
+	}
+	void qsf::text_stream::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		for (auto& i : this->texts) {
+			for (auto& j : i) {
+				j.draw(window, states);
+			}
+		}
+	}
+	void qsf::text_stream::set_font(const std::string& font) {
+		for (auto& i : this->states) {
+			i.font = font;
+		}
+	}
+	void qsf::text_stream::set_color(qsf::rgb color) {
+		for (auto& i : this->states) {
+			i.color = color;
+		}
+	}
+	void qsf::text_stream::set_style(qpl::u32 style) {
+		for (auto& i : this->states) {
+			i.style = style;
+		}
+	}
+	void qsf::text_stream::set_character_size(qpl::u32 character_size) {
+		for (auto& i : this->states) {
+			i.character_size = character_size;
+		}
+	}
+	void qsf::text_stream::set_outline_thickness(qpl::f32 thickness) {
+		for (auto& i : this->states) {
+			i.outline_thickness = thickness;
+		}
+	}
+	void qsf::text_stream::set_outline_color(qsf::rgb color) {
+		for (auto& i : this->states) {
+			i.outline_color = color;
+		}
+	}
+	void qsf::text_stream::set_letter_spacing(qpl::f32 spacing) {
+		for (auto& i : this->states) {
+			i.letter_spacing = spacing;
+		}
+	}
+	void qsf::text_stream::set_position(qsf::vector2f position) {
+		this->position = position;
+	}
+	qsf::vrectangle qsf::text_stream::get_visible_hitbox() const {
+		qpl::u32 index = this->lines() - 1;
+		while (index && (this->texts[index].size() == 1u && this->texts[index][0].get_string().empty())) {
+			--index;
+		}
+		auto back_box = this->line_hitbox(index);
+		
+		qsf::vrectangle front_box;
+		qpl::f32 max_x = 0;
+		for (qpl::u32 i = 0u; i <= index; ++i) {
+			auto hitbox = this->line_hitbox(i);
+			if (!i) {
+				front_box = this->line_hitbox(0u);
+			}
+			max_x = qpl::max(max_x, hitbox.dimension.x);
+		}
+
+		qsf::vrectangle result;
+		result.position = front_box.position;
+		result.dimension.y= (back_box.position.y + back_box.dimension.y) - result.position.y;
+		result.dimension.x = max_x;
+		return result;
+	}
+
 
 	void qsf::vrectangle::set_dimension(qsf::vector2f dimension) {
 		this->dimension = dimension;
@@ -373,7 +710,7 @@ namespace qsf {
 			position.y > pos.y && position.y < (pos.y + dim.y));
 	}
 	void qsf::rectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		window.draw(this->m_rect);
+		window.draw(this->m_rect, states);
 	}
 
 	qsf::vector2f qsf::rectangle::get_position() const {
@@ -410,10 +747,10 @@ namespace qsf {
 
 	qsf::rectangle& qsf::rectangle::operator=(const qsf::vrectangle& rectangle) {
 		this->set_color(rectangle.color);
+		this->set_position(rectangle.position);
 		this->set_dimension(rectangle.dimension);
 		this->set_outline_color(rectangle.outline_color);
 		this->set_outline_thickness(rectangle.outline_thickness);
-		this->set_position(rectangle.position);
 		return *this;
 	}
 
@@ -1332,14 +1669,11 @@ namespace qsf {
 			this->vertices[this->vertices.size() - 1].color = color;
 		}
 
-		//qpl::println(this->vertices[this->vertices.getVertexCount() - 2].position.x, ", ", this->vertices[this->vertices.getVertexCount() - 2].position.y);
-		//qpl::println(this->vertices[this->vertices.getVertexCount() - 1].position.x, ", ", this->vertices[this->vertices.getVertexCount() - 1].position.y);
-
 	}
 	qsf::thick_lines& qsf::thick_lines::operator=(const qsf::vthick_lines& lines) {
 		this->vertices.clear();
 		for (auto& p : lines.points.points) {
-			this->add_thick_line(p, lines.thickness);
+			this->add_thick_line(p.position + lines.position, p.color, lines.thickness);
 		}
 		return *this;
 	}
@@ -1352,7 +1686,9 @@ namespace qsf {
 	qpl::size qsf::thick_lines::size() const {
 		return this->vertices.size();
 	}
-
+	bool qsf::thick_lines::empty() const {
+		return this->vertices.empty();
+	}
 
 	void qsf::pixel_image::set_array_dimension(qsf::vector2u dimension) {
 		this->positions_set = this->array_dimension == dimension;
@@ -1413,13 +1749,350 @@ namespace qsf {
 	}
 
 
-	void qsf::tile_map::set_texture_ptr(sf::Texture& texture, qsf::vector2u texture_tile_dimension) {
+	void qsf::tile_map::set_texture_ptr(const sf::Texture& texture, qsf::vector2u texture_tile_dimension) {
 		this->texture_ptr = &texture;
 		this->texture_tile_dimension = texture_tile_dimension;
 		this->texture_ptr_set = true;
 	}
-	void qsf::tile_map::set_texture_ptr(sf::Texture& texture, qpl::u32 texture_tile_width) {
+	void qsf::tile_map::set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width) {
 		this->set_texture_ptr(texture, qsf::vector2u(texture_tile_width, texture_tile_width));
+	}
+
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width, qsf::rgb color) {
+		if (!this->texture_ptr_set) {
+			qpl::println("tile_map::create: texture_ptr not set");
+			return;
+		}
+
+		this->chunks.clear();
+		this->color = color;
+		auto chunk_width = (width - 1) / this->max_chunk_size.x + 1;
+		auto chunk_height = (indices.size() / width - 1) / this->max_chunk_size.y + 1;
+		auto chunk_dim = chunk_width * chunk_height;
+
+		this->chunk_width_count = chunk_width;
+		this->chunks.resize(chunk_dim);
+		for (auto& chunk : this->chunks) {
+			chunk.setPrimitiveType(sf::Quads);
+			chunk.resize(this->max_chunk_size.y * this->max_chunk_size.x * 4);
+		}
+
+		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+		if (color == qsf::rgb::white) {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile = indices[i];
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+
+				auto& chunk = this->chunks[chunk_x + chunk_y * chunk_width];
+
+				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
+
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				if (tile.second == 0b000) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_0;
+					chunk[chunk_index * 4 + 1].texCoords = tex_1;
+					chunk[chunk_index * 4 + 2].texCoords = tex_2;
+					chunk[chunk_index * 4 + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b001) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_1;
+					chunk[chunk_index * 4 + 1].texCoords = tex_0;
+					chunk[chunk_index * 4 + 2].texCoords = tex_3;
+					chunk[chunk_index * 4 + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b010) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_3;
+					chunk[chunk_index * 4 + 1].texCoords = tex_2;
+					chunk[chunk_index * 4 + 2].texCoords = tex_1;
+					chunk[chunk_index * 4 + 3].texCoords = tex_0;
+				}
+				else if (tile.second == 0b011) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_2;
+					chunk[chunk_index * 4 + 1].texCoords = tex_3;
+					chunk[chunk_index * 4 + 2].texCoords = tex_0;
+					chunk[chunk_index * 4 + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b100) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_3;
+					chunk[chunk_index * 4 + 1].texCoords = tex_0;
+					chunk[chunk_index * 4 + 2].texCoords = tex_1;
+					chunk[chunk_index * 4 + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b101) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_2;
+					chunk[chunk_index * 4 + 1].texCoords = tex_1;
+					chunk[chunk_index * 4 + 2].texCoords = tex_0;
+					chunk[chunk_index * 4 + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b110) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_0;
+					chunk[chunk_index * 4 + 1].texCoords = tex_3;
+					chunk[chunk_index * 4 + 2].texCoords = tex_2;
+					chunk[chunk_index * 4 + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b111) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_1;
+					chunk[chunk_index * 4 + 1].texCoords = tex_2;
+					chunk[chunk_index * 4 + 2].texCoords = tex_3;
+					chunk[chunk_index * 4 + 3].texCoords = tex_0;
+				}
+			}
+		}
+		else {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile = indices[i];
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+
+				auto& chunk = this->chunks[chunk_x + chunk_y * chunk_width];
+
+				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
+
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[chunk_index * 4 + 0].color = color;
+				chunk[chunk_index * 4 + 1].color = color;
+				chunk[chunk_index * 4 + 2].color = color;
+				chunk[chunk_index * 4 + 3].color = color;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				if (tile.second == 0b000) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_0;
+					chunk[chunk_index * 4 + 1].texCoords = tex_1;
+					chunk[chunk_index * 4 + 2].texCoords = tex_2;
+					chunk[chunk_index * 4 + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b001) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_1;
+					chunk[chunk_index * 4 + 1].texCoords = tex_0;
+					chunk[chunk_index * 4 + 2].texCoords = tex_3;
+					chunk[chunk_index * 4 + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b010) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_3;
+					chunk[chunk_index * 4 + 1].texCoords = tex_2;
+					chunk[chunk_index * 4 + 2].texCoords = tex_1;
+					chunk[chunk_index * 4 + 3].texCoords = tex_0;
+				}
+				else if (tile.second == 0b011) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_2;
+					chunk[chunk_index * 4 + 1].texCoords = tex_3;
+					chunk[chunk_index * 4 + 2].texCoords = tex_0;
+					chunk[chunk_index * 4 + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b100) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_3;
+					chunk[chunk_index * 4 + 1].texCoords = tex_0;
+					chunk[chunk_index * 4 + 2].texCoords = tex_1;
+					chunk[chunk_index * 4 + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b101) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_2;
+					chunk[chunk_index * 4 + 1].texCoords = tex_1;
+					chunk[chunk_index * 4 + 2].texCoords = tex_0;
+					chunk[chunk_index * 4 + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b110) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_0;
+					chunk[chunk_index * 4 + 1].texCoords = tex_3;
+					chunk[chunk_index * 4 + 2].texCoords = tex_2;
+					chunk[chunk_index * 4 + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b111) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_1;
+					chunk[chunk_index * 4 + 1].texCoords = tex_2;
+					chunk[chunk_index * 4 + 2].texCoords = tex_3;
+					chunk[chunk_index * 4 + 3].texCoords = tex_0;
+				}
+			}
+		}
+
+	}
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width) {
+		this->create(indices, width, qsf::rgb::white);
+	}
+
+
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width, qsf::rgb color) {
+		if (!this->texture_ptr_set) {
+			qpl::println("tile_map::create: texture_ptr not set");
+			return;
+		}
+
+		this->chunks.clear();
+		this->color = color;
+		auto chunk_width = (width - 1) / this->max_chunk_size.x + 1;
+		auto chunk_height = (indices.size() / width - 1) / this->max_chunk_size.y + 1;
+		auto chunk_dim = chunk_width * chunk_height;
+
+		this->chunk_width_count = chunk_width;
+		this->chunks.resize(chunk_dim);
+		for (auto& chunk : this->chunks) {
+			chunk.setPrimitiveType(sf::Quads);
+			chunk.resize(this->max_chunk_size.y * this->max_chunk_size.x * 4);
+		}
+
+		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+		if (color == qsf::rgb::white) {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile = indices[i];
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+
+				auto& chunk = this->chunks[chunk_x + chunk_y * chunk_width];
+
+				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
+
+				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+
+				auto diagonal = std::sqrt(std::pow(this->texture_tile_dimension.x, 2) + std::pow(this->texture_tile_dimension.y, 2));
+				auto angle = tile.second + (qpl::pi * 1.25);
+				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+
+				chunk[chunk_index * 4 + 0].position = pos_1;
+				chunk[chunk_index * 4 + 1].position = pos_2;
+				chunk[chunk_index * 4 + 2].position = pos_3;
+				chunk[chunk_index * 4 + 3].position = pos_4;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				chunk[chunk_index * 4 + 0].texCoords = tex_0;
+				chunk[chunk_index * 4 + 1].texCoords = tex_1;
+				chunk[chunk_index * 4 + 2].texCoords = tex_2;
+				chunk[chunk_index * 4 + 3].texCoords = tex_3;
+			}
+		}
+		else {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile = indices[i];
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+
+				auto& chunk = this->chunks[chunk_x + chunk_y * chunk_width];
+
+				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
+
+				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+
+				auto diagonal = std::sqrt(std::pow(this->texture_tile_dimension.x, 2) + std::pow(this->texture_tile_dimension.y, 2));
+				auto angle = tile.second + (qpl::pi * 1.25);
+				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+
+				chunk[chunk_index * 4 + 0].position = pos_1;
+				chunk[chunk_index * 4 + 1].position = pos_2;
+				chunk[chunk_index * 4 + 2].position = pos_3;
+				chunk[chunk_index * 4 + 3].position = pos_4;
+
+				chunk[chunk_index * 4 + 0].color = color;
+				chunk[chunk_index * 4 + 1].color = color;
+				chunk[chunk_index * 4 + 2].color = color;
+				chunk[chunk_index * 4 + 3].color = color;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				if (tile.second == 0b000) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_0;
+					chunk[chunk_index * 4 + 1].texCoords = tex_1;
+					chunk[chunk_index * 4 + 2].texCoords = tex_2;
+					chunk[chunk_index * 4 + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b001) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_1;
+					chunk[chunk_index * 4 + 1].texCoords = tex_0;
+					chunk[chunk_index * 4 + 2].texCoords = tex_3;
+					chunk[chunk_index * 4 + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b010) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_3;
+					chunk[chunk_index * 4 + 1].texCoords = tex_2;
+					chunk[chunk_index * 4 + 2].texCoords = tex_1;
+					chunk[chunk_index * 4 + 3].texCoords = tex_0;
+				}
+				else if (tile.second == 0b011) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_2;
+					chunk[chunk_index * 4 + 1].texCoords = tex_3;
+					chunk[chunk_index * 4 + 2].texCoords = tex_0;
+					chunk[chunk_index * 4 + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b100) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_3;
+					chunk[chunk_index * 4 + 1].texCoords = tex_0;
+					chunk[chunk_index * 4 + 2].texCoords = tex_1;
+					chunk[chunk_index * 4 + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b101) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_2;
+					chunk[chunk_index * 4 + 1].texCoords = tex_1;
+					chunk[chunk_index * 4 + 2].texCoords = tex_0;
+					chunk[chunk_index * 4 + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b110) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_0;
+					chunk[chunk_index * 4 + 1].texCoords = tex_3;
+					chunk[chunk_index * 4 + 2].texCoords = tex_2;
+					chunk[chunk_index * 4 + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b111) {
+					chunk[chunk_index * 4 + 0].texCoords = tex_1;
+					chunk[chunk_index * 4 + 1].texCoords = tex_2;
+					chunk[chunk_index * 4 + 2].texCoords = tex_3;
+					chunk[chunk_index * 4 + 3].texCoords = tex_0;
+				}
+			}
+		}
+
+	}
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width) {
+		this->create(indices, width, qsf::rgb::white);
 	}
 	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::u32 width, qsf::rgb color) {
 		if (!this->texture_ptr_set) {
@@ -1427,8 +2100,19 @@ namespace qsf {
 			return;
 		}
 
-		this->vertices.setPrimitiveType(sf::Quads);
-		this->vertices.resize(indices.size() * 4);
+		this->chunks.clear();
+		this->color = color;		
+
+		auto chunk_width = (width - 1) / this->max_chunk_size.x + 1;
+		auto chunk_height = (indices.size() / width - 1) / this->max_chunk_size.y + 1;
+		auto chunk_dim = chunk_width * chunk_height;
+		this->chunk_width_count = chunk_width;
+		this->chunks.resize(chunk_dim);
+		for (auto& chunk : this->chunks) {
+			chunk.setPrimitiveType(sf::Quads);
+			chunk.resize(this->max_chunk_size.y * this->max_chunk_size.x * 4);
+		}
+
 		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
 		if (color == qsf::rgb::white) {
@@ -1438,15 +2122,23 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				this->vertices[i * 4 + 0].position = sf::Vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 1].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 2].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 3].position = sf::Vector2f(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
 
-				this->vertices[i * 4 + 0].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 1].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 2].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 3].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+
+				auto& chunk = this->chunks[chunk_x + chunk_y * chunk_width];
+
+				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
+
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[chunk_index * 4 + 0].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
 			}
 		}
 		else {
@@ -1456,20 +2148,27 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				this->vertices[i * 4 + 0].position = sf::Vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 1].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 2].position = sf::Vector2f((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 3].position = sf::Vector2f(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
 
-				this->vertices[i * 4 + 0].color = color;
-				this->vertices[i * 4 + 1].color = color;
-				this->vertices[i * 4 + 2].color = color;
-				this->vertices[i * 4 + 3].color = color;
+				auto& chunk = this->chunks[chunk_x + chunk_y * chunk_width];
 
-				this->vertices[i * 4 + 0].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 1].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 2].texCoords = sf::Vector2f((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
-				this->vertices[i * 4 + 3].texCoords = sf::Vector2f(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
+
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[chunk_index * 4 + 0].color = color;
+				chunk[chunk_index * 4 + 1].color = color;
+				chunk[chunk_index * 4 + 2].color = color;
+				chunk[chunk_index * 4 + 3].color = color;
+
+				chunk[chunk_index * 4 + 0].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
 			}
 		}
 		
@@ -1477,16 +2176,469 @@ namespace qsf {
 	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::u32 width) {
 		this->create(indices, width, qsf::rgb::white);
 	}
-	void qsf::tile_map::zoom(qpl::f32 delta, qsf::vector2f screen_position) {
-		this->scale *= (1 + delta);
-		this->position += (screen_position * delta) / (this->scale);
+
+
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width, qsf::rgb color, qpl::u32 skip_index) {
+		if (!this->texture_ptr_set) {
+			qpl::println("tile_map::create: texture_ptr not set");
+			return;
+		}
+
+		this->chunks.clear();
+		this->color = color;
+		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+		auto chunk_width = (width - 1) / this->max_chunk_size.x + 1;
+		auto chunk_height = (indices.size() / width - 1) / this->max_chunk_size.y + 1;
+		auto chunk_dim = chunk_width * chunk_height;
+
+		this->chunk_width_count = chunk_width;
+		this->chunks.resize(chunk_dim);
+		for (auto& chunk : this->chunks) {
+			chunk.setPrimitiveType(sf::Quads);
+		}
+
+		if (color == qsf::rgb::white) {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto tile = indices[i];
+				if (tile.first == skip_index) {
+					continue;
+				}
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+				auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+				auto& chunk = this->chunks[chunk_index];
+
+				auto ctr = chunk.getVertexCount();
+				chunk.resize(ctr + 4);
+				
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto pos_0 = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				auto pos_1 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				auto pos_2 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				auto pos_3 = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[ctr + 0].position = pos_0;
+				chunk[ctr + 1].position = pos_1;
+				chunk[ctr + 2].position = pos_2;
+				chunk[ctr + 3].position = pos_3;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				if (tile.second == 0b000) {
+					chunk[ctr + 0].texCoords = tex_0;
+					chunk[ctr + 1].texCoords = tex_1;
+					chunk[ctr + 2].texCoords = tex_2;
+					chunk[ctr + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b001) {
+					chunk[ctr + 0].texCoords = tex_1;
+					chunk[ctr + 1].texCoords = tex_0;
+					chunk[ctr + 2].texCoords = tex_3;
+					chunk[ctr + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b010) {
+					chunk[ctr + 0].texCoords = tex_3;
+					chunk[ctr + 1].texCoords = tex_2;
+					chunk[ctr + 2].texCoords = tex_1;
+					chunk[ctr + 3].texCoords = tex_0;
+				}
+				else if (tile.second == 0b011) {
+					chunk[ctr + 0].texCoords = tex_2;
+					chunk[ctr + 1].texCoords = tex_3;
+					chunk[ctr + 2].texCoords = tex_0;
+					chunk[ctr + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b100) {
+					chunk[ctr + 0].texCoords = tex_3;
+					chunk[ctr + 1].texCoords = tex_0;
+					chunk[ctr + 2].texCoords = tex_1;
+					chunk[ctr + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b101) {
+					chunk[ctr + 0].texCoords = tex_2;
+					chunk[ctr + 1].texCoords = tex_1;
+					chunk[ctr + 2].texCoords = tex_0;
+					chunk[ctr + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b110) {
+					chunk[ctr + 0].texCoords = tex_0;
+					chunk[ctr + 1].texCoords = tex_3;
+					chunk[ctr + 2].texCoords = tex_2;
+					chunk[ctr + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b111) {
+					chunk[ctr + 0].texCoords = tex_1;
+					chunk[ctr + 1].texCoords = tex_2;
+					chunk[ctr + 2].texCoords = tex_3;
+					chunk[ctr + 3].texCoords = tex_0;
+				}
+
+			}
+		}
+		else {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto tile = indices[i];
+				if (tile.first == skip_index) {
+					continue;
+				}
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+				auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+				auto& chunk = this->chunks[chunk_index];
+				auto ctr = chunk.getVertexCount();
+				chunk.resize(ctr + 4);
+
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+
+				auto pos_0 = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				auto pos_1 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				auto pos_2 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				auto pos_3 = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[ctr + 0].position = pos_0;
+				chunk[ctr + 1].position = pos_1;
+				chunk[ctr + 2].position = pos_2;
+				chunk[ctr + 3].position = pos_3;
+						  
+				chunk[ctr + 0].color = color;
+				chunk[ctr + 1].color = color;
+				chunk[ctr + 2].color = color;
+				chunk[ctr + 3].color = color;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				if (tile.second == 0b000) {
+					chunk[ctr + 0].texCoords = tex_0;
+					chunk[ctr + 1].texCoords = tex_1;
+					chunk[ctr + 2].texCoords = tex_2;
+					chunk[ctr + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b001) {
+					chunk[ctr + 0].texCoords = tex_1;
+					chunk[ctr + 1].texCoords = tex_0;
+					chunk[ctr + 2].texCoords = tex_3;
+					chunk[ctr + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b010) {
+					chunk[ctr + 0].texCoords = tex_3;
+					chunk[ctr + 1].texCoords = tex_2;
+					chunk[ctr + 2].texCoords = tex_1;
+					chunk[ctr + 3].texCoords = tex_0;
+				}
+				else if (tile.second == 0b011) {
+					chunk[ctr + 0].texCoords = tex_2;
+					chunk[ctr + 1].texCoords = tex_3;
+					chunk[ctr + 2].texCoords = tex_0;
+					chunk[ctr + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b100) {
+					chunk[ctr + 0].texCoords = tex_3;
+					chunk[ctr + 1].texCoords = tex_0;
+					chunk[ctr + 2].texCoords = tex_1;
+					chunk[ctr + 3].texCoords = tex_2;
+				}
+				else if (tile.second == 0b101) {
+					chunk[ctr + 0].texCoords = tex_2;
+					chunk[ctr + 1].texCoords = tex_1;
+					chunk[ctr + 2].texCoords = tex_0;
+					chunk[ctr + 3].texCoords = tex_3;
+				}
+				else if (tile.second == 0b110) {
+					chunk[ctr + 0].texCoords = tex_0;
+					chunk[ctr + 1].texCoords = tex_3;
+					chunk[ctr + 2].texCoords = tex_2;
+					chunk[ctr + 3].texCoords = tex_1;
+				}
+				else if (tile.second == 0b111) {
+					chunk[ctr + 0].texCoords = tex_1;
+					chunk[ctr + 1].texCoords = tex_2;
+					chunk[ctr + 2].texCoords = tex_3;
+					chunk[ctr + 3].texCoords = tex_0;
+				}
+			}
+		}
+
 	}
-	void qsf::tile_map::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		states.transform.scale(this->scale).translate(-this->position).rotate(this->rotation);
-		states.texture = this->texture_ptr;
-		window.draw(this->vertices, states);
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width, qpl::u32 skip_index) {
+		this->create_skip_empty(indices, width, qsf::rgb::white, skip_index);
 	}
 
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width, qsf::rgb color, qpl::u32 skip_index) {
+		if (!this->texture_ptr_set) {
+			qpl::println("tile_map::create: texture_ptr not set");
+			return;
+		}
+
+		this->chunks.clear();
+		this->color = color;
+		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+		auto chunk_width = (width - 1) / this->max_chunk_size.x + 1;
+		auto chunk_height = (indices.size() / width - 1) / this->max_chunk_size.y + 1;
+		auto chunk_dim = chunk_width * chunk_height;
+
+		this->chunk_width_count = chunk_width;
+		this->chunks.resize(chunk_dim);
+		for (auto& chunk : this->chunks) {
+			chunk.setPrimitiveType(sf::Quads);
+		}
+
+		auto diagonal = std::sqrt(std::pow(this->texture_tile_dimension.x, 2) + std::pow(this->texture_tile_dimension.y, 2));
+
+		if (color == qsf::rgb::white) {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto tile = indices[i];
+				if (tile.first == skip_index) {
+					continue;
+				}
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+				auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+				auto& chunk = this->chunks[chunk_index];
+
+				auto ctr = chunk.getVertexCount();
+				chunk.resize(ctr + 4);
+
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+
+				auto angle = ((tile.second / 180) * qpl::pi) + (qpl::pi * 1.25);
+				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+
+				chunk[ctr + 0].position = pos_1;
+				chunk[ctr + 1].position = pos_2;
+				chunk[ctr + 2].position = pos_3;
+				chunk[ctr + 3].position = pos_4;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				chunk[ctr + 0].texCoords = tex_0;
+				chunk[ctr + 1].texCoords = tex_1;
+				chunk[ctr + 2].texCoords = tex_2;
+				chunk[ctr + 3].texCoords = tex_3;
+				
+			}
+		}
+		else {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto tile = indices[i];
+				if (tile.first == skip_index) {
+					continue;
+				}
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+				auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+				auto& chunk = this->chunks[chunk_index];
+				auto ctr = chunk.getVertexCount();
+				chunk.resize(ctr + 4);
+
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile_x = (tile.first % texture_row_tile_count);
+				auto tile_y = (tile.first / texture_row_tile_count);
+
+				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+
+				auto angle = tile.second + (qpl::pi * 1.25);
+				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+
+				chunk[ctr + 0].position = pos_1;
+				chunk[ctr + 1].position = pos_2;
+				chunk[ctr + 2].position = pos_3;
+				chunk[ctr + 3].position = pos_4;
+
+				chunk[ctr + 0].color = color;
+				chunk[ctr + 1].color = color;
+				chunk[ctr + 2].color = color;
+				chunk[ctr + 3].color = color;
+
+				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				auto tex_2 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				auto tex_3 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+
+				chunk[ctr + 0].texCoords = tex_0;
+				chunk[ctr + 1].texCoords = tex_1;
+				chunk[ctr + 2].texCoords = tex_2;
+				chunk[ctr + 3].texCoords = tex_3;
+				
+			}
+		}
+
+	}
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width, qpl::u32 skip_index) {
+		this->create_skip_empty(indices, width, qsf::rgb::white, skip_index);
+	}
+	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 width, qsf::rgb color, qpl::u32 skip_index) {
+		if (!this->texture_ptr_set) {
+			qpl::println("tile_map::create: texture_ptr not set");
+			return;
+		}
+
+		this->chunks.clear();
+		this->color = color;
+
+		auto chunk_width = (width - 1) / this->max_chunk_size.x + 1;
+		auto chunk_height = (indices.size() / width - 1) / this->max_chunk_size.y + 1;
+		auto chunk_dim = chunk_width * chunk_height;
+
+		this->chunk_width_count = chunk_width;
+		this->chunks.resize(chunk_dim);
+		for (auto& chunk : this->chunks) {
+			chunk.setPrimitiveType(sf::Quads);
+		}
+
+		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+		qpl::u32 ctr = 0;
+		if (color == qsf::rgb::white) {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto index = indices[i];
+				if (index == skip_index) {
+					continue;
+				}
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+				auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+				auto& chunk = this->chunks[chunk_index];
+				auto ctr = chunk.getVertexCount();
+				chunk.resize(ctr + 4);
+
+				auto [y, x] = qpl::div_mod(i, width);
+
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				chunk[ctr + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[ctr + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[ctr + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[ctr + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[ctr + 0].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[ctr + 1].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[ctr + 2].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				chunk[ctr + 3].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+			}
+		}
+		else {
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto index = indices[i];
+				if (index == skip_index) {
+					continue;
+				}
+
+				auto chunk_x = (i % width) / this->max_chunk_size.x;
+				auto chunk_y = (i / width) / this->max_chunk_size.y;
+				auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+				auto& chunk = this->chunks[chunk_index];
+				auto ctr = chunk.getVertexCount();
+				chunk.resize(ctr + 4);
+
+				auto [y, x] = qpl::div_mod(i, width);
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				chunk[ctr + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[ctr + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
+				chunk[ctr + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[ctr + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				chunk[ctr + 0].color = color;
+				chunk[ctr + 1].color = color;
+				chunk[ctr + 2].color = color;
+				chunk[ctr + 3].color = color;
+
+				chunk[ctr + 0].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[ctr + 1].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+				chunk[ctr + 2].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				chunk[ctr + 3].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+			}
+		}
+
+	}
+	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 width, qpl::u32 skip_index) {
+		this->create_skip_empty(indices, width, qsf::rgb::white, skip_index);
+	}
+
+	void qsf::tile_map::set_color(qsf::rgb color) {
+		this->color = color;
+		for (auto& v : this->chunks) {
+			for (qpl::u32 i = 0u; i < v.getVertexCount(); ++i) {
+				v[i].color = color;
+			}
+		}
+	}
+
+	void qsf::tile_map::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		states.texture = this->texture_ptr;
+
+		for (qpl::u32 i = 0u; i < this->chunks.size(); ++i) {
+			auto x = i % this->chunk_width_count;
+			auto y = i / this->chunk_width_count;
+
+			auto rx = x * this->max_chunk_size.x * this->texture_tile_dimension.x;
+			auto ry = y * this->max_chunk_size.y * this->texture_tile_dimension.y;
+			auto rw = this->max_chunk_size.x * this->texture_tile_dimension.x;
+			auto rh = this->max_chunk_size.y * this->texture_tile_dimension.y;
+
+			auto rect = states.transform.transformRect(sf::FloatRect(rx, ry, rw, rh));
+			auto fov = sf::FloatRect(0, 0, window.getSize().x, window.getSize().y);
+
+
+			if (rect.intersects(fov)) {
+				window.draw(this->chunks[i], states);
+			}
+		}
+	}
+
+	qpl::size qsf::tile_map::size() const {
+		qpl::size count = 0u;
+		for (auto& i : this->chunks) {
+			count += i.getVertexCount() / 4;
+		}
+		return count;
+	}
+	qpl::size qsf::tile_map::chunk_count() const {
+		return this->chunks.size();
+	}
+	void qsf::tile_map::set_chunk_dimension(qpl::u32 x, qpl::u32 y) {
+		this->max_chunk_size = qsf::vector2u(x, y);
+	}
+	void qsf::tile_map::clear() {
+		this->chunks.clear();
+	}
 
 	void qsf::vgraph::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::graph = *this;
@@ -2246,6 +3398,14 @@ namespace qsf {
 		if (high > graph.max_value) {
 			high = graph.max_value;
 		}
+		if (graph.y_axis_start_at_0) {
+			if (low < 0 && high < 0) {
+				high = 0;
+			}
+			if (low > 0 && high > 0) {
+				low = 0;
+			}
+		}
 
 		qpl::u32 u = 0u;
 		for (auto& g : graph.info_graphs) {
@@ -2444,6 +3604,8 @@ namespace qsf {
 				if (high == qpl::f64_min && low == qpl::f64_max) {
 					y_range = 0.0;
 				}
+				auto low_padded = low - y_range * graph.y_axis_padding;
+				auto high_padded = high + y_range * graph.y_axis_padding;
 				auto exponent = static_cast<qpl::i64>(std::log10(y_range)) - 1;
 				auto substep = 0.5;
 				auto multiply = std::pow(10, -exponent);
@@ -2467,8 +3629,8 @@ namespace qsf {
 							y_delta *= 1.5;
 						}
 					}
-					y_start = qpl::i64_cast(low / y_delta + 1) * y_delta;
-					y_end = qpl::i64_cast(high / y_delta) * y_delta;
+					y_start = qpl::i64_cast(low_padded / y_delta + 1) * y_delta;
+					y_end = qpl::i64_cast(high_padded / y_delta) * y_delta;
 					y_steps = qpl::i64_cast((y_end - y_start) / y_delta) + 1;
 
 					if (y_steps < graph.y_axis_line_count) {
@@ -2490,7 +3652,7 @@ namespace qsf {
 
 				for (qpl::u32 i = 0u; i < y_steps; ++i) {
 					auto y_position = y_start + y_delta * i;
-					auto y_progress = ((y_position)-low) / (high - low);
+					auto y_progress = ((y_position)-low_padded) / (high_padded - low_padded);
 					y_progress = (1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2;
 					qsf::vector2f position;
 					position.x = graph.position.x;
@@ -2515,6 +3677,9 @@ namespace qsf {
 						if (graph.y_axis_text_percent) {
 							this->y_texts[i].set_string(graph.y_axis_text.string + qpl::to_string_precision(graph.y_axis_text_precision, y_position * 100) + "%");
 						}
+						else if (graph.y_axis_text_integer) {
+							this->y_texts[i].set_string(graph.y_axis_text.string + qpl::to_string(qpl::i64_cast(y_position)));
+						}
 						else {
 							this->y_texts[i].set_string(graph.y_axis_text.string + qpl::to_string_precision(graph.y_axis_text_precision, y_position));
 						}
@@ -2522,6 +3687,9 @@ namespace qsf {
 					else {
 						if (graph.y_axis_text_percent) {
 							this->y_texts[i].set_string(qpl::to_string_precision(graph.y_axis_text_precision, y_position * 100) + "%" + graph.y_axis_text.string);
+						}
+						else if (graph.y_axis_text_integer) {
+							this->y_texts[i].set_string(qpl::to_string(qpl::i64_cast(y_position)));
 						}
 						else {
 							this->y_texts[i].set_string(qpl::to_string_precision(graph.y_axis_text_precision, y_position) + graph.y_axis_text.string);
@@ -2704,7 +3872,35 @@ namespace qsf {
 
 		this->clicked = this->hovering && event_info.left_mouse_clicked();
 	}
+	void qsf::vbutton::update(const event_info& event_info, qsf::view_rectangle rectangle) {
+		auto pos = rectangle.mouse_position;
 
+		auto new_hovering = this->background.contains(pos);
+		if (new_hovering != this->hovering) {
+			if (this->invert_on_hover) {
+				if (new_hovering) {
+					this->background.set_color(this->background_color.inverted());
+					this->text.set_color(this->text_color.inverted());
+				}
+				else {
+					this->background.set_color(this->background_color);
+					this->text.set_color(this->text_color);
+				}
+			}
+			else {
+				if (new_hovering) {
+					this->background.set_color(this->hover_background_color);
+				}
+				else {
+					this->background.set_color(this->background_color);
+				}
+			}
+		}
+
+		this->hovering = new_hovering;
+
+		this->clicked = this->hovering && event_info.left_mouse_clicked();
+	}
 
 
 	void qsf::vbutton::draw(sf::RenderTarget& window, sf::RenderStates states) const {
@@ -2805,7 +4001,35 @@ namespace qsf {
 		this->hovering = new_hovering;
 
 		this->clicked = this->hovering && event_info.left_mouse_clicked();
+	}
+	void qsf::button::update(const event_info& event_info, qsf::view_rectangle view) {
+		auto pos = view.mouse_position;
 
+		auto new_hovering = this->background.contains(pos);
+		if (new_hovering != this->hovering) {
+			if (this->invert_on_hover) {
+				if (new_hovering) {
+					this->background.set_color(this->background_color.inverted());
+					this->text.set_color(this->text_color.inverted());
+				}
+				else {
+					this->background.set_color(this->background_color);
+					this->text.set_color(this->text_color);
+				}
+			}
+			else {
+				if (new_hovering) {
+					this->background.set_color(this->hover_background_color);
+				}
+				else {
+					this->background.set_color(this->background_color);
+				}
+			}
+		}
+
+		this->hovering = new_hovering;
+
+		this->clicked = this->hovering && event_info.left_mouse_clicked();
 	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;

@@ -425,6 +425,12 @@ namespace qpl {
 		memcpy(result.data(), source.data(), source.size() * sizeof(T));
 		return result;
 	}
+	template<typename T, qpl::size N>
+	std::vector<T> array_to_vector(const std::array<T, N>& source) {
+		std::vector<T> result(source.size());
+		memcpy(result.data(), source.data(), source.size() * sizeof(T));
+		return result;
+	}
 	template<typename It>
 	constexpr auto make_span(It begin, It end) {
 		return std::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
@@ -503,6 +509,56 @@ namespace qpl {
 			sum = qpl::vector_including_values(v, sum);
 		}
 		return sum;
+	}
+
+	template<typename T>
+	void vector_flip_x_axis(std::vector<std::vector<T>>& source) {
+		auto copy = source;
+		for (qpl::u32 y = 0u; y < copy.size(); ++y) {
+			for (qpl::u32 x = 0u; x < copy[0].size(); ++x) {
+				source[y][x] = copy[y][copy[0].size() - 1 - x];
+			}
+		}
+	}
+	template<typename T>
+	void vector_flip_y_axis(std::vector<std::vector<T>>& source) {
+		auto copy = source;
+		for (qpl::u32 y = 0u; y < copy.size(); ++y) {
+			for (qpl::u32 x = 0u; x < copy[0].size(); ++x) {
+				source[y][x] = copy[copy.size() - 1 - y][x];
+			}
+		}
+	}
+
+	template<typename T>
+	std::vector<std::vector<T>> vector_rotate_right_copy(std::vector<std::vector<T>> source) {
+		std::vector<std::vector<T>> result(source[0].size(), std::vector<T>(source.size()));
+		for (qpl::u32 y = 0u; y < result.size(); ++y) {
+			for (qpl::u32 x = 0u; x < source.size(); ++x) {
+				result[y][x] = source[source.size() - 1 - x][y];
+			}
+		}
+		return result;
+	}
+	template<typename T>
+	std::vector<std::vector<T>> vector_flip_x_axis_copy(std::vector<std::vector<T>> source) {
+		std::vector<std::vector<T>> result(source.size(), std::vector<T>(source[0].size()));
+		for (qpl::u32 y = 0u; y < source.size(); ++y) {
+			for (qpl::u32 x = 0u; x < source[0].size(); ++x) {
+				result[y][x] = source[y][source[0].size() - 1 - x];
+			}
+		}
+		return result;
+	}
+	template<typename T>
+	std::vector<std::vector<T>> vector_flip_y_axis_copy(std::vector<std::vector<T>> source) {
+		std::vector<std::vector<T>> result(source.size(), std::vector<T>(source[0].size()));
+		for (qpl::u32 y = 0u; y < source.size(); ++y) {
+			for (qpl::u32 x = 0u; x < source[0].size(); ++x) {
+				result[y][x] = source[source.size() - 1 - y][x];
+			}
+		}
+		return result;
 	}
 
 

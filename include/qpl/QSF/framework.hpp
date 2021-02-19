@@ -64,12 +64,16 @@ namespace qsf {
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;
 
+
+
 		QPLDLL void create();
 		QPLDLL bool is_created() const;
 		QPLDLL bool is_open() const;
 		QPLDLL void set_info(const std::string& title, qsf::vector2u dimension, qpl::u32 style);
 		QPLDLL void set_title(const std::string& title);
 		QPLDLL void set_dimension(qsf::vector2u dimension);
+		QPLDLL void set_antialising(qpl::u32 antialising);
+		QPLDLL qpl::u32 get_antialising() const;
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void hide_cursor();
 		QPLDLL void set_window_position(qsf::vector2u position);
@@ -78,7 +82,7 @@ namespace qsf {
 		QPLDLL void set_cursor_position(qsf::vector2i position);
 		QPLDLL void draw_call();
 		QPLDLL void display();
-		QPLDLL bool game_loop_basic_segment();
+		QPLDLL bool game_loop_update_segment();
 		QPLDLL bool game_loop_segment();
 		QPLDLL void game_loop();
 
@@ -115,6 +119,7 @@ namespace qsf {
 		qpl::clock m_run_time_clock;
 		qpl::clock m_frametime_clock;
 		qpl::time m_frametime;
+		qpl::u32 m_antialising = 12u;
 		bool m_created;
 	};
 	
@@ -141,7 +146,7 @@ namespace qsf {
 
 		QPLDLL void draw_call();
 		QPLDLL void display();
-		QPLDLL bool game_loop_basic_segment();
+		QPLDLL bool game_loop_update_segment();
 		QPLDLL bool game_loop_segment();
 		template<typename T>
 		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
@@ -154,8 +159,7 @@ namespace qsf {
 		}
 		template<typename T>
 		QPLDLL void draw(const T& drawable, qsf::view_rectangle view) {
-			sf::RenderStates states;
-			states.transform.scale(qsf::vector2f(1, 1) / view.scale).translate(-view.position).rotate(view.rotation);
+			sf::RenderStates states = view.get_render_states();
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}

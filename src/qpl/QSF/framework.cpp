@@ -23,8 +23,8 @@ namespace qsf {
 	void qsf::base_state::display() {
 		this->framework->display();
 	}
-	bool qsf::base_state::game_loop_basic_segment() {
-		return this->framework->game_loop_basic_segment();
+	bool qsf::base_state::game_loop_update_segment() {
+		return this->framework->game_loop_update_segment();
 	}
 	bool qsf::base_state::game_loop_segment() {
 		return this->framework->game_loop_segment();
@@ -39,10 +39,14 @@ namespace qsf {
 		sf::Event event;
 
 
+		this->event.m_mouse_clicked = false;
+		this->event.m_mouse_released = false;
 		this->event.m_left_mouse_clicked = false;
 		this->event.m_left_mouse_released = false;
 		this->event.m_right_mouse_clicked = false;
 		this->event.m_right_mouse_released = false;
+		this->event.m_middle_mouse_clicked = false;
+		this->event.m_middle_mouse_released = false;
 		this->event.m_scrolled_up = false;
 		this->event.m_scrolled_down = false;
 		this->event.m_key_pressed = false;
@@ -57,26 +61,46 @@ namespace qsf {
 
 		while (this->framework->window.pollEvent(event)) {
 			if (event.type == sf::Event::MouseButtonPressed) {
+				this->event.m_mouse_clicked = true;
+				this->event.m_mouse_holding = true;
 				if (event.mouseButton.button == sf::Mouse::Left) {
 					this->event.m_left_mouse_clicked = true;
+					this->event.m_holding_left_mouse = true;
 				}
 				else if (event.mouseButton.button == sf::Mouse::Right) {
 					this->event.m_right_mouse_clicked = true;
+					this->event.m_holding_right_mouse = true;
+				}
+				else if (event.mouseButton.button == sf::Mouse::Middle) {
+					this->event.m_middle_mouse_clicked = true;
+					this->event.m_holding_middle_mouse = true;
 				}
 			}
 			else if (event.type == sf::Event::MouseButtonReleased) {
+				this->event.m_mouse_released = true;
+				this->event.m_mouse_holding = false;
 				if (event.mouseButton.button == sf::Mouse::Left) {
 					this->event.m_left_mouse_released = true;
+					this->event.m_holding_left_mouse = false;
 				}
 				else if (event.mouseButton.button == sf::Mouse::Right) {
 					this->event.m_right_mouse_released = true;
+					this->event.m_holding_right_mouse = false;
+				}
+				else if (event.mouseButton.button == sf::Mouse::Middle) {
+					this->event.m_middle_mouse_released = true;
+					this->event.m_holding_middle_mouse = false;
 				}
 			}
 			else if (event.type == sf::Event::KeyPressed) {
+				this->event.m_key_pressed = true;
+				this->event.m_key_holding = true;
 				this->event.m_keys_pressed.insert(event.key.code);
 				this->event.m_keys_holding.insert(event.key.code);
 			}
 			else if (event.type == sf::Event::KeyReleased) {
+				this->event.m_key_released = true;
+				this->event.m_key_holding = false;
 				this->event.m_keys_released.insert(event.key.code);
 				this->event.m_keys_holding.erase(event.key.code);
 			}
@@ -272,7 +296,7 @@ namespace qsf {
 		return true;
 	}
 
-	bool qsf::framework::game_loop_basic_segment() {
+	bool qsf::framework::game_loop_update_segment() {
 		if (!this->is_created()) {
 			this->create();
 		}
@@ -387,7 +411,7 @@ namespace qsf {
 	void qsf::framework::create() {
 		if (!this->is_created()) {
 			sf::ContextSettings settings;
-			settings.antialiasingLevel = 12;
+			settings.antialiasingLevel = this->m_antialising;
 
 			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), this->m_title, this->m_style, settings);
 			this->m_created = true;
@@ -418,6 +442,12 @@ namespace qsf {
 	}
 	void qsf::framework::set_dimension(qsf::vector2u dimension) {
 		this->m_dimension = dimension;
+	}
+	void qsf::framework::set_antialising(qpl::u32 antialising) {
+		this->m_antialising = antialising;
+	}
+	qpl::u32 qsf::framework::get_antialising() const {
+		return this->m_antialising;
 	}
 	void qsf::framework::set_style(qpl::u32 style) {
 		this->m_style = style;

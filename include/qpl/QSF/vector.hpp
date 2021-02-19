@@ -63,6 +63,9 @@ namespace qsf {
 		T normal() const {
 			return static_cast<T>(std::sqrt(this->x * this->x + this->y * this->y));
 		}
+		bool empty() const {
+			return this->x == T{ 0 } && this->y == T{ 0 };
+		}
 
 		vector2 operator-() const {
 			auto copy = *this;
@@ -213,6 +216,31 @@ namespace qsf {
 		auto operator/(U u) const {
 			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy /= u;
+			return copy;
+		}
+
+		template<typename U>
+		vector2<T>& operator%=(const vector2<U>& other) {
+			this->x %= static_cast<T>(other.x);
+			this->y %= static_cast<T>(other.y);
+			return *this;
+		}
+		template<typename U>
+		auto operator%(const vector2<U>& other) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
+			copy %= other;
+			return copy;
+		}
+		template<typename U>
+		vector2<T>& operator%=(U u) {
+			this->x %= static_cast<T>(u);
+			this->y %= static_cast<T>(u);
+			return *this;
+		}
+		template<typename U>
+		auto operator%(U u) const {
+			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
+			copy %= u;
 			return copy;
 		}
 

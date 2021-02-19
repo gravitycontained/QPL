@@ -18,11 +18,21 @@ namespace qsf {
 		QPLDLL bool key_holding(sf::Keyboard::Key key) const;
 		QPLDLL bool keys_holding(const std::vector<sf::Keyboard::Key>& keys) const;
 
+		QPLDLL bool mouse_button_clicked(sf::Mouse::Button button) const;
+		QPLDLL bool mouse_button_released(sf::Mouse::Button button) const;
+		QPLDLL bool mouse_button_holding(sf::Mouse::Button button) const;
+
+		QPLDLL bool mouse_button_clicked() const;
+		QPLDLL bool mouse_button_released() const;
+		QPLDLL bool mouse_button_holding() const;
+
 		QPLDLL bool mouse_moved() const;
 		QPLDLL bool left_mouse_clicked() const;
 		QPLDLL bool left_mouse_released() const;
 		QPLDLL bool right_mouse_clicked() const;
 		QPLDLL bool right_mouse_released() const;
+		QPLDLL bool middle_mouse_clicked() const;
+		QPLDLL bool middle_mouse_released() const;
 		QPLDLL bool scrolled_up() const;
 		QPLDLL bool scrolled_down() const;
 		QPLDLL bool key_pressed() const;
@@ -34,16 +44,22 @@ namespace qsf {
 
 		QPLDLL bool holding_left_mouse() const;
 		QPLDLL bool holding_right_mouse() const;
+		QPLDLL bool holding_middle_mouse() const;
 		QPLDLL bool holding_key() const;
 
 		QPLDLL qsf::vector2i resized_size() const;
 		QPLDLL qsf::vector2i mouse_position() const;
 		QPLDLL qsf::vector2i mouse_position_desktop() const;
 
+		bool m_mouse_clicked;
+		bool m_mouse_released;
+		bool m_mouse_holding;
 		bool m_left_mouse_clicked;
 		bool m_left_mouse_released;
 		bool m_right_mouse_clicked;
 		bool m_right_mouse_released;
+		bool m_middle_mouse_clicked;
+		bool m_middle_mouse_released;
 		bool m_scrolled_up;
 		bool m_scrolled_down;
 		bool m_key_pressed;
@@ -55,6 +71,7 @@ namespace qsf {
 
 		bool m_holding_left_mouse;
 		bool m_holding_right_mouse;
+		bool m_holding_middle_mouse;
 		bool m_holding_key;
 
 		qsf::vector2i m_resized_size;
