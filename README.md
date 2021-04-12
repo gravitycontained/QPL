@@ -82,12 +82,10 @@ auto sub = a - b;
 auto mul = a * b;
 auto div = a / b;
 auto pow = a ^ b;
-auto sina = a.sined();
-auto cosb = b.cosed();
-auto sqta = a.sqrted();
-auto sqtb = b.sqrted();
-auto inva = a.inverted();
-auto invb = b.inverted();
+auto sqta = qpl::f512::sqrt(a);
+auto sqtb = qpl::f512::sqrt(b);
+auto inva = qpl::f512::invert(a);
+auto invb = qpl::f512::invert(b);
 
 qpl_vprintln(add);
 qpl_vprintln(sub);
@@ -293,10 +291,64 @@ int main() {
 	framework.set_dimension({ 1280u, 720u });
 
 	framework.add_state<game_state>();
-	framework.gameloop();
+	framework.game_loop();
 }
 ```
 
-clicking on screen addds connected cirlcles. possible output:
+clicking on screen addds connected cirlcles:
 
 ![possible output](https://i.imgur.com/Yek7ojA.png)
+
+----------
+
+**Graph example**: 
+
+```
+#include <qpl/qpl.hpp>
+
+struct game_state : qsf::base_state {
+
+	void init() override {
+		this->graph.dimension = this->dimension();
+		this->graph.font = "arial";
+
+		this->graph.get_simple_graph("random").color = qsf::rgb::grey;
+		this->graph.get_simple_graph("ema").color = qsf::rgb::green;
+
+		qpl::f64 value = 0.5;
+		this->ema.time_period = 10;
+		for (qpl::u32 i = 0u; i < 100; ++i) {
+			value += qpl::random(-0.1, 0.1);
+			this->ema.add_value(value);
+
+			this->graph.get_simple_graph("random").add_data(value);
+			this->graph.get_simple_graph("ema").add_data(this->ema.get_average());
+		}
+	}
+	void updating() override {
+		this->graph.update(this->event);
+	}
+	void drawing() override {
+		this->draw(this->graph);
+	}
+
+	qsf::vgraph graph;
+	qpl::ema ema;
+};
+
+
+int main() {
+	qsf::framework framework;
+	framework.set_title("Graph");
+	framework.add_font("arial", "resources/arial.ttf");
+	framework.set_dimension({ 1280u, 720u });
+
+	framework.add_state<game_state>();
+	framework.game_loop();
+}
+```
+
+
+produces an interactive graph:
+
+![possible output](https://i.imgur.com/gbDwKyY.png)
