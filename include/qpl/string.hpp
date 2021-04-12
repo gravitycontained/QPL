@@ -141,6 +141,12 @@ namespace qpl {
 	}
 
 	template<typename... Args>
+	std::string to_string_ios_binary(Args&&... args) {
+		std::ostringstream stream(std::ios::binary);
+		((stream << args), ...);
+		return stream.str();
+	}
+	template<typename... Args>
 	const char* to_cstring(Args&&... args) {
 		std::ostringstream stream;
 		((stream << args), ...);
@@ -679,13 +685,13 @@ namespace qpl {
 		QPLDLL extern qpl::cc println_default_color;
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
 	inline std::string container_to_string(const C& data, std::string_view delimiter = ", ", std::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
 		bool start = true;
 		for (const auto& e : data) {
-			if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+			if constexpr (qpl::is_container<qpl::container_subtype<C>> && !qpl::is_string_type<C>()) {
 				if (!start) {
 					str << delimiter;
 				}
@@ -1099,7 +1105,7 @@ namespace qpl {
 		qpl::println();
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	inline void print_container(const C& data, std::string_view delimiter = ", ") {
 		qpl::print(qpl::container_to_string(data));
 	}
@@ -1107,7 +1113,7 @@ namespace qpl {
 	std::string pair_to_string(const std::pair<T, U>& pair) {
 		return qpl::to_string('{', pair.first, ", ", pair.second, '}');
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	inline void println_container(const C& data) {
 		qpl::println(qpl::container_to_string(data));
 	}
@@ -1504,7 +1510,7 @@ namespace qpl {
 	}
 
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
 	inline std::string container_to_hex_string(const C& data, std::string_view delimiter = ", ", std::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
@@ -1531,7 +1537,7 @@ namespace qpl {
 		str << brackets.back();
 		return str.str();
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
 	inline void println_container_hex(const C& data) {
 		qpl::println(qpl::container_to_hex_string(data));
 	}

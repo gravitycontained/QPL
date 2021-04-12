@@ -3,6 +3,10 @@
 #if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
 
 namespace qsf {
+
+	bool qsf::event_info::key_single_pressed(sf::Keyboard::Key key) const {
+		return this->m_keys_single_pressed.find(key) != this->m_keys_single_pressed.cend();
+	}
 	bool qsf::event_info::key_pressed(sf::Keyboard::Key key) const {
 		return this->m_keys_pressed.find(key) != this->m_keys_pressed.cend();
 	}
@@ -113,6 +117,9 @@ namespace qsf {
 	bool qsf::event_info::key_pressed() const {
 		return this->m_key_pressed;
 	}
+	bool qsf::event_info::key_single_pressed() const {
+		return this->m_key_single_pressed;
+	}
 	bool qsf::event_info::key_released() const {
 		return this->m_key_released;
 	}
@@ -143,12 +150,58 @@ namespace qsf {
 	qsf::vector2i qsf::event_info::resized_size() const {
 		return this->m_resized_size;
 	}
+	bool qsf::event_info::text_entered(char c) const {
+		auto str = this->text_entered_str();
+		for (auto& i : str) {
+			if (i == c) {
+				return true;
+			}
+		}
+		return false;
+	}
+	bool qsf::event_info::text_entered(wchar_t c) const {
+		for (auto& i : this->m_text_entered) {
+			if (i == c) {
+				return true;
+			}
+		}
+		return false;
+	}
+	bool qsf::event_info::text_entered(std::string c) const {
+		for (auto& i : c) {
+			if (!this->text_entered(i)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool qsf::event_info::text_entered(std::wstring c) const {
+		for (auto& i : c) {
+			if (!this->text_entered(i)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 	qsf::vector2i qsf::event_info::mouse_position() const {
 		return this->m_mouse_position;
 	}
 	qsf::vector2i qsf::event_info::mouse_position_desktop() const {
 		return this->m_mouse_position_desktop;
+	}
+	std::wstring qsf::event_info::text_entered() const {
+		return this->m_text_entered;
+	}
+	std::string qsf::event_info::text_entered_str() const {
+		return qpl::wstring_to_string(this->m_text_entered);
+	}
+	std::wstring qsf::event_info::all_text_entered() const {
+		return this->m_text_entered_stream.str();
+	}
+	std::string qsf::event_info::all_text_entered_str() const {
+		return qpl::wstring_to_string(this->m_text_entered_stream.str());
 	}
 
 }

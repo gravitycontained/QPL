@@ -45,6 +45,7 @@ namespace qsf {
 		bool dragging = false;
 		bool integer_step = false;
 		bool power_of_two = false;
+		bool allow_dragging = true;
 	};
 }
 

@@ -323,7 +323,7 @@ namespace qsf {
 	qsf::text& qsf::text::operator=(const qsf::vtext& text) {
 		this->set_character_size(text.character_size);
 		this->set_color(text.color);
-		this->set_font(text.font_name);
+		this->m_font = text.font_name;
 		this->set_letter_spacing(text.letter_spacing);
 		this->set_outline_color(text.outline_color);
 		this->set_outline_thickness(text.outline_thickness);
@@ -601,6 +601,9 @@ namespace qsf {
 		this->position = position;
 	}
 	qsf::vrectangle qsf::text_stream::get_visible_hitbox() const {
+		if (!this->lines()) {
+			return {};
+		}
 		qpl::u32 index = this->lines() - 1;
 		while (index && (this->texts[index].size() == 1u && this->texts[index][0].get_string().empty())) {
 			--index;
@@ -1301,8 +1304,19 @@ namespace qsf {
 		qsf::vector2f diff = this->vertices[0].position - this->vertices[1].position;
 		return diff.normal();
 	}	
-	qpl::f32 qsf::line::rotation() const {
-		return std::asin(((this->vertices[1].position.y - this->vertices[0].position.y) + qpl::pi) / this->length());
+	qpl::f32 qsf::line::angle_from_a() const {
+		auto angle = std::atan2(this->vertices[1].position.y - this->vertices[0].position.y, this->vertices[1].position.x - this->vertices[0].position.x);
+		if (angle < 0) {
+			angle += qpl::pi * 2;
+		}
+		return angle;
+	}
+	qpl::f32 qsf::line::angle_from_b() const {
+		auto angle = std::atan2(this->vertices[0].position.y - this->vertices[1].position.y, this->vertices[0].position.x - this->vertices[1].position.x);
+		if (angle < 0) {
+			angle += qpl::pi * 2;
+		}
+		return angle;
 	}
 	//qsf::vline& qsf::line::rotate_a(qpl::f64 degree) {
 	//	return *this;
@@ -1670,6 +1684,114 @@ namespace qsf {
 		}
 
 	}
+	void qsf::thick_lines::complete() {
+		if (this->empty()) {
+			return;
+		}
+		qsf::vector2f first_point;
+		qsf::rgb first_color;
+		qpl::f32 first_thickness;
+
+		if (this->vertices.size()) {
+			first_point = (this->vertices[0].position + this->vertices[1].position) / 2.0f;
+
+			first_color.c.r = qpl::u8_cast((qpl::u32_cast(this->vertices[0].color.c.r) + qpl::u32_cast(this->vertices[1].color.c.r)) / 2);
+			first_color.c.g = qpl::u8_cast((qpl::u32_cast(this->vertices[0].color.c.g) + qpl::u32_cast(this->vertices[1].color.c.g)) / 2);
+			first_color.c.b = qpl::u8_cast((qpl::u32_cast(this->vertices[0].color.c.b) + qpl::u32_cast(this->vertices[1].color.c.b)) / 2);
+			first_color.c.a = qpl::u8_cast((qpl::u32_cast(this->vertices[0].color.c.a) + qpl::u32_cast(this->vertices[1].color.c.a)) / 2);
+
+			qsf::vline line;
+			line.set_a(this->vertices[0].position);
+			line.set_b(this->vertices[1].position);
+			first_thickness = line.length() / 2;
+		}
+
+		auto last_point = first_point;
+		auto last_color = first_color;
+		auto last_thickness = first_thickness;
+		if (this->vertices.size() > 4) {
+			last_point = (this->vertices[this->vertices.size() - 1].position + this->vertices[this->vertices.size() - 2].position) / 2.0f;
+
+			last_color.c.r = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.r) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.r)) / 2);
+			last_color.c.g = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.g) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.g)) / 2);
+			last_color.c.b = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.b) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.b)) / 2);
+			last_color.c.a = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.a) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.a)) / 2);
+
+			qsf::vline line;
+			line.set_a(this->vertices[this->vertices.size() - 1].position);
+			line.set_b(this->vertices[this->vertices.size() - 2].position);
+			last_thickness = line.length() / 2;
+		}
+
+		qsf::vline line;
+		line.set_b(last_point);
+		line.set_a(first_point);
+
+		auto normal = line.normal();
+		if (first_point == last_point) {
+			normal.x = 1.0;
+			normal.y = 0.0;
+		}
+
+		this->vertices.resize(this->vertices.size() + 8);
+
+		this->vertices[this->vertices.size() - 8] = this->vertices[this->vertices.size() - 10];
+		this->vertices[this->vertices.size() - 7] = this->vertices[this->vertices.size() - 9];
+		this->vertices[this->vertices.size() - 6].position = last_point + normal * last_thickness;
+		this->vertices[this->vertices.size() - 6].color = last_color;
+		this->vertices[this->vertices.size() - 5].position = last_point - normal * last_thickness;
+		this->vertices[this->vertices.size() - 5].color = last_color;
+
+		this->vertices[this->vertices.size() - 4].position = last_point + normal * last_thickness;
+		this->vertices[this->vertices.size() - 4].color = last_color;
+		this->vertices[this->vertices.size() - 3].position = last_point - normal * last_thickness;
+		this->vertices[this->vertices.size() - 3].color = last_color;
+		this->vertices[this->vertices.size() - 2].position = first_point - normal * first_thickness;
+		this->vertices[this->vertices.size() - 2].color = first_color;
+		this->vertices[this->vertices.size() - 1].position = first_point + normal * first_thickness;
+		this->vertices[this->vertices.size() - 1].color = first_color;
+
+		auto mid_point = (this->vertices[8].position + this->vertices[9].position) / 2.0f;
+
+		qsf::rgb mid_color;
+		mid_color.c.r = qpl::u8_cast((qpl::u32_cast(this->vertices[8].color.c.r) + qpl::u32_cast(this->vertices[9].color.c.r)) / 2);
+		mid_color.c.g = qpl::u8_cast((qpl::u32_cast(this->vertices[8].color.c.g) + qpl::u32_cast(this->vertices[9].color.c.g)) / 2);
+		mid_color.c.b = qpl::u8_cast((qpl::u32_cast(this->vertices[8].color.c.b) + qpl::u32_cast(this->vertices[9].color.c.b)) / 2);
+		mid_color.c.a = qpl::u8_cast((qpl::u32_cast(this->vertices[8].color.c.a) + qpl::u32_cast(this->vertices[9].color.c.a)) / 2);
+
+		line.set_a(this->vertices[8].position);
+		line.set_b(this->vertices[9].position);
+		auto mid_thickness = line.length() / 2;
+
+		last_point = (this->vertices[this->vertices.size() - 1].position + this->vertices[this->vertices.size() - 2].position) / 2.0f;
+
+		last_color.c.r = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.r) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.r)) / 2);
+		last_color.c.g = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.g) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.g)) / 2);
+		last_color.c.b = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.b) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.b)) / 2);
+		last_color.c.a = qpl::u8_cast((qpl::u32_cast(this->vertices[this->vertices.size() - 1].color.c.a) + qpl::u32_cast(this->vertices[this->vertices.size() - 2].color.c.a)) / 2);
+
+		line.set_a(this->vertices[this->vertices.size() - 1].position);
+		line.set_b(this->vertices[this->vertices.size() - 2].position);
+		last_thickness = line.length() / 2;
+
+		line.set_b(last_point);
+		line.set_a(mid_point);
+
+		normal = line.normal();
+		if (mid_point == last_point) {
+			normal.x = 1.0;
+			normal.y = 0.0;
+		}
+
+		this->vertices.resize(this->vertices.size() + 4);
+		this->vertices[this->vertices.size() - 4] = this->vertices[this->vertices.size() - 6];
+		this->vertices[this->vertices.size() - 3] = this->vertices[this->vertices.size() - 5];
+		this->vertices[this->vertices.size() - 2].position = last_point + normal * last_thickness;
+		this->vertices[this->vertices.size() - 2].color = last_color;
+		this->vertices[this->vertices.size() - 1].position = last_point - normal * last_thickness;
+		this->vertices[this->vertices.size() - 1].color = last_color;
+
+	}
 	qsf::thick_lines& qsf::thick_lines::operator=(const qsf::vthick_lines& lines) {
 		this->vertices.clear();
 		for (auto& p : lines.points.points) {
@@ -1752,6 +1874,7 @@ namespace qsf {
 	void qsf::tile_map::set_texture_ptr(const sf::Texture& texture, qsf::vector2u texture_tile_dimension) {
 		this->texture_ptr = &texture;
 		this->texture_tile_dimension = texture_tile_dimension;
+		this->position_tile_dimension = this->texture_tile_dimension;
 		this->texture_ptr_set = true;
 	}
 	void qsf::tile_map::set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width) {
@@ -1794,10 +1917,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				auto tex_0 = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
 				auto tex_1 = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
@@ -1868,10 +1991,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[chunk_index * 4 + 0].color = color;
 				chunk[chunk_index * 4 + 1].color = color;
@@ -1976,9 +2099,9 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+				auto middle = qsf::vector2f(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y) + this->position_tile_dimension / 2;
 
-				auto diagonal = std::sqrt(std::pow(this->texture_tile_dimension.x, 2) + std::pow(this->texture_tile_dimension.y, 2));
+				auto diagonal = std::sqrt(std::pow(this->position_tile_dimension.x, 2) + std::pow(this->position_tile_dimension.y, 2));
 				auto angle = tile.second + (qpl::pi * 1.25);
 				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
 				auto pos_2 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
@@ -2015,9 +2138,9 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+				auto middle = qsf::vector2f(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y) + this->position_tile_dimension / 2;
 
-				auto diagonal = std::sqrt(std::pow(this->texture_tile_dimension.x, 2) + std::pow(this->texture_tile_dimension.y, 2));
+				auto diagonal = std::sqrt(std::pow(this->position_tile_dimension.x, 2) + std::pow(this->position_tile_dimension.y, 2));
 				auto angle = tile.second + (qpl::pi * 1.25);
 				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
 				auto pos_2 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
@@ -2130,10 +2253,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[chunk_index * 4 + 0].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
 				chunk[chunk_index * 4 + 1].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
@@ -2155,10 +2278,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[chunk_index * 4 + 0].color = color;
 				chunk[chunk_index * 4 + 1].color = color;
@@ -2218,10 +2341,11 @@ namespace qsf {
 				auto tile_x = (tile.first % texture_row_tile_count);
 				auto tile_y = (tile.first / texture_row_tile_count);
 
-				auto pos_0 = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				auto pos_1 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				auto pos_2 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				auto pos_3 = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+
+				auto pos_0 = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_1 = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_2 = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				auto pos_3 = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].position = pos_0;
 				chunk[ctr + 1].position = pos_1;
@@ -2302,11 +2426,10 @@ namespace qsf {
 				auto tile_x = (tile.first % texture_row_tile_count);
 				auto tile_y = (tile.first / texture_row_tile_count);
 
-
-				auto pos_0 = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				auto pos_1 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				auto pos_2 = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				auto pos_3 = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				auto pos_0 = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_1 = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_2 = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				auto pos_3 = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].position = pos_0;
 				chunk[ctr + 1].position = pos_1;
@@ -2421,7 +2544,7 @@ namespace qsf {
 				auto tile_x = (tile.first % texture_row_tile_count);
 				auto tile_y = (tile.first / texture_row_tile_count);
 
-				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+				auto middle = qsf::vector2f(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y) + this->position_tile_dimension / 2;
 
 				auto angle = ((tile.second / 180) * qpl::pi) + (qpl::pi * 1.25);
 				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
@@ -2464,7 +2587,7 @@ namespace qsf {
 				auto tile_x = (tile.first % texture_row_tile_count);
 				auto tile_y = (tile.first / texture_row_tile_count);
 
-				auto middle = qsf::vector2f(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y) + this->texture_tile_dimension / 2;
+				auto middle = qsf::vector2f(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y) + this->position_tile_dimension / 2;
 
 				auto angle = tile.second + (qpl::pi * 1.25);
 				auto pos_1 = middle + qsf::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
@@ -2540,10 +2663,10 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				chunk[ctr + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[ctr + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[ctr + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				chunk[ctr + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[ctr + 0].position = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 1].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 2].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[ctr + 3].position = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].texCoords = qsf::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
 				chunk[ctr + 1].texCoords = qsf::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
@@ -2570,10 +2693,10 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				chunk[ctr + 0].position = qsf::vector2u(x * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[ctr + 1].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, y * this->texture_tile_dimension.y);
-				chunk[ctr + 2].position = qsf::vector2u((x + 1) * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
-				chunk[ctr + 3].position = qsf::vector2u(x * this->texture_tile_dimension.x, (y + 1) * this->texture_tile_dimension.y);
+				chunk[ctr + 0].position = qsf::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 1].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 2].position = qsf::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[ctr + 3].position = qsf::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].color = color;
 				chunk[ctr + 1].color = color;
@@ -2818,6 +2941,9 @@ namespace qsf {
 	qpl::size qsf::vgraph::info_graph::size() const {
 		return this->data.size();
 	}
+	void qsf::vgraph::info_graph::clear() {
+		return this->data.clear();
+	}
 	qsf::vgraph::data_point_info& qsf::vgraph::info_graph::operator[](qpl::size index) {
 		return this->data[index];
 	}
@@ -2879,6 +3005,9 @@ namespace qsf {
 	qpl::size qsf::vgraph::standard_graph::size() const {
 		return this->data.size();
 	}
+	void qsf::vgraph::standard_graph::clear() {
+		return this->data.clear();
+	}
 	qsf::vgraph::data_point& qsf::vgraph::standard_graph::operator[](qpl::size index) {
 		return this->data[index];
 	}
@@ -2931,6 +3060,9 @@ namespace qsf {
 	qpl::size qsf::vgraph::simple_graph::size() const {
 		return this->data.size();
 	}
+	void qsf::vgraph::simple_graph::clear() {
+		return this->data.clear();
+	}
 	qsf::vgraph::data_point_simple& qsf::vgraph::simple_graph::operator[](qpl::size index) {
 		return this->data[index];
 	}
@@ -2968,7 +3100,23 @@ namespace qsf {
 		return this->data.cend();
 	}
 
-	void qsf::vgraph::check_x_axis() {
+	bool qsf::vgraph::empty() const {
+		return this->simple_graphs.empty() && this->standard_graphs.empty() && this->info_graphs.empty();
+	}
+	bool qsf::vgraph::changed() const {
+		return (this->visible_index_range_before != this->visible_index_range());
+	}
+	void qsf::vgraph::update_change() const {
+		if (!this->changed()) {
+			return;
+		}
+		this->check_x_axis();
+		auto x = this->get_low_high();
+		this->low_high_graph = { x.first, x.second };
+
+		this->visible_index_range_before = this->visible_index_range();
+	}
+	void qsf::vgraph::check_x_axis() const {
 		while (this->visible_element_size() / this->x_axis_line_frequency < this->desired_x_axis_lines / 2) {
 			this->x_axis_line_frequency /= 2;
 			if (!this->x_axis_line_frequency) {
@@ -3000,6 +3148,9 @@ namespace qsf {
 	}
 
 	void qsf::vgraph::update(const event_info& event_info) {
+		if (this->empty()) {
+			return;
+		}
 		if (event_info.left_mouse_clicked()) {
 			qsf::vrectangle rect(this->position, this->true_graph_dimension());
 			rect.position.x += this->y_axis_text_space;
@@ -3011,6 +3162,8 @@ namespace qsf {
 		}
 
 		if (event_info.mouse_moved()) {
+			this->mouse_position = event_info.mouse_position();
+
 			if (this->drag) {
 				auto diff = this->click_position - event_info.mouse_position();
 
@@ -3030,6 +3183,129 @@ namespace qsf {
 						this->index_start -= over;
 					}
 				}
+			}
+			if (this->display_closest_graph_at_cursor) {
+
+				this->update_change();
+
+				qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
+
+				auto visible_size = this->visible_element_size() - 1;
+				auto offset = this->position.x + this->y_axis_text_space;
+				auto progress = (event_info.mouse_position().x - offset) / this->true_graph_width();
+				auto index = visible_size * progress;
+				auto int_index = qpl::int_cast(index);
+				auto left_over = index - int_index;
+				auto [low, high] = this->low_high_graph;
+
+				this->closest_graph_at_cursor = "";
+				if (index >= 0 && index <= visible_size) {
+					qpl::f64 min_distance = qpl::f64_max;
+
+					for (auto& g : this->info_graphs) {
+						interpolation = interpolation;
+						if (interpolation == qsf::vgraph::interpolation_type::unset) {
+							interpolation = this->interpolation;
+						}
+
+						qpl::f64 value = 0.0;
+						if (left_over == 0.0) {
+							value = g.second.data[this->visible_index_start() + int_index].data;
+						}
+						else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+							value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+						}
+						else if (interpolation == qsf::vgraph::interpolation_type::linear) {
+							value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+						}
+
+						auto y_progress = (value - low) / (high - low);
+						y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
+						auto pos_y = this->position.y + this->dimension.y * y_progress;
+
+						auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
+
+						if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
+							min_distance = distance;
+							this->closest_graph_at_cursor = g.first;
+							this->closest_graph_at_cursor_value = value;
+							this->closest_graph_at_cursor_color = g.second.color;
+							this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+							if (this->closest_graph_at_cursor_color.is_unset()) {
+								this->closest_graph_at_cursor_color = this->color;
+							}
+						}
+					}
+					for (auto& g : this->standard_graphs) {
+						interpolation = interpolation;
+						if (interpolation == qsf::vgraph::interpolation_type::unset) {
+							interpolation = this->interpolation;
+						}
+
+						qpl::f64 value = 0.0;
+						if (left_over == 0.0) {
+							value = g.second.data[this->visible_index_start() + int_index].data;
+						}
+						else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+							value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+						}
+						else if (interpolation == qsf::vgraph::interpolation_type::linear) {
+							value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+						}
+
+						auto y_progress = (value - low) / (high - low);
+						y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
+						auto pos_y = this->position.y + this->dimension.y * y_progress;
+
+						auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
+
+						if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
+							min_distance = distance;
+							this->closest_graph_at_cursor = g.first;
+							this->closest_graph_at_cursor_value = value;
+							this->closest_graph_at_cursor_color = g.second.color;
+							this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+							if (this->closest_graph_at_cursor_color.is_unset()) {
+								this->closest_graph_at_cursor_color = this->color;
+							}
+						}
+					}
+					for (auto& g : this->simple_graphs) {
+						interpolation = interpolation;
+						if (interpolation == qsf::vgraph::interpolation_type::unset) {
+							interpolation = this->interpolation;
+						}
+
+						qpl::f64 value = 0.0;
+						if (left_over == 0.0) {
+							value = g.second.data[this->visible_index_start() + int_index].data;
+						}
+						else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+							value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+						}
+						else if (interpolation == qsf::vgraph::interpolation_type::linear) {
+							value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+						}
+
+						auto y_progress = (value - low) / (high - low);
+						y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
+						auto pos_y = this->position.y + this->dimension.y * y_progress;
+
+						auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
+
+						if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
+							min_distance = distance;
+							this->closest_graph_at_cursor = g.first;
+							this->closest_graph_at_cursor_value = value;
+							this->closest_graph_at_cursor_color = g.second.color;
+							this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+							if (this->closest_graph_at_cursor_color.is_unset()) {
+								this->closest_graph_at_cursor_color = this->color;
+							}
+						}
+					}
+				}
+				
 			}
 		}
 		if (event_info.left_mouse_released()) {
@@ -3116,23 +3392,129 @@ namespace qsf {
 		return qsf::vector2f(this->true_graph_width(), this->true_graph_height());
 	}
 	std::pair<qpl::f64, qpl::f64> qsf::vgraph::get_low_high() const {
-		std::pair<qpl::f64, qpl::f64> result;
-		for (auto& i : this->standard_graphs) {
-			auto x = i.second.get_low_high();
-			result.first = qpl::min(x.first.data, result.first);
-			result.second = qpl::max(x.second.data, result.second);
+		qpl::f64 low, high;
+		low = qpl::f64_max;
+		high = qpl::f64_min;
+
+		qpl::size interpolation_steps;
+		qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
+
+		for (auto& g : this->info_graphs) {
+			qpl::f64 min, max;
+
+			interpolation_steps = g.second.interpolation_steps;
+			if (interpolation_steps == qpl::size_max) {
+				interpolation_steps = this->interpolation_steps;
+			}
+
+
+			interpolation = g.second.interpolation;
+			if (interpolation == qsf::vgraph::interpolation_type::unset) {
+				interpolation = this->interpolation;
+			}
+
+			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+				auto span = this->get_info_graph_span(g.first);
+
+				auto result = qpl::cubic_vector_interpolation_min_max(span, interpolation_steps, 0, this->index_skip_size, qsf::vgraph::data_point_info{ qpl::f64_max }, qsf::vgraph::data_point_info{ qpl::f64_min });
+
+				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+			}
+			else {
+				auto span = this->get_info_graph_span(g.first);
+
+				auto result = qpl::min_max_vector(span, this->index_skip_size);
+
+				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+			}
+
+
+			low = qpl::min(min, low);
+			high = qpl::max(max, high);
 		}
-		for (auto& i : this->info_graphs) {
-			auto x = i.second.get_low_high();
-			result.first = qpl::min(x.first.data, result.first);
-			result.second = qpl::max(x.second.data, result.second);
+		for (auto& g : this->standard_graphs) {
+			qpl::f64 min, max;
+
+			interpolation_steps = g.second.interpolation_steps;
+			if (interpolation_steps == qpl::size_max) {
+				interpolation_steps = this->interpolation_steps;
+			}
+
+
+			interpolation = g.second.interpolation;
+			if (interpolation == qsf::vgraph::interpolation_type::unset) {
+				interpolation = this->interpolation;
+			}
+
+			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+				auto span = this->get_standard_graph_span(g.first);
+
+				auto result = qpl::cubic_vector_interpolation_min_max(span, interpolation_steps, 0, this->index_skip_size, qsf::vgraph::data_point{ qpl::f64_max }, qsf::vgraph::data_point{ qpl::f64_min });
+
+				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+			}
+			else {
+				auto span = this->get_standard_graph_span(g.first);
+
+				auto result = qpl::min_max_vector(span, this->index_skip_size);
+
+				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+			}
+
+
+			low = qpl::min(min, low);
+			high = qpl::max(max, high);
 		}
-		for (auto& i : this->simple_graphs) {
-			auto x = i.second.get_low_high();
-			result.first = qpl::min(x.first.data, result.first);
-			result.second = qpl::max(x.second.data, result.second);
+		for (auto& g : this->simple_graphs) {
+			qpl::f64 min, max;
+
+			interpolation_steps = g.second.interpolation_steps;
+			if (interpolation_steps == qpl::size_max) {
+				interpolation_steps = this->interpolation_steps;
+			}
+
+
+			interpolation = g.second.interpolation;
+			if (interpolation == qsf::vgraph::interpolation_type::unset) {
+				interpolation = this->interpolation;
+			}
+
+			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+				auto span = this->get_simple_graph_span(g.first);
+
+
+				auto result = qpl::cubic_vector_interpolation_min_max(span, interpolation_steps, 0, this->index_skip_size, qsf::vgraph::data_point_simple{ qpl::f64_max }, qsf::vgraph::data_point_simple{ qpl::f64_min });
+
+				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+			}
+			else {
+				auto span = this->get_simple_graph_span(g.first);
+
+				auto result = qpl::min_max_vector(span, this->index_skip_size);
+
+				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
+
+			}
+
+
+			low = qpl::min(min, low);
+			high = qpl::max(max, high);
 		}
-		return result;
+		if (low < this->min_value) {
+			low = this->min_value;
+		}
+		if (high > this->max_value) {
+			high = this->max_value;
+		}
+		if (this->y_axis_start_at_0) {
+			if (low < 0 && high < 0) {
+				high = 0;
+			}
+			if (low > 0 && high > 0) {
+				low = 0;
+			}
+		}
+		return std::make_pair(low, high);
 	}
 	qpl::size qsf::vgraph::total_graph_size() const {
 		return this->standard_graphs.size() + this->info_graphs.size() + this->simple_graphs.size();
@@ -3208,6 +3590,9 @@ namespace qsf {
 		}
 		return this->visible_element_size();
 	}
+	std::pair<qpl::u32, qpl::u32> qsf::vgraph::visible_index_range() const {
+		return std::make_pair(this->visible_index_start(), this->visible_index_end());
+	}
 	bool qsf::vgraph::is_range_enabled() const {
 		return !(this->index_start == 0u && this->index_end == qpl::size_max);
 	}
@@ -3270,9 +3655,10 @@ namespace qsf {
 	}
 
 	qsf::graph& qsf::graph::operator=(const qsf::vgraph& graph) {
-		qpl::f64 low, high;
-		low = qpl::f64_max;
-		high = qpl::f64_min;
+		if (graph.empty()) {
+			return *this;
+		}
+		graph.update_change();
 
 		std::string used_font = graph.font;
 
@@ -3292,120 +3678,36 @@ namespace qsf {
 		qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
 
 		for (auto& g : graph.info_graphs) {
-			qpl::f64 min, max;
-
 			interpolation_steps = g.second.interpolation_steps;
 			if (interpolation_steps == qpl::size_max) {
 				interpolation_steps = graph.interpolation_steps;
 			}
-
-
-			interpolation = g.second.interpolation;
-			if (interpolation == qsf::vgraph::interpolation_type::unset) {
-				interpolation = graph.interpolation;
-			}
-
-			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
-				auto span = graph.get_info_graph_span(g.first);
-
-				auto result = qpl::cubic_vector_interpolation_min_max(span, interpolation_steps, 0, graph.index_skip_size, qsf::vgraph::data_point_info{ qpl::f64_max }, qsf::vgraph::data_point_info{ qpl::f64_min });
-
-				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
-			}
-			else {
-				auto span = graph.get_info_graph_span(g.first);
-
-				auto result = qpl::min_max_vector(span, graph.index_skip_size);
-
-				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
-			}
-
-
-			low = qpl::min(min, low);
-			high = qpl::max(max, high);
 		}
 		for (auto& g : graph.standard_graphs) {
-			qpl::f64 min, max;
-
 			interpolation_steps = g.second.interpolation_steps;
 			if (interpolation_steps == qpl::size_max) {
 				interpolation_steps = graph.interpolation_steps;
 			}
 
-
 			interpolation = g.second.interpolation;
 			if (interpolation == qsf::vgraph::interpolation_type::unset) {
 				interpolation = graph.interpolation;
 			}
-
-			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
-				auto span = graph.get_standard_graph_span(g.first);
-
-				auto result = qpl::cubic_vector_interpolation_min_max(span, interpolation_steps, 0, graph.index_skip_size, qsf::vgraph::data_point{ qpl::f64_max }, qsf::vgraph::data_point{ qpl::f64_min });
-
-				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
-			}
-			else {
-				auto span = graph.get_standard_graph_span(g.first);
-
-				auto result = qpl::min_max_vector(span, graph.index_skip_size);
-
-				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
-			}
-
-
-			low = qpl::min(min, low);
-			high = qpl::max(max, high);
 		}
 		for (auto& g : graph.simple_graphs) {
-			qpl::f64 min, max;
-
 			interpolation_steps = g.second.interpolation_steps;
 			if (interpolation_steps == qpl::size_max) {
 				interpolation_steps = graph.interpolation_steps;
 			}
 
-
 			interpolation = g.second.interpolation;
 			if (interpolation == qsf::vgraph::interpolation_type::unset) {
 				interpolation = graph.interpolation;
 			}
-
-			if (interpolation == qsf::vgraph::interpolation_type::cubic) {
-				auto span = graph.get_simple_graph_span(g.first);
-
-				
-				auto result = qpl::cubic_vector_interpolation_min_max(span, interpolation_steps, 0, graph.index_skip_size, qsf::vgraph::data_point_simple{ qpl::f64_max }, qsf::vgraph::data_point_simple{ qpl::f64_min });
-
-				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
-			}
-			else {
-				auto span = graph.get_simple_graph_span(g.first);
-
-				auto result = qpl::min_max_vector(span, graph.index_skip_size);
-
-				std::tie(min, max) = std::make_pair(result.first.data, result.second.data);
-
-			}
-
-
-			low = qpl::min(min, low);
-			high = qpl::max(max, high);
 		}
-		if (low < graph.min_value) {
-			low = graph.min_value;
-		}
-		if (high > graph.max_value) {
-			high = graph.max_value;
-		}
-		if (graph.y_axis_start_at_0) {
-			if (low < 0 && high < 0) {
-				high = 0;
-			}
-			if (low > 0 && high > 0) {
-				low = 0;
-			}
-		}
+
+		qpl::f64 low, high;
+		std::tie(low, high) = graph.get_low_high();
 
 		qpl::u32 u = 0u;
 		for (auto& g : graph.info_graphs) {
@@ -3443,6 +3745,10 @@ namespace qsf {
 			qpl::f64 using_thickness = g.second.thickness;
 			if (using_thickness == qpl::f64_min) {
 				using_thickness = graph.thickness;
+			}
+
+			if (graph.display_closest_graph_at_cursor && !graph.closest_graph_at_cursor.empty() && graph.closest_graph_at_cursor == g.first && graph.closest_graph_at_cursor_color == g.second.color) {
+				using_thickness *= graph.closest_graph_at_cursor_multiply_thickness;
 			}
 			qsf::frgb using_color = g.second.color;
 			if (using_color == qsf::frgb::unset) {
@@ -3526,6 +3832,11 @@ namespace qsf {
 			if (using_thickness == qpl::f64_min) {
 				using_thickness = graph.thickness;
 			}
+
+			if (graph.display_closest_graph_at_cursor && !graph.closest_graph_at_cursor.empty() && graph.closest_graph_at_cursor == g.first && graph.closest_graph_at_cursor_color == g.second.color) {
+				using_thickness *= graph.closest_graph_at_cursor_multiply_thickness;
+			}
+
 			qsf::frgb using_color = g.second.color;
 			if (using_color == qsf::frgb::unset) {
 				using_color = graph.color;
@@ -3567,6 +3878,12 @@ namespace qsf {
 			if (using_thickness == qpl::f64_min) {
 				using_thickness = graph.thickness;
 			}
+
+
+			if (graph.display_closest_graph_at_cursor && !graph.closest_graph_at_cursor.empty() && graph.closest_graph_at_cursor == g.first && graph.closest_graph_at_cursor_color == g.second.color) {
+				using_thickness *= graph.closest_graph_at_cursor_multiply_thickness;
+			}
+
 			qsf::frgb using_color = g.second.color;
 			if (using_color == qsf::frgb::unset) {
 				using_color = graph.color;
@@ -3607,44 +3924,20 @@ namespace qsf {
 				auto low_padded = low - y_range * graph.y_axis_padding;
 				auto high_padded = high + y_range * graph.y_axis_padding;
 				auto exponent = static_cast<qpl::i64>(std::log10(y_range)) - 1;
-				auto substep = 0.5;
 				auto multiply = std::pow(10, -exponent);
 				y_range *= multiply;
-
 
 				qpl::f64 y_delta = 0.0;
 				qpl::f64 y_start = 0.0;
 				qpl::f64 y_end = 0.0;
 				qpl::u32 y_steps = 0;
 
-				qpl::u32 ctr = 0u;
-				while (!used_font.empty() && y_range != 0.0) {
+				if (!used_font.empty() && y_range != 0) {
+					y_delta = qpl::i64_cast(y_range) / (multiply * graph.y_axis_line_count);
 
-					y_delta = (qpl::i64_cast((y_range / graph.y_axis_line_count) / substep) * substep) / multiply;
-					if (ctr > 5) {
-						if (y_steps < graph.y_axis_line_count) {
-							y_delta *= 0.75;
-						}
-						else if (y_steps > graph.y_axis_line_count * 2) {
-							y_delta *= 1.5;
-						}
-					}
 					y_start = qpl::i64_cast(low_padded / y_delta + 1) * y_delta;
 					y_end = qpl::i64_cast(high_padded / y_delta) * y_delta;
 					y_steps = qpl::i64_cast((y_end - y_start) / y_delta) + 1;
-
-					if (y_steps < graph.y_axis_line_count) {
-						substep /= 2;
-					}
-					else if (y_steps > graph.y_axis_line_count * 2) {
-						substep *= 2;
-					}
-					else {
-						break;
-					}
-
-
-					++ctr;
 				}
 
 				this->y_lines.resize(y_steps);
@@ -3674,7 +3967,10 @@ namespace qsf {
 						this->y_texts[i].set_color(use_color);
 					}
 					if (graph.y_axis_text_left) {
-						if (graph.y_axis_text_percent) {
+						if (graph.y_axis_string_function) {
+							this->y_texts[i].set_string(graph.y_axis_string_function(y_position));
+						}
+						else if (graph.y_axis_text_percent) {
 							this->y_texts[i].set_string(graph.y_axis_text.string + qpl::to_string_precision(graph.y_axis_text_precision, y_position * 100) + "%");
 						}
 						else if (graph.y_axis_text_integer) {
@@ -3685,7 +3981,10 @@ namespace qsf {
 						}
 					}
 					else {
-						if (graph.y_axis_text_percent) {
+						if (graph.y_axis_string_function) {
+							this->y_texts[i].set_string(graph.y_axis_string_function(y_position));
+						}
+						else if (graph.y_axis_text_percent) {
 							this->y_texts[i].set_string(qpl::to_string_precision(graph.y_axis_text_precision, y_position * 100) + "%" + graph.y_axis_text.string);
 						}
 						else if (graph.y_axis_text_integer) {
@@ -3764,7 +4063,39 @@ namespace qsf {
 				this->x_lines.clear();
 				this->x_texts.clear();
 			}
+		}
 
+		this->cursor_graph_text.set_color(qsf::rgb::unset);
+		if (graph.display_closest_graph_at_cursor && !graph.closest_graph_at_cursor.empty()) {
+			this->cursor_graph_text = graph.closest_graph_at_cursor_text;
+			if (this->cursor_graph_text.get_font().empty()) {
+				this->cursor_graph_text.set_font(used_font);
+			}
+			if (graph.closest_graph_at_cursor_string_function) {
+				this->cursor_graph_text.set_string(graph.closest_graph_at_cursor_string_function(graph.closest_graph_at_cursor, graph.closest_graph_at_cursor_value, graph.closest_graph_at_cursor_index));
+			}
+			else {
+				this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " : ", graph.closest_graph_at_cursor_value));
+			}
+			this->cursor_graph_text.set_color(graph.closest_graph_at_cursor_color.with_alpha(255));
+			this->cursor_graph_text.set_position(graph.mouse_position);
+
+			auto hitbox = this->cursor_graph_text.visible_hitbox();
+			this->cursor_graph_text.move(qsf::vector2f{ 15, -hitbox.dimension.y - 15 });
+			hitbox = this->cursor_graph_text.visible_hitbox();
+			auto diff = (hitbox.position.x + hitbox.dimension.x) - (graph.position.x + graph.dimension.x) + 15;
+			if (diff > 0) {
+				this->cursor_graph_text.move(qsf::vector2f{ -diff, 0 });
+				hitbox = this->cursor_graph_text.visible_hitbox();
+			}
+
+			this->cursor_graph_background = graph.closest_graph_at_cursor_background;
+			if (graph.closest_graph_at_cursor_background_is_graph_background) {
+				this->cursor_graph_background.set_color(graph.background_color.with_alpha(255));
+			}
+			this->cursor_graph_background.set_dimension(hitbox.dimension + 5);
+			this->cursor_graph_background.set_center(hitbox.get_center());
+			this->cursor_graph_background.set_outline_color(graph.closest_graph_at_cursor_color.with_alpha(255));
 		}
 
 
@@ -3799,7 +4130,10 @@ namespace qsf {
 				i.draw(window, states);
 			}
 		}
-
+		if (!this->cursor_graph_text.get_color().is_unset()) {
+			this->cursor_graph_background.draw(window, states);
+			this->cursor_graph_text.draw(window, states);
+		}
 	}
 
 	void qsf::vbutton::set_dimension(qsf::vector2f dimension) {
@@ -4001,6 +4335,10 @@ namespace qsf {
 		this->hovering = new_hovering;
 
 		this->clicked = this->hovering && event_info.left_mouse_clicked();
+	}
+	void qsf::button::update(const event_info& event_info, bool& hovering) {
+		this->update(event_info);
+		hovering = hovering || this->hovering;
 	}
 	void qsf::button::update(const event_info& event_info, qsf::view_rectangle view) {
 		auto pos = view.mouse_position;

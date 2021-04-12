@@ -586,8 +586,25 @@ namespace qpl {
 		CloseClipboard();
 	}
 
-
-	bool qpl::shared_memory::create(const std::string& name, qpl::u32 size) {
+	void* qpl::shared_memory::get() {
+		if (this->is_array()) {
+			return reinterpret_cast<char*>(this->ptr) + qpl::bytes_in_type<qpl::size>();
+		}
+		else {
+			return this->ptr;
+		}
+	}
+	qpl::size qpl::shared_memory::array_byte_size() const {
+		if (!this->is_array()) {
+			return 0u;
+		}
+		return *reinterpret_cast<qpl::size*>(this->ptr);
+	}
+	bool qpl::shared_memory::is_array() const {
+		return this->array;
+	}
+	bool qpl::shared_memory::create(const std::string& name, qpl::size size) {
+		this->array = false;
 		this->hMapFile = CreateFileMapping(
 			INVALID_HANDLE_VALUE,    // use paging file
 			NULL,                    // default security
@@ -615,8 +632,16 @@ namespace qpl {
 		}
 		return true;
 	}
+	bool qpl::shared_memory::create_array(const std::string& name, qpl::size size) {
+		auto result = this->create(name, size + qpl::bytes_in_type<qpl::size>());
+		if (!result) return false;
+		this->array = true;
+		reinterpret_cast<qpl::size*>(this->ptr)[0] = size;
+		return true;
+	}
 
-	bool qpl::shared_memory::open(const std::string& name, qpl::u32 size) {
+	bool qpl::shared_memory::open(const std::string& name, qpl::size size) {
+		this->array = false;
 		this->hMapFile = OpenFileMapping(
 			FILE_MAP_ALL_ACCESS,   // read/write access
 			FALSE,                 // do not inherit the name
@@ -642,6 +667,41 @@ namespace qpl {
 		}
 		return true;
 	}
+	bool qpl::shared_memory::open_array(const std::string& name) {
+		this->array = true;
+		this->hMapFile = OpenFileMapping(
+			FILE_MAP_ALL_ACCESS,   // read/write access
+			FALSE,                 // do not inherit the name
+			qpl::string_to_wstring(name).c_str());               // name of mapping object
+
+		if (this->hMapFile == nullptr) {
+			qpl::println("qpl::shared_memory::create: could not open file mapping object (", GetLastError(), ")");
+			return false;
+		}
+
+		this->ptr = MapViewOfFile(hMapFile, // handle to map object
+			FILE_MAP_ALL_ACCESS,  // read/write permission
+			0,
+			0,
+			qpl::bytes_in_type<qpl::size>());
+
+		if (this->ptr == nullptr) {
+			qpl::println("qpl::shared_memory::create: could not map view of file (", GetLastError(), ")");
+
+			CloseHandle(this->hMapFile);
+
+			return false;
+		}
+		auto size = this->array_byte_size();
+		UnmapViewOfFile(this->ptr);
+		this->ptr = MapViewOfFile(hMapFile, // handle to map object
+			FILE_MAP_ALL_ACCESS,  // read/write permission
+			0,
+			0,
+			size);
+
+		return true;
+	}
 
 	void qpl::shared_memory::destroy() {
 		UnmapViewOfFile(this->ptr);
@@ -651,11 +711,28 @@ namespace qpl {
 		std::unordered_map<std::string, qpl::shared_memory> qpl::detail::shared_memories;
 	}
 
-	void qpl::create_shared_memory(std::string name, qpl::u32 size) {
+	qpl::size qpl::get_shared_memory_array_byte_size(std::string name) {
+		return qpl::detail::shared_memories[name].array_byte_size();
+	}
+	void qpl::create_shared_memory_array(std::string name, qpl::size size) {
+		qpl::detail::shared_memories[name].create_array(name, size);
+	}
+	void qpl::open_shared_memory_array(std::string name) {
+		qpl::detail::shared_memories[name].open_array(name);
+	}
+	void qpl::create_shared_memory(std::string name, qpl::size size) {
 		qpl::detail::shared_memories[name].create(name, size);
 	}
-	void qpl::open_shared_memory(std::string name, qpl::u32 size) {
+	void qpl::open_shared_memory(std::string name, qpl::size size) {
 		qpl::detail::shared_memories[name].open(name, size);
+	}
+	bool qpl::find_shared_memory(std::string name) {
+		qpl::detail::shared_memories[name].hMapFile = OpenFileMapping(
+			FILE_MAP_ALL_ACCESS,   // read/write access
+			FALSE,                 // do not inherit the name
+			qpl::string_to_wstring(name).c_str());               // name of mapping object
+
+		return (qpl::detail::shared_memories[name].hMapFile != nullptr);
 	}
 
 }

@@ -10,6 +10,7 @@
 #include <qpl/config.hpp>
 #include <qpl/date.hpp>
 #include <qpl/filesys.hpp>
+#include <qpl/fraction.hpp>
 #include <qpl/intrinsics.hpp>
 #include <qpl/lut.hpp>
 #include <qpl/number.hpp>

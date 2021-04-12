@@ -64,4 +64,7 @@ namespace qpl {
 	qpl::u64 qpl::random() {
 		return qpl::detail::rng.rng.generate();
 	}
+	qpl::f64 qpl::random_falling(qpl::f64 n) {
+		return (1.0 / qpl::random(0.0, 1.0 / n)) - n;
+	}
 }

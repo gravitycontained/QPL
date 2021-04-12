@@ -88,9 +88,7 @@ namespace qpl {
 
 	template<typename T>
 	std::vector<std::vector<T>> list_all_permutations(const std::vector<T>& array) {
-		//1 2 3 
-		//1 3 2
-		//
+
 
 		std::vector<std::vector<T>> result;
 		auto copy = array;
@@ -107,6 +105,7 @@ namespace qpl {
 				result.push_back(copy);
 			}
 		}
+		return result;
 	}
 
 	template<typename T>

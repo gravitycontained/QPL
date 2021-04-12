@@ -13,7 +13,8 @@
 #include <iterator>
 #include <iostream>
 #include <span>
-
+#include <functional>
+#include <tuple>
 
 namespace qpl {
 
@@ -138,6 +139,18 @@ namespace qpl {
 			++result;
 		}
 		return result;
+	}
+
+
+	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	constexpr qpl::size number_of_set_bits(T n) {
+		return qpl::number_of_set_bits(qpl::u64_cast(n));
+	}
+	template<>
+	constexpr qpl::size number_of_set_bits(qpl::u64 n) {
+		n = n - ((n >> 1) & 0x5555'5555'5555'5555ull);
+		n = (n & 0x3333'3333'3333'3333ull) + ((n >> 2) & 0x3333'3333'3333'3333ull);
+		return (((n + (n >> 4)) & 0x0F0F'0F0F'0F0F'0F0Full) * 0x0101'0101'0101'0101ull) >> 56;
 	}
 
 	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
@@ -351,7 +364,148 @@ namespace qpl {
 		return typeid(T).name();
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>
+
+	template<class Op, class compare, class... Args>
+	constexpr bool is_operation_to_any(Op op, compare first, Args... rest) {
+		return (op(first, rest) || ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_equal_to_any(compare first, Args... rest) {
+		return qpl::is_operation_to_any(std::equal_to{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_not_equal_to_any(compare first, Args... rest) {
+		return qpl::is_operation_to_any(std::not_equal_to{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_less_to_any(compare first, Args... rest) {
+		return qpl::is_operation_to_any(std::less{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_less_or_equal_to_any(compare first, Args... rest) {
+		return qpl::is_operation_to_any(std::less_equal{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_greater_to_any(compare first, Args... rest) {
+		return qpl::is_operation_to_any(std::greater{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_greater_or_equal_to_any(compare first, Args... rest) {
+		return qpl::is_operation_to_any(std::greater_equal{}, first, rest...);
+	}
+
+	template<class Op, class compare, class... Args>
+	constexpr bool is_operation_to_all(Op op, compare first, Args... rest) {
+		return (op(first, rest) && ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_equal_to_all(compare first, Args... rest) {
+		return qpl::is_operation_to_all(std::equal_to{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_not_equal_to_all(compare first, Args... rest) {
+		return qpl::is_operation_to_all(std::not_equal_to{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_less_to_all(compare first, Args... rest) {
+		return qpl::is_operation_to_all(std::less{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_less_or_equal_to_all(compare first, Args... rest) {
+		return qpl::is_operation_to_all(std::less_equal{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_greater_to_all(compare first, Args... rest) {
+		return qpl::is_operation_to_all(std::greater{}, first, rest...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_greater_or_equal_to_all(compare first, Args... rest) {
+		return qpl::is_operation_to_all(std::greater_equal{}, first, rest...);
+	}
+
+	template<class Op, class... Args>
+	constexpr bool is_any_operation_to(Op op, Args... args) {
+		if constexpr (sizeof...(Args) == 1) {
+			return false;
+		}
+		else {
+			auto tuple = std::tuple(args...);
+
+			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+				return qpl::is_operation_to_any(op, std::get<sizeof...(Ints)>(tuple), std::get<Ints>(tuple)...);
+			};
+			return unpack_tuple(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)> - 1>());
+		}
+	}
+
+	template<class... Args>
+	constexpr bool is_any_equal_to(Args... args) {
+		return qpl::is_any_operation_to(std::equal_to{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_any_not_equal_to(Args... args) {
+		return qpl::is_any_operation_to(std::not_equal_to{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_any_less_to(Args... args) {
+		return qpl::is_any_operation_to(std::greater_equal{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_any_less_or_equal_to(Args... args) {
+		return qpl::is_any_operation_to(std::greater{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_any_greater_to(Args... args) {
+		return qpl::is_any_operation_to(std::less_equal{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_any_greater_or_equal_to(Args... args) {
+		return qpl::is_any_operation_to(std::less{}, args...);
+	}
+
+
+	template<class Op, class... Args>
+	constexpr bool is_all_operation_to(Op op, Args... args) {
+		if constexpr (sizeof...(Args) == 1) {
+			return false;
+		}
+		else {
+			auto tuple = std::tuple(args...);
+
+			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+				return qpl::is_operation_to_all(op, std::get<sizeof...(Ints)>(tuple), std::get<Ints>(tuple)...);
+			};
+			return unpack_tuple(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)> -1>());
+		}
+	}
+
+	template<class... Args>
+	constexpr bool is_all_equal_to(Args... args) {
+		return qpl::is_all_operation_to(std::equal_to{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_all_not_equal_to(Args... args) {
+		return qpl::is_all_operation_to(std::not_equal_to{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_all_less_to(Args... args) {
+		return qpl::is_all_operation_to(std::less{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_all_less_or_equal_to(Args... args) {
+		return qpl::is_all_operation_to(std::less_equal{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_all_greater_to(Args... args) {
+		return qpl::is_all_operation_to(std::greater{}, args...);
+	}
+	template<class... Args>
+	constexpr bool is_all_greater_or_equal_to(Args... args) {
+		return qpl::is_all_operation_to(std::greater_equal{}, args...);
+	}
+
+
+	template<typename C, QPLCONCEPT(qpl::is_container<C> && qpl::has_size<C>)>
 	qpl::size container_size(const C& data) {
 		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
 			qpl::size sum = qpl::size{};
@@ -366,7 +520,7 @@ namespace qpl {
 	}
 	template<typename C>
 	constexpr qpl::size container_depth() {
-		return qpl::is_container<C>() ?
+		return qpl::is_container<C> ?
 			(qpl::is_container<qpl::container_subtype<C>>() ? qpl::container_depth<qpl::container_subtype<C>>() + qpl::size{ 1 } : qpl::size{ 1 }) :
 			qpl::size{};
 	}
@@ -375,7 +529,7 @@ namespace qpl {
 
 	template<typename C>
 	auto container_sum(const C& data) {
-		if constexpr (!qpl::is_container<C>()) {
+		if constexpr (!qpl::is_container<C>) {
 			return data;
 		}
 		else {
@@ -431,6 +585,65 @@ namespace qpl {
 		memcpy(result.data(), source.data(), source.size() * sizeof(T));
 		return result;
 	}
+	template< qpl::size N, typename T>
+	std::array<T, N> vector_to_array(const std::vector<T>& source) {
+		std::array<T, N> result;
+		memcpy(result.data(), source.data(), source.size() * sizeof(T));
+		return result;
+	}
+	template<typename... Args>
+	auto tuple_to_vector(std::tuple<Args...> tuple) -> std::vector<std::tuple_element_t<0, decltype(tuple)>> {
+		std::vector<std::tuple_element_t<0, decltype(tuple)>> result(std::tuple_size_v<decltype(tuple)>);
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+			((result[Ints] = std::get<Ints>(tuple)), ...);
+		};
+		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
+		return result;
+	}
+	template<typename T, typename... Args>
+	std::vector<T> tuple_to_vector(std::tuple<Args...> tuple) {
+		std::vector<T> result(std::tuple_size_v<decltype(tuple)>);
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+			((result[Ints] = std::get<Ints>(tuple)), ...);
+		};
+		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
+		return result;
+	}
+	template<typename T, typename... Args>
+	std::vector<T> to_vector(Args... args) {
+		return qpl::tuple_to_vector<T>(std::make_tuple(args...));
+	}
+	template<typename... Args>
+	auto to_vector(Args... args) {
+		return qpl::tuple_to_vector(std::make_tuple(args...));
+	}
+
+	template<typename... Args>
+	constexpr auto tuple_to_array(std::tuple<Args...> tuple) -> std::array<std::tuple_element_t<0, decltype(tuple)>, std::tuple_size_v<decltype(tuple)>> {
+		std::array<std::tuple_element_t<0, decltype(tuple)>, std::tuple_size_v<decltype(tuple)>> result{};
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+			((result[Ints] = std::get<Ints>(tuple)), ...);
+		};
+		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
+		return result;
+	}
+	template<typename T, typename... Args>
+	constexpr std::array<T, sizeof...(Args)> tuple_to_array(std::tuple<Args...> tuple) {
+		std::array<T, sizeof...(Args)> result{};
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+			((result[Ints] = std::get<Ints>(tuple)), ...);
+		};
+		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
+		return result;
+	}
+	template<typename T, typename... Args>
+	constexpr auto to_array(Args... args) {
+		return qpl::tuple_to_array<T>(std::make_tuple(args...));
+	}
+	template<typename... Args>
+	constexpr auto to_array(Args... args) {
+		return qpl::tuple_to_array(std::make_tuple(args...));
+	}
 	template<typename It>
 	constexpr auto make_span(It begin, It end) {
 		return std::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
@@ -439,6 +652,7 @@ namespace qpl {
 	constexpr auto make_span(const C& container) {
 		return qpl::make_span(container.begin(), container.end());
 	}
+
 
 	template<typename T>
 	std::vector<T> vector_0_to_n(T n, T shift = T{}) {
@@ -539,6 +753,10 @@ namespace qpl {
 			}
 		}
 		return result;
+	}
+	template<typename T>
+	void vector_rotate_right(std::vector<std::vector<T>>& source) {
+		source = vector_rotate_right_copy(source);
 	}
 	template<typename T>
 	std::vector<std::vector<T>> vector_flip_x_axis_copy(std::vector<std::vector<T>> source) {

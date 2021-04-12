@@ -7,11 +7,11 @@
 #include <tuple>
 #include <string>
 #include <limits>
+#include <utility>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 
 #define QPLCONCEPT(x) std::enable_if_t<x>* = nullptr
-
 
 namespace qpl {
 	template<qpl::u32 base, bool sign>
@@ -170,7 +170,11 @@ namespace qpl {
 
 
 	template<typename T>
-	std::string type_name(T value = T{}) {
+	std::string type_name(T value) {
+		return std::string(typeid(T).name());
+	}
+	template<typename T>
+	std::string type_name() {
 		return std::string(typeid(T).name());
 	}
 
@@ -203,9 +207,17 @@ namespace qpl {
 	constexpr bool is_same() {
 		return std::is_same_v<T, U>;
 	}
+	template<typename T, typename U, typename... Args>
+	constexpr bool all_equal() {
+		return qpl::is_same<T, U>() && (qpl::is_same<T, Args>() && ...);
+	}
 	template<typename T, typename U>
 	constexpr bool is_same_decayed() {
 		return std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
+	}
+	template<typename T, typename U, typename... Args>
+	constexpr bool all_equal_decayed() {
+		return qpl::is_same_decayed<T, U>() && (qpl::is_same_decayed<T, Args>() && ...);
 	}
 
 	template<class compare, class... Args>
@@ -216,8 +228,6 @@ namespace qpl {
 	constexpr bool is_equal_to_any_decayed() {
 		return (qpl::is_same_decayed<compare, Args>() || ...);
 	}
-
-
 
 
 	struct true_type {};
@@ -271,6 +281,7 @@ namespace qpl {
 	template<class Truth, class T, typename... Args>
 	using conditional = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>::type;
 	
+
 	template<typename T>
 	qpl::size constexpr type_used_bit_size() {
 		if constexpr (qpl::is_qpl_integer<T>()) {
@@ -311,7 +322,7 @@ namespace qpl {
 		qpl::if_true<qpl::char_is_unsigned()>, qpl::u8>;
 
 	template<typename T>
-	using signed_type = qpl::conditional<
+	using signed_cast_type = qpl::conditional<
 		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
 			qpl::conditional<
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 8 }>, qpl::i8,
@@ -322,13 +333,33 @@ namespace qpl {
 		qpl::default_error>;
 	
 	template<typename T>
-	using unsigned_type = qpl::conditional<
+	using unsigned_cast_type = qpl::conditional<
 		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
 			qpl::conditional<
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 8 }>, qpl::u8,
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 16 }>, qpl::u16,
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 32 }>, qpl::u32,
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 64 }>, qpl::u64,
+				qpl::default_error>,
+		qpl::default_error>;
+	
+	template<typename T>
+	using int_cast_type = qpl::conditional<
+		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
+			qpl::conditional<
+				qpl::if_true<qpl::is_integer<T>()>, T,
+				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 32 }>, qpl::i32,
+				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 64 }>, qpl::i64,
+				qpl::default_error>,
+		qpl::default_error>;
+	
+	template<typename T>
+	using float_cast_type = qpl::conditional<
+		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
+			qpl::conditional<
+				qpl::if_true<qpl::is_floating_point<T>()>, T,
+				qpl::if_true<qpl::bits_in_type<T>() <= std::size_t{ 32 }>, qpl::f32,
+				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 64 }>, qpl::f64,
 				qpl::default_error>,
 		qpl::default_error>;
 
@@ -457,39 +488,172 @@ namespace qpl {
 
 	template<typename T>
 	auto signed_cast(T&& value) {
-		return static_cast<signed_type<T>>(value);
+		return static_cast<signed_cast_type<T>>(value);
 	}
 	template<typename T>
 	auto unsigned_cast(T&& value) {
-		return static_cast<unsigned_type<T>>(value);
+		return static_cast<unsigned_cast_type<T>>(value);
+	}
+	template<typename T>
+	auto int_cast(T&& value) {
+		return static_cast<int_cast_type<T>>(value);
+	}
+	template<typename T>
+	auto float_cast(T&& value) {
+		return static_cast<float_cast_type<T>>(value);
 	}
 
 	template<typename T, typename U>
 	constexpr bool equals_type(U&& value = U{}) {
 		return std::is_same_v<std::decay_t<U>, std::decay_t<T>>;
 	}
-	template <typename T, typename = void>
-	struct is_iterable_impl : std::false_type {};
-	template <typename T>
-	struct is_iterable_impl<T, std::void_t<decltype(std::declval<T>().begin()), decltype(std::declval<T>().end())>> : std::true_type {};
-	
-	template <typename T, typename = void>
-	struct has_size_impl : std::false_type {};
-	template <typename T>
-	struct has_size_impl<T, std::void_t<decltype(std::declval<T>().size())>> : std::true_type {};
 
-	template<typename C>
-	constexpr bool is_container() {
-		return is_iterable_impl<C>::value;
+	template<typename T>
+	concept is_container = requires(T a, const T b) {
+		a.begin();
+		a.end();
+		b.cbegin();
+		b.cend();
+	};
+	template<typename T>
+	concept is_vector_like = requires(T a, const T b) {
+		requires is_container<T>;
+		a.resize(0u);
+		a.data();
+		b.size();
+	};
+
+
+	template<typename T>
+	concept has_size = requires(const T x) {
+		x.size();
+	};
+
+
+	namespace impl {
+
+		template<typename R, typename... A>
+		constexpr R return_type(R(*)(A...)) {
+			return R{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr R return_type(R(C::*)(A...)) {
+			return R{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr R return_type(R(C::*)(A...) const) {
+			return R{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr C method_class_type(R(C::*)(A...)) {
+			return C{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr C method_class_type(R(C::*)(A...) const) {
+			return C{};
+		}
+
+		template<typename R, typename... A>
+		constexpr auto parameter_type(R(*)(A...)) {
+			return std::tuple<A...>{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr auto parameter_type(R(C::*)(A...)) {
+			return std::tuple<A...>{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr auto parameter_type(R(C::*)(A...) const) {
+			return std::tuple<A...>{};
+		}
+
+
+		template<typename R, typename... A>
+		constexpr auto function_type(R(*)(A...)) {
+			return std::tuple<R, A...>{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr auto function_type(R(C::*)(A...)) {
+			return std::tuple<R, A...>{};
+		}
+		template<typename C, typename R, typename... A>
+		constexpr auto function_type(R(C::*)(A...) const) {
+			return std::tuple<R, A...>{};
+		}
+
+
+		template<typename R, typename... A>
+		constexpr auto make_function() {
+			return std::declval<R(*)(A...)>();
+		}
+
+		template<typename C, typename R, typename... A>
+		constexpr auto make_method_help() {
+			return std::declval<R(C::*)(A...)>();
+		}
+
+		template<typename C, typename F>
+		constexpr auto make_method() {
+			constexpr auto unpack_tuple = [&]<class C, class Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+				return make_method_help<C, std::tuple_element_t<Ints, Tuple>...>();
+			};
+			using function_type = decltype(impl::function_type(std::declval<F>()));
+			return unpack_tuple.template operator()<C, function_type>(std::make_index_sequence<std::tuple_size_v<function_type>>{});
+		}
+
+
+		template<typename C, typename F, typename = void>
+		struct has_method : std::false_type {};
+		template<typename C, typename F>
+		struct has_method<C, F, std::void_t<decltype(make_method<C, F>())>> : std::true_type {};
+
 	}
-	template<typename C>
-	constexpr bool has_size() {
-		return has_size_impl<C>::value;
+
+
+	template<typename F>
+	constexpr bool is_function(F&& function) {
+		return std::is_function_v<F>;
 	}
+	template<typename F>
+	constexpr bool is_function() {
+		return std::is_function_v<F>;
+	}
+	template<typename F>
+	constexpr bool is_method(F&& function) {
+		return std::is_member_function_pointer_v<F>;
+	}
+	template<typename F>
+	constexpr bool is_method() {
+		return std::is_member_function_pointer_v<F>;
+	}
+
+	template<typename... Args>
+	using make_function = decltype(impl::make_function<Args...>());
+
+	template<typename C, typename F>
+	using make_method = decltype(impl::make_method<C, F>());
+
+
+	template<typename C, typename F>
+	constexpr bool has_method() {
+		return impl::has_method<C, F>::value;
+	}
+
+	template<typename F>
+	using return_type = decltype(impl::return_type(std::declval<F>()));
+
+	template<typename F>
+	using parameter_type = decltype(impl::parameter_type(std::declval<F>()));
+
+	template<typename F>
+	using method_class_type = decltype(impl::method_class_type(std::declval<F>()));
+
+	template<typename F>
+	using function_type = decltype(impl::function_type(std::declval<F>()));
+
 
 	template<typename C>
 	using container_subtype = qpl::conditional<
-		qpl::if_true<qpl::is_container<C>()>, 
+		qpl::if_true<qpl::is_container<C>>, 
 		std::decay_t<decltype(*(std::declval<C>().begin()))>, 
 		qpl::default_error>;
 
@@ -584,7 +748,7 @@ namespace qpl {
 	//struct container_deepest_type_impl {
 	//	using type = typename qpl::conditional<
 	//		qpl::if_true<qpl::is_container<qpl::container_subtype<C>>()>, container_deepest_type_impl<qpl::container_subtype<C>>::type,
-	//		qpl::if_true<qpl::is_container<C>()>, qpl::container_subtype<C>,
+	//		qpl::if_true<qpl::is_container<C>>, qpl::container_subtype<C>,
 	//		qpl::default_type, C>;
 	//};
 	//

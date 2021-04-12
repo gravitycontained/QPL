@@ -33,4 +33,19 @@ namespace qpl {
 	double qpl::ema::get_average() const {
 		return this->last_ma;
 	}
+	std::string qpl::mathematical_operation_string(mathematical_operation op) {
+		switch (op) {
+		case mathematical_operation::add:
+			return "+";
+		case mathematical_operation::sub:
+			return "-";
+		case mathematical_operation::mul:
+			return "*";
+		case mathematical_operation::div:
+			return "/";
+		case mathematical_operation::pow:
+			return "^";
+		}
+		return "";
+	}
 }

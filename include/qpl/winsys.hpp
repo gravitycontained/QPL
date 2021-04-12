@@ -13,9 +13,12 @@
 #include <Windows.h>
 #include <vector>
 #include <string_view>
+#include <iostream>
 #include <unordered_map>
+#include <span>
 
 #include <qpl/qpldeclspec.hpp>
+#include <qpl/type_traits.hpp>
 #include <qpl/pictures.hpp>
 
 namespace qpl {
@@ -296,7 +299,8 @@ namespace qpl {
 
 	struct shared_memory {
 		HANDLE hMapFile;
-		void* ptr;
+		void* ptr = nullptr;
+		bool array = false;
 
 		~shared_memory() {
 			this->destroy();
@@ -304,10 +308,22 @@ namespace qpl {
 
 		template <typename T>
 		T* get() {
-			return reinterpret_cast<T*>(ptr);
+			return reinterpret_cast<T*>(this->ptr);
 		}
-		QPLDLL bool create(const std::string& name, qpl::u32 size);
-		QPLDLL bool open(const std::string& name, qpl::u32 size);
+		template <typename T>
+		std::span<T> get_array() {
+			auto p = reinterpret_cast<T*>(reinterpret_cast<char*>(this->ptr) + qpl::bytes_in_type<qpl::size>());
+			auto size = this->array_byte_size() / sizeof(T);
+			std::span<T> result(p, p + size);
+			return result;
+		}
+		QPLDLL void* get();
+		QPLDLL qpl::size array_byte_size() const;
+		QPLDLL bool is_array() const;
+		QPLDLL bool create(const std::string& name, qpl::size size);
+		QPLDLL bool create_array(const std::string& name, qpl::size size);
+		QPLDLL bool open(const std::string& name, qpl::size size);
+		QPLDLL bool open_array(const std::string& name);
 		QPLDLL void destroy();
 	};
 
@@ -315,16 +331,47 @@ namespace qpl {
 		extern std::unordered_map<std::string, shared_memory> shared_memories;
 	}
 
-	void create_shared_memory(std::string name, qpl::u32 size);
-	void open_shared_memory(std::string name, qpl::u32 size);
+	QPLDLL qpl::size get_shared_memory_array_byte_size(std::string name);
+	QPLDLL void create_shared_memory_array(std::string name, qpl::size size);
+	QPLDLL void open_shared_memory_array(std::string name);
+	QPLDLL void create_shared_memory(std::string name, qpl::size size);
+	QPLDLL void open_shared_memory(std::string name, qpl::size size);
+	QPLDLL bool find_shared_memory(std::string name);
 	template <typename T>
-	T* get_shared_memory(std::string name) {
+	T* create_shared_memory(std::string name) {
+		qpl::create_shared_memory(name, sizeof(T));
 		return qpl::detail::shared_memories[name].get<T>();
 	}
 	template <typename T>
-	T* make_shared_memory(std::string name) {
-		qpl::create_shared_memory(name, sizeof(T));
+	std::span<T> create_shared_memory_array(std::string name, qpl::size size) {
+		qpl::create_shared_memory_array(name, sizeof(T) * size);
+		return qpl::detail::shared_memories[name].get_array<T>();
+	}
+	template <typename T>
+	T* get_shared_memory(std::string name) {
+		if (qpl::detail::shared_memories.find(name) == qpl::detail::shared_memories.cend()) {
+			if (qpl::find_shared_memory(name)){
+				qpl::open_shared_memory(name, sizeof(T));
+				return qpl::detail::shared_memories[name].get<T>();
+			}
+			else {
+				return qpl::create_shared_memory<T>(name);
+			}
+		}
 		return qpl::detail::shared_memories[name].get<T>();
+	}
+
+	template <typename T>
+	std::span<T> get_shared_memory_array(std::string name) {
+		if (qpl::detail::shared_memories.find(name) == qpl::detail::shared_memories.cend()) {
+			if (qpl::find_shared_memory(name)) {
+				qpl::open_shared_memory_array(name);
+			}
+			else {
+				return {};
+			}
+		}
+		return qpl::detail::shared_memories[name].get_array<T>();
 	}
 }
 

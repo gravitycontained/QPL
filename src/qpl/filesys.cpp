@@ -1,8 +1,8 @@
 #include <qpl/filesys.hpp>
-#include <fstream>
 #include <qpl/string.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/system.hpp>
+#include <qpl/time.hpp>
 
 namespace qpl {
 
@@ -2688,19 +2688,26 @@ namespace qpl {
             std::ifstream file(path, std::ios::ate | std::ios::binary);
 
             if (!file.is_open()) {
-                throw std::runtime_error("failed to open file!");
+                throw std::runtime_error(qpl::to_string("failed to open file \"", path, "\"").c_str());
             }
 
-            size_t fileSize = (size_t)file.tellg();
+            auto file_size = (size_t)file.tellg();
             std::string buffer;
-            buffer.resize(fileSize);
+            buffer.resize(file_size);
 
             file.seekg(0);
-            file.read(buffer.data(), fileSize);
+            file.read(buffer.data(), file_size);
 
             file.close();
 
             return buffer;
+        }
+        std::filesystem::file_time_type qpl::filesys::file_last_write_time(const std::string& path) {
+            qpl::filesys::path p = path;
+            return p.last_write_time();
+        }
+        std::string qpl::filesys::file_last_write_time_str(const std::string& path) {
+            return qpl::get_time_string(qpl::filesys::file_last_write_time(path));
         }
 
         void qpl::filesys::write_to_file(const std::string& text, const std::string& path) {
@@ -2713,7 +2720,7 @@ namespace qpl {
             file << text << '\n';
             file.close();
         }
-        void qpl::filesys::write_file(const std::string& data, const std::string& path) {
+        void qpl::filesys::write_data_file(const std::string& data, const std::string& path) {
             std::ofstream file(path, std::ios::binary);
             file << data;
             file.close();

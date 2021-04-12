@@ -29,6 +29,9 @@ namespace qsf {
 	bool qsf::base_state::game_loop_segment() {
 		return this->framework->game_loop_segment();
 	}
+	bool qsf::base_state::game_loop_segment_no_display() {
+		return this->framework->game_loop_segment_no_display();
+	}
 	void qsf::base_state::create() {
 		return this->framework->create();
 	}
@@ -50,6 +53,7 @@ namespace qsf {
 		this->event.m_scrolled_up = false;
 		this->event.m_scrolled_down = false;
 		this->event.m_key_pressed = false;
+		this->event.m_key_single_pressed = false;
 		this->event.m_key_released = false;
 		this->event.m_mouse_moved = false;
 		this->event.m_key_holding = false;
@@ -58,8 +62,16 @@ namespace qsf {
 
 		this->event.m_keys_pressed.clear();
 		this->event.m_keys_released.clear();
+		this->event.m_keys_single_pressed.clear();
+
+		this->event.m_text_entered.clear();
 
 		while (this->framework->window.pollEvent(event)) {
+			if (event.type == sf::Event::TextEntered) {
+				this->event.m_text_entered.push_back(event.text.unicode);
+				this->event.m_text_entered_stream << (wchar_t)event.text.unicode;
+
+			}
 			if (event.type == sf::Event::MouseButtonPressed) {
 				this->event.m_mouse_clicked = true;
 				this->event.m_mouse_holding = true;
@@ -96,7 +108,12 @@ namespace qsf {
 				this->event.m_key_pressed = true;
 				this->event.m_key_holding = true;
 				this->event.m_keys_pressed.insert(event.key.code);
+				if (!this->event.key_holding(event.key.code)) {
+					this->event.m_keys_single_pressed.insert(event.key.code);
+					this->event.m_key_single_pressed = true;
+				}
 				this->event.m_keys_holding.insert(event.key.code);
+
 			}
 			else if (event.type == sf::Event::KeyReleased) {
 				this->event.m_key_released = true;
@@ -296,6 +313,37 @@ namespace qsf {
 		return true;
 	}
 
+	bool qsf::framework::game_loop_segment_no_display() {
+		if (!this->is_created()) {
+			this->create();
+		}
+
+		this->m_frametime = this->m_frametime_clock.elapsed_reset();
+
+		this->states.back()->event_update();
+
+		if (this->states.back()->event.resized()) {
+			auto new_dimension = this->states.back()->event.resized_size();
+			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
+			this->window.setView(sf::View(view));
+			this->m_dimension = new_dimension;
+			this->states.back()->call_on_resize();
+		}
+		this->states.back()->updating();
+		this->states.back()->update_close_window();
+
+		if (this->states.back()->m_pop_this_state) {
+			this->states.pop_back();
+			if (this->states.empty()) {
+				return false;
+			}
+		}
+		if (this->states.back()->is_clear_allowed()) {
+			this->states.back()->clear();
+		}
+		this->states.back()->drawing();
+		return true;
+	}
 	bool qsf::framework::game_loop_update_segment() {
 		if (!this->is_created()) {
 			this->create();
@@ -372,10 +420,10 @@ namespace qsf {
 		qsf::add_font(name, path);
 	}
 	void qsf::framework::add_texture(const std::string& name, const std::string& path) {
-		qsf::add_font(name, path);
+		qsf::add_texture(name, path);
 	}
 	void qsf::framework::add_sprite(const std::string& name, const std::string& path) {
-		qsf::add_font(name, path);
+		qsf::add_sprite(name, path);
 	}
 	void qsf::framework::add_text(const std::string& name) {
 		qsf::add_text(name);

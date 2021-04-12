@@ -84,6 +84,7 @@ namespace qsf {
 		QPLDLL void display();
 		QPLDLL bool game_loop_update_segment();
 		QPLDLL bool game_loop_segment();
+		QPLDLL bool game_loop_segment_no_display();
 		QPLDLL void game_loop();
 
 
@@ -148,12 +149,17 @@ namespace qsf {
 		QPLDLL void display();
 		QPLDLL bool game_loop_update_segment();
 		QPLDLL bool game_loop_segment();
+		QPLDLL bool game_loop_segment_no_display();
 		template<typename T>
 		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}
-			else {
+			else if constexpr (qsf::has_draw_object<T>) {
+				draw_object draw(this->framework->window, states);
+				drawable.draw(draw);
+			}
+			else if constexpr (qsf::has_draw_sf<T>) {
 				drawable.draw(this->framework->window, states);
 			}
 		}
@@ -163,7 +169,11 @@ namespace qsf {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}
-			else {
+			else if constexpr (qsf::has_draw_object<T>) {
+				draw_object draw(this->framework->window, states);
+				drawable.draw(draw);
+			}
+			else if constexpr (qsf::has_draw_sf<T>) {
 				drawable.draw(this->framework->window, states);
 			}
 		}

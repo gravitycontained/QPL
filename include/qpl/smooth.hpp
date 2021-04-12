@@ -13,7 +13,7 @@
 namespace qpl {
 	class cubic_generator {
 	public:
-		cubic_generator(double min = 0, double max = 100) {
+		cubic_generator(double min = 0, double max = 1) {
 			this->set_random_range(min, max);
 			this->init();
 		}

@@ -7,6 +7,7 @@
 #include <qpl/type_traits.hpp>
 #include <qpl/string.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/memory.hpp>
 #include <array>
 
 namespace qpl {
@@ -84,13 +85,95 @@ namespace qpl {
 		qpl::default_type, qpl::floating_point<32u, bits>>;
 
 
-	template<qpl::u64 bits>
+	template<qpl::u64 bits, bool BOUNDARY_CHECK = detail::array_boundary_check>
 	class bitset {
 	public:
 
+		using uint_type = qpl::conditional<
+			qpl::if_true<(bits <= 64u)>, qpl::ubit<bits>,
+			qpl::default_type, qpl::u64>;
+
 		using holding_type = qpl::conditional<
 			qpl::if_true<(bits <= 64u)>, qpl::ubit<bits>,
-			qpl::default_type, std::array<qpl::u64, qpl::approximate_multiple_up(bits, qpl::u64{ 64 }) / 64>>;
+			qpl::default_type, qpl::array<qpl::u64, qpl::approximate_multiple_up(bits, qpl::u64{ 64 }) / 64, BOUNDARY_CHECK>>;
+
+		class bitset_range_proxy {
+		public:
+			bitset_range_proxy(bitset& data, qpl::u32 begin, qpl::u32 end) {
+				this->ptr = &data;
+				this->begin = begin;
+				this->end = end;
+			}
+
+			uint_type get() const {
+				return this->ptr->get_range(this->begin, this->end);
+			}
+
+			operator bool() const {
+				return this->get();
+			}
+			bitset_range_proxy operator=(uint_type value) const {
+				this->ptr->set_range(this->begin, this->end, value);
+				return *this;
+			}
+
+			bitset_range_proxy operator|=(uint_type value) const {
+				this->ptr->set_range(this->begin, this->end, this->get() | value);
+				return *this;
+			}
+			uint_type operator|(uint_type value) const {
+				return this->get() | value;
+			}
+			bitset_range_proxy operator&=(uint_type value) const {
+				this->ptr->set_range(this->begin, this->end, this->get() & value);
+				return *this;
+			}
+			uint_type operator&(uint_type value) const {
+				return this->get() & value;
+			}
+			bitset_range_proxy operator^=(uint_type value) const {
+				this->ptr->set_range(this->begin, this->end, this->get() ^ value);
+				return *this;
+			}
+			uint_type operator^(uint_type value) const {
+				return this->get() ^ value;
+			}
+		private:
+			bitset* ptr;
+			qpl::u32 begin;
+			qpl::u32 end;
+		};
+
+		class bitset_range_const_proxy {
+		public:
+			bitset_range_const_proxy(const bitset& data, qpl::u32 begin, qpl::u32 end) {
+				this->ptr = &data;
+				this->begin = begin;
+				this->end = end;
+			}
+
+			uint_type get() const {
+				return this->ptr->get_range(this->begin, this->end);
+			}
+
+			operator bool() const {
+				return this->get();
+			}
+
+			uint_type operator|(uint_type value) const {
+				return this->get() | value;
+			}
+			uint_type operator&(uint_type value) const {
+				return this->get() & value;
+			}
+			uint_type operator^(uint_type value) const {
+				return this->get() ^ value;
+			}
+		private:
+			const bitset* ptr;
+			qpl::u32 begin;
+			qpl::u32 end;
+		};
 
 
 		class bitset_proxy {
@@ -111,6 +194,28 @@ namespace qpl {
 				this->ptr->set(this->index, value);
 				return *this;
 			}
+			
+			bitset_proxy operator|=(bool value) const {
+				this->ptr->set(this->index, this->ptr->get(this->index) | value);
+				return *this;
+			}
+			bool operator|(bool value) const {
+				return this->ptr->get(this->index) | value;
+			}
+			bitset_proxy operator&=(bool value) const {
+				this->ptr->set(this->index, this->ptr->get(this->index) & value);
+				return *this;
+			}
+			bool operator&(bool value) const {
+				return this->ptr->get(this->index) & value;
+			}
+			bitset_proxy operator^=(bool value) const {
+				this->ptr->set(this->index, this->ptr->get(this->index) ^ value);
+				return *this;
+			}
+			bool operator^(bool value) const {
+				return this->ptr->get(this->index) ^ value;
+			}
 		private:
 			bitset* ptr;
 			qpl::u32 index;
@@ -129,6 +234,15 @@ namespace qpl {
 
 			constexpr operator bool() const {
 				return this->get();
+			}
+			bool operator|(bool value) const {
+				return this->ptr->get(this->index) | value;
+			}
+			bool operator&(bool value) const {
+				return this->ptr->get(this->index) & value;
+			}
+			bool operator^(bool value) const {
+				return this->ptr->get(this->index) ^ value;
 			}
 		private:
 			const bitset* ptr;
@@ -207,11 +321,29 @@ namespace qpl {
 		constexpr static qpl::u64 memory_size() {
 			return sizeof(holding_type) * qpl::bits_in_byte();
 		}
-		constexpr static qpl::u64 size() {
+		constexpr static qpl::size size() {
 			return bits;
 		}
 		constexpr static bool is_array() {
 			return bits > 64u;
+		}
+		constexpr static qpl::size array_size() {
+			if (!is_array()) {
+				return 0;
+			}
+			return qpl::approximate_multiple_up(bits, qpl::u64{ 64 }) / 64;
+		}
+		constexpr qpl::size number_of_set_bits() {
+			if constexpr (is_array()) {
+				qpl::size size = 0u;
+				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+					size += qpl::number_of_set_bits(this->data[i]);
+				}
+				return size;
+			}
+			else {
+				return qpl::number_of_set_bits(this->data);
+			}
 		}
 
 		constexpr bitset() {
@@ -220,6 +352,54 @@ namespace qpl {
 		template<typename T>
 		constexpr bitset(T value) : data() {
 			this->set(value);
+		}
+
+		constexpr bitset& operator|=(const bitset& other) {
+			if constexpr (is_array()) {
+				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+					this->data[i] |= other.data[i];
+				}
+			}
+			else {
+				this->data |= other.data;
+			}
+			return *this;
+		}
+		constexpr bitset operator|(const bitset& other) const {
+			auto result = *this;
+			return result |= other;
+		}
+
+		constexpr bitset& operator&=(const bitset& other) {
+			if constexpr (is_array()) {
+				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+					this->data[i] &= other.data[i];
+				}
+			}
+			else {
+				this->data &= other.data;
+			}
+			return *this;
+		}
+		constexpr bitset operator&(const bitset& other) const {
+			auto result = *this;
+			return result &= other;
+		}
+
+		constexpr bitset& operator^=(const bitset& other) {
+			if constexpr (is_array()) {
+				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+					this->data[i] ^= other.data[i];
+				}
+			}
+			else {
+				this->data ^= other.data;
+			}
+			return *this;
+		}
+		constexpr bitset operator^(const bitset& other) const {
+			auto result = *this;
+			return result ^= other;
 		}
 
 		constexpr void clear() {
@@ -285,6 +465,48 @@ namespace qpl {
 			this->data = data;
 		}
 
+		template<typename T>
+		constexpr void set_range(qpl::u32 begin, qpl::u32 end, T value) {
+			if constexpr (is_array()) {
+				auto div = begin / 64u;
+
+				auto extract = (value & (~T{} >> (qpl::bits_in_type<T>() - ((end - (div * 64)) - (begin - (div * 64))) - 1)));
+				this->data[div] |= extract << (begin - (div * 64));
+			}
+			else {
+				auto extract = (value & (~T{} >> (qpl::bits_in_type<T>() - (end - begin) - 1)));
+				this->data |= extract << begin;
+			}
+		}
+		constexpr uint_type get_range(qpl::u32 begin, qpl::u32 end) const {
+
+			if constexpr (is_array()) {
+				auto div = begin / 64u;
+
+				auto shift = this->data[div] >> (begin - (div * 64));
+				return (shift & (~uint_type{} >> (qpl::bits_in_type<uint_type>() - ((end - (div * 64)) - (begin - (div * 64))) - 1)));
+			}
+			else {
+				auto shift = this->data >> begin;
+				return (shift & (~uint_type{} >> (qpl::bits_in_type<uint_type>() - (end - begin) - 1)));
+			}
+		}
+
+		constexpr bool empty() const {
+			if constexpr (is_array()) {
+				for (auto& i : this->data) {
+					if (i) {
+						return false;
+					}
+				}
+				return true;
+			}
+			else {
+				return this->data == holding_type{ 0 };
+			}
+		}
+
+
 		std::string string() const {
 			if constexpr (is_array()) {
 				std::ostringstream stream;
@@ -332,13 +554,13 @@ namespace qpl {
 				return stream.str();
 			}
 			else {
-				auto str = qpl::hex_string(this->data);
-				return qpl::prepended_to_string_to_fit(str, '0', this->size());
+				auto str = qpl::hex_string(this->data, "");
+				return qpl::to_string("0x", qpl::prepended_to_string_to_fit(str, '0', this->size()));
 			}
 		}
 
 
-		bitset_iterator begin() {
+		constexpr bitset_iterator begin() {
 			return bitset_iterator(*this, 0u);
 		}
 		constexpr bitset_const_iterator begin() const {
@@ -348,7 +570,7 @@ namespace qpl {
 			return bitset_const_iterator(*this, 0u);
 		}
 
-		bitset_iterator end() {
+		constexpr bitset_iterator end() {
 			return bitset_iterator(*this, this->size());
 		}
 		constexpr bitset_const_iterator end() const {
@@ -360,7 +582,7 @@ namespace qpl {
 
 
 
-		bitset_proxy operator[](qpl::u32 index) {
+		constexpr bitset_proxy operator[](qpl::u32 index) {
 			return bitset_proxy(*this, index);
 		}
 		constexpr bitset_const_proxy operator[](qpl::u32 index) const {
@@ -368,21 +590,28 @@ namespace qpl {
 			return result;
 		}
 
-		bitset_proxy front() {
+		constexpr bitset_range_proxy operator[](std::pair<qpl::u32, qpl::u32> range) {
+			return bitset_range_proxy(*this, range.first, range.second);
+		}
+		constexpr bitset_range_const_proxy operator[](std::pair<qpl::u32, qpl::u32> range) const {
+			bitset_range_const_proxy result(*this, range.first, range.second);
+			return result;
+		}
+
+		constexpr bitset_proxy front() {
 			return bitset_proxy(*this, 0u);
 		}
 		constexpr bitset_const_proxy front() const {
 			return bitset_const_proxy(*this, 0u);
 		}
 
-		bitset_proxy back() {
+		constexpr bitset_proxy back() {
 			return bitset_proxy(*this, this->size() - 1);
 		}
 		constexpr bitset_const_proxy back() const {
 			return bitset_const_proxy(*this, this->size() - 1);
 		}
 
-	private:
 		holding_type data;
 	};
 

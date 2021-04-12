@@ -61,7 +61,7 @@ namespace qpl {
 			return smooth_inter(low, high, y_frac);
 		}
 
-		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::size depth) {
+		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::size depth) {
 			qpl::fbit<bits> xa = x * freq;
 			qpl::fbit<bits> ya = y * freq;
 			qpl::fbit<bits> amp = 1.0;
@@ -79,10 +79,18 @@ namespace qpl {
 
 			return fin / div;
 		}
+		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y) {
+			return this->get(x, y, this->frequency, this->depth);
+		}
+		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::size depth) {
+			return this->get(x, y, freq, depth);
+		}
+		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y) {
+			return this->get(x, y, this->frequency, this->depth);
+		}
 
 
 
-	//private:
 		void construct() {
 			this->set_seed(5678u);
 		}
@@ -98,6 +106,8 @@ namespace qpl {
 		qpl::u32 m_seed;
 		qpl::random_engine<64> m_engine;
 		std::array<qpl::ibit<bits>, N> m_hash;
+		qpl::fbit<bits> frequency = 0.1;
+		qpl::size depth = 5;
 	};
 
 	using perlin_noise = perlin_noise_N<64, 256>;

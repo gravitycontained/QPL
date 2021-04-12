@@ -12,6 +12,7 @@
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+#include <chrono>
 
 
 namespace qpl {
@@ -226,6 +227,26 @@ namespace qpl {
 	QPLDLL void wait(qpl::time duration);
 	QPLDLL void wait(double seconds);
 
+	template <typename T>
+	constexpr std::time_t to_time_t(T t) {
+		using namespace std::chrono;
+		auto sctp = time_point_cast<system_clock::duration>(t - T::clock::now()
+			+ system_clock::now());
+		return system_clock::to_time_t(sctp);
+	}
+	template<typename T>
+	std::string get_time_string(T duration, std::string format = "%Y-%m-%d-%H-%M-%S") {
+		auto time = qpl::to_time_t(duration);
+		
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		std::tm* gmt = std::localtime(&time);
+#pragma warning( pop ) 
+
+		std::ostringstream buffer;
+		buffer << std::put_time(gmt, format.c_str());
+		return buffer.str();
+	}
 	//YYYY-MM-DD-HH-MM-SS
 	QPLDLL std::string get_current_time_string();
 	QPLDLL std::string get_current_time_string_ms();

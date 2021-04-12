@@ -6,78 +6,94 @@
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/system.hpp>
 #include <array>
+
 
 namespace qpl {
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline C string_to_container_memory(const std::string& data) {
 		C result;
+		if (data.empty()) {
+			return C;
+		}
 		result.resize((data.size() - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
 		memcpy(result.data(), data.data(), data.size());
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline void string_to_container_memory(const std::string& source, C& dest) {
+		if (source.empty()) {
+			return;
+		}
 		dest.resize((source.size() - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
 		memcpy(dest.data(), source.data(), source.size());
 	}
 
-
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline std::string container_memory_to_string(const C& data) {
 		std::string result;
 		result.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(result.data(), data.data(), result.size());
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline void container_memory_to_string(const C& data, std::string& destination) {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(destination.data(), data.data(), destination.size());
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline void string_to_vector_memory(const std::string& data, C& destination) {
+		if (data.empty()) {
+			return;
+		}
 		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
 		memcpy(destination.data(), data.data(), data.size());
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline void string_to_vector_memory(const std::string_view& data, C& destination) {
+		if (data.empty()) {
+			return;
+		}
 		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
 		memcpy(destination.data(), data.data(), data.size());
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr inline void add_string_to_container_memory(const std::string& data, C& destination) {
+		if (data.empty()) {
+			return;
+		}
 		auto size = destination.size();
 		destination.resize(size + (data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
 		memcpy(destination.data() + size, data.data(), data.size());
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr std::wstring container_memory_to_wstring(const C& data) {
 		std::wstring result;
 		result.resize(data.size() * sizeof(qpl::container_subtype<C>) / (sizeof(wchar_t) / sizeof(char)));
 		memcpy(result.data(), data.data(), result.size() * (sizeof(wchar_t) / sizeof(char)));
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr void container_memory_to_wstring(const C& data, std::wstring& destination) {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(destination.data(), data.data(), destination.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr C wstring_to_container_memory(const std::wstring& data) {
 		C result;
 		result.resize(((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>) + 1));
 		memcpy(result.data(), data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr void wstring_to_container_memory(const std::wstring& data, C& destination) {
 		destination.resize(((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>) + 1));
 		memcpy(destination.data(), data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container<C>
 	constexpr void add_wstring_to_container_memory(const std::wstring& data, C& destination) {
 		auto size = destination.size();
 		destination.resize(size + ((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>)) + 1);
@@ -123,8 +139,6 @@ namespace qpl {
 
 
 	QPLDLL void print_character_bool_table(std::string_view characters);
-
-
 
 	template<qpl::size exponent_bytes, qpl::size mantissa_bytes>
 	struct float_memory {
@@ -420,6 +434,391 @@ namespace qpl {
 		qpl::u32 index;
 		qpl::conditional<qpl::if_true<N == 0>, std::vector<T>, std::array<T, N>> data;
 	};
+
+	namespace detail {
+#ifdef QPL_NO_ARRAY_BOUNDARY_CHECK
+		constexpr bool array_boundary_check = false;
+#else
+		constexpr bool array_boundary_check = true;
+#endif
+#ifdef QPL_NO_VECTOR_BOUNDARY_CHECK
+		constexpr bool vector_boundary_check = false;
+#else
+		constexpr bool vector_boundary_check = true;
+#endif
+	}
+
+	template<typename T, qpl::size N, bool BOUNDARY_CHECK = detail::array_boundary_check>
+	struct array {
+	private:
+		constexpr void index_check(qpl::u32 index, bool at) const {
+			if (index >= this->size()) {
+				std::ostringstream stream;
+				stream << qpl::to_string("qpl::array<", qpl::type_name<T>(), ", ", N, ">", at ? ".at()" : "::operator[]", " : index is ", index);
+				qpl::i32 convert = qpl::i32_cast(index);
+				if (convert < 0) {
+					stream << qpl::to_string(" (= ", convert, ") ");
+				}
+				qpl::println(stream.str());
+				throw std::exception(stream.str().c_str());
+			}
+		}
+
+	public:
+		using array_type = std::array<T, N>;
+
+		array_type memory;
+
+		constexpr array() : memory() {
+
+		}
+
+		constexpr array(const array& other) : memory() {
+			*this = other;
+		}
+		constexpr array(const std::array<T, N>& other) : memory() {
+			*this = other;
+		}
+		constexpr array(const std::initializer_list<T>& list) : memory() {
+			*this = list;
+		}
+		template<typename First, typename... Args>
+		constexpr array(First first, Args&&... args) : memory() {
+			this->memory = qpl::type_cast<T>(first, args...);
+		}
+
+		constexpr array& operator=(const array& other) {
+			this->memory = other.memory;
+			return *this;
+		}
+		constexpr array& operator=(const std::array<T, N>& other) {
+			this->memory = other;
+			return *this;
+		}
+
+		constexpr array& operator=(const std::initializer_list<T>& list) {
+			for (qpl::u32 i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
+				this->memory[i] = *(list.begin() + i);
+			}
+			return *this;
+		}
+
+		constexpr operator std::array<T, N>() {
+			return this->memory;
+		}
+
+		constexpr void fill(const T& value) {
+			this->memory.fill(value);
+		}
+
+		constexpr T& operator[](qpl::u32 index) {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, false);
+			}
+			return this->memory[index];
+		}
+		constexpr const T& operator[](qpl::u32 index) const {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, false);
+			}
+			return this->memory[index];
+		}
+
+		constexpr T& at(qpl::u32 index) {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, true);
+			}
+			return this->memory.at(index);
+		}
+		constexpr const T& at(qpl::u32 index) const {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, true);
+			}
+			return this->memory.at(index);
+		}
+
+		constexpr auto data() {
+			return this->memory.data();
+		}
+		constexpr auto data() const {
+			return this->memory.data();
+		}
+
+
+		constexpr T& front(qpl::u32 index) {
+			return this->memory.front(index);
+		}
+		constexpr const T& front(qpl::u32 index) const {
+			return this->memory.front(index);
+		}
+		constexpr T& back(qpl::u32 index) {
+			return this->memory.back(index);
+		}
+		constexpr const T& back(qpl::u32 index) const {
+			return this->memory.back(index);
+		}
+
+		constexpr qpl::size size() const {
+			return this->memory.size();
+		}
+
+		constexpr auto begin() {
+			return this->memory.begin();
+		}
+		constexpr auto begin() const {
+			return this->memory.begin();
+		}
+		constexpr auto rbegin() {
+			return this->memory.rbegin();
+		}
+		constexpr auto rbegin() const {
+			return this->memory.rbegin();
+		}
+		constexpr auto cbegin() {
+			return this->memory.cbegin();
+		}
+		constexpr auto crbegin() {
+			return this->memory.crbegin();
+		}		
+
+		constexpr auto end() {
+			return this->memory.end();
+		}
+		constexpr auto end() const {
+			return this->memory.end();
+		}
+		constexpr auto rend() {
+			return this->memory.rend();
+		}
+		constexpr auto rend() const {
+			return this->memory.rend();
+		}
+		constexpr auto cend() {
+			return this->memory.cend();
+		}
+		constexpr auto crend() {
+			return this->memory.crend();
+		}
+
+		std::string string() const {
+			return qpl::container_to_string(this->memory);
+		}
+		template<typename T, qpl::size N>
+		friend std::ostream& operator<<(std::ostream& os, const array<T, N>& array);
+	};
+
+	template<typename T, qpl::size N>
+	std::ostream& operator<<(std::ostream& os, const qpl::array<T, N>& array) {
+		return (os << array.string());
+	}
+
+	template<typename T, bool BOUNDARY_CHECK = detail::vector_boundary_check>
+	struct vector {
+
+	private:
+		constexpr void index_check(qpl::u32 index, bool at) const {
+			if (index >= this->size()) {
+				std::ostringstream stream;
+				stream << qpl::to_string("qpl::vector<", qpl::type_name<T>(), ">", at ? ".at()" : "::operator[]", " : index is ", index);
+				qpl::i32 convert = qpl::i32_cast(index);
+				if (convert < 0) {
+					stream << qpl::to_string(" (= ", convert, ") ");
+				}
+				stream << " - size of vector is " << this->size();
+				qpl::println(stream.str());
+				throw std::exception(stream.str().c_str());
+			}
+		}
+		constexpr void front_check(bool front) const {
+			if (this->empty()) {
+				std::ostringstream stream;
+				stream << qpl::to_string("qpl::vector<", qpl::type_name<T>(), ">", front ? ".front()" : ".back()", " : vector is empty");
+				qpl::println(stream.str());
+				throw std::exception(stream.str().c_str());
+			}
+		}
+	public:
+
+		using vector_type = std::vector<T>;
+		vector_type memory;
+
+		constexpr vector() {
+
+		}
+
+		constexpr vector(const vector& other) : memory() {
+			*this = other;
+		}
+		constexpr vector(const std::vector<T>& other) : memory() {
+			*this = other;
+		}
+		constexpr vector(const std::initializer_list<T>& list) : memory() {
+			*this = list;
+		}
+		template<typename First, typename... Args>
+		constexpr vector(First first, Args&&... args) : memory() {
+			auto result = qpl::type_cast<T>(first, args...);
+			for (qpl::u32 i = 0u; i < qpl::min(this->size(), result.size()); ++i) {
+				this->data[i] = result[i];
+			}
+		}
+
+		constexpr vector& operator=(const vector& other) {
+			this->memory = other.memory;
+			return *this;
+		}
+		constexpr vector& operator=(const std::vector<T>& other) {
+			this->memory = other;
+			return *this;
+		}
+		constexpr vector& operator=(const std::initializer_list<T>& list) {
+			for (qpl::u32 i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
+				this->memory[i] = *(list.begin() + i);
+			}
+			return *this;
+		}
+
+		constexpr operator std::vector<T>() {
+			return this->memory;
+		}
+
+		constexpr void pop_back(const T& value) {
+			this->memory.pop_back();
+		}
+		constexpr void push_back(const T& value) {
+			this->memory.push_back(value);
+		}
+		constexpr void emplace_back(T&& value) {
+			this->memory.emplace_back(std::forward(value));
+		}
+
+		constexpr void fill(const T& value) {
+			this->memory.fill(value);
+		}
+		constexpr void reserve(qpl::size reserve) {
+			this->memory.reserve(reserve);
+		}
+		constexpr void resize(qpl::size resize) {
+			this->memory.resize(resize);
+		}
+		
+
+		constexpr T& operator[](qpl::u32 index) {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, false);
+			}
+			return this->memory[index];
+		}
+		constexpr const T& operator[](qpl::u32 index) const {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, false);
+			}
+			return this->memory[index];
+		}
+
+		constexpr T& at(qpl::u32 index) {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, true);
+			}
+			return this->memory.at(index);
+		}
+		constexpr const T& at(qpl::u32 index) const {
+			if constexpr (BOUNDARY_CHECK) {
+				this->index_check(index, true);
+			}
+			return this->memory.at(index);
+		}
+
+		constexpr auto data() {
+			return this->memory.data();
+		}
+		constexpr auto data() const {
+			return this->memory.data();
+		}
+
+
+		constexpr T& front(qpl::u32 index) {
+			if constexpr (BOUNDARY_CHECK) {
+				this->front_check(index, true);
+			}
+			return this->memory.front(index);
+		}
+		constexpr const T& front(qpl::u32 index) const {
+			if constexpr (BOUNDARY_CHECK) {
+				this->front_check(index, true);
+			}
+			return this->memory.front(index);
+		}
+		constexpr T& back(qpl::u32 index) {
+			if constexpr (BOUNDARY_CHECK) {
+				this->front_check(index, false);
+			}
+			return this->memory.back(index);
+		}
+		constexpr const T& back(qpl::u32 index) const {
+			if constexpr (BOUNDARY_CHECK) {
+				this->front_check(index, false);
+			}
+			return this->memory.back(index);
+		}
+
+		constexpr qpl::size size() const {
+			return this->memory.size();
+		}
+		constexpr bool empty() const {
+			return this->memory.empty();
+		}
+
+		constexpr auto begin() {
+			return this->memory.begin();
+		}
+		constexpr auto begin() const {
+			return this->memory.begin();
+		}
+		constexpr auto rbegin() {
+			return this->memory.rbegin();
+		}
+		constexpr auto rbegin() const {
+			return this->memory.rbegin();
+		}
+		constexpr auto cbegin() {
+			return this->memory.cbegin();
+		}
+		constexpr auto crbegin() {
+			return this->memory.crbegin();
+		}
+
+		constexpr auto end() {
+			return this->memory.end();
+		}
+		constexpr auto end() const {
+			return this->memory.end();
+		}
+		constexpr auto rend() {
+			return this->memory.rend();
+		}
+		constexpr auto rend() const {
+			return this->memory.rend();
+		}
+		constexpr auto cend() {
+			return this->memory.cend();
+		}
+		constexpr auto crend() {
+			return this->memory.crend();
+		}
+
+		std::string string() const {
+			return qpl::container_to_string(this->memory);
+		}
+		template<typename T>
+		friend std::ostream& operator<<(std::ostream& os, const vector<T>& array);
+	};
+
+
+	template<typename T>
+	std::ostream& operator<<(std::ostream& os, const vector<T>& array) {
+		return (os << array.string());
+	}
 }
 
 #endif

@@ -4,11 +4,13 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/memory.hpp>
 #include <string>
 #include <string_view>
 #include <filesystem>
 #include <functional>
 #include <regex>
+#include <fstream>
 
 namespace qpl {
 
@@ -581,10 +583,38 @@ namespace qpl {
 
 
         QPLDLL std::string read_file(const std::string& path);
+        QPLDLL std::filesystem::file_time_type file_last_write_time(const std::string& path);
+        QPLDLL std::string file_last_write_time_str(const std::string& path);
         QPLDLL void write_to_file(const std::string& text, const std::string& path);
         QPLDLL void writeln_to_file(const std::string& text, const std::string& path);
-        QPLDLL void write_file(const std::string& data, const std::string& path);
+
+
+        QPLDLL void write_data_file(const std::string& data, const std::string& path);
         QPLDLL qpl::filesys::path get_current_location();
+
+        template<typename C>
+        void container_memory_to_file(const C& data, const std::string& path) {
+            std::ofstream file(path, std::ios::binary);
+            file.write(reinterpret_cast<const char*>(data.data()), data.size() * qpl::bytes_in_type<qpl::container_subtype<C>>());
+            file.close();
+        }
+        template<typename C>
+        void container_memory_from_file(C& data, const std::string& path) {
+            std::ifstream file(path, std::ios::ate | std::ios::binary);
+
+            if (!file.is_open()) {
+                throw std::runtime_error(qpl::to_string("failed to open file \"", path, "\"").c_str());
+            }
+
+            auto file_size = (size_t)file.tellg();
+            data.resize((file_size - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
+
+            file.seekg(0);
+            file.read(reinterpret_cast<char*>(data.data()), file_size);
+
+            file.close();
+        }
+        
     }
 
 }

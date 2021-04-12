@@ -52,7 +52,7 @@ namespace qsf {
 				this->click_mouse_position = mouse_relative;
 			}
 
-			if (this->dragging && event.mouse_moved()) {
+			if (this->allow_dragging && this->dragging && event.mouse_moved()) {
 				auto delta = (this->click_mouse_position - mouse_relative);
 				this->position = this->click_position + delta * this->scale;
 
@@ -135,7 +135,7 @@ namespace qsf {
 			}
 		}
 
-		if (event.mouse_button_released(this->drag_mouse_button)) {
+		if (this->allow_dragging && event.mouse_button_released(this->drag_mouse_button)) {
 			this->dragging = false;
 			this->click_position = this->position;
 			this->click_mouse_position = event.mouse_position() - this->hitbox.position;

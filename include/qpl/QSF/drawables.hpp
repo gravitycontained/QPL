@@ -14,6 +14,41 @@
 #include <SFML/Graphics.hpp>
 
 namespace qsf {
+	struct draw_object;
+
+	template<typename C>
+	concept has_draw_object = requires (const C x, draw_object& object) {
+		x.draw(object);
+	};
+
+	template<typename C>
+	concept has_draw_sf = requires (const C x, sf::RenderTarget& render, sf::RenderStates states) {
+		x.draw(render, states);
+	};
+	struct draw_object {
+		draw_object(sf::RenderWindow& window, sf::RenderStates states = sf::RenderStates::Default) {
+			this->window = &window;
+			this->states = states;
+		}
+		template<typename T>
+		void draw(const T& object) {
+			if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->window->draw(object, this->states);
+			}
+			else if constexpr (qsf::has_draw_object<T>) {
+				object.draw(*this->window, this->states);
+			}
+			else if constexpr (qsf::has_draw_sf<T>) {
+				object.draw(*this->window, this->states);
+			}
+			else {
+				qpl::println(qpl::type_name<T>(), " is not drawable");
+			}
+		}
+		sf::RenderWindow* window;
+		sf::RenderStates states;
+	};
+
 	struct vtext;
 	struct text;
 	struct vrectangle;
@@ -800,7 +835,8 @@ namespace qsf {
 
 		QPLDLL qsf::vector2f normal() const;
 		QPLDLL qpl::f32 length() const;
-		QPLDLL qpl::f32 rotation() const;
+		QPLDLL qpl::f32 angle_from_a() const;
+		QPLDLL qpl::f32 angle_from_b() const;
 		qsf::vline& rotate_a(qpl::f64 degree);
 		qsf::vline& rotate_b(qpl::f64 degree);
 
@@ -961,6 +997,9 @@ namespace qsf {
 
 		QPLDLL void add_thick_line(qsf::vpoint point, qpl::f32 thickness);
 		QPLDLL void add_thick_line(qsf::vector2f position, qsf::rgb color, qpl::f32 thickness);
+
+		QPLDLL void complete();
+
 		QPLDLL qsf::thick_lines& operator=(const qsf::vthick_lines& lines);
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL void clear();
@@ -1011,6 +1050,7 @@ namespace qsf {
 		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qsf::rgb color);
 		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width);
 
+
 		//pair.first = index - pair.second = rotation (0-7)
 		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
 		//pair.first = index - pair.second = rotation (0-7)
@@ -1038,6 +1078,8 @@ namespace qsf {
 		const sf::Texture* texture_ptr;
 		bool texture_ptr_set = false;
 		qsf::vector2u texture_tile_dimension;
+		qsf::vector2u position_tile_dimension;
+
 		qsf::rgb color;
 	};
 
@@ -1049,6 +1091,9 @@ namespace qsf {
 			this->x_axis_string_function = [](qpl::size index) {
 				return qpl::to_string(index);
 			};
+			this->closest_graph_at_cursor_text.set_character_size(30);
+			this->closest_graph_at_cursor_text.set_style(sf::Text::Style::Bold);
+			this->closest_graph_at_cursor_background.set_outline_thickness(2);
 		}
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
@@ -1149,12 +1194,12 @@ namespace qsf {
 		bool y_axis_text_percent = false;
 		bool y_axis_text_integer = false;
 		qpl::size y_axis_text_precision = 5u;
-		bool use_y_axis = false;
+		bool use_y_axis = true;
 		bool y_axis_start_at_0 = false;
 		qpl::f64 y_axis_padding = 0.1;
 
 		qpl::f64 x_axis_text_space = 5.0;
-		qpl::size x_axis_line_frequency = 200u;
+		mutable qpl::size x_axis_line_frequency = 200u;
 		qsf::vtext x_axis_text;
 		bool x_axis_text_left = true;
 		bool x_axis_text_percent = false;
@@ -1168,10 +1213,12 @@ namespace qsf {
 		qpl::size display_last_n_entries = qpl::size_max;
 		qpl::size index_start = 0u;
 		qpl::size index_end = qpl::size_max;
-		qpl::size index_skip_size = 1u;
+		mutable qpl::size index_skip_size = 1u;
+		mutable std::pair<qpl::u32, qpl::u32> visible_index_range_before = { qpl::u32_max, qpl::u32_max };
 
-		bool use_x_axis = false;
+		bool use_x_axis = true;
 		std::function<std::string(qpl::size)> x_axis_string_function;
+		std::function<std::string(qpl::f64)> y_axis_string_function;
 
 		qsf::rgb axis_line_color = qsf::rgb(30, 30, 30);
 		qpl::f64 axis_thickness = 1.5f;
@@ -1181,6 +1228,20 @@ namespace qsf {
 		qsf::vector2f position;
 		qsf::vector2f dimension = { 500, 300 };
 
+		mutable qsf::vector2f low_high_graph;
+		std::string closest_graph_at_cursor = "";
+		qpl::f64 closest_graph_at_cursor_value = qpl::f64_max;
+		qpl::u32 closest_graph_at_cursor_index = qpl::u32_max;
+		qsf::rgb closest_graph_at_cursor_color;
+		qpl::f32 closest_graph_at_cursor_distance = 40.0f;
+		qpl::f32 closest_graph_at_cursor_multiply_thickness = 2.0f;
+		qsf::vector2f mouse_position;
+		bool display_closest_graph_at_cursor = true;
+
+		qsf::vtext closest_graph_at_cursor_text;
+		qsf::vrectangle closest_graph_at_cursor_background;
+		bool closest_graph_at_cursor_background_is_graph_background = true;
+		std::function<std::string(std::string, qpl::f64, qpl::u32)> closest_graph_at_cursor_string_function;
 
 		enum class interpolation_type : qpl::u32 {
 			unset = 0,
@@ -1226,6 +1287,7 @@ namespace qsf {
 			QPLDLL qpl::f64 get_percentage_height_at(qpl::size index) const;
 			QPLDLL std::pair<data_point_info, data_point_info> get_low_high() const;
 			QPLDLL qpl::size size() const;
+			QPLDLL void clear();
 			QPLDLL data_point_info& operator[](qpl::size index);
 			QPLDLL const data_point_info& operator[](qpl::size index) const;
 
@@ -1252,7 +1314,6 @@ namespace qsf {
 			std::vector<data_point_info> data;
 		};
 
-
 		struct standard_graph {
 			template<typename T>
 			void set_data(const std::vector<T>& data) {
@@ -1276,6 +1337,7 @@ namespace qsf {
 			QPLDLL qpl::f64 get_percentage_height_at(qpl::size index) const;
 			QPLDLL std::pair<data_point, data_point> get_low_high() const;
 			QPLDLL qpl::size size() const;
+			QPLDLL void clear();
 			QPLDLL data_point& operator[](qpl::size index);
 			QPLDLL const data_point& operator[](qpl::size index) const;
 
@@ -1320,6 +1382,7 @@ namespace qsf {
 			QPLDLL qpl::f64 get_percentage_height_at(qpl::size index) const;
 			QPLDLL std::pair<data_point_simple, data_point_simple> get_low_high() const;
 			QPLDLL qpl::size size() const;
+			QPLDLL void clear();
 			QPLDLL data_point_simple& operator[](qpl::size index);
 			QPLDLL const data_point_simple& operator[](qpl::size index) const;
 
@@ -1348,7 +1411,10 @@ namespace qsf {
 		bool drag = false;
 		qsf::vector2f click_position;
 
-		QPLDLL void check_x_axis();
+		QPLDLL bool empty() const;
+		QPLDLL bool changed() const;
+		QPLDLL void update_change() const;
+		QPLDLL void check_x_axis() const;
 		QPLDLL void enable_track_new_entries();
 		QPLDLL void disable_track_new_entries();
 		QPLDLL void enable_axis_info();
@@ -1367,6 +1433,7 @@ namespace qsf {
 		QPLDLL qpl::size visible_element_size() const;
 		QPLDLL qpl::u32 visible_index_start() const;
 		QPLDLL qpl::u32 visible_index_end() const;
+		QPLDLL std::pair<qpl::u32, qpl::u32> visible_index_range() const;
 		QPLDLL bool is_range_enabled() const;
 
 		QPLDLL void add_info_graph(std::string name);
@@ -1389,7 +1456,7 @@ namespace qsf {
 		std::unordered_map<std::string, standard_graph> standard_graphs;
 		std::unordered_map<std::string, simple_graph> simple_graphs;
 
-		qsf::rgb background_color = qsf::rgb::transparent;
+		qsf::rgb background_color = qsf::rgb::black;
 	};
 
 	struct graph {
@@ -1406,6 +1473,9 @@ namespace qsf {
 		std::vector<qsf::text> x_texts;
 
 		std::vector<qsf::thick_lines> lines;
+
+		qsf::text cursor_graph_text;
+		qsf::rectangle cursor_graph_background;
 
 		qsf::rectangle background;
 	};
@@ -1470,6 +1540,7 @@ namespace qsf {
 		QPLDLL bool is_hovering() const;
 		QPLDLL bool is_clicked() const;
 		QPLDLL void update(const event_info& event_info);
+		QPLDLL void update(const event_info& event_info, bool& hovering);
 		QPLDLL void update(const event_info& event_info, qsf::view_rectangle view);
 
 		bool outline_on_hover = true;
