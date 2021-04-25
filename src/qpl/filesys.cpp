@@ -391,9 +391,17 @@ namespace qpl {
             this->m_string = new_name;
         }
         void qpl::filesys::path::remove() const {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::remove: ", this->string(), " doesn't exist");
+                return;
+            }
             std::filesystem::remove_all(this->string());
         }
         void qpl::filesys::path::copy(const qpl::filesys::path& path_destination) const {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::copy: ", this->string(), " doesn't exist");
+                return;
+            }
             if (path_destination.is_directory()) {
                 if (!path_destination.exists()) {
                     path_destination.create();
@@ -405,6 +413,10 @@ namespace qpl {
             }
         }
         void qpl::filesys::path::copy_overwrite(const qpl::filesys::path& path_destination) const {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::copy_overwrite: ", this->string(), " doesn't exist");
+                return;
+            }
             if (path_destination.is_directory()) {
                 if (!path_destination.exists()) {
                     path_destination.create();
@@ -416,19 +428,35 @@ namespace qpl {
             }
         }
         void qpl::filesys::path::move(const qpl::filesys::path& path_destination) const {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::move: ", this->string(), " doesn't exist");
+                return;
+            }
             this->copy(path_destination);
             this->remove();
         }
         void qpl::filesys::path::move_overwrite(const qpl::filesys::path& path_destination) const {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::move_overwrite: ", this->string(), " doesn't exist");
+                return;
+            }
             this->copy_overwrite(path_destination);
             this->remove();
         }
 
         void qpl::filesys::path::move_and_apply_path(const qpl::filesys::path& path_destination) {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::move_and_apply_path: ", this->string(), " doesn't exist");
+                return;
+            }
             this->move(path_destination);
             *this = path_destination;
         }
         void qpl::filesys::path::move_overwrite_and_apply_path(const qpl::filesys::path& path_destination) {
+            if (!this->exists()) {
+                qpl::println("qpl::filesys::path::move_overwrite_and_apply_path: ", this->string(), " doesn't exist");
+                return;
+            }
             this->move_overwrite(path_destination);
             *this = path_destination;
         }

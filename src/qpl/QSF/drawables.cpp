@@ -1090,7 +1090,7 @@ namespace qsf {
 	void qsf::vcircle::set_center(qsf::vector2f center) {
 		this->point.position = center - qsf::vector2f{ this->radius, this->radius };
 	}
-	qsf::vector2f qsf::vcircle::center() const {
+	qsf::vector2f qsf::vcircle::get_center() const {
 		return this->point.position + qsf::vector2f{ this->radius, this->radius };
 	}
 	void qsf::vcircle::centerize() {
@@ -1114,6 +1114,31 @@ namespace qsf {
 		this->circle_shape.setRadius(circle.circle_shape.getRadius());
 		this->circle_shape.setFillColor(circle.circle_shape.getFillColor());
 		return *this;
+	}
+	void qsf::circle::set_radius(qpl::f32 radius) {
+		this->circle_shape.setRadius(radius);
+	}
+	qpl::f32 qsf::circle::get_radius() const {
+		return this->circle_shape.getRadius();
+	}
+	void qsf::circle::set_position(qsf::vector2f position) {
+		this->circle_shape.setPosition(position);
+	}
+	void qsf::circle::set_center(qsf::vector2f center) {
+		this->set_position(center - qsf::vector2f{ this->get_radius(), this->get_radius() });
+	}
+	qsf::vector2f qsf::circle::get_center() const {
+
+		return this->get_position() + qsf::vector2f{ this->get_radius(), this->get_radius() };
+	}
+	qsf::vector2f qsf::circle::get_position() const const {
+		return this->circle_shape.getPosition();
+	}
+	void qsf::circle::set_color(qsf::rgb color) {
+		this->circle_shape.setFillColor(color);
+	}
+	qsf::rgb qsf::circle::get_color() const const {
+		return this->circle_shape.getFillColor();
 	}
 
 

@@ -752,7 +752,7 @@ namespace qsf {
 		QPLDLL void set_radius(qpl::f32 radius);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_center(qsf::vector2f center);
-		QPLDLL qsf::vector2f center() const;
+		QPLDLL qsf::vector2f get_center() const;
 		QPLDLL void centerize();
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
@@ -773,6 +773,15 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL qsf::circle& operator=(const qsf::vcircle& circle);
 		QPLDLL qsf::circle& operator=(const qsf::circle& circle);
+
+		QPLDLL void set_radius(qpl::f32 radius);
+		QPLDLL qpl::f32 get_radius() const;
+		QPLDLL void set_position(qsf::vector2f position);
+		QPLDLL void set_center(qsf::vector2f center);
+		QPLDLL qsf::vector2f get_center() const;
+		QPLDLL qsf::vector2f get_position() const;
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL qsf::rgb get_color() const;
 
 		sf::CircleShape circle_shape;
 	};
