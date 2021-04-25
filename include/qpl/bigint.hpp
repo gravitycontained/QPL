@@ -1,5 +1,5 @@
-#ifndef QPLBIGINT_HPP
-#define QPLBIGINT_HPP
+#ifndef QPL_BIGINT_HPP
+#define QPL_BIGINT_HPP
 #pragma once
 
 #include <qpl/qpldeclspec.hpp>

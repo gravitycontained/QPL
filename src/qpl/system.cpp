@@ -17,7 +17,7 @@
 namespace qpl {
 
 #ifdef QPL_USE_BOOST
-    int qpl::execute(const std::string_view& what) {
+    int qpl::execute(const qpl::string_view& what) {
         qpl::println(what);
         //qpl::begin_benchmark();
         boost::asio::io_context ios;
@@ -47,7 +47,7 @@ namespace qpl {
     }
 
 
-    int qpl::execute(const std::string_view& what, const input_t& input) {
+    int qpl::execute(const qpl::string_view& what, const input_t& input) {
         //qpl::begin_benchmark();
         std::mutex mu;
         boost::process::opstream in;
@@ -84,15 +84,15 @@ namespace qpl {
         //qpl::println(what, "\ntook ", qpl::end_benchmark().string());
         return child.exit_code();
     }
-    int qpl::execute(const std::string_view& path, const std::vector<std::string>& arguments) {
+    int qpl::execute(const qpl::string_view& path, const std::vector<std::string>& arguments) {
         auto s = qpl::to_string(path, ' ', qpl::container_to_string(arguments, " ", ""));
         return qpl::execute(s.c_str());
     }
 
-    int qpl::execute(const std::string_view& path, const qpl::args_t& arguments) {
+    int qpl::execute(const qpl::string_view& path, const qpl::args_t& arguments) {
         return qpl::execute(qpl::to_string(path, ' ', arguments.string));
     }
-    int qpl::execute(const std::string_view& path, const qpl::args_t& arguments, const input_t& input) {
+    int qpl::execute(const qpl::string_view& path, const qpl::args_t& arguments, const input_t& input) {
         return qpl::execute(qpl::to_string(path, ' ', arguments.string), input);
     }
 #endif
@@ -128,7 +128,7 @@ namespace qpl {
         std::getline(std::cin, result);
         return result;
     }
-    std::string get_hidden_input(const std::string_view& replace) {
+    std::string get_hidden_input(const qpl::string_view& replace) {
         std::string result;
         char c;
         while (true) {
@@ -166,7 +166,7 @@ namespace qpl {
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
     }
-    void system_pause(const std::string_view& message, qpl::u32 max_keyboard_latency_hz) {
+    void system_pause(const qpl::string_view& message, qpl::u32 max_keyboard_latency_hz) {
         qpl::print("press enter to ", message, " . . . ");
         if (!std::cin.good()) {
             std::cin.clear();

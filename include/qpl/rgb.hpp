@@ -1,5 +1,5 @@
-#ifndef QPL_RGb_HPP
-#define QPL_RGb_HPP
+#ifndef QPL_RGB_HPP
+#define QPL_RGB_HPP
 #pragma once
 
 #ifdef QPL_USE_VULKAN

@@ -178,7 +178,7 @@ namespace qpl {
 
 		class bitset_proxy {
 		public:
-			bitset_proxy(bitset& data, qpl::u32 index) {
+			bitset_proxy(bitset& data, qpl::size index) {
 				this->ptr = &data;
 				this->index = index;
 			}
@@ -218,13 +218,13 @@ namespace qpl {
 			}
 		private:
 			bitset* ptr;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 		class bitset_const_proxy {
 		public:
 
-			constexpr bitset_const_proxy(const bitset& data, qpl::u32 index) : ptr(&data), index(index) {
+			constexpr bitset_const_proxy(const bitset& data, qpl::size index) : ptr(&data), index(index) {
 
 			}
 
@@ -246,12 +246,12 @@ namespace qpl {
 			}
 		private:
 			const bitset* ptr;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 		class bitset_iterator {
 		public:
-			bitset_iterator(bitset& data, qpl::u32 index) {
+			bitset_iterator(bitset& data, qpl::size index) {
 				this->ptr = &data;
 				this->index = index;
 			}
@@ -283,12 +283,12 @@ namespace qpl {
 
 		private:
 			bitset* ptr;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 		class bitset_const_iterator {
 		public:
-			constexpr bitset_const_iterator(const bitset& data, qpl::u32 index) : ptr(&data), index(index) {
+			constexpr bitset_const_iterator(const bitset& data, qpl::size index) : ptr(&data), index(index) {
 
 			}
 
@@ -315,7 +315,7 @@ namespace qpl {
 
 		private:
 			const bitset* const ptr;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 		constexpr static qpl::u64 memory_size() {
@@ -445,7 +445,7 @@ namespace qpl {
 			return !(*this == other);
 		}
 
-		constexpr bool get(qpl::u32 index) const {
+		constexpr bool get(qpl::size index) const {
 			if constexpr (is_array()) {
 				return qpl::get_bit(this->data[index / 64u], index % 64u);
 			}
@@ -453,7 +453,7 @@ namespace qpl {
 				return qpl::get_bit(this->data, index);
 			}
 		}
-		constexpr void set(qpl::u32 index, bool value) {
+		constexpr void set(qpl::size index, bool value) {
 			if constexpr (is_array()) {
 				qpl::set_bit(this->data[index / 64u], index % 64u, value);
 			}
@@ -582,10 +582,10 @@ namespace qpl {
 
 
 
-		constexpr bitset_proxy operator[](qpl::u32 index) {
+		constexpr bitset_proxy operator[](qpl::size index) {
 			return bitset_proxy(*this, index);
 		}
-		constexpr bitset_const_proxy operator[](qpl::u32 index) const {
+		constexpr bitset_const_proxy operator[](qpl::size index) const {
 			bitset_const_proxy result(*this, index);
 			return result;
 		}

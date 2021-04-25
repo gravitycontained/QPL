@@ -20,7 +20,7 @@ namespace qpl {
        QPLDLL std::string string() const;
 
        template <typename T = std::string>
-       T get(qpl::u32 index) const {
+       T get(qpl::size index) const {
            return qpl::from_string<T>(this->strings[index]);
        }
     };

@@ -4,6 +4,7 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/span.hpp>
 #include <vector>
 #include <array>
 #include <string>
@@ -48,8 +49,8 @@ namespace qpl {
 	};
 
 	struct pixels {
-		QPLDLL void load(std::string_view sv);
-		QPLDLL void load_bmp(std::string_view sv);
+		QPLDLL void load(qpl::string_view sv);
+		QPLDLL void load_bmp(qpl::string_view sv);
 		QPLDLL void set_dimension(qpl::u32 width, qpl::u32 height);
 		QPLDLL pixels rectangle(qpl::u32 x, qpl::u32 y, qpl::u32 width, qpl::u32 height) const;
 		qpl::size size() const;

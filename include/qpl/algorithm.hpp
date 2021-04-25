@@ -5,6 +5,7 @@
 
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/span.hpp>
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -12,7 +13,6 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
-#include <span>
 #include <functional>
 #include <tuple>
 
@@ -505,7 +505,7 @@ namespace qpl {
 	}
 
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C> && qpl::has_size<C>)>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>
 	qpl::size container_size(const C& data) {
 		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
 			qpl::size sum = qpl::size{};
@@ -529,7 +529,7 @@ namespace qpl {
 
 	template<typename C>
 	auto container_sum(const C& data) {
-		if constexpr (!qpl::is_container<C>) {
+		if constexpr (!qpl::is_container<C>()) {
 			return data;
 		}
 		else {
@@ -646,7 +646,7 @@ namespace qpl {
 	}
 	template<typename It>
 	constexpr auto make_span(It begin, It end) {
-		return std::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
+		return qpl::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
 	}
 	template<typename C>
 	constexpr auto make_span(const C& container) {
@@ -668,7 +668,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const std::span<T>& data, qpl::u32 skip_size) {
+	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const qpl::span<T>& data, qpl::u32 skip_size) {
 		if (data.empty()) {
 			return std::make_pair(std::decay_t<T>{}, std::decay_t<T>{});
 		}
@@ -811,7 +811,7 @@ namespace qpl {
 
 
 	template<qpl::size N>
-	std::array<qpl::u8, N> static_split(const std::string_view& string, const std::string& delimiter = ",") {
+	std::array<qpl::u8, N> static_split(const qpl::string_view& string, const std::string& delimiter = ",") {
 		std::array<qpl::u8, N> result;
 		unsigned ctr = 0u;
 		for (int i = 0; i < string.size(); ++i) {
@@ -853,7 +853,7 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<std::decay_t<T>> linear_vector_interpolation(std::span<T> data, qpl::size interpolations, qpl::u32 index_skip_size = 1u) {
+	std::vector<std::decay_t<T>> linear_vector_interpolation(qpl::span<T> data, qpl::size interpolations, qpl::size index_skip_size = 1u) {
 		if (data.empty()) {
 			return {};
 		}
@@ -925,7 +925,7 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<std::decay_t<T>> cubic_vector_interpolation(std::span<T> data, qpl::size interpolations, qpl::u32 index_skip_size = 1u) {
+	std::vector<std::decay_t<T>> cubic_vector_interpolation(qpl::span<T> data, qpl::size interpolations, qpl::size index_skip_size = 1u) {
 		if (data.empty()) {
 			return {};
 		}
@@ -972,7 +972,7 @@ namespace qpl {
 
 
 	template<typename T>
-	std::pair<std::decay_t<T>, std::decay_t<T>> cubic_vector_interpolation_min_max(std::span<T> data, qpl::size interpolations, qpl::f64 interpolation_offset = 0.0, qpl::u32 index_skip_size = 1u, std::decay_t<T> low = qpl::type_max<T>(), std::decay_t<T> high = qpl::type_min<T>()) {
+	std::pair<std::decay_t<T>, std::decay_t<T>> cubic_vector_interpolation_min_max(qpl::span<T> data, qpl::size interpolations, qpl::f64 interpolation_offset = 0.0, qpl::size index_skip_size = 1u, std::decay_t<T> low = qpl::type_max<T>(), std::decay_t<T> high = qpl::type_min<T>()) {
 		if (data.empty()) {
 			return std::make_pair(T{}, T{});
 		}

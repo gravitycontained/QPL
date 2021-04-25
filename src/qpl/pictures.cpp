@@ -9,10 +9,10 @@ namespace qpl {
 		return qpl::to_string("(", qpl::i32_cast(this->r), ", ", qpl::i32_cast(this->g), ", ", qpl::i32_cast(this->b), ")");
 	}
 
-	void qpl::pixels::load(std::string_view sv) {
+	void qpl::pixels::load(qpl::string_view sv) {
 		qpl::string_to_vector_memory(sv, this->data);
 	}
-	void qpl::pixels::load_bmp(std::string_view sv) {
+	void qpl::pixels::load_bmp(qpl::string_view sv) {
 		qpl::string_to_vector_memory(sv.substr(64), this->data);
 	}
 	void qpl::pixels::set_dimension(qpl::u32 width, qpl::u32 height) { 

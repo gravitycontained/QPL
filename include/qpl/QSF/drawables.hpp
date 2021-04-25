@@ -11,20 +11,58 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <type_traits>
 #include <SFML/Graphics.hpp>
 
 namespace qsf {
 	struct draw_object;
 
-	template<typename C>
-	concept has_draw_object = requires (const C x, draw_object& object) {
-		x.draw(object);
+#ifdef QPL_CPP17
+	template<typename T, typename = void>
+	struct has_draw_object_impl : std::false_type {
+
 	};
+	template<typename T>
+	struct has_draw_object_impl<T, std::void_t<decltype(std::declval<const T>().draw(std::declval<draw_object&>()))>> : std::true_type {
+
+	};
+	template<typename C>
+	constexpr bool has_draw_object() {
+		return has_draw_object_impl<C>::value;
+	}
+
+	template<typename T, typename = void>
+	struct has_draw_sf_impl : std::false_type {
+
+	};
+	template<typename T>
+	struct has_draw_sf_impl<T, std::void_t<decltype(std::declval<const T>().draw(std::declval<sf::RenderTarget&>(), std::declval<sf::RenderStates>()))>> : std::true_type {
+
+	};
+	template<typename C>
+	constexpr bool has_draw_sf() {
+		return has_draw_sf_impl<C>::value;
+	}
+#else
 
 	template<typename C>
-	concept has_draw_sf = requires (const C x, sf::RenderTarget& render, sf::RenderStates states) {
+	concept has_draw_object_c = requires (const C x, draw_object & object) {
+		x.draw(object);
+	};
+	template<typename C>
+	constexpr bool has_draw_object() {
+		return has_draw_object_c<C>;
+	}
+	template<typename C>
+	concept has_draw_sf_c = requires (const C x, sf::RenderTarget & render, sf::RenderStates states) {
 		x.draw(render, states);
 	};
+	template<typename C>
+	constexpr bool has_draw_sf() {
+		return has_draw_sf_c<C>;
+	}
+#endif
+
 	struct draw_object {
 		draw_object(sf::RenderWindow& window, sf::RenderStates states = sf::RenderStates::Default) {
 			this->window = &window;
@@ -35,10 +73,10 @@ namespace qsf {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->window->draw(object, this->states);
 			}
-			else if constexpr (qsf::has_draw_object<T>) {
+			else if constexpr (qsf::has_draw_object<T>()) {
 				object.draw(*this->window, this->states);
 			}
-			else if constexpr (qsf::has_draw_sf<T>) {
+			else if constexpr (qsf::has_draw_sf<T>()) {
 				object.draw(*this->window, this->states);
 			}
 			else {
@@ -139,8 +177,8 @@ namespace qsf {
 
 		QPLDLL void clear();
 
-		QPLDLL qsf::vertex& operator[](qpl::u32 index);
-		QPLDLL const qsf::vertex& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vertex& front();
 		QPLDLL const qsf::vertex& front() const;
@@ -421,15 +459,15 @@ namespace qsf {
 		QPLDLL text_stream& operator<<(const std::wstring& string);
 		QPLDLL text_stream& add_string(const std::string& string, bool has_no_newline = false);
 		QPLDLL text_stream& add_string(const std::wstring& string, bool has_no_newline = false);
-		QPLDLL qsf::vrectangle line_hitbox(qpl::u32 index) const;
-		QPLDLL void centerize_line(qpl::u32 index);
+		QPLDLL qsf::vrectangle line_hitbox(qpl::size index) const;
+		QPLDLL void centerize_line(qpl::size index);
 		QPLDLL void centerize_lines();
 		QPLDLL qpl::size size() const;
 		QPLDLL qpl::size lines() const;
-		QPLDLL qsf::text& operator[](qpl::u32 index);
-		QPLDLL const qsf::text& operator[](qpl::u32 index) const;
-		QPLDLL std::vector<qsf::text>& line(qpl::u32 index);
-		QPLDLL const std::vector<qsf::text>& line(qpl::u32 index) const;
+		QPLDLL qsf::text& operator[](qpl::size index);
+		QPLDLL const qsf::text& operator[](qpl::size index) const;
+		QPLDLL std::vector<qsf::text>& line(qpl::size index);
+		QPLDLL const std::vector<qsf::text>& line(qpl::size index) const;
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL void set_font(const std::string& font);
 		QPLDLL void set_color(qsf::rgb color);
@@ -536,8 +574,8 @@ namespace qsf {
 		QPLDLL void clear();
 		QPLDLL void add(const qsf::vrectangle& rect);
 
-		QPLDLL qsf::vrectangle& operator[](qpl::u32 index);
-		QPLDLL const qsf::vrectangle& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vrectangle& operator[](qpl::size index);
+		QPLDLL const qsf::vrectangle& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vrectangle& front();
 		QPLDLL const qsf::vrectangle& front() const;
@@ -571,8 +609,8 @@ namespace qsf {
 		QPLDLL void clear();
 		QPLDLL void add(const qsf::rectangle& rect);
 
-		QPLDLL qsf::rectangle& operator[](qpl::u32 index);
-		QPLDLL const qsf::rectangle& operator[](qpl::u32 index) const;
+		QPLDLL qsf::rectangle& operator[](qpl::size index);
+		QPLDLL const qsf::rectangle& operator[](qpl::size index) const;
 
 		QPLDLL qsf::rectangle& front();
 		QPLDLL const qsf::rectangle& front() const;
@@ -634,8 +672,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vpoint& operator[](qpl::u32 index);
-		QPLDLL const qsf::vpoint& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vpoint& operator[](qpl::size index);
+		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vpoint& front();
 		QPLDLL const qsf::vpoint& front() const;
@@ -675,8 +713,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vertex& operator[](qpl::u32 index);
-		QPLDLL const qsf::vertex& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vertex& front();
 		QPLDLL const qsf::vertex& front() const;
@@ -743,8 +781,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vcircle& operator[](qpl::u32 index);
-		QPLDLL const qsf::vcircle& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vcircle& operator[](qpl::size index);
+		QPLDLL const qsf::vcircle& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vcircle& front();
 		QPLDLL const qsf::vcircle& front() const;
@@ -778,8 +816,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::circle& operator[](qpl::u32 index);
-		QPLDLL const qsf::circle& operator[](qpl::u32 index) const;
+		QPLDLL qsf::circle& operator[](qpl::size index);
+		QPLDLL const qsf::circle& operator[](qpl::size index) const;
 
 		QPLDLL qsf::circle& front();
 		QPLDLL const qsf::circle& front() const;
@@ -850,8 +888,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vpoint& operator[](qpl::u32 index);
-		QPLDLL const qsf::vpoint& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vpoint& operator[](qpl::size index);
+		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vpoint& front();
 		QPLDLL const qsf::vpoint& front() const;
@@ -883,8 +921,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vertex& operator[](qpl::u32 index);
-		QPLDLL const qsf::vertex& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vertex& front();
 		QPLDLL const qsf::vertex& front() const;
@@ -956,8 +994,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vpoint& operator[](qpl::u32 index);
-		QPLDLL const qsf::vpoint& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vpoint& operator[](qpl::size index);
+		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vpoint& front();
 		QPLDLL const qsf::vpoint& front() const;
@@ -985,8 +1023,8 @@ namespace qsf {
 		QPLDLL void resize(qpl::size new_size);
 		QPLDLL void reserve(qpl::size new_size);
 
-		QPLDLL qsf::vertex& operator[](qpl::u32 index);
-		QPLDLL const qsf::vertex& operator[](qpl::u32 index) const;
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
 
 		QPLDLL qsf::vertex& front();
 		QPLDLL const qsf::vertex& front() const;
@@ -1036,33 +1074,33 @@ namespace qsf {
 		QPLDLL void set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width);
 
 		//pair.first = index - pair.second = rotation (0-7)
-		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color);
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::size index_width, qsf::rgb color);
 		//pair.first = index - pair.second = rotation (0-7)
-		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width);
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::size index_width);
 
 
 		//pair.first = index - pair.second = rotation (0-360)
-		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color);
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::size index_width, qsf::rgb color);
 		//pair.first = index - pair.second = rotation (0-360)
-		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width);
+		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::size index_width);
 
 
-		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qsf::rgb color);
-		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::u32 index_width);
+		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::size index_width, qsf::rgb color);
+		QPLDLL void create(const std::vector<qpl::u32>& indices, qpl::size index_width);
 
 
 		//pair.first = index - pair.second = rotation (0-7)
-		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::size index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
 		//pair.first = index - pair.second = rotation (0-7)
-		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::u32 index_width, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::size index_width, qpl::u32 skip_index = 0u);
 
 		//pair.first = index - pair.second = rotation (0-360)
-		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::size index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
 		//pair.first = index - pair.second = rotation (0-360)
-		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::u32 index_width, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices_and_rotations, qpl::size index_width, qpl::u32 skip_index = 0u);
 
-		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
-		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 index_width, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
+		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size index_width, qpl::u32 skip_index = 0u);
 
 		QPLDLL void set_color(qsf::rgb color);
 
@@ -1439,17 +1477,17 @@ namespace qsf {
 		QPLDLL void add_info_graph(std::string name);
 		QPLDLL info_graph& get_info_graph(std::string name);
 		QPLDLL const info_graph& get_info_graph(std::string name) const;
-		QPLDLL std::span<const data_point_info> get_info_graph_span(std::string name) const;
+		QPLDLL qpl::span<const data_point_info> get_info_graph_span(std::string name) const;
 
 		QPLDLL void add_standard_graph(std::string name);
 		QPLDLL standard_graph& get_standard_graph(std::string name);
 		QPLDLL const standard_graph& get_standard_graph(std::string name) const;
-		QPLDLL std::span<const data_point> get_standard_graph_span(std::string name) const;
+		QPLDLL qpl::span<const data_point> get_standard_graph_span(std::string name) const;
 
 		QPLDLL void add_simple_graph(std::string name);
 		QPLDLL simple_graph& get_simple_graph(std::string name);
 		QPLDLL const simple_graph& get_simple_graph(std::string name) const;
-		QPLDLL std::span<const data_point_simple> get_simple_graph_span(std::string name) const;
+		QPLDLL qpl::span<const data_point_simple> get_simple_graph_span(std::string name) const;
 
 
 		std::unordered_map<std::string, info_graph> info_graphs;

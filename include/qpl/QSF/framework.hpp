@@ -89,12 +89,12 @@ namespace qsf {
 
 
 		template<typename T>
-		QPLDLL void draw_graph(const std::vector<T>& data, const std::string name = "") {
+		void draw_graph(const std::vector<T>& data, const std::string name = "") {
 			qsf::drawing_graph[name].set_data(data);
 			this->window.draw(qsf::drawing_graph);
 		}
 		template<typename T>
-		QPLDLL void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
+		void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
 			qsf::drawing_graph[name].color = color;
 			qsf::drawing_graph[name].thickness = thickness;
 			this->draw_graph(data);
@@ -151,7 +151,7 @@ namespace qsf {
 		QPLDLL bool game_loop_segment();
 		QPLDLL bool game_loop_segment_no_display();
 		template<typename T>
-		QPLDLL void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
+		void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}
@@ -164,21 +164,21 @@ namespace qsf {
 			}
 		}
 		template<typename T>
-		QPLDLL void draw(const T& drawable, qsf::view_rectangle view) {
+		void draw(const T& drawable, qsf::view_rectangle view) {
 			sf::RenderStates states = view.get_render_states();
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}
-			else if constexpr (qsf::has_draw_object<T>) {
+			else if constexpr (qsf::has_draw_object<T>()) {
 				draw_object draw(this->framework->window, states);
 				drawable.draw(draw);
 			}
-			else if constexpr (qsf::has_draw_sf<T>) {
+			else if constexpr (qsf::has_draw_sf<T>()) {
 				drawable.draw(this->framework->window, states);
 			}
 		}
 		template<typename T>
-		QPLDLL void update(T& updatable) {
+		void update(T& updatable) {
 			updatable.update(this->event);
 		}
 		QPLDLL void create();
@@ -215,11 +215,11 @@ namespace qsf {
 			this->framework->add_state<C>();
 		}
 		template<typename T>
-		QPLDLL void draw_graph(const std::vector<T>& data, const std::string& name = "") {
+		void draw_graph(const std::vector<T>& data, const std::string& name = "") {
 			this->framework->draw_graph(data, name);
 		}
 		template<typename T>
-		QPLDLL void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
+		void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
 			this->framework->draw_graph(data, color, thickness, name);
 		}
 		QPLDLL void set_graph_color(qsf::rgb color);

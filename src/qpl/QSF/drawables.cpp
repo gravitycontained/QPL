@@ -9,7 +9,7 @@
 
 #include <qpl/system.hpp>
 #include <qpl/memory.hpp>
-#include <span>
+#include <qpl/span.hpp>
 
 namespace qsf {
 
@@ -99,10 +99,10 @@ namespace qsf {
 	void qsf::vertex_array::clear() {
 		this->vertices.clear();
 	}
-	qsf::vertex& qsf::vertex_array::operator[](qpl::u32 index) {
+	qsf::vertex& qsf::vertex_array::operator[](qpl::size index) {
 		return this->vertices[index];
 	}
-	const qsf::vertex& qsf::vertex_array::operator[](qpl::u32 index) const {
+	const qsf::vertex& qsf::vertex_array::operator[](qpl::size index) const {
 		return this->vertices[index];
 	}
 
@@ -475,7 +475,7 @@ namespace qsf {
 
 		return *this;
 	}
-	qsf::vrectangle qsf::text_stream::line_hitbox(qpl::u32 index) const {
+	qsf::vrectangle qsf::text_stream::line_hitbox(qpl::size index) const {
 		if (index >= this->texts.size()) {
 			return {};
 		}
@@ -506,7 +506,7 @@ namespace qsf {
 		return hitbox;
 
 	}
-	void qsf::text_stream::centerize_line(qpl::u32 index) {
+	void qsf::text_stream::centerize_line(qpl::size index) {
 		auto hitbox = this->line_hitbox(index);
 		
 		for (auto& line : this->texts[index]) {
@@ -529,7 +529,7 @@ namespace qsf {
 	qpl::size qsf::text_stream::lines() const {
 		return this->texts.size();
 	}
-	qsf::text& qsf::text_stream::operator[](qpl::u32 index) {
+	qsf::text& qsf::text_stream::operator[](qpl::size index) {
 		qpl::size result = 0u;
 		for (auto& i : this->texts) {
 			if (index >= result && index < result + i.size()) {
@@ -539,7 +539,7 @@ namespace qsf {
 		}
 		return this->texts.back().back();
 	}
-	const qsf::text& qsf::text_stream::operator[](qpl::u32 index) const {
+	const qsf::text& qsf::text_stream::operator[](qpl::size index) const {
 		qpl::size result = 0u;
 		for (auto& i : this->texts) {
 			if (index >= result && index < result + i.size()) {
@@ -549,10 +549,10 @@ namespace qsf {
 		}
 		return this->texts.back().back();
 	}
-	std::vector<qsf::text>& qsf::text_stream::line(qpl::u32 index) {
+	std::vector<qsf::text>& qsf::text_stream::line(qpl::size index) {
 		return this->texts[index];
 	}
-	const std::vector<qsf::text>& qsf::text_stream::line(qpl::u32 index) const {
+	const std::vector<qsf::text>& qsf::text_stream::line(qpl::size index) const {
 		return this->texts[index];
 	}
 	void qsf::text_stream::draw(sf::RenderTarget& window, sf::RenderStates states) const {
@@ -604,7 +604,7 @@ namespace qsf {
 		if (!this->lines()) {
 			return {};
 		}
-		qpl::u32 index = this->lines() - 1;
+		qpl::size index = this->lines() - 1;
 		while (index && (this->texts[index].size() == 1u && this->texts[index][0].get_string().empty())) {
 			--index;
 		}
@@ -773,10 +773,10 @@ namespace qsf {
 	void qsf::vrectangles::add(const qsf::vrectangle& rect) {
 		this->rectangles.push_back(rect);
 	}
-	qsf::vrectangle& qsf::vrectangles::operator[](qpl::u32 index) {
+	qsf::vrectangle& qsf::vrectangles::operator[](qpl::size index) {
 		return this->rectangles[index];
 	}
-	const qsf::vrectangle& qsf::vrectangles::operator[](qpl::u32 index) const {
+	const qsf::vrectangle& qsf::vrectangles::operator[](qpl::size index) const {
 		return this->rectangles[index];
 	}
 
@@ -852,10 +852,10 @@ namespace qsf {
 	void qsf::rectangles::add(const qsf::rectangle& rect) {
 		this->rectangles_.push_back(rect);
 	}
-	qsf::rectangle& qsf::rectangles::operator[](qpl::u32 index) {
+	qsf::rectangle& qsf::rectangles::operator[](qpl::size index) {
 		return this->rectangles_[index];
 	}
-	const qsf::rectangle& qsf::rectangles::operator[](qpl::u32 index) const {
+	const qsf::rectangle& qsf::rectangles::operator[](qpl::size index) const {
 		return this->rectangles_[index];
 	}
 
@@ -955,10 +955,10 @@ namespace qsf {
 	void qsf::vpoints::reserve(qpl::size new_size) {
 		this->points.reserve(new_size);
 	}
-	qsf::vpoint& qsf::vpoints::operator[](qpl::u32 index) {
+	qsf::vpoint& qsf::vpoints::operator[](qpl::size index) {
 		return this->points[index];
 	}
-	const qsf::vpoint& qsf::vpoints::operator[](qpl::u32 index) const {
+	const qsf::vpoint& qsf::vpoints::operator[](qpl::size index) const {
 		return this->points[index];
 	}
 
@@ -1025,10 +1025,10 @@ namespace qsf {
 	void qsf::points::reserve(qpl::size new_size) {
 		this->vertices.reserve(new_size);
 	}
-	qsf::vertex& qsf::points::operator[](qpl::u32 index) {
+	qsf::vertex& qsf::points::operator[](qpl::size index) {
 		return this->vertices[index];
 	}
-	const qsf::vertex& qsf::points::operator[](qpl::u32 index) const {
+	const qsf::vertex& qsf::points::operator[](qpl::size index) const {
 		return this->vertices[index];
 	}
 
@@ -1125,10 +1125,10 @@ namespace qsf {
 	}
 
 
-	qsf::vcircle& qsf::vcircles::operator[](qpl::u32 index) {
+	qsf::vcircle& qsf::vcircles::operator[](qpl::size index) {
 		return this->circles[index];
     }
-	const qsf::vcircle& qsf::vcircles::operator[](qpl::u32 index) const {
+	const qsf::vcircle& qsf::vcircles::operator[](qpl::size index) const {
 		return this->circles[index];
 	}
 
@@ -1175,10 +1175,10 @@ namespace qsf {
 	void qsf::circles::reserve(qpl::size new_size) {
 		this->circles_.reserve(new_size);
 	}
-	qsf::circle& qsf::circles::operator[](qpl::u32 index) {
+	qsf::circle& qsf::circles::operator[](qpl::size index) {
 		return this->circles_[index];
 	}
-	const qsf::circle& qsf::circles::operator[](qpl::u32 index) const {
+	const qsf::circle& qsf::circles::operator[](qpl::size index) const {
 		return this->circles_[index];
 	}
 
@@ -1334,10 +1334,10 @@ namespace qsf {
 		this->points.reserve(new_size);
 	}
 
-	qsf::vpoint& qsf::vlines::operator[](qpl::u32 index) {
+	qsf::vpoint& qsf::vlines::operator[](qpl::size index) {
 		return this->points[index];
 	}
-	const qsf::vpoint& qsf::vlines::operator[](qpl::u32 index) const {
+	const qsf::vpoint& qsf::vlines::operator[](qpl::size index) const {
 		return this->points[index];
 	}
 
@@ -1385,10 +1385,10 @@ namespace qsf {
 	void qsf::lines::reserve(qpl::size new_size) {
 		this->vertices.reserve(new_size);
 	}
-	qsf::vertex& qsf::lines::operator[](qpl::u32 index) {
+	qsf::vertex& qsf::lines::operator[](qpl::size index) {
 		return this->vertices[index];
 	}
-	const qsf::vertex& qsf::lines::operator[](qpl::u32 index) const {
+	const qsf::vertex& qsf::lines::operator[](qpl::size index) const {
 		return this->vertices[index];
 	}
 	
@@ -1551,10 +1551,10 @@ namespace qsf {
 		this->points.reserve(new_size);
 	}
 
-	qsf::vpoint& qsf::vthick_lines::operator[](qpl::u32 index) {
+	qsf::vpoint& qsf::vthick_lines::operator[](qpl::size index) {
 		return this->points[index];
 	}
-	const qsf::vpoint& qsf::vthick_lines::operator[](qpl::u32 index) const {
+	const qsf::vpoint& qsf::vthick_lines::operator[](qpl::size index) const {
 		return this->points[index];
 	}
 
@@ -1601,10 +1601,10 @@ namespace qsf {
 		this->vertices.reserve(new_size);
 	}
 
-	qsf::vertex& qsf::thick_lines::operator[](qpl::u32 index) {
+	qsf::vertex& qsf::thick_lines::operator[](qpl::size index) {
 		return this->vertices[index];
 	}
-	const qsf::vertex& qsf::thick_lines::operator[](qpl::u32 index) const {
+	const qsf::vertex& qsf::thick_lines::operator[](qpl::size index) const {
 		return this->vertices[index];
 	}
 
@@ -1881,7 +1881,7 @@ namespace qsf {
 		this->set_texture_ptr(texture, qsf::vector2u(texture_tile_width, texture_tile_width));
 	}
 
-	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width, qsf::rgb color) {
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width, qsf::rgb color) {
 		if (!this->texture_ptr_set) {
 			qpl::println("tile_map::create: texture_ptr not set");
 			return;
@@ -2058,12 +2058,12 @@ namespace qsf {
 		}
 
 	}
-	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width) {
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width) {
 		this->create(indices, width, qsf::rgb::white);
 	}
 
 
-	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width, qsf::rgb color) {
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width, qsf::rgb color) {
 		if (!this->texture_ptr_set) {
 			qpl::println("tile_map::create: texture_ptr not set");
 			return;
@@ -2214,10 +2214,10 @@ namespace qsf {
 		}
 
 	}
-	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width) {
+	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width) {
 		this->create(indices, width, qsf::rgb::white);
 	}
-	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::u32 width, qsf::rgb color) {
+	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::size width, qsf::rgb color) {
 		if (!this->texture_ptr_set) {
 			qpl::println("tile_map::create: texture_ptr not set"); 
 			return;
@@ -2296,12 +2296,12 @@ namespace qsf {
 		}
 		
 	}
-	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::u32 width) {
+	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::size width) {
 		this->create(indices, width, qsf::rgb::white);
 	}
 
 
-	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width, qsf::rgb color, qpl::u32 skip_index) {
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width, qsf::rgb color, qpl::u32 skip_index) {
 		if (!this->texture_ptr_set) {
 			qpl::println("tile_map::create: texture_ptr not set");
 			return;
@@ -2498,11 +2498,11 @@ namespace qsf {
 		}
 
 	}
-	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::u32 width, qpl::u32 skip_index) {
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width, qpl::u32 skip_index) {
 		this->create_skip_empty(indices, width, qsf::rgb::white, skip_index);
 	}
 
-	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width, qsf::rgb color, qpl::u32 skip_index) {
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width, qsf::rgb color, qpl::u32 skip_index) {
 		if (!this->texture_ptr_set) {
 			qpl::println("tile_map::create: texture_ptr not set");
 			return;
@@ -2619,10 +2619,10 @@ namespace qsf {
 		}
 
 	}
-	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::u32 width, qpl::u32 skip_index) {
+	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width, qpl::u32 skip_index) {
 		this->create_skip_empty(indices, width, qsf::rgb::white, skip_index);
 	}
-	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 width, qsf::rgb color, qpl::u32 skip_index) {
+	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size width, qsf::rgb color, qpl::u32 skip_index) {
 		if (!this->texture_ptr_set) {
 			qpl::println("tile_map::create: texture_ptr not set");
 			return;
@@ -2711,7 +2711,7 @@ namespace qsf {
 		}
 
 	}
-	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::u32 width, qpl::u32 skip_index) {
+	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size width, qpl::u32 skip_index) {
 		this->create_skip_empty(indices, width, qsf::rgb::white, skip_index);
 	}
 
@@ -3608,7 +3608,7 @@ namespace qsf {
 	const qsf::vgraph::info_graph& qsf::vgraph::get_info_graph(std::string name) const {
 		return this->info_graphs.at(name);
 	}
-	std::span<const qsf::vgraph::data_point_info> qsf::vgraph::get_info_graph_span(std::string name) const {
+	qpl::span<const qsf::vgraph::data_point_info> qsf::vgraph::get_info_graph_span(std::string name) const {
 		auto start = this->visible_index_start();
 		auto end = this->visible_index_end();
 
@@ -3627,7 +3627,7 @@ namespace qsf {
 	const qsf::vgraph::standard_graph& qsf::vgraph::get_standard_graph(std::string name) const {
 		return this->standard_graphs.at(name);
 	}
-	std::span<const qsf::vgraph::data_point> qsf::vgraph::get_standard_graph_span(std::string name) const {
+	qpl::span<const qsf::vgraph::data_point> qsf::vgraph::get_standard_graph_span(std::string name) const {
 		auto start = this->visible_index_start();
 		auto end = this->visible_index_end();
 
@@ -3646,7 +3646,7 @@ namespace qsf {
 	const qsf::vgraph::simple_graph& qsf::vgraph::get_simple_graph(std::string name) const {
 		return this->simple_graphs.at(name);
 	}
-	std::span<const qsf::vgraph::data_point_simple> qsf::vgraph::get_simple_graph_span(std::string name) const {
+	qpl::span<const qsf::vgraph::data_point_simple> qsf::vgraph::get_simple_graph_span(std::string name) const {
 		auto start = this->visible_index_start();
 		auto end = this->visible_index_end();
 

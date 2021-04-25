@@ -46,7 +46,7 @@ namespace qpl {
 		return static_cast<week_days>(rst % 7 + 1);
 	}
 
-	std::string_view qpl::year_month_day::get_week_day_string() const {
+	qpl::string_view qpl::year_month_day::get_week_day_string() const {
 		switch (this->get_week_day()) {
 		case week_days::monday: return "monday"; break;
 		case week_days::tuesday: return "tuesday"; break;
@@ -80,7 +80,7 @@ namespace qpl {
 		return this->get_week_day() == week_days::sunday;
 	}
 
-	qpl::year_month_day& qpl::year_month_day::operator=(std::string_view date) {
+	qpl::year_month_day& qpl::year_month_day::operator=(qpl::string_view date) {
 		this->year = (date[0] - '0') * 1000 + (date[1] - '0') * 100 + (date[2] - '0') * 10 + (date[3] - '0');
 		this->month = (date[5] - '0') * 10 + (date[6] - '0');
 		this->day = (date[8] - '0') * 10 + (date[9] - '0');
@@ -133,7 +133,7 @@ namespace qpl {
 	qpl::size qpl::hour_minutes::minutes() const {
 		return this->hour * qpl::size{ 24 } +this->minute;
 	}
-	hour_minutes& qpl::hour_minutes::operator=(std::string_view date) {
+	hour_minutes& qpl::hour_minutes::operator=(qpl::string_view date) {
 		this->hour = (date[0] - '0') * 10 + (date[1] - '0');
 		this->minute = (date[3] - '0') * 10 + (date[4] - '0');
 		return *this;

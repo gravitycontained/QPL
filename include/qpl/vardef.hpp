@@ -13,7 +13,6 @@
 #include <cstdint>
 #include <tuple>
 #include <limits>
-#include <string_view>
 
 namespace qpl {
 	using size = std::size_t;

@@ -289,7 +289,7 @@ namespace qpl {
 		std::shuffle(data.begin(), data.end(), qpl::detail::rng.rng.engine);
 	}
 
-	template<typename C> requires qpl::is_container<C>&& qpl::has_size<C>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>
 	qpl::container_subtype<C> random_element(const C& data) {
 		auto size = data.size();
 		auto index = qpl::random_i(qpl::size{}, size - qpl::size{ 1 });
@@ -319,7 +319,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	qpl::u32 random_weighted_index(std::span<T> weights) {
+	qpl::u32 random_weighted_index(qpl::span<T> weights) {
 		std::decay_t<T> sum = 0;
 		for (auto& i : weights) {
 			sum += i;

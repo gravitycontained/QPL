@@ -99,10 +99,10 @@ namespace qpl {
 		QPLDLL qpl::f64 get_average_accuracy() const;
 		QPLDLL qpl::size get_generation_count() const;
 
-		QPLDLL std::vector<neuron>& operator[](qpl::u32 index);
-		QPLDLL const std::vector<neuron>& operator[](qpl::u32 index) const;
-		QPLDLL std::vector<neuron>& at(qpl::u32 index);
-		QPLDLL const std::vector<neuron>& at(qpl::u32 index) const;
+		QPLDLL std::vector<neuron>& operator[](qpl::size index);
+		QPLDLL const std::vector<neuron>& operator[](qpl::size index) const;
+		QPLDLL std::vector<neuron>& at(qpl::size index);
+		QPLDLL const std::vector<neuron>& at(qpl::size index) const;
 		QPLDLL qpl::size size() const;
 
 		QPLDLL void load_from_string(const std::string& info);

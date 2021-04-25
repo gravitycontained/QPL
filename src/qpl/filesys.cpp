@@ -8,7 +8,7 @@ namespace qpl {
 
     namespace filesys {
 
-        qpl::filesys::path& qpl::filesys::path::operator=(const std::string_view& str) {
+        qpl::filesys::path& qpl::filesys::path::operator=(const qpl::string_view& str) {
             this->m_string.clear();
 
             bool seperator = false;
@@ -31,10 +31,10 @@ namespace qpl {
             return *this;
         }
         qpl::filesys::path& qpl::filesys::path::operator=(const std::string& str) {
-            return this->operator=(std::string_view{ str.c_str() });
+            return this->operator=(qpl::string_view{ str.c_str() });
         }
         qpl::filesys::path& qpl::filesys::path::operator=(const char* str) {
-            return this->operator=(std::string_view{ str });
+            return this->operator=(qpl::string_view{ str });
         }
         qpl::filesys::path& qpl::filesys::path::operator=(const path& other) {
             this->m_string = other.m_string;
@@ -202,7 +202,7 @@ namespace qpl {
         }
 
 
-        std::string_view qpl::filesys::path::get_extension_view() const {
+        qpl::string_view qpl::filesys::path::get_extension_view() const {
             if (!this->is_file() || this->empty()) {
                 return "";
             }
@@ -214,10 +214,10 @@ namespace qpl {
                     break;
                 }
             }
-            auto result = std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend()));
+            auto result = qpl::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend()));
             return result;
         }
-        std::string_view qpl::filesys::path::get_name_view() const {
+        qpl::string_view qpl::filesys::path::get_name_view() const {
             if (this->empty()) {
                 return "";
             }
@@ -229,7 +229,7 @@ namespace qpl {
                         break;
                     }
                 }
-                return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend()));
+                return qpl::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend()));
             }
             else if (this->is_directory()) {
                 bool end_slash = false;
@@ -245,11 +245,11 @@ namespace qpl {
                         break;
                     }
                 }
-                return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend() - end_slash));
+                return qpl::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend() - end_slash));
             }
             return "";
         }
-        std::string_view qpl::filesys::path::get_file_name_view() const {
+        qpl::string_view qpl::filesys::path::get_file_name_view() const {
             if (!this->is_file() || this->empty()) {
                 return "";
             }
@@ -267,23 +267,23 @@ namespace qpl {
                     break;
                 }
             }
-            return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), begin), std::distance(begin, end));
+            return qpl::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), begin), std::distance(begin, end));
         }
 
 
-        bool qpl::filesys::path::extension_equals(const std::string_view& str) const {
+        bool qpl::filesys::path::extension_equals(const qpl::string_view& str) const {
             if (str.front() == '.' && str.size()) {
                 return this->get_extension_view() == str.substr(1, str.size() - 1);
             }
             return this->get_extension_view() == str;
         }
         bool qpl::filesys::path::extension_equals(const char* str) const {
-            return this->extension_equals(std::string_view{ str });
+            return this->extension_equals(qpl::string_view{ str });
         }
         bool qpl::filesys::path::extension_equals(const std::string& str) const {
-            return this->extension_equals(std::string_view{ str });
+            return this->extension_equals(qpl::string_view{ str });
         }
-        bool qpl::filesys::path::extension_contains(const std::string_view& str) const {
+        bool qpl::filesys::path::extension_contains(const qpl::string_view& str) const {
             auto extension = this->get_extension_view();
             for (qpl::i32 i = 0; i < qpl::signed_cast(extension.size()) - qpl::signed_cast(str.size()) + 1; ++i) {
                 if (extension.substr(i, str.size()) == str) {
@@ -293,10 +293,10 @@ namespace qpl {
             return false;
         }
         bool qpl::filesys::path::extension_contains(const char* str) const {
-            return this->extension_contains(std::string_view{ str });
+            return this->extension_contains(qpl::string_view{ str });
         }
         bool qpl::filesys::path::extension_contains(const std::string& str) const {
-            return this->extension_contains(std::string_view{ str });
+            return this->extension_contains(qpl::string_view{ str });
         }
         bool qpl::filesys::path::extension_matches(const std::string& regex) const {
             const std::regex reg{ regex };
@@ -306,16 +306,16 @@ namespace qpl {
             return std::regex_match(this->get_extension(), regex);
         }
 
-        bool qpl::filesys::path::file_name_equals(const std::string_view& str) const {
+        bool qpl::filesys::path::file_name_equals(const qpl::string_view& str) const {
             return this->get_extension_view() == str;
         }
         bool qpl::filesys::path::file_name_equals(const char* str) const {
-            return this->file_name_equals(std::string_view{ str });
+            return this->file_name_equals(qpl::string_view{ str });
         }
         bool qpl::filesys::path::file_name_equals(const std::string& str) const {
-            return this->file_name_equals(std::string_view{ str });
+            return this->file_name_equals(qpl::string_view{ str });
         }
-        bool qpl::filesys::path::file_name_contains(const std::string_view& str) const {
+        bool qpl::filesys::path::file_name_contains(const qpl::string_view& str) const {
             auto name = this->get_file_name_view();
             for (qpl::i32 i = 0; i < qpl::signed_cast(name.size()) - qpl::signed_cast(str.size()) + 1; ++i) {
                 if (name.substr(i, str.size()) == str) {
@@ -325,10 +325,10 @@ namespace qpl {
             return false;
         }
         bool qpl::filesys::path::file_name_contains(const char* str) const {
-            return this->file_name_contains(std::string_view{ str });
+            return this->file_name_contains(qpl::string_view{ str });
         }
         bool qpl::filesys::path::file_name_contains(const std::string& str) const {
-            return this->file_name_contains(std::string_view{ str });
+            return this->file_name_contains(qpl::string_view{ str });
         }
         bool qpl::filesys::path::file_name_matches(const std::string& regex) const {
             const std::regex reg{ regex };
@@ -338,7 +338,7 @@ namespace qpl {
             return std::regex_match(this->get_file_name(), regex);
         }
 
-        bool qpl::filesys::path::name_equals(const std::string_view& str) const {
+        bool qpl::filesys::path::name_equals(const qpl::string_view& str) const {
             auto name = this->get_name_view();
             if (this->is_directory()) {
                 auto off = qpl::size{};
@@ -357,12 +357,12 @@ namespace qpl {
             return name == str;
         }
         bool qpl::filesys::path::name_equals(const char* str) const {
-            return this->name_equals(std::string_view{ str });
+            return this->name_equals(qpl::string_view{ str });
         }
         bool qpl::filesys::path::name_equals(const std::string& str) const {
-            return this->name_equals(std::string_view{ str });
+            return this->name_equals(qpl::string_view{ str });
         }
-        bool qpl::filesys::path::name_contains(const std::string_view& str) const {
+        bool qpl::filesys::path::name_contains(const qpl::string_view& str) const {
             auto name = this->get_name_view();
             for (qpl::i32 i = 0; i < qpl::signed_cast(name.size()) - qpl::signed_cast(str.size()) + 1; ++i) {
                 if (name.substr(i, str.size()) == str) {
@@ -372,10 +372,10 @@ namespace qpl {
             return false;
         }
         bool qpl::filesys::path::name_contains(const char* str) const {
-            return this->name_contains(std::string_view{ str });
+            return this->name_contains(qpl::string_view{ str });
         }
         bool qpl::filesys::path::name_contains(const std::string& str) const {
-            return this->name_contains(std::string_view{ str });
+            return this->name_contains(qpl::string_view{ str });
         }
         bool qpl::filesys::path::name_matches(const std::string& regex) const {
             const std::regex reg{ regex };
@@ -445,7 +445,7 @@ namespace qpl {
             }
             return ctr;
         }
-        qpl::filesys::path qpl::filesys::path::branch_at(qpl::u32 index) const {
+        qpl::filesys::path qpl::filesys::path::branch_at(qpl::size index) const {
             qpl::u32 ctr = 0u;
             auto it = this->m_string.cbegin();
             for (; it != this->m_string.cend(); ++it) {
@@ -670,7 +670,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_where_extension_equals(const std::string_view& extension) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_extension_equals(const qpl::string_view& extension) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -682,12 +682,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_equals(const char* extension) const {
-            return this->search_where_extension_equals(std::string_view{ extension });
+            return this->search_where_extension_equals(qpl::string_view{ extension });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_equals(const std::string& extension) const {
-            return this->search_where_extension_equals(std::string_view{ extension });
+            return this->search_where_extension_equals(qpl::string_view{ extension });
         }
-        qpl::filesys::paths qpl::filesys::path::search_where_extension_contains(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_extension_contains(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -699,10 +699,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_contains(const char* str) const {
-            return this->search_where_extension_contains(std::string_view{ str });
+            return this->search_where_extension_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_contains(const std::string& str) const {
-            return this->search_where_extension_contains(std::string_view{ str });
+            return this->search_where_extension_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_matches(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -716,7 +716,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_where_name_equals(const std::string_view& name) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_name_equals(const qpl::string_view& name) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -728,12 +728,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_equals(const char* name) const {
-            return this->search_where_name_equals(std::string_view{ name });
+            return this->search_where_name_equals(qpl::string_view{ name });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_equals(const std::string& name) const {
-            return this->search_where_name_equals(std::string_view{ name });
+            return this->search_where_name_equals(qpl::string_view{ name });
         }
-        qpl::filesys::paths qpl::filesys::path::search_where_name_contains(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_name_contains(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -745,10 +745,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_contains(const char* str) const {
-            return this->search_where_name_contains(std::string_view{ str });
+            return this->search_where_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_contains(const std::string& str) const {
-            return this->search_where_name_contains(std::string_view{ str });
+            return this->search_where_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_matches(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -762,7 +762,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_where_file_name_equals(const std::string_view& file_name) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_file_name_equals(const qpl::string_view& file_name) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -774,12 +774,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_equals(const char* file_name) const {
-            return this->search_where_file_name_equals(std::string_view{ file_name });
+            return this->search_where_file_name_equals(qpl::string_view{ file_name });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_equals(const std::string& file_name) const {
-            return this->search_where_file_name_equals(std::string_view{ file_name });
+            return this->search_where_file_name_equals(qpl::string_view{ file_name });
         }
-        qpl::filesys::paths qpl::filesys::path::search_where_file_name_contains(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_file_name_contains(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -791,10 +791,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_contains(const char* str) const {
-            return this->search_where_file_name_contains(std::string_view{ str });
+            return this->search_where_file_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_contains(const std::string& str) const {
-            return this->search_where_file_name_contains(std::string_view{ str });
+            return this->search_where_file_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_matches(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -808,7 +808,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_equal(const std::string_view& extension) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_equal(const qpl::string_view& extension) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -820,12 +820,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_equal(const char* extension) const {
-            return this->search_where_extension_doesnt_equal(std::string_view{ extension });
+            return this->search_where_extension_doesnt_equal(qpl::string_view{ extension });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_equal(const std::string& extension) const {
-            return this->search_where_extension_doesnt_equal(std::string_view{ extension });
+            return this->search_where_extension_doesnt_equal(qpl::string_view{ extension });
         }
-        qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_contain(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_contain(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -837,10 +837,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_contain(const char* str) const {
-            return this->search_where_extension_doesnt_contain(std::string_view{ str });
+            return this->search_where_extension_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_contain(const std::string& str) const {
-            return this->search_where_extension_doesnt_contain(std::string_view{ str });
+            return this->search_where_extension_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_extension_doesnt_match(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -854,7 +854,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_equal(const std::string_view& name) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_equal(const qpl::string_view& name) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -866,12 +866,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_equal(const char* name) const {
-            return this->search_where_name_doesnt_equal(std::string_view{ name });
+            return this->search_where_name_doesnt_equal(qpl::string_view{ name });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_equal(const std::string& name) const {
-            return this->search_where_name_doesnt_equal(std::string_view{ name });
+            return this->search_where_name_doesnt_equal(qpl::string_view{ name });
         }
-        qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_contain(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_contain(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -883,10 +883,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_contain(const char* str) const {
-            return this->search_where_name_doesnt_contain(std::string_view{ str });
+            return this->search_where_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_contain(const std::string& str) const {
-            return this->search_where_name_doesnt_contain(std::string_view{ str });
+            return this->search_where_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_name_doesnt_match(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -900,7 +900,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_equal(const std::string_view& file_name) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_equal(const qpl::string_view& file_name) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -912,12 +912,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_equal(const char* file_name) const {
-            return this->search_where_file_name_doesnt_equal(std::string_view{ file_name });
+            return this->search_where_file_name_doesnt_equal(qpl::string_view{ file_name });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_equal(const std::string& file_name) const {
-            return this->search_where_file_name_doesnt_equal(std::string_view{ file_name });
+            return this->search_where_file_name_doesnt_equal(qpl::string_view{ file_name });
         }
-        qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_contain(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_contain(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -929,10 +929,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_contain(const char* str) const {
-            return this->search_where_file_name_doesnt_contain(std::string_view{ str });
+            return this->search_where_file_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_contain(const std::string& str) const {
-            return this->search_where_file_name_doesnt_contain(std::string_view{ str });
+            return this->search_where_file_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_where_file_name_doesnt_match(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -972,7 +972,7 @@ namespace qpl {
         }
 
 
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_equals(const std::string_view& extension) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_equals(const qpl::string_view& extension) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -984,12 +984,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_equals(const char* extension) const {
-            return this->search_recursively_where_extension_equals(std::string_view{ extension });
+            return this->search_recursively_where_extension_equals(qpl::string_view{ extension });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_equals(const std::string& extension) const {
-            return this->search_recursively_where_extension_equals(std::string_view{ extension });
+            return this->search_recursively_where_extension_equals(qpl::string_view{ extension });
         }
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_contains(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_contains(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1001,10 +1001,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_contains(const char* str) const {
-            return this->search_recursively_where_extension_contains(std::string_view{ str });
+            return this->search_recursively_where_extension_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_contains(const std::string& str) const {
-            return this->search_recursively_where_extension_contains(std::string_view{ str });
+            return this->search_recursively_where_extension_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_matches(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -1018,7 +1018,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_equals(const std::string_view& name) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_equals(const qpl::string_view& name) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1030,12 +1030,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_equals(const char* name) const {
-            return this->search_recursively_where_name_equals(std::string_view{ name });
+            return this->search_recursively_where_name_equals(qpl::string_view{ name });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_equals(const std::string& name) const {
-            return this->search_recursively_where_name_equals(std::string_view{ name });
+            return this->search_recursively_where_name_equals(qpl::string_view{ name });
         }
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_contains(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_contains(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1047,10 +1047,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_contains(const char* str) const {
-            return this->search_recursively_where_name_contains(std::string_view{ str });
+            return this->search_recursively_where_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_contains(const std::string& str) const {
-            return this->search_recursively_where_name_contains(std::string_view{ str });
+            return this->search_recursively_where_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_matches(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -1064,7 +1064,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_equals(const std::string_view& file_name) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_equals(const qpl::string_view& file_name) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1076,12 +1076,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_equals(const char* file_name) const {
-            return this->search_recursively_where_file_name_equals(std::string_view{ file_name });
+            return this->search_recursively_where_file_name_equals(qpl::string_view{ file_name });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_equals(const std::string& file_name) const {
-            return this->search_recursively_where_file_name_equals(std::string_view{ file_name });
+            return this->search_recursively_where_file_name_equals(qpl::string_view{ file_name });
         }
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_contains(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_contains(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1093,10 +1093,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_contains(const char* str) const {
-            return this->search_recursively_where_file_name_contains(std::string_view{ str });
+            return this->search_recursively_where_file_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_contains(const std::string& str) const {
-            return this->search_recursively_where_file_name_contains(std::string_view{ str });
+            return this->search_recursively_where_file_name_contains(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_matches(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -1110,7 +1110,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_equal(const std::string_view& extension) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_equal(const qpl::string_view& extension) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1122,12 +1122,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_equal(const char* extension) const {
-            return this->search_recursively_where_extension_doesnt_equal(std::string_view{ extension });
+            return this->search_recursively_where_extension_doesnt_equal(qpl::string_view{ extension });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_equal(const std::string& extension) const {
-            return this->search_recursively_where_extension_doesnt_equal(std::string_view{ extension });
+            return this->search_recursively_where_extension_doesnt_equal(qpl::string_view{ extension });
         }
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_contain(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_contain(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1139,10 +1139,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_contain(const char* str) const {
-            return this->search_recursively_where_extension_doesnt_contain(std::string_view{ str });
+            return this->search_recursively_where_extension_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_contain(const std::string& str) const {
-            return this->search_recursively_where_extension_doesnt_contain(std::string_view{ str });
+            return this->search_recursively_where_extension_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_extension_doesnt_match(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -1156,7 +1156,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_equal(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_equal(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1168,12 +1168,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_equal(const char* str) const {
-            return this->search_recursively_where_name_doesnt_equal(std::string_view{ str });
+            return this->search_recursively_where_name_doesnt_equal(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_equal(const std::string& str) const {
-            return this->search_recursively_where_name_doesnt_equal(std::string_view{ str });
+            return this->search_recursively_where_name_doesnt_equal(qpl::string_view{ str });
         }
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_contain(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_contain(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1185,10 +1185,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_contain(const char* str) const {
-            return this->search_recursively_where_name_doesnt_contain(std::string_view{ str });
+            return this->search_recursively_where_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_contain(const std::string& str) const {
-            return this->search_recursively_where_name_doesnt_contain(std::string_view{ str });
+            return this->search_recursively_where_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_name_doesnt_match(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -1202,7 +1202,7 @@ namespace qpl {
             return result;
         }
 
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_equal(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_equal(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1214,12 +1214,12 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_equal(const char* str) const {
-            return this->search_recursively_where_file_name_doesnt_equal(std::string_view{ str });
+            return this->search_recursively_where_file_name_doesnt_equal(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_equal(const std::string& str) const {
-            return this->search_recursively_where_file_name_doesnt_equal(std::string_view{ str });
+            return this->search_recursively_where_file_name_doesnt_equal(qpl::string_view{ str });
         }
-        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_contain(const std::string_view& str) const {
+        qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_contain(const qpl::string_view& str) const {
             qpl::filesys::paths result;
             auto directory = this->is_directory() ? this->string() : this->get_parent_branch().string();
             for (auto i : std::filesystem::recursive_directory_iterator(directory, std::filesystem::directory_options::skip_permission_denied)) {
@@ -1231,10 +1231,10 @@ namespace qpl {
             return result;
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_contain(const char* str) const {
-            return this->search_recursively_where_file_name_doesnt_contain(std::string_view{ str });
+            return this->search_recursively_where_file_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_contain(const std::string& str) const {
-            return this->search_recursively_where_file_name_doesnt_contain(std::string_view{ str });
+            return this->search_recursively_where_file_name_doesnt_contain(qpl::string_view{ str });
         }
         qpl::filesys::paths qpl::filesys::path::search_recursively_where_file_name_doesnt_match(const std::regex& regex) const {
             qpl::filesys::paths result;
@@ -1785,22 +1785,22 @@ namespace qpl {
         }
 
         void qpl::filesys::paths::list_remove_where_extension_equals(const std::string& extension) {
-            this->list_remove_where_extension_equals(std::string_view{ extension });
+            this->list_remove_where_extension_equals(qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_add_where_extension_equals(const qpl::filesys::path& directory, const std::string& extension) {
-            this->list_add_where_extension_equals(directory, std::string_view{ extension });
+            this->list_add_where_extension_equals(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_equals(const qpl::filesys::path& directory, const std::string& extension) {
-            this->list_recursively_add_where_extension_equals(directory, std::string_view{ extension });
+            this->list_recursively_add_where_extension_equals(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_remove_where_extension_contains(const std::string& str) {
-            this->list_remove_where_extension_contains(std::string_view{ str });
+            this->list_remove_where_extension_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_extension_contains(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_add_where_extension_contains(directory, std::string_view{ str });
+            this->list_add_where_extension_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_contains(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_extension_contains(directory, std::string_view{ str });
+            this->list_recursively_add_where_extension_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_remove_where_extension_matches(const std::regex& regex) {
             auto copy = this->m_paths;
@@ -1821,22 +1821,22 @@ namespace qpl {
         }
 
         void qpl::filesys::paths::list_remove_where_name_equals(const std::string& name) {
-            this->list_remove_where_name_equals(std::string_view{ name });
+            this->list_remove_where_name_equals(qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_add_where_name_equals(const qpl::filesys::path& directory, const std::string& name) {
-            this->list_add_where_name_equals(directory, std::string_view{ name });
+            this->list_add_where_name_equals(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_equals(const qpl::filesys::path& directory, const std::string& name) {
-            this->list_recursively_add_where_name_equals(directory, std::string_view{ name });
+            this->list_recursively_add_where_name_equals(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_remove_where_name_contains(const std::string& str) {
-            this->list_remove_where_name_contains(std::string_view{ str });
+            this->list_remove_where_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_name_contains(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_add_where_name_contains(directory, std::string_view{ str });
+            this->list_add_where_name_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_contains(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_name_contains(directory, std::string_view{ str });
+            this->list_recursively_add_where_name_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_remove_where_name_matches(const std::regex& regex) {
             auto copy = this->m_paths;
@@ -1857,22 +1857,22 @@ namespace qpl {
         }
 
         void qpl::filesys::paths::list_remove_where_file_name_equals(const std::string& file_name) {
-            this->list_remove_where_file_name_equals(std::string_view{ file_name });
+            this->list_remove_where_file_name_equals(qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_add_where_file_name_equals(const qpl::filesys::path& directory, const std::string& file_name) {
-            this->list_add_where_file_name_equals(directory, std::string_view{ file_name });
+            this->list_add_where_file_name_equals(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_equals(const qpl::filesys::path& directory, const std::string& file_name) {
-            this->list_recursively_add_where_file_name_equals(directory, std::string_view{ file_name });
+            this->list_recursively_add_where_file_name_equals(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_remove_where_file_name_contains(const std::string& str) {
-            this->list_remove_where_file_name_contains(std::string_view{ str });
+            this->list_remove_where_file_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_file_name_contains(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_add_where_file_name_contains(directory, std::string_view{ str });
+            this->list_add_where_file_name_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_contains(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_file_name_contains(directory, std::string_view{ str });
+            this->list_recursively_add_where_file_name_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_remove_where_file_name_matches(const std::regex& regex) {
             auto copy = this->m_paths;
@@ -1894,22 +1894,22 @@ namespace qpl {
 
 
         void qpl::filesys::paths::list_keep_where_extension_equals(const std::string& extension) {
-            this->list_keep_where_extension_equals(std::string_view{ extension });
+            this->list_keep_where_extension_equals(qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const std::string& extension) {
-            this->list_add_where_extension_doesnt_equal(directory, std::string_view{ extension });
+            this->list_add_where_extension_doesnt_equal(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const std::string& extension) {
-            this->list_recursively_add_where_extension_doesnt_equal(directory, std::string_view{ extension });
+            this->list_recursively_add_where_extension_doesnt_equal(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_keep_where_extension_contains(const std::string& str) {
-            this->list_keep_where_extension_contains(std::string_view{ str });
+            this->list_keep_where_extension_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_add_where_extension_doesnt_contain(directory, std::string_view{ str });
+            this->list_add_where_extension_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_extension_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_extension_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_keep_where_extension_matches(const std::regex& regex) {
             auto copy = this->m_paths;
@@ -1930,22 +1930,22 @@ namespace qpl {
         }
 
         void qpl::filesys::paths::list_keep_where_name_equals(const std::string& name) {
-            this->list_keep_where_name_equals(std::string_view{ name });
+            this->list_keep_where_name_equals(qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string& name) {
-            this->list_add_where_name_doesnt_equal(directory, std::string_view{ name });
+            this->list_add_where_name_doesnt_equal(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string& name) {
-            this->list_recursively_add_where_name_doesnt_equal(directory, std::string_view{ name });
+            this->list_recursively_add_where_name_doesnt_equal(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_keep_where_name_contains(const std::string& str) {
-            this->list_keep_where_name_contains(std::string_view{ str });
+            this->list_keep_where_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_name_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_name_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_keep_where_name_matches(const std::regex& regex) {
             auto copy = this->m_paths;
@@ -1966,22 +1966,22 @@ namespace qpl {
         }
 
         void qpl::filesys::paths::list_keep_where_file_name_equals(const std::string& file_name) {
-            this->list_keep_where_file_name_equals(std::string_view{ file_name });
+            this->list_keep_where_file_name_equals(qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const std::string& file_name) {
-            this->list_add_where_file_name_doesnt_equal(directory, std::string_view{ file_name });
+            this->list_add_where_file_name_doesnt_equal(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const std::string& file_name) {
-            this->list_recursively_add_where_file_name_doesnt_equal(directory, std::string_view{ file_name });
+            this->list_recursively_add_where_file_name_doesnt_equal(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_keep_where_file_name_contains(const std::string& str) {
-            this->list_keep_where_file_name_contains(std::string_view{ str });
+            this->list_keep_where_file_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_file_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_file_name_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const std::string& str) {
-            this->list_recursively_add_where_file_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_file_name_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_keep_where_file_name_matches(const std::regex& regex) {
             auto copy = this->m_paths;
@@ -2002,7 +2002,7 @@ namespace qpl {
         }
 
 
-        void qpl::filesys::paths::list_remove_where_extension_equals(const std::string_view& extension) {
+        void qpl::filesys::paths::list_remove_where_extension_equals(const qpl::string_view& extension) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2011,15 +2011,15 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_extension_equals(const qpl::filesys::path& directory, const std::string_view& extension) {
+        void qpl::filesys::paths::list_add_where_extension_equals(const qpl::filesys::path& directory, const qpl::string_view& extension) {
             auto list = directory.search_where_extension_equals(extension);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_extension_equals(const qpl::filesys::path& directory, const std::string_view& extension) {
+        void qpl::filesys::paths::list_recursively_add_where_extension_equals(const qpl::filesys::path& directory, const qpl::string_view& extension) {
             auto list = directory.search_recursively_where_extension_equals(extension);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_remove_where_extension_contains(const std::string_view& str) {
+        void qpl::filesys::paths::list_remove_where_extension_contains(const qpl::string_view& str) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2028,16 +2028,16 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_extension_contains(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_add_where_extension_contains(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_where_extension_contains(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_extension_contains(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_recursively_add_where_extension_contains(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_recursively_where_extension_contains(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
 
-        void qpl::filesys::paths::list_remove_where_name_equals(const std::string_view& name) {
+        void qpl::filesys::paths::list_remove_where_name_equals(const qpl::string_view& name) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2046,15 +2046,15 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_name_equals(const qpl::filesys::path& directory, const std::string_view& name) {
+        void qpl::filesys::paths::list_add_where_name_equals(const qpl::filesys::path& directory, const qpl::string_view& name) {
             auto list = directory.search_where_name_equals(name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_name_equals(const qpl::filesys::path& directory, const std::string_view& name) {
+        void qpl::filesys::paths::list_recursively_add_where_name_equals(const qpl::filesys::path& directory, const qpl::string_view& name) {
             auto list = directory.search_recursively_where_name_equals(name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_remove_where_name_contains(const std::string_view& str) {
+        void qpl::filesys::paths::list_remove_where_name_contains(const qpl::string_view& str) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2063,16 +2063,16 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_name_contains(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_add_where_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_where_name_contains(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_name_contains(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_recursively_add_where_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_recursively_where_name_contains(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
 
-        void qpl::filesys::paths::list_remove_where_file_name_equals(const std::string_view& file_name) {
+        void qpl::filesys::paths::list_remove_where_file_name_equals(const qpl::string_view& file_name) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2081,15 +2081,15 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_file_name_equals(const qpl::filesys::path& directory, const std::string_view& file_name) {
+        void qpl::filesys::paths::list_add_where_file_name_equals(const qpl::filesys::path& directory, const qpl::string_view& file_name) {
             auto list = directory.search_where_file_name_equals(file_name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_file_name_equals(const qpl::filesys::path& directory, const std::string_view& file_name) {
+        void qpl::filesys::paths::list_recursively_add_where_file_name_equals(const qpl::filesys::path& directory, const qpl::string_view& file_name) {
             auto list = directory.search_recursively_where_file_name_equals(file_name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_remove_where_file_name_contains(const std::string_view& str) {
+        void qpl::filesys::paths::list_remove_where_file_name_contains(const qpl::string_view& str) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2098,17 +2098,17 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_file_name_contains(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_add_where_file_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_where_file_name_contains(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_file_name_contains(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_recursively_add_where_file_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_recursively_where_file_name_contains(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
 
 
-        void qpl::filesys::paths::list_keep_where_extension_equals(const std::string_view& extension) {
+        void qpl::filesys::paths::list_keep_where_extension_equals(const qpl::string_view& extension) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2117,15 +2117,15 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& extension) {
+        void qpl::filesys::paths::list_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& extension) {
             auto list = directory.search_where_extension_doesnt_equal(extension);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& extension) {
+        void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& extension) {
             auto list = directory.search_recursively_where_extension_doesnt_equal(extension);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_keep_where_extension_contains(const std::string_view& str) {
+        void qpl::filesys::paths::list_keep_where_extension_contains(const qpl::string_view& str) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2134,16 +2134,16 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_where_extension_doesnt_contain(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_recursively_where_extension_doesnt_contain(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
 
-        void qpl::filesys::paths::list_keep_where_name_equals(const std::string_view& name) {
+        void qpl::filesys::paths::list_keep_where_name_equals(const qpl::string_view& name) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2152,15 +2152,15 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& name) {
+        void qpl::filesys::paths::list_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& name) {
             auto list = directory.search_where_name_doesnt_equal(name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& name) {
+        void qpl::filesys::paths::list_recursively_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& name) {
             auto list = directory.search_recursively_where_name_doesnt_equal(name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_keep_where_name_contains(const std::string_view& str) {
+        void qpl::filesys::paths::list_keep_where_name_contains(const qpl::string_view& str) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2169,16 +2169,16 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_where_name_doesnt_contain(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_recursively_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_recursively_where_name_doesnt_contain(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
 
-        void qpl::filesys::paths::list_keep_where_file_name_equals(const std::string_view& file_name) {
+        void qpl::filesys::paths::list_keep_where_file_name_equals(const qpl::string_view& file_name) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2187,15 +2187,15 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& file_name) {
+        void qpl::filesys::paths::list_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& file_name) {
             auto list = directory.search_where_file_name_doesnt_equal(file_name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& file_name) {
+        void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& file_name) {
             auto list = directory.search_recursively_where_file_name_doesnt_equal(file_name);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_keep_where_file_name_contains(const std::string_view& str) {
+        void qpl::filesys::paths::list_keep_where_file_name_contains(const qpl::string_view& str) {
             auto copy = this->m_paths;
             this->clear();
             for (auto& i : copy) {
@@ -2204,129 +2204,129 @@ namespace qpl {
                 }
             }
         }
-        void qpl::filesys::paths::list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_where_file_name_doesnt_contain(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
-        void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str) {
+        void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str) {
             auto list = directory.search_recursively_where_file_name_doesnt_contain(str);
             this->m_paths.insert(this->m_paths.end(), list.m_paths.begin(), list.m_paths.end());
         }
 
 
         void qpl::filesys::paths::list_remove_where_extension_equals(const char* extension) {
-            this->list_remove_where_extension_equals(std::string_view{ extension });
+            this->list_remove_where_extension_equals(qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_add_where_extension_equals(const qpl::filesys::path& directory, const char* extension) {
-            this->list_add_where_extension_equals(directory, std::string_view{ extension });
+            this->list_add_where_extension_equals(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_equals(const qpl::filesys::path& directory, const char* extension) {
-            this->list_recursively_add_where_extension_equals(directory, std::string_view{ extension });
+            this->list_recursively_add_where_extension_equals(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_remove_where_extension_contains(const char* str) {
-            this->list_remove_where_extension_contains(std::string_view{ str });
+            this->list_remove_where_extension_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_extension_contains(const qpl::filesys::path& directory, const char* str) {
-            this->list_add_where_extension_contains(directory, std::string_view{ str });
+            this->list_add_where_extension_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_contains(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_extension_contains(directory, std::string_view{ str });
+            this->list_recursively_add_where_extension_contains(directory, qpl::string_view{ str });
         }
 
         void qpl::filesys::paths::list_remove_where_name_equals(const char* name) {
-            this->list_remove_where_name_equals(std::string_view{ name });
+            this->list_remove_where_name_equals(qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_add_where_name_equals(const qpl::filesys::path& directory, const char* name) {
-            this->list_add_where_name_equals(directory, std::string_view{ name });
+            this->list_add_where_name_equals(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_equals(const qpl::filesys::path& directory, const char* name) {
-            this->list_recursively_add_where_name_equals(directory, std::string_view{ name });
+            this->list_recursively_add_where_name_equals(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_remove_where_name_contains(const char* str) {
-            this->list_remove_where_name_contains(std::string_view{ str });
+            this->list_remove_where_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_name_contains(const qpl::filesys::path& directory, const char* str) {
-            this->list_add_where_name_contains(directory, std::string_view{ str });
+            this->list_add_where_name_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_contains(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_name_contains(directory, std::string_view{ str });
+            this->list_recursively_add_where_name_contains(directory, qpl::string_view{ str });
         }
 
         void qpl::filesys::paths::list_remove_where_file_name_equals(const char* file_name) {
-            this->list_remove_where_file_name_equals(std::string_view{ file_name });
+            this->list_remove_where_file_name_equals(qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_add_where_file_name_equals(const qpl::filesys::path& directory, const char* file_name) {
-            this->list_add_where_file_name_equals(directory, std::string_view{ file_name });
+            this->list_add_where_file_name_equals(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_equals(const qpl::filesys::path& directory, const char* file_name) {
-            this->list_recursively_add_where_file_name_equals(directory, std::string_view{ file_name });
+            this->list_recursively_add_where_file_name_equals(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_remove_where_file_name_contains(const char* str) {
-            this->list_remove_where_file_name_contains(std::string_view{ str });
+            this->list_remove_where_file_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_file_name_contains(const qpl::filesys::path& directory, const char* str) {
-            this->list_add_where_file_name_contains(directory, std::string_view{ str });
+            this->list_add_where_file_name_contains(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_contains(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_file_name_contains(directory, std::string_view{ str });
+            this->list_recursively_add_where_file_name_contains(directory, qpl::string_view{ str });
         }
 
 
         void qpl::filesys::paths::list_keep_where_extension_equals(const char* extension) {
-            this->list_keep_where_extension_equals(std::string_view{ extension });
+            this->list_keep_where_extension_equals(qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const char* extension) {
-            this->list_add_where_extension_doesnt_equal(directory, std::string_view{ extension });
+            this->list_add_where_extension_doesnt_equal(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const char* extension) {
-            this->list_recursively_add_where_extension_doesnt_equal(directory, std::string_view{ extension });
+            this->list_recursively_add_where_extension_doesnt_equal(directory, qpl::string_view{ extension });
         }
         void qpl::filesys::paths::list_keep_where_extension_contains(const char* str) {
-            this->list_keep_where_extension_contains(std::string_view{ str });
+            this->list_keep_where_extension_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const char* str) {
-            this->list_add_where_extension_doesnt_contain(directory, std::string_view{ str });
+            this->list_add_where_extension_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_extension_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_extension_doesnt_contain(directory, qpl::string_view{ str });
         }
 
         void qpl::filesys::paths::list_keep_where_name_equals(const char* name) {
-            this->list_keep_where_name_equals(std::string_view{ name });
+            this->list_keep_where_name_equals(qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const char* name) {
-            this->list_add_where_name_doesnt_equal(directory, std::string_view{ name });
+            this->list_add_where_name_doesnt_equal(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const char* name) {
-            this->list_recursively_add_where_name_doesnt_equal(directory, std::string_view{ name });
+            this->list_recursively_add_where_name_doesnt_equal(directory, qpl::string_view{ name });
         }
         void qpl::filesys::paths::list_keep_where_name_contains(const char* str) {
-            this->list_keep_where_name_contains(std::string_view{ str });
+            this->list_keep_where_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_name_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_name_doesnt_contain(directory, qpl::string_view{ str });
         }
 
         void qpl::filesys::paths::list_keep_where_file_name_equals(const char* file_name) {
-            this->list_keep_where_file_name_equals(std::string_view{ file_name });
+            this->list_keep_where_file_name_equals(qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const char* file_name) {
-            this->list_add_where_file_name_doesnt_equal(directory, std::string_view{ file_name });
+            this->list_add_where_file_name_doesnt_equal(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const char* file_name) {
-            this->list_recursively_add_where_file_name_doesnt_equal(directory, std::string_view{ file_name });
+            this->list_recursively_add_where_file_name_doesnt_equal(directory, qpl::string_view{ file_name });
         }
         void qpl::filesys::paths::list_keep_where_file_name_contains(const char* str) {
-            this->list_keep_where_file_name_contains(std::string_view{ str });
+            this->list_keep_where_file_name_contains(qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_file_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_file_name_doesnt_contain(directory, qpl::string_view{ str });
         }
         void qpl::filesys::paths::list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const char* str) {
-            this->list_recursively_add_where_file_name_doesnt_contain(directory, std::string_view{ str });
+            this->list_recursively_add_where_file_name_doesnt_contain(directory, qpl::string_view{ str });
         }
 
 
@@ -2467,26 +2467,26 @@ namespace qpl {
             return path.get_file_name();
         }
 
-        std::string_view get_name_view(const qpl::filesys::path& path) {
+        qpl::string_view get_name_view(const qpl::filesys::path& path) {
             return path.get_name_view();
         }
-        std::string_view get_extension_view(const qpl::filesys::path& path) {
+        qpl::string_view get_extension_view(const qpl::filesys::path& path) {
             return path.get_extension_view();
         }
-        std::string_view get_file_name_view(const qpl::filesys::path& path) {
+        qpl::string_view get_file_name_view(const qpl::filesys::path& path) {
             return path.get_file_name_view();
         }
         qpl::filesys::path qpl::filesys::get_parent_branch(const qpl::filesys::path& path) {
             return path.get_parent_branch();
         }
 
-        bool qpl::filesys::extension_equals(const qpl::filesys::path& path, const std::string_view& str) {
+        bool qpl::filesys::extension_equals(const qpl::filesys::path& path, const qpl::string_view& str) {
             return path.extension_equals(str);
         }
         bool qpl::filesys::extension_equals(const qpl::filesys::path& path, const std::string& str) {
             return path.extension_equals(str);
         }
-        bool qpl::filesys::extension_contains(const qpl::filesys::path& path, const std::string_view& str) {
+        bool qpl::filesys::extension_contains(const qpl::filesys::path& path, const qpl::string_view& str) {
             return path.extension_contains(str);
         }
         bool qpl::filesys::extension_contains(const qpl::filesys::path& path, const std::string& str) {
@@ -2498,13 +2498,13 @@ namespace qpl {
         bool qpl::filesys::extension_matches(const qpl::filesys::path& path, const std::regex& regex) {
             return path.extension_matches(regex);
         }
-        bool qpl::filesys::file_name_equals(const qpl::filesys::path& path, const std::string_view& str) {
+        bool qpl::filesys::file_name_equals(const qpl::filesys::path& path, const qpl::string_view& str) {
             return path.file_name_equals(str);
         }
         bool qpl::filesys::file_name_equals(const qpl::filesys::path& path, const std::string& str) {
             return path.file_name_equals(str);
         }
-        bool qpl::filesys::file_name_contains(const qpl::filesys::path& path, const std::string_view& str) {
+        bool qpl::filesys::file_name_contains(const qpl::filesys::path& path, const qpl::string_view& str) {
             return path.file_name_contains(str);
         }
         bool qpl::filesys::file_name_contains(const qpl::filesys::path& path, const std::string& str) {
@@ -2516,13 +2516,13 @@ namespace qpl {
         bool qpl::filesys::file_name_matches(const qpl::filesys::path& path, const std::regex& regex) {
             return path.file_name_matches(regex);
         }
-        bool qpl::filesys::name_equals(const qpl::filesys::path& path, const std::string_view& str) {
+        bool qpl::filesys::name_equals(const qpl::filesys::path& path, const qpl::string_view& str) {
             return path.name_equals(str);
         }
         bool qpl::filesys::name_equals(const qpl::filesys::path& path, const std::string& str) {
             return path.name_equals(str);
         }
-        bool qpl::filesys::name_contains(const qpl::filesys::path& path, const std::string_view& str) {
+        bool qpl::filesys::name_contains(const qpl::filesys::path& path, const qpl::string_view& str) {
             return path.name_contains(str);
         }
         bool qpl::filesys::name_contains(const qpl::filesys::path& path, const std::string& str) {

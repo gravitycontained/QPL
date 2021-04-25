@@ -445,10 +445,10 @@ namespace qpl {
 			return pixels.generate_bmp_string();
 		}
 
-		monitor_capture& qpl::winsys::get_capture_monitor(qpl::u32 index) {
+		monitor_capture& qpl::winsys::get_capture_monitor(qpl::size index) {
 			return qpl::winsys::impl::monitor_captures[index];
 		}
-		void qpl::winsys::scan_monitor(qpl::u32 index) {
+		void qpl::winsys::scan_monitor(qpl::size index) {
 			qpl::winsys::impl::loop_monitor_index = 0u;
 			qpl::winsys::impl::looping_monitors = true;
 			qpl::winsys::impl::update_monitor_index = index;

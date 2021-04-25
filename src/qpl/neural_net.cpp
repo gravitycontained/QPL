@@ -278,16 +278,16 @@ namespace qpl {
 		return this->m_generation_counter;
 	}
 
-	std::vector<neuron>& neural_net::operator[](qpl::u32 index) {
+	std::vector<neuron>& neural_net::operator[](qpl::size index) {
 		return this->m_neurons[index];
 	}
-	const std::vector<neuron>& neural_net::operator[](qpl::u32 index) const {
+	const std::vector<neuron>& neural_net::operator[](qpl::size index) const {
 		return this->m_neurons[index];
 	}
-	std::vector<neuron>& neural_net::at(qpl::u32 index) {
+	std::vector<neuron>& neural_net::at(qpl::size index) {
 		return this->m_neurons.at(index);
 	}
-	const std::vector<neuron>& neural_net::at(qpl::u32 index) const {
+	const std::vector<neuron>& neural_net::at(qpl::size index) const {
 		return this->m_neurons.at(index);
 	}
 	std::size_t neural_net::size() const {

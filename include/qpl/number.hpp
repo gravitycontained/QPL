@@ -11,7 +11,7 @@
 #include <qpl/random.hpp>
 #include <qpl/bits.hpp>
 #include <qpl/system.hpp>
-#include <string_view>
+#include <qpl/span.hpp>
 #include <array>
 #include <vector>
 
@@ -23,7 +23,7 @@ namespace qpl {
 	struct dynamic_integer {
 
 		struct digit_proxy {
-			digit_proxy(dynamic_integer& value, qpl::u32 index) {
+			digit_proxy(dynamic_integer& value, qpl::size index) {
 				this->proxy = &value;
 				this->index = index;
 			}
@@ -44,7 +44,7 @@ namespace qpl {
 
 		private:
 			dynamic_integer* proxy;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 		struct signed_content_type {
@@ -143,7 +143,7 @@ namespace qpl {
 				}
 			}
 		}
-		inline bool exceeding(qpl::u32 index) const {
+		inline bool exceeding(qpl::size index) const {
 			return index >= this->memory_size();
 		}
 
@@ -242,10 +242,10 @@ namespace qpl {
 			}
 		}
 
-		inline digit_proxy operator[](qpl::u32 index) {
+		inline digit_proxy operator[](qpl::size index) {
 			return digit_proxy(*this, index);
 		}
-		inline const digit_proxy operator[](qpl::u32 index) const {
+		inline const digit_proxy operator[](qpl::size index) const {
 			return digit_proxy(*this, index);
 		}
 		inline digit_proxy front() {
@@ -523,7 +523,7 @@ namespace qpl {
 			}
 		}
 
-		void set(std::string_view string, qpl::u32 string_base = base) {
+		void set(qpl::string_view string, qpl::u32 string_base = base) {
 			if (string.empty()) {
 				this->clear();
 			}
@@ -564,7 +564,7 @@ namespace qpl {
 					negative = true;
 				}
 
-				std::string_view substr;
+				qpl::string_view substr;
 				if (string.length() >= 2 + negative) {
 					substr = string.substr(negative, 2);
 				}
@@ -628,7 +628,7 @@ namespace qpl {
 		}
 
 		void set(const char* string) {
-			this->set(std::string_view{ string });
+			this->set(qpl::string_view{ string });
 		}
 
 		template<qpl::u32 base2 = base, bool sign2 = sign>
@@ -715,7 +715,7 @@ namespace qpl {
 		}
 
 		template<qpl::u32 base2, bool sign2>
-		void add(dynamic_integer<base2, sign2> other, qpl::u32 index = 0u) {
+		void add(dynamic_integer<base2, sign2> other, qpl::size index = 0u) {
 			if constexpr (base != base2) {
 				this->add(other.as_type<base, sign2>(), index);
 				return;
@@ -1608,7 +1608,7 @@ namespace qpl {
 		}
 
 
-		std::string memory_string(qpl::u32 result_base = base, qpl::u32 seperation = 0u, std::string_view prefix = "") const {
+		std::string memory_string(qpl::u32 result_base = base, qpl::u32 seperation = 0u, qpl::string_view prefix = "") const {
 			std::ostringstream stream;
 			if constexpr (is_signed()) {
 				if (this->is_negative()) {
@@ -2269,7 +2269,7 @@ namespace qpl {
 		using holding_type = qpl::conditional<qpl::if_true<bits% qpl::bits_in_type<qpl::u32>() == 0>, std::array<qpl::u32, (bits - 1) / qpl::bits_in_type<qpl::u32>() + 1>, qpl::default_error>;
 
 		struct bit_proxy {
-			constexpr bit_proxy(holding_type& memory, qpl::u32 index) {
+			constexpr bit_proxy(holding_type& memory, qpl::size index) {
 				this->memory = &memory;
 				this->index = index;
 			}
@@ -2289,7 +2289,7 @@ namespace qpl {
 
 		private:
 			holding_type* memory;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 		enum class constexpr_construction {
@@ -2358,7 +2358,7 @@ namespace qpl {
 		}
 
 		constexpr integer& operator=(const char* string) {
-			this->set(std::string_view(string));
+			this->set(qpl::string_view(string));
 			return *this;
 		}
 
@@ -2768,8 +2768,8 @@ namespace qpl {
 		}
 
 
-		constexpr void set_hex_string(std::string_view string) {
-			std::string_view substr;
+		constexpr void set_hex_string(qpl::string_view string) {
+			qpl::string_view substr;
 			this->clear();
 
 			bool negative = false;
@@ -2815,8 +2815,8 @@ namespace qpl {
 				}
 			}
 		}
-		constexpr void set_binary_string(std::string_view string) {
-			std::string_view substr;
+		constexpr void set_binary_string(qpl::string_view string) {
+			qpl::string_view substr;
 			this->clear();
 
 
@@ -2863,7 +2863,7 @@ namespace qpl {
 				}
 			}
 		}
-		constexpr void set_base_string(std::string_view string, qpl::u32 base = 10u) {
+		constexpr void set_base_string(qpl::string_view string, qpl::u32 base = 10u) {
 			this->clear();
 
 			bool negative = false;
@@ -2871,7 +2871,7 @@ namespace qpl {
 				negative = true;
 			}
 
-			std::string_view substr;
+			qpl::string_view substr;
 			if (string.length() >= 2 + negative) {
 				substr = string.substr(negative, 2);
 			}
@@ -2922,14 +2922,14 @@ namespace qpl {
 				this->flip_sign();
 			}
 		}
-		constexpr void set_base_string_vector(std::string_view string, qpl::u32 base) {
+		constexpr void set_base_string_vector(qpl::string_view string, qpl::u32 base) {
 			this->clear();
 			bool negative = false;
 			if (string.front() == '-') {
 				negative = true;
 			}
 
-			std::string_view substr;
+			qpl::string_view substr;
 			if (string.length() >= 2 + negative) {
 				substr = string.substr(negative, 2);
 			}
@@ -2978,7 +2978,7 @@ namespace qpl {
 				}
 			}
 		}
-		constexpr void set(std::string_view string, qpl::u32 base = qpl::u32_max) {
+		constexpr void set(qpl::string_view string, qpl::u32 base = qpl::u32_max) {
 			qpl::u32 start = 0u;
 			while (start < string.length() && qpl::is_character_white_space(string[start])) { ++start; }
 
@@ -3001,7 +3001,7 @@ namespace qpl {
 					return;
 				}
 
-				std::string_view substr;
+				qpl::string_view substr;
 
 				bool negative = string.front() == '-';
 
@@ -3465,7 +3465,7 @@ namespace qpl {
 			return result;
 		}
 		template<qpl::size bits2, bool sign2>
-		constexpr bool quick_dm_less(qpl::integer<bits2, sign2> other, qpl::u32 index) const {
+		constexpr bool quick_dm_less(qpl::integer<bits2, sign2> other, qpl::size index) const {
 
 			auto my_non = this->last_used_index(index);
 			auto other_non = other.last_used_index(index);
@@ -3485,7 +3485,7 @@ namespace qpl {
 			}
 			return this->memory[0u] < other.memory[0u];
 		}
-		void quick_dm_sub(integer other, qpl::u32 index) {
+		void quick_dm_sub(integer other, qpl::size index) {
 
 			qpl::u32 over = 0u;
 			qpl::size other_stop = other.last_used_index(index) + 1;
@@ -4670,7 +4670,7 @@ namespace qpl {
 			auto pos = this->last_used_index();
 			qpl::set_bit(this->memory[pos], qpl::significant_bit(this->memory[pos]) - 1, false);
 		}
-		constexpr qpl::size significant_bit(qpl::u32 index = memory_size() - 1) const {
+		constexpr qpl::size significant_bit(qpl::size index = memory_size() - 1) const {
 			auto pos = this->last_used_index(index);
 			return qpl::significant_bit(this->memory[pos]) + pos * base_max_log();
 		}
@@ -5415,10 +5415,10 @@ namespace qpl {
 		}
 
 
-		constexpr bit_proxy operator[](qpl::u32 index) {
+		constexpr bit_proxy operator[](qpl::size index) {
 			return bit_proxy(this->memory, index);
 		}
-		constexpr const bit_proxy operator[](qpl::u32 index) const {
+		constexpr const bit_proxy operator[](qpl::size index) const {
 			return bit_proxy(this->memory, index);
 		}
 		constexpr bit_proxy front() {
@@ -5664,7 +5664,7 @@ namespace qpl {
 			qpl::default_error>;
 
 		struct bit_proxy {
-			constexpr bit_proxy(holding_type& memory, qpl::u32 index) {
+			constexpr bit_proxy(holding_type& memory, qpl::size index) {
 				this->memory = &memory;
 				this->index = index;
 			}
@@ -5688,7 +5688,7 @@ namespace qpl {
 
 		private:
 			holding_type* memory;
-			qpl::u32 index;
+			qpl::size index;
 		};
 
 
@@ -6011,7 +6011,7 @@ namespace qpl {
 				this->memory[i] = qpl::u64{};
 			}
 		}
-		constexpr void set(std::string_view string, qpl::u32 base = qpl::u32_max) {
+		constexpr void set(qpl::string_view string, qpl::u32 base = qpl::u32_max) {
 			qpl::integer<bits, sign> copy;
 			copy.set(string, base);
 			this->set(copy);
@@ -6309,7 +6309,7 @@ namespace qpl {
 			}
 			return result;
 		}
-		void add_shift(x64_integer other, qpl::u32 index) {
+		void add_shift(x64_integer other, qpl::size index) {
 			char c = 0;
 			for (qpl::u32 i = 0u; i < this->memory_size() - index; ++i) {
 				c = _addcarry_u64(c, this->memory[i + index], other.memory[i], &this->memory[i + index]);
@@ -6472,13 +6472,13 @@ namespace qpl {
 			}
 		}
 
-		constexpr bool get_bit(qpl::u32 index) const {
+		constexpr bool get_bit(qpl::size index) const {
 			qpl::u32 div, mod;
 			div = _udiv64(qpl::u64_cast(index), qpl::u32_cast(this->base_max_log()), &mod);
 
 			return qpl::get_bit(this->memory[div], mod);
 		}
-		constexpr void set_bit(qpl::u32 index, bool value) {
+		constexpr void set_bit(qpl::size index, bool value) {
 			qpl::u32 div, mod;
 			div = _udiv64(qpl::u64_cast(index), qpl::u32_cast(this->base_max_log()), &mod);
 
@@ -6536,7 +6536,7 @@ namespace qpl {
 		}
 
 
-		constexpr void set_bit(qpl::u32 index, qpl::u32 bit, bool value) {
+		constexpr void set_bit(qpl::size index, qpl::u32 bit, bool value) {
 			return qpl::set_bit(this->memory[index], bit, value);
 		}
 		constexpr void set_first_bit(bool value) {
@@ -6742,7 +6742,7 @@ namespace qpl {
 			return result;
 		}
 		template<qpl::size bits2, bool sign2>
-		constexpr bool quick_dm_less(qpl::x64_integer<bits2, sign2> other, qpl::u32 index) const {
+		constexpr bool quick_dm_less(qpl::x64_integer<bits2, sign2> other, qpl::size index) const {
 
 			auto my_non = this->last_used_index(index);
 			auto other_non = other.last_used_index(index);
@@ -6762,7 +6762,7 @@ namespace qpl {
 			}
 			return this->memory[0u] < other.memory[0u];
 		}
-		void quick_dm_sub(x64_integer other, qpl::u32 index) {
+		void quick_dm_sub(x64_integer other, qpl::size index) {
 
 			if constexpr (this->memory_size() >= 96u) {
 				qpl::u64 over = 0ull;
@@ -7259,7 +7259,7 @@ namespace qpl {
 		}
 
 		template<bool check_sign = sign>
-		constexpr std::string memory_base_string(qpl::u32 base, qpl::size seperation = 0, std::string_view prefix = "") const {
+		constexpr std::string memory_base_string(qpl::u32 base, qpl::size seperation = 0, qpl::string_view prefix = "") const {
 			std::ostringstream prefix_stuff;
 			if constexpr (check_sign) {
 				if (this->is_negative()) {
@@ -7327,7 +7327,7 @@ namespace qpl {
 			}
 		}
 		template<bool check_sign = sign>
-		constexpr std::string memory_base_string_full(qpl::u32 base, qpl::size seperation = 0, std::string_view prefix = "") const {
+		constexpr std::string memory_base_string_full(qpl::u32 base, qpl::size seperation = 0, qpl::string_view prefix = "") const {
 			std::ostringstream prefix_stuff;
 			if constexpr (check_sign) {
 				if (this->is_negative()) {
@@ -7382,11 +7382,11 @@ namespace qpl {
 
 
 		template<bool check_sign = sign>
-		constexpr std::string hex_string(qpl::size seperation = 0, std::string_view prefix = "0x") const {
+		constexpr std::string hex_string(qpl::size seperation = 0, qpl::string_view prefix = "0x") const {
 			return this->memory_base_string<check_sign>(16u, seperation, prefix);
 		}
 		template<bool check_sign = sign>
-		constexpr std::string hex_string_full(qpl::size seperation = 0, std::string_view prefix = "0x") const {
+		constexpr std::string hex_string_full(qpl::size seperation = 0, qpl::string_view prefix = "0x") const {
 			return this->memory_base_string_full<check_sign>(16u, seperation, prefix);
 		}
 		template<bool check_sign = sign>
@@ -7594,10 +7594,10 @@ namespace qpl {
 		}
 
 
-		constexpr bit_proxy operator[](qpl::u32 index) {
+		constexpr bit_proxy operator[](qpl::size index) {
 			return bit_proxy(this->memory, index);
 		}
-		constexpr const bit_proxy operator[](qpl::u32 index) const {
+		constexpr const bit_proxy operator[](qpl::size index) const {
 			return bit_proxy(this->memory, index);
 		}
 		constexpr bit_proxy front() {
@@ -7674,7 +7674,7 @@ namespace qpl {
 			this->sign = false;
 		}
 
-		constexpr void set(std::string_view string, qpl::u32 base = 10u) {
+		constexpr void set(qpl::string_view string, qpl::u32 base = 10u) {
 			qpl::i32 off = 0u;
 			if (string.front() == '-') {
 				this->sign = true;
@@ -7785,7 +7785,7 @@ namespace qpl {
 		}
 
 		constexpr void set(qpl::f64 value) {
-			this->set(std::string_view{ qpl::to_string(value) });
+			this->set(qpl::string_view{ qpl::to_string(value) });
 			//auto content = qpl::double_content(value);
 			//
 			//this->sign = (qpl::u64)content.sign;
@@ -8874,7 +8874,7 @@ namespace qpl {
 			return result.str();
 		}
 
-		std::string quick_scientific_notation(qpl::u32 base = 16u, std::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
+		std::string quick_scientific_notation(qpl::u32 base = 16u, qpl::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
 			auto m = this->mantissa;
 			m <<= 1;
 
@@ -8935,7 +8935,7 @@ namespace qpl {
 			return result.str();
 		}
 
-		std::string scientific_notation(qpl::u32 base = 10u, std::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
+		std::string scientific_notation(qpl::u32 base = 10u, qpl::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
 			if (precision == qpl::u32_max) {
 				precision = precision_digits(base);
 			}
@@ -9067,7 +9067,7 @@ namespace qpl {
 
 			return result.str();
 		}
-		std::string hex_scientific_notation(std::string_view prefix = "0x", qpl::u32 precision = qpl::u32_max) {
+		std::string hex_scientific_notation(qpl::string_view prefix = "0x", qpl::u32 precision = qpl::u32_max) {
 			return this->scientific_notation(16u, prefix, precision);
 		}
 
@@ -9138,7 +9138,7 @@ namespace qpl {
 		std::string string_precision(qpl::u32 precision) const {
 			return this->base_string(10u, precision);
 		}
-		std::string hex_string(std::string_view prefix = "0x") const {
+		std::string hex_string(qpl::string_view prefix = "0x") const {
 			return qpl::to_string(prefix, this->base_string(16u));
 		}
 		std::string binary_string(qpl::u32 precision = qpl::u32_max) const {

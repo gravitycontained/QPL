@@ -12,14 +12,13 @@
 
 #include <Windows.h>
 #include <vector>
-#include <string_view>
 #include <iostream>
 #include <unordered_map>
-#include <span>
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/pictures.hpp>
+#include <qpl/span.hpp>
 
 namespace qpl {
 	namespace winsys {
@@ -81,7 +80,7 @@ namespace qpl {
 
 
 		struct monitor_capture {
-			qpl::u32 index = 0u;
+			qpl::size index = 0u;
 			bool initialized = false;
 			qpl::winsys::rect rect;
 			RECT rc_client;
@@ -159,8 +158,8 @@ namespace qpl {
 		QPLDLL qpl::pixels get_screen_pixels();
 		QPLDLL std::string get_screen_pixels_bmp_string();
 
-		QPLDLL monitor_capture& get_capture_monitor(qpl::u32 index);
-		QPLDLL void scan_monitor(qpl::u32 index);
+		QPLDLL monitor_capture& get_capture_monitor(qpl::size index);
+		QPLDLL void scan_monitor(qpl::size index);
 		QPLDLL void init_monitor_captures();
 		QPLDLL void scan_monitor_captures();
 		QPLDLL void screen_shot_monitors();
@@ -311,10 +310,10 @@ namespace qpl {
 			return reinterpret_cast<T*>(this->ptr);
 		}
 		template <typename T>
-		std::span<T> get_array() {
+		qpl::span<T> get_array() {
 			auto p = reinterpret_cast<T*>(reinterpret_cast<char*>(this->ptr) + qpl::bytes_in_type<qpl::size>());
 			auto size = this->array_byte_size() / sizeof(T);
-			std::span<T> result(p, p + size);
+			qpl::span<T> result(p, p + size);
 			return result;
 		}
 		QPLDLL void* get();
@@ -343,7 +342,7 @@ namespace qpl {
 		return qpl::detail::shared_memories[name].get<T>();
 	}
 	template <typename T>
-	std::span<T> create_shared_memory_array(std::string name, qpl::size size) {
+	qpl::span<T> create_shared_memory_array(std::string name, qpl::size size) {
 		qpl::create_shared_memory_array(name, sizeof(T) * size);
 		return qpl::detail::shared_memories[name].get_array<T>();
 	}
@@ -362,7 +361,7 @@ namespace qpl {
 	}
 
 	template <typename T>
-	std::span<T> get_shared_memory_array(std::string name) {
+	qpl::span<T> get_shared_memory_array(std::string name) {
 		if (qpl::detail::shared_memories.find(name) == qpl::detail::shared_memories.cend()) {
 			if (qpl::find_shared_memory(name)) {
 				qpl::open_shared_memory_array(name);

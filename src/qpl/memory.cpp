@@ -3,7 +3,7 @@
 
 namespace qpl {
 
-	void qpl::print_character_bool_table(std::string_view characters) {
+	void qpl::print_character_bool_table(qpl::string_view characters) {
 		std::array<bool, 256> table;
 		table.fill(false);
 		for (auto& i : characters) {

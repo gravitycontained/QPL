@@ -7,11 +7,11 @@
 #include <qpl/vardef.hpp>
 #include <qpl/winsys.hpp>
 #include <qpl/type_traits.hpp>
+#include <qpl/span.hpp>
 #include <string>
 #include <sstream>
 #include <charconv>
 #include <iostream>
-#include <string_view>
 #include <array>
 #include <vector>
 #include <iomanip>
@@ -26,33 +26,6 @@
 #endif
 
 namespace qpl {
-
-	
-	template<typename T>
-	constexpr bool is_string_type() {
-		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view, wchar_t, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
-	}
-
-	template<typename T>
-	constexpr bool is_string_type(T value) {
-		return is_string_type<T>();
-	}
-	template<typename T>
-	constexpr bool is_standard_string_type() {
-		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view>();
-	}
-	template<typename T>
-	constexpr bool is_standard_string_type(T value) {
-		return is_wstring_type<T>();
-	}
-	template<typename T>
-	constexpr bool is_wstring_type() {
-		return qpl::is_equal_to_any_decayed<T, wchar_t, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
-	}
-	template<typename T>
-	constexpr bool is_wstring_type(T value) {
-		return is_wstring_type<T>();
-	}
 
 	QPLDLL std::wstring string_to_wstring(const std::string& str);
 	QPLDLL std::wstring string_to_unicode_wstring(const std::string& str);
@@ -114,7 +87,7 @@ namespace qpl {
 	}
 
 
-	constexpr bool string_contains(std::string_view string, char c) {
+	constexpr bool string_contains(qpl::string_view string, char c) {
 		for (qpl::i32 i = 0; i < string.length(); ++i) {
 			if (string[i] == c) {
 				return true;
@@ -122,7 +95,7 @@ namespace qpl {
 		}
 		return false;
 	}
-	constexpr bool string_contains(const std::string_view& string, const std::string_view& sequence) {
+	constexpr bool string_contains(const qpl::string_view& string, const qpl::string_view& sequence) {
 		for (qpl::i32 i = 0; i < qpl::i32_cast(string.length()) - sequence.length(); ++i) {
 			if (string.substr(i, sequence.length()) == sequence) {
 				return true;
@@ -494,9 +467,9 @@ namespace qpl {
 		return qpl::appended_to_string_to_fit(qpl::to_string(value), append, length);
 	}
 
-	QPLDLL std::string appended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length);
+	QPLDLL std::string appended_to_string_to_fit(const std::string& string, const qpl::string_view& prepend, qpl::size length);
 	template<typename T>
-	std::string appended_to_string_to_fit(const T& value, const std::string_view& prepend, qpl::size length) {
+	std::string appended_to_string_to_fit(const T& value, const qpl::string_view& prepend, qpl::size length) {
 		return qpl::appended_to_string_to_fit(qpl::to_string(value), prepend, length);
 	}
 
@@ -506,15 +479,15 @@ namespace qpl {
 		return qpl::prepended_to_string_to_fit(qpl::to_string(value), prepend, length);
 	}
 
-	QPLDLL std::string prepended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length);
+	QPLDLL std::string prepended_to_string_to_fit(const std::string& string, const qpl::string_view& prepend, qpl::size length);
 	template<typename T>
-	std::string prepended_to_string_to_fit(const T& value, const std::string_view& prepend, qpl::size length) {
+	std::string prepended_to_string_to_fit(const T& value, const qpl::string_view& prepend, qpl::size length) {
 		return qpl::prepended_to_string_to_fit(qpl::to_string(value), prepend, length);
 	}
 
-	QPLDLL std::string two_strings_fixed_insert(const std::string& a, const std::string& b, const std::string_view& insert, qpl::size length, qpl::u32 rotation = 0u);
+	QPLDLL std::string two_strings_fixed_insert(const std::string& a, const std::string& b, const qpl::string_view& insert, qpl::size length, qpl::u32 rotation = 0u);
 	template<typename T, typename U>
-	std::string two_strings_fixed_insert(const T& a, const U& b, const std::string_view& insert, qpl::size length, qpl::u32 rotation = 0u) {
+	std::string two_strings_fixed_insert(const T& a, const U& b, const qpl::string_view& insert, qpl::size length, qpl::u32 rotation = 0u) {
 		return qpl::two_strings_fixed_insert(qpl::to_string(a), qpl::to_string(b), insert, length);
 	}
 
@@ -686,7 +659,7 @@ namespace qpl {
 	}
 
 	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
-	inline std::string container_to_string(const C& data, std::string_view delimiter = ", ", std::string_view brackets = "{}") {
+	inline std::string container_to_string(const C& data, qpl::string_view delimiter = ", ", qpl::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
 		bool start = true;
@@ -903,19 +876,19 @@ namespace qpl {
 		qpl::print(qpl::to_string_full_precision(args...));
 	}
 	template<typename T, typename U>
-	inline void vprint(const T& a, const U& b, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vprint(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::print(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(' ', b), length, insert, rotation));
 	}
 	template<typename T>
-	inline void vprint(const T& a, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vprint(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vprint("value", a, length, insert, rotation);
 	}
 	template<typename T, typename U>
-	inline void vsprint(const T& a, const U& b, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vsprint(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::print(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(" \"", b, "\""), insert, length, rotation));
 	}
 	template<typename T>
-	inline void vsprint(const T& a, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vsprint(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vsprint("value", a, length, insert, rotation);
 	}
 
@@ -998,19 +971,19 @@ namespace qpl {
 		qpl::println(qpl::to_string_full_precision(args...));
 	}
 	template<typename T, typename U>
-	inline void vprintln(const T& a, const U& b, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vprintln(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::println(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(' ', b), insert, length, rotation));
 	}
 	template<typename T>
-	inline void vprintln(const T& a, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vprintln(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vprintln("value", a, length, insert, rotation);
 	}
 	template<typename T, typename U>
-	inline void vsprintln(const T& a, const U& b, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vsprintln(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::println(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(" \"", b, "\""), insert, length, rotation));
 	}
 	template<typename T>
-	inline void vsprintln(const T& a, qpl::size length = 60, const std::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
+	inline void vsprintln(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vsprintln("value", a, length, insert, rotation);
 	}
 
@@ -1105,15 +1078,15 @@ namespace qpl {
 		qpl::println();
 	}
 
-	template<typename C> requires qpl::is_container<C>
-	inline void print_container(const C& data, std::string_view delimiter = ", ") {
+	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	inline void print_container(const C& data, qpl::string_view delimiter = ", ") {
 		qpl::print(qpl::container_to_string(data));
 	}
 	template<typename T, typename U>
 	std::string pair_to_string(const std::pair<T, U>& pair) {
 		return qpl::to_string('{', pair.first, ", ", pair.second, '}');
 	}
-	template<typename C> requires qpl::is_container<C>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
 	inline void println_container(const C& data) {
 		qpl::println(qpl::container_to_string(data));
 	}
@@ -1436,7 +1409,7 @@ namespace qpl {
 	}
 
 	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
-	constexpr T from_string(const std::string_view& string) {
+	constexpr T from_string(const qpl::string_view& string) {
 		if constexpr (qpl::is_same_decayed<T, std::string>()) {
 			return string;
 		}
@@ -1459,7 +1432,7 @@ namespace qpl {
 	}
 
 	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
-	constexpr T from_base_string(const std::string_view& string, T base, base_format base_format = base_format::base36l) {
+	constexpr T from_base_string(const qpl::string_view& string, T base, base_format base_format = base_format::base36l) {
 		bool negative = false;
 		if (string.front() == '-') {
 			negative = true;
@@ -1511,7 +1484,7 @@ namespace qpl {
 
 
 	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
-	inline std::string container_to_hex_string(const C& data, std::string_view delimiter = ", ", std::string_view brackets = "{}") {
+	inline std::string container_to_hex_string(const C& data, qpl::string_view delimiter = ", ", qpl::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
 		bool start = true;
@@ -1732,25 +1705,25 @@ namespace qpl {
 	QPLDLL std::vector<qpl::f64> split_floats(const std::string& string);
 
 	QPLDLL std::string string_first_n_characters(const std::string& string, qpl::size n);
-	constexpr std::string_view string_first_n_characters(const std::string_view& string, qpl::size n) {
+	constexpr qpl::string_view string_first_n_characters(const qpl::string_view& string, qpl::size n) {
 		return string.substr(0, n);
 	}
-	constexpr std::string_view string_first_n_characters(const char* string, qpl::size n) {
-		return qpl::string_first_n_characters(std::string_view(string), n);
+	constexpr qpl::string_view string_first_n_characters(const char* string, qpl::size n) {
+		return qpl::string_first_n_characters(qpl::string_view(string), n);
 	}
 	QPLDLL std::string string_last_n_characters(const std::string& string, qpl::size n);
-	constexpr std::string_view string_last_n_characters(const std::string_view& string, qpl::size n) {
+	constexpr qpl::string_view string_last_n_characters(const qpl::string_view& string, qpl::size n) {
 		return string.substr(string.length() - n);
 	}
-	constexpr std::string_view string_last_n_characters(const char* string, qpl::size n) {
-		return qpl::string_last_n_characters(std::string_view(string), n);
+	constexpr qpl::string_view string_last_n_characters(const char* string, qpl::size n) {
+		return qpl::string_last_n_characters(qpl::string_view(string), n);
 	}
 
 	QPLDLL std::string string_seperation(const std::string& string, const std::string& seperation, qpl::size n, bool left = true);
 	QPLDLL std::string string_seperation(const std::string& string, char seperation, qpl::size n, bool left = true);
 
 	//sequence : 0-9, a-z, A-Z, 0-9a-z
-	constexpr bool string_contains_exclusively(std::string_view string, std::string_view sequence) {
+	constexpr bool string_contains_exclusively(qpl::string_view string, qpl::string_view sequence) {
 		if (sequence.length() >= 3 && sequence[1] == '-') {
 			for (auto& c : string) {
 				for (qpl::u32 i = 0; i < sequence.length() / 3; ++i) {
@@ -1780,7 +1753,7 @@ namespace qpl {
 		}
 		return true;
 	}
-	constexpr bool is_scientific_notation(const std::string_view& string) {
+	constexpr bool is_scientific_notation(const qpl::string_view& string) {
 		for (qpl::u32 i = 0u; i < string.length() - 1; ++i) {
 			auto substr = string.substr(i, 2);
 			if (substr == "e+" || substr == "e-") {
@@ -1837,7 +1810,7 @@ namespace qpl {
 	QPLDLL bool is_string_number(std::string string);
 
 
-	constexpr operator_type get_operator_type(const std::string_view& expression) {
+	constexpr operator_type get_operator_type(const qpl::string_view& expression) {
 		
 		if (expression == "+") return qpl::operator_type::plus;
 		else if (expression == "-") return qpl::operator_type::minus;
@@ -1862,7 +1835,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	constexpr T parse_single_expression(const std::string_view& expression) {
+	constexpr T parse_single_expression(const qpl::string_view& expression) {
 		//(3 + (5 * 3))
 
 		qpl::u32 a1 = 0u;
@@ -2002,7 +1975,7 @@ namespace qpl {
 		return c;
 	}
 	template<typename T>
-	constexpr T parse_expression(const std::string_view& expression) {
+	constexpr T parse_expression(const qpl::string_view& expression) {
 		qpl::u32 start = 0u;
 		while (start < expression.length() && qpl::is_character_white_space(expression[start])) { ++start; }
 
@@ -2097,7 +2070,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	T string_cast(const std::string_view& string) {
+	T string_cast(const qpl::string_view& string) {
 		T value;
 		std::from_chars(string.data(), string.data() + string.size(), value);
 

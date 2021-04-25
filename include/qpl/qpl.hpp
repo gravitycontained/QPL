@@ -12,6 +12,7 @@
 #include <qpl/filesys.hpp>
 #include <qpl/fraction.hpp>
 #include <qpl/intrinsics.hpp>
+#include <qpl/iterator.hpp>
 #include <qpl/lut.hpp>
 #include <qpl/number.hpp>
 #include <qpl/maths.hpp>
@@ -23,13 +24,14 @@
 #include <qpl/ranges.hpp>
 #include <qpl/singleton.hpp>
 #include <qpl/smooth.hpp>
+#include <qpl/span.hpp>
 #include <qpl/string.hpp>
 #include <qpl/system.hpp>
 #include <qpl/time.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #include <qpl/vulkan.hpp>
 #include <qpl/camera.hpp>
 #include <qpl/objects.hpp>

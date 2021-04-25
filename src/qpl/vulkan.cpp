@@ -1673,7 +1673,7 @@ namespace qpl {
 
 		this->m_created = true;
 	}
-	void qpl::vk::texture::set_path(std::string_view path) {
+	void qpl::vk::texture::set_path(qpl::string_view path) {
 		this->m_path = path;
 	}
 	bool qpl::vk::texture::is_created() const {
@@ -1911,7 +1911,7 @@ namespace qpl {
 	const qpl::u32& qpl::vk::index_buffer::back() const {
 		return this->indices.back();
 	}
-	void qpl::vk::index_buffer::add(qpl::u32 index) {
+	void qpl::vk::index_buffer::add(qpl::size index) {
 		this->indices.reserve(this->size() + 1ull);
 		this->indices.push_back(index);
 	}
@@ -3361,10 +3361,10 @@ namespace qpl {
 	glm::ivec2 qpl::vk::application::get_dimension() const {
 		return qpl::window::get_dimension();
 	}
-	void qpl::vk::application::set_title(std::string_view title) const {
+	void qpl::vk::application::set_title(qpl::string_view title) const {
 		qpl::window::set_title(title);
 	}
-	std::string_view qpl::vk::application::get_title() const {
+	qpl::string_view qpl::vk::application::get_title() const {
 		return qpl::window::get_title();
 	}
 

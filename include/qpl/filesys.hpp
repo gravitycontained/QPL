@@ -6,7 +6,6 @@
 #include <qpl/vardef.hpp>
 #include <qpl/memory.hpp>
 #include <string>
-#include <string_view>
 #include <filesystem>
 #include <functional>
 #include <regex>
@@ -27,7 +26,7 @@ namespace qpl {
                 this->construct();
                 *this = str;
             }
-            path(const std::string_view& str) {
+            path(const qpl::string_view& str) {
                 this->construct();
                 *this = str;
             }
@@ -43,7 +42,7 @@ namespace qpl {
             }
 
             QPLDLL path& operator=(const std::string& str);
-            QPLDLL path& operator=(const std::string_view& str);
+            QPLDLL path& operator=(const qpl::string_view& str);
             QPLDLL path& operator=(const char* str);
             QPLDLL path& operator=(const path& other);
             QPLDLL path& operator=(const std::filesystem::directory_entry& entry);
@@ -75,33 +74,33 @@ namespace qpl {
             QPLDLL std::string get_name() const;
             QPLDLL std::string get_extension() const;
             QPLDLL std::string get_file_name() const;
-            QPLDLL std::string_view get_name_view() const;
-            QPLDLL std::string_view get_extension_view() const;
-            QPLDLL std::string_view get_file_name_view() const;
+            QPLDLL qpl::string_view get_name_view() const;
+            QPLDLL qpl::string_view get_extension_view() const;
+            QPLDLL qpl::string_view get_file_name_view() const;
 
 
-            QPLDLL bool extension_equals(const std::string_view& str) const;
+            QPLDLL bool extension_equals(const qpl::string_view& str) const;
             QPLDLL bool extension_equals(const char* str) const;
             QPLDLL bool extension_equals(const std::string& str) const;
-            QPLDLL bool extension_contains(const std::string_view& str) const;
+            QPLDLL bool extension_contains(const qpl::string_view& str) const;
             QPLDLL bool extension_contains(const char* str) const;
             QPLDLL bool extension_contains(const std::string& str) const;
             QPLDLL bool extension_matches(const std::string& regex) const;
             QPLDLL bool extension_matches(const std::regex& regex) const;
 
-            QPLDLL bool file_name_equals(const std::string_view& str) const;
+            QPLDLL bool file_name_equals(const qpl::string_view& str) const;
             QPLDLL bool file_name_equals(const char* str) const;
             QPLDLL bool file_name_equals(const std::string& str) const;
-            QPLDLL bool file_name_contains(const std::string_view& str) const;
+            QPLDLL bool file_name_contains(const qpl::string_view& str) const;
             QPLDLL bool file_name_contains(const char* str) const;
             QPLDLL bool file_name_contains(const std::string& str) const;
             QPLDLL bool file_name_matches(const std::string& regex) const;
             QPLDLL bool file_name_matches(const std::regex& regex) const;
 
-            QPLDLL bool name_equals(const std::string_view& str) const;
+            QPLDLL bool name_equals(const qpl::string_view& str) const;
             QPLDLL bool name_equals(const char* str) const;
             QPLDLL bool name_equals(const std::string& str) const;
-            QPLDLL bool name_contains(const std::string_view& str) const;
+            QPLDLL bool name_contains(const qpl::string_view& str) const;
             QPLDLL bool name_contains(const char* str) const;
             QPLDLL bool name_contains(const std::string& str) const;
             QPLDLL bool name_matches(const std::string& regex) const;
@@ -117,7 +116,7 @@ namespace qpl {
             QPLDLL void move_overwrite_and_apply_path(const qpl::filesys::path& path_destination);
 
             QPLDLL qpl::size branch_size() const;
-            QPLDLL qpl::filesys::path branch_at(qpl::u32 index) const;
+            QPLDLL qpl::filesys::path branch_at(qpl::size index) const;
             QPLDLL qpl::filesys::paths get_branches() const;
             QPLDLL qpl::filesys::path get_branch_earlier(qpl::u32 n) const;
             QPLDLL qpl::filesys::path get_parent_branch() const;
@@ -144,50 +143,50 @@ namespace qpl {
 
             QPLDLL qpl::size last_common_branch(const qpl::filesys::path& path) const;
 
-            QPLDLL qpl::filesys::paths search_where_extension_equals(const std::string_view& extension) const;
+            QPLDLL qpl::filesys::paths search_where_extension_equals(const qpl::string_view& extension) const;
             QPLDLL qpl::filesys::paths search_where_extension_equals(const char* extension) const;
             QPLDLL qpl::filesys::paths search_where_extension_equals(const std::string& extension) const;
-            QPLDLL qpl::filesys::paths search_where_extension_contains(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_where_extension_contains(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_where_extension_contains(const char* str) const;
             QPLDLL qpl::filesys::paths search_where_extension_contains(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_where_extension_matches(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_where_name_equals(const std::string_view& name) const;
+            QPLDLL qpl::filesys::paths search_where_name_equals(const qpl::string_view& name) const;
             QPLDLL qpl::filesys::paths search_where_name_equals(const char* name) const;
             QPLDLL qpl::filesys::paths search_where_name_equals(const std::string& name) const;
-            QPLDLL qpl::filesys::paths search_where_name_contains(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_where_name_contains(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_where_name_contains(const char* str) const;
             QPLDLL qpl::filesys::paths search_where_name_contains(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_where_name_matches(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_where_file_name_equals(const std::string_view& file_name) const;
+            QPLDLL qpl::filesys::paths search_where_file_name_equals(const qpl::string_view& file_name) const;
             QPLDLL qpl::filesys::paths search_where_file_name_equals(const char* file_name) const;
             QPLDLL qpl::filesys::paths search_where_file_name_equals(const std::string& file_name) const;
-            QPLDLL qpl::filesys::paths search_where_file_name_contains(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_where_file_name_contains(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_where_file_name_contains(const char* str) const;
             QPLDLL qpl::filesys::paths search_where_file_name_contains(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_where_file_name_matches(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_where_extension_doesnt_equal(const std::string_view& extension) const;
+            QPLDLL qpl::filesys::paths search_where_extension_doesnt_equal(const qpl::string_view& extension) const;
             QPLDLL qpl::filesys::paths search_where_extension_doesnt_equal(const char* extension) const;
             QPLDLL qpl::filesys::paths search_where_extension_doesnt_equal(const std::string& extension) const;
-            QPLDLL qpl::filesys::paths search_where_extension_doesnt_contain(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_where_extension_doesnt_contain(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_where_extension_doesnt_contain(const char* str) const;
             QPLDLL qpl::filesys::paths search_where_extension_doesnt_contain(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_where_extension_doesnt_match(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_where_name_doesnt_equal(const std::string_view& name) const;
+            QPLDLL qpl::filesys::paths search_where_name_doesnt_equal(const qpl::string_view& name) const;
             QPLDLL qpl::filesys::paths search_where_name_doesnt_equal(const char* name) const;
             QPLDLL qpl::filesys::paths search_where_name_doesnt_equal(const std::string& name) const;
-            QPLDLL qpl::filesys::paths search_where_name_doesnt_contain(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_where_name_doesnt_contain(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_where_name_doesnt_contain(const char* str) const;
             QPLDLL qpl::filesys::paths search_where_name_doesnt_contain(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_where_name_doesnt_match(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_where_file_name_doesnt_equal(const std::string_view& file_name) const;
+            QPLDLL qpl::filesys::paths search_where_file_name_doesnt_equal(const qpl::string_view& file_name) const;
             QPLDLL qpl::filesys::paths search_where_file_name_doesnt_equal(const char* file_name) const;
             QPLDLL qpl::filesys::paths search_where_file_name_doesnt_equal(const std::string& file_name) const;
-            QPLDLL qpl::filesys::paths search_where_file_name_doesnt_contain(const std::string_view& file_name) const;
+            QPLDLL qpl::filesys::paths search_where_file_name_doesnt_contain(const qpl::string_view& file_name) const;
             QPLDLL qpl::filesys::paths search_where_file_name_doesnt_contain(const char* str) const;
             QPLDLL qpl::filesys::paths search_where_file_name_doesnt_contain(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_where_file_name_doesnt_match(const std::regex& regex) const;
@@ -195,50 +194,50 @@ namespace qpl {
             QPLDLL qpl::filesys::paths search_directories() const;
             QPLDLL qpl::filesys::paths search_files() const;
 
-            QPLDLL qpl::filesys::paths search_recursively_where_extension_equals(const std::string_view& extension) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_extension_equals(const qpl::string_view& extension) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_equals(const char* extension) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_equals(const std::string& extension) const;
-            QPLDLL qpl::filesys::paths search_recursively_where_extension_contains(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_extension_contains(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_contains(const char* str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_contains(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_matches(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_recursively_where_name_equals(const std::string_view& name) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_name_equals(const qpl::string_view& name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_equals(const char* name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_equals(const std::string& name) const;
-            QPLDLL qpl::filesys::paths search_recursively_where_name_contains(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_name_contains(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_contains(const char* str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_contains(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_matches(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_recursively_where_file_name_equals(const std::string_view& file_name) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_file_name_equals(const qpl::string_view& file_name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_equals(const char* file_name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_equals(const std::string& file_name) const;
-            QPLDLL qpl::filesys::paths search_recursively_where_file_name_contains(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_file_name_contains(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_contains(const char* str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_contains(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_matches(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_equal(const std::string_view& extension) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_equal(const qpl::string_view& extension) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_equal(const char* extension) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_equal(const std::string& extension) const;
-            QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_contain(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_contain(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_contain(const char* str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_contain(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_extension_doesnt_match(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_equal(const std::string_view& name) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_equal(const qpl::string_view& name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_equal(const char* name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_equal(const std::string& name) const;
-            QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_contain(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_contain(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_contain(const char* str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_contain(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_name_doesnt_match(const std::regex& regex) const;
 
-            QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_equal(const std::string_view& file_name) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_equal(const qpl::string_view& file_name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_equal(const char* file_name) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_equal(const std::string& file_name) const;
-            QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_contain(const std::string_view& str) const;
+            QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_contain(const qpl::string_view& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_contain(const char* str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_contain(const std::string& str) const;
             QPLDLL qpl::filesys::paths search_recursively_where_file_name_doesnt_match(const std::regex& regex) const;
@@ -398,48 +397,48 @@ namespace qpl {
             QPLDLL void list_recursively_add_where_file_name_doesnt_match(const qpl::filesys::path& directory, const std::regex& regex);
 
 
-            QPLDLL void list_remove_where_extension_equals(const std::string_view& extension);
-            QPLDLL void list_add_where_extension_equals(const qpl::filesys::path& directory, const std::string_view& extension);
-            QPLDLL void list_recursively_add_where_extension_equals(const qpl::filesys::path& directory, const std::string_view& extension);
-            QPLDLL void list_remove_where_extension_contains(const std::string_view& str);
-            QPLDLL void list_add_where_extension_contains(const qpl::filesys::path& directory, const std::string_view& str);
-            QPLDLL void list_recursively_add_where_extension_contains(const qpl::filesys::path& directory, const std::string_view& str);
+            QPLDLL void list_remove_where_extension_equals(const qpl::string_view& extension);
+            QPLDLL void list_add_where_extension_equals(const qpl::filesys::path& directory, const qpl::string_view& extension);
+            QPLDLL void list_recursively_add_where_extension_equals(const qpl::filesys::path& directory, const qpl::string_view& extension);
+            QPLDLL void list_remove_where_extension_contains(const qpl::string_view& str);
+            QPLDLL void list_add_where_extension_contains(const qpl::filesys::path& directory, const qpl::string_view& str);
+            QPLDLL void list_recursively_add_where_extension_contains(const qpl::filesys::path& directory, const qpl::string_view& str);
 
-            QPLDLL void list_remove_where_name_equals(const std::string_view& name);
-            QPLDLL void list_add_where_name_equals(const qpl::filesys::path& directory, const std::string_view& name);
-            QPLDLL void list_recursively_add_where_name_equals(const qpl::filesys::path& directory, const std::string_view& name);
-            QPLDLL void list_remove_where_name_contains(const std::string_view& name);
-            QPLDLL void list_add_where_name_contains(const qpl::filesys::path& directory, const std::string_view& str);
-            QPLDLL void list_recursively_add_where_name_contains(const qpl::filesys::path& directory, const std::string_view& str);
+            QPLDLL void list_remove_where_name_equals(const qpl::string_view& name);
+            QPLDLL void list_add_where_name_equals(const qpl::filesys::path& directory, const qpl::string_view& name);
+            QPLDLL void list_recursively_add_where_name_equals(const qpl::filesys::path& directory, const qpl::string_view& name);
+            QPLDLL void list_remove_where_name_contains(const qpl::string_view& name);
+            QPLDLL void list_add_where_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str);
+            QPLDLL void list_recursively_add_where_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str);
 
-            QPLDLL void list_remove_where_file_name_equals(const std::string_view& file_name);
-            QPLDLL void list_add_where_file_name_equals(const qpl::filesys::path& directory, const std::string_view& file_name);
-            QPLDLL void list_recursively_add_where_file_name_equals(const qpl::filesys::path& directory, const std::string_view& file_name);
-            QPLDLL void list_remove_where_file_name_contains(const std::string_view& file_name);
-            QPLDLL void list_add_where_file_name_contains(const qpl::filesys::path& directory, const std::string_view& str);
-            QPLDLL void list_recursively_add_where_file_name_contains(const qpl::filesys::path& directory, const std::string_view& str);
+            QPLDLL void list_remove_where_file_name_equals(const qpl::string_view& file_name);
+            QPLDLL void list_add_where_file_name_equals(const qpl::filesys::path& directory, const qpl::string_view& file_name);
+            QPLDLL void list_recursively_add_where_file_name_equals(const qpl::filesys::path& directory, const qpl::string_view& file_name);
+            QPLDLL void list_remove_where_file_name_contains(const qpl::string_view& file_name);
+            QPLDLL void list_add_where_file_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str);
+            QPLDLL void list_recursively_add_where_file_name_contains(const qpl::filesys::path& directory, const qpl::string_view& str);
 
 
-            QPLDLL void list_keep_where_extension_equals(const std::string_view& extension);
-            QPLDLL void list_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& extension);
-            QPLDLL void list_recursively_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& extension);
-            QPLDLL void list_keep_where_extension_contains(const std::string_view& str);
-            QPLDLL void list_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str);
-            QPLDLL void list_recursively_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str);
+            QPLDLL void list_keep_where_extension_equals(const qpl::string_view& extension);
+            QPLDLL void list_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& extension);
+            QPLDLL void list_recursively_add_where_extension_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& extension);
+            QPLDLL void list_keep_where_extension_contains(const qpl::string_view& str);
+            QPLDLL void list_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str);
+            QPLDLL void list_recursively_add_where_extension_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str);
 
-            QPLDLL void list_keep_where_name_equals(const std::string_view& name);
-            QPLDLL void list_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& name);
-            QPLDLL void list_recursively_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& name);
-            QPLDLL void list_keep_where_name_contains(const std::string_view& name);
-            QPLDLL void list_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str);
-            QPLDLL void list_recursively_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str);
+            QPLDLL void list_keep_where_name_equals(const qpl::string_view& name);
+            QPLDLL void list_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& name);
+            QPLDLL void list_recursively_add_where_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& name);
+            QPLDLL void list_keep_where_name_contains(const qpl::string_view& name);
+            QPLDLL void list_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str);
+            QPLDLL void list_recursively_add_where_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str);
 
-            QPLDLL void list_keep_where_file_name_equals(const std::string_view& file_name);
-            QPLDLL void list_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& file_name);
-            QPLDLL void list_recursively_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const std::string_view& file_name);
-            QPLDLL void list_keep_where_file_name_contains(const std::string_view& file_name);
-            QPLDLL void list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str);
-            QPLDLL void list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const std::string_view& str);
+            QPLDLL void list_keep_where_file_name_equals(const qpl::string_view& file_name);
+            QPLDLL void list_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& file_name);
+            QPLDLL void list_recursively_add_where_file_name_doesnt_equal(const qpl::filesys::path& directory, const qpl::string_view& file_name);
+            QPLDLL void list_keep_where_file_name_contains(const qpl::string_view& file_name);
+            QPLDLL void list_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str);
+            QPLDLL void list_recursively_add_where_file_name_doesnt_contain(const qpl::filesys::path& directory, const qpl::string_view& str);
 
 
             QPLDLL void list_remove_where_extension_equals(const char* extension);
@@ -522,26 +521,26 @@ namespace qpl {
         QPLDLL std::string get_name(const qpl::filesys::path& path);
         QPLDLL std::string get_extension(const qpl::filesys::path& path);
         QPLDLL std::string get_file_name(const qpl::filesys::path& path);
-        QPLDLL std::string_view get_name_view(const qpl::filesys::path& path);
-        QPLDLL std::string_view get_extension_view(const qpl::filesys::path& path);
-        QPLDLL std::string_view get_file_name_view(const qpl::filesys::path& path);
+        QPLDLL qpl::string_view get_name_view(const qpl::filesys::path& path);
+        QPLDLL qpl::string_view get_extension_view(const qpl::filesys::path& path);
+        QPLDLL qpl::string_view get_file_name_view(const qpl::filesys::path& path);
         QPLDLL qpl::filesys::path get_parent_branch(const qpl::filesys::path& path);
 
-        QPLDLL bool extension_equals(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool extension_equals(const qpl::filesys::path& path, const qpl::string_view& str);
         QPLDLL bool extension_equals(const qpl::filesys::path& path, const std::string& str);
-        QPLDLL bool extension_contains(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool extension_contains(const qpl::filesys::path& path, const qpl::string_view& str);
         QPLDLL bool extension_contains(const qpl::filesys::path& path, const std::string& str);
         QPLDLL bool extension_matches(const qpl::filesys::path& path, const std::string& regex);
         QPLDLL bool extension_matches(const qpl::filesys::path& path, const std::regex& regex);
-        QPLDLL bool file_name_equals(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool file_name_equals(const qpl::filesys::path& path, const qpl::string_view& str);
         QPLDLL bool file_name_equals(const qpl::filesys::path& path, const std::string& str);
-        QPLDLL bool file_name_contains(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool file_name_contains(const qpl::filesys::path& path, const qpl::string_view& str);
         QPLDLL bool file_name_contains(const qpl::filesys::path& path, const std::string& str);
         QPLDLL bool file_name_matches(const qpl::filesys::path& path, const std::string& regex);
         QPLDLL bool file_name_matches(const qpl::filesys::path& path, const std::regex& regex);
-        QPLDLL bool name_equals(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool name_equals(const qpl::filesys::path& path, const qpl::string_view& str);
         QPLDLL bool name_equals(const qpl::filesys::path& path, const std::string& str);
-        QPLDLL bool name_contains(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool name_contains(const qpl::filesys::path& path, const qpl::string_view& str);
         QPLDLL bool name_contains(const qpl::filesys::path& path, const std::string& str);
         QPLDLL bool name_matches(const qpl::filesys::path& path, const std::string& regex);
         QPLDLL bool name_matches(const qpl::filesys::path& path, const std::regex& regex);
