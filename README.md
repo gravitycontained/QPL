@@ -3,7 +3,29 @@ QPL (Quick Production Library) is a C++20 personal utility library with many pur
 
 # Setup
 
-To use this library download the zip and include the include folder. Add `qpl` and `qpl-d` to linker linkage and copy the `qpl.dll` and `qpl-d.dll` into your project folder. It is build with SFML enabled, so you you have to inlcude and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. (`sfml-graphics.lib` `sfml-window.lib` `sfml-main.lib` `sfml-system.lib` `sfml-audio.lib` `sfml-network.lib` linker dependencies. `-d` before `.lib` for debug files)
+To use this library download the zip and include the include folder. Copy the `qpl.dll` and `qpl-d.dll` into your project folder. It is build with SFML enabled, so you you have to inlcude and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. 
+these are the required linker dependencies:
+
+release x86/x64:
+```
+sfml-graphics.lib
+sfml-window.lib
+sfml-main.lib
+sfml-system.lib
+sfml-audio.lib
+sfml-network.lib
+qpl.lib
+```
+debug x86/x64:
+```
+sfml-graphics-d.lib
+sfml-window-d.lib
+sfml-main-d.lib
+sfml-system-d.lib
+sfml-audio-d.lib
+sfml-network-d.lib
+qpl-d.lib
+```
 
 When building yourself, there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` or defined as a preprocessor define will have a different effect. 
 `QPL_USE_ALL` to use all 3 below.
