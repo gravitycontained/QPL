@@ -1,7 +1,8 @@
 #ifndef QPLSF_RESOURCES_HPP
 #define QPLSF_RESOURCES_HPP
 #pragma once
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+
+#ifndef QPL_NO_SFML
 
 #include <qpl/qpldeclspec.hpp>
 #include <unordered_map>
@@ -13,6 +14,7 @@ namespace qsf {
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
+		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
 
 		QPLDLL bool find_font(const std::string& name) const;
 		QPLDLL bool find_texture(const std::string& name) const;
@@ -41,6 +43,7 @@ namespace qsf {
 	QPLDLL void add_font(const std::string& name, const std::string& path);
 	QPLDLL void add_texture(const std::string& name, const std::string& path);
 	QPLDLL void add_sprite(const std::string& name, const std::string& path);
+	QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
 
 	QPLDLL sf::Font& get_font(const std::string& name);
 	QPLDLL sf::Texture& get_texture(const std::string& name);

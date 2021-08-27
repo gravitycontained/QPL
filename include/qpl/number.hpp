@@ -35,7 +35,7 @@ namespace qpl {
 			}
 
 			qpl::u32 get_value() const {
-				return this->proxy->get_digit();
+				return this->proxy->get_digit(this->index);
 			}
 
 			operator qpl::u32() const {
@@ -191,7 +191,9 @@ namespace qpl {
 		}
 		template<>
 		void set_digit(qpl::u32 position, char digit) {
-			qpl::set_digit(position, qpl::from_base_string<qpl::u32>(digit, base, base <= 36u ? qpl::base_format::base36l : qpl::base_format::base64));
+			auto div = position / base_max_log();
+			auto mod = position % base_max_log();
+			qpl::set_digit(content.memory[div], mod, qpl::from_base_string<qpl::u32>(digit, base, base <= 36u ? qpl::base_format::base36l : qpl::base_format::base64));
 		}
 
 		constexpr void set_first_digit(qpl::u32 digit) {
@@ -2014,7 +2016,7 @@ namespace qpl {
 				result += qpl::i32_cast(this->content.memory[i]) * mul;
 			}
 			if (result < 0) {
-				return qpl::i32_min();
+				return qpl::i32_min;
 			}
 			if (this->is_negative()) {
 				result *= -1;
@@ -2338,13 +2340,10 @@ namespace qpl {
 		constexpr integer(T value) : memory() {
 			*this = value;
 		}
-		template<typename T, qpl::size N>
-		constexpr integer(const std::array<T, N>& values) : memory() {
-			for (auto i = 0u; i < qpl::min(N, memory.size()); ++i) {
-				memory[i] = values[i];
-			}
-		}
 
+
+		constexpr integer(const holding_type& values) : memory(values) {
+		}
 
 		template<typename T>
 		constexpr integer& operator=(T value) {
@@ -2384,7 +2383,7 @@ namespace qpl {
 			return !sign;
 		}
 		constexpr static qpl::size max_decimal_exponent() {
-			return qpl::size_cast(used_bit_size() / qpl::log2_log10);
+			return qpl::size_cast(used_bit_size() / (qpl::ln10 / qpl::ln2));
 		}
 		constexpr static qpl::size max_base_exponent(qpl::u32 base) {
 			if (qpl::base_full_bit_usage(base)) {
@@ -2412,7 +2411,7 @@ namespace qpl {
 		}
 
 		constexpr static qpl::f64 decimal_digits() {
-			return used_bit_size() / qpl::log2_log10;
+			return used_bit_size() / (qpl::ln10 / qpl::ln2);
 		}
 
 		constexpr static integer min() {
@@ -5441,26 +5440,25 @@ namespace qpl {
 		holding_type memory;
 	};
 
+	constexpr qpl::i128 i128_min = qpl::i128{ std::array<qpl::u32, 4>{ 0u, 0u, 0u, 2147483648u } };
+	constexpr qpl::i128 i128_max = qpl::i128{ std::array<qpl::u32, 4>{ 4294967295u, 4294967295u, 4294967295u, 2147483647u } };
+	constexpr qpl::u128 u128_min = qpl::u128{ std::array<qpl::u32, 4>{ 0u, 0u, 0u, 0u } };
+	constexpr qpl::u128 u128_max = qpl::u128{ std::array<qpl::u32, 4>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u } };
 
-	constexpr qpl::i128 i128_min = qpl::i128::min();
-	constexpr qpl::i128 i128_max = qpl::i128::max();
-	constexpr qpl::u128 u128_min = qpl::u128::min();
-	constexpr qpl::u128 u128_max = qpl::u128::max();
+	constexpr qpl::i256 i256_min = qpl::i256{ std::array<qpl::u32, 8>{ 0u, 0u, 0u, 0u, 0u, 0u, 0u, 2147483648u } };
+	constexpr qpl::i256 i256_max = qpl::i256{ std::array<qpl::u32, 8>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 2147483647u } };
+	constexpr qpl::u256 u256_min = qpl::u256{ std::array<qpl::u32, 8>{ 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u } };
+	constexpr qpl::u256 u256_max = qpl::u256{ std::array<qpl::u32, 8>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u } };
 
-	constexpr qpl::i256 i256_min = qpl::i256::min();
-	constexpr qpl::i256 i256_max = qpl::i256::max();
-	constexpr qpl::u256 u256_min = qpl::u256::min();
-	constexpr qpl::u256 u256_max = qpl::u256::max();
+	constexpr qpl::i512 i512_min = qpl::i512{ std::array<qpl::u32, 16>{ 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 2147483648u } };
+	constexpr qpl::i512 i512_max = qpl::i512{ std::array<qpl::u32, 16>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 2147483647u } };
+	constexpr qpl::u512 u512_min = qpl::u512{ std::array<qpl::u32, 16>{ 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u } };
+	constexpr qpl::u512 u512_max = qpl::u512{ std::array<qpl::u32, 16>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u } };
 
-	constexpr qpl::i512 i512_min = qpl::i512::min();
-	constexpr qpl::i512 i512_max = qpl::i512::max();
-	constexpr qpl::u512 u512_min = qpl::u512::min();
-	constexpr qpl::u512 u512_max = qpl::u512::max();
-
-	constexpr qpl::i1024 i1024_min = qpl::i1024::min();
-	constexpr qpl::i1024 i1024_max = qpl::i1024::max();
-	constexpr qpl::u1024 u1024_min = qpl::u1024::min();
-	constexpr qpl::u1024 u1024_max = qpl::u1024::max();
+	constexpr qpl::i1024 i1024_min = qpl::i1024{ std::array<qpl::u32, 32>{ 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 2147483648u } };
+	constexpr qpl::i1024 i1024_max = qpl::i1024{ std::array<qpl::u32, 32>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 2147483647u } };
+	constexpr qpl::u1024 u1024_min = qpl::u1024{ std::array<qpl::u32, 32>{ 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u } };
+	constexpr qpl::u1024 u1024_max = qpl::u1024{ std::array<qpl::u32, 32>{ 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u, 4294967295u } };
 
 
 
@@ -9253,6 +9251,66 @@ namespace qpl {
 	};
 
 
+	template<typename T>
+	constexpr inline qpl::u128 u128_cast(T&& data) {
+		return static_cast<qpl::u128>(data);
+	}
+	template<typename T>
+	constexpr inline qpl::i128 i128_cast(T&& data) {
+		return static_cast<qpl::i128>(data);
+	}
+
+	template<typename T>
+	constexpr inline qpl::u256 u256_cast(T&& data) {
+		return static_cast<qpl::u256>(data);
+	}
+	template<typename T>
+	constexpr inline qpl::i256 i256_cast(T&& data) {
+		return static_cast<qpl::i256>(data);
+	}
+
+	template<typename T>
+	constexpr inline qpl::u512 u512_cast(T&& data) {
+		return static_cast<qpl::u512>(data);
+	}
+	template<typename T>
+	constexpr inline qpl::i512 i512_cast(T&& data) {
+		return static_cast<qpl::i512>(data);
+	}
+
+
+	template<typename T>
+	inline qpl::u u_cast(T&& data) {
+		return static_cast<qpl::u>(data);
+	}
+	template<typename T>
+	inline qpl::i i_cast(T&& data) {
+		return static_cast<qpl::i>(data);
+	}
+	template<typename T>
+	inline qpl::uh uh_cast(T&& data) {
+		return static_cast<qpl::uh>(data);
+	}
+	template<typename T>
+	inline qpl::ih ih_cast(T&& data) {
+		return static_cast<qpl::ih>(data);
+	}
+	template<typename T>
+	inline qpl::ub ub_cast(T&& data) {
+		return static_cast<qpl::ub>(data);
+	}
+	template<typename T>
+	inline qpl::ib ib_cast(T&& data) {
+		return static_cast<qpl::ib>(data);
+	}
+	template<qpl::u32 base, typename T>
+	inline qpl::ubase<base> ubase_cast(T&& data) {
+		return static_cast<qpl::ubase<base>>(data);
+	}
+	template<qpl::u32 base, typename T>
+	inline qpl::ibase<base> ibase_cast(T&& data) {
+		return static_cast<qpl::ibase<base>>(data);
+	}
 }
 
 #endif

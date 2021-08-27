@@ -54,8 +54,32 @@ namespace qpl {
 			stream << first;
 		}
 		return stream.str();
-		//return std::to_string(first);
 	}
+
+	namespace detail {
+		QPLDLL extern std::wostringstream stream_wstr;
+
+		template<typename T>
+		void add_to_wstream(const T& first) {
+			if constexpr (qpl::is_standard_string_type<T>()) {
+				detail::stream_wstr << qpl::string_to_wstring(qpl::to_string(first));
+			}
+			else {
+				detail::stream_wstr << first;
+			}
+		}
+	}
+
+	template<typename T, typename... Args>
+	std::wstring to_wstring(T&& first, Args&&... args) {
+		detail::stream_wstr.str(L"");
+
+		detail::add_to_wstream(first);
+		(detail::add_to_wstream(args), ...);
+
+		return detail::stream_wstr.str();
+	}
+
 	QPLDLL std::string to_string(const std::string& first);
 	QPLDLL std::wstring to_wstring(const std::wstring& first);
 
@@ -369,11 +393,6 @@ namespace qpl {
 	}
 
 	template<typename T, typename... Args>
-	std::wstring to_wstring(const T& first, Args&&... args) {
-		return qpl::to_wstring(first) + qpl::to_wstring(args...);
-	}
-
-	template<typename T, typename... Args>
 	std::wstring to_wstring_line(T&& first, Args&&... args) {
 		std::wostringstream stream;
 		stream << first;
@@ -499,9 +518,9 @@ namespace qpl {
 	QPLDLL std::string console_space(qpl::size n, const std::string& string);
 
 
-	QPLDLL inline std::wstring wstring_to_fit(const std::wstring& string, char append, qpl::size length);
-	QPLDLL std::wstring appended_to_wstring_to_fit(const std::wstring& string, char append, qpl::size length);
-	QPLDLL std::wstring prepended_to_wstring_to_fit(const std::wstring& string, char prepend, qpl::size length);
+	QPLDLL inline std::wstring wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length);
+	QPLDLL std::wstring appended_to_wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length);
+	QPLDLL std::wstring prepended_to_wstring_to_fit(const std::wstring& string, wchar_t prepend, qpl::size length);
 
 	struct print_effect {
 
@@ -658,13 +677,13 @@ namespace qpl {
 		QPLDLL extern qpl::cc println_default_color;
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
+	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
 	inline std::string container_to_string(const C& data, qpl::string_view delimiter = ", ", qpl::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
 		bool start = true;
 		for (const auto& e : data) {
-			if constexpr (qpl::is_container<qpl::container_subtype<C>> && !qpl::is_string_type<C>()) {
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && !qpl::is_string_type<C>()) {
 				if (!start) {
 					str << delimiter;
 				}
@@ -2063,6 +2082,10 @@ namespace qpl {
 	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
 	std::string percentage_string_precision(T number, qpl::u32 precision) {
 		return qpl::to_string(qpl::big_number_string(number * 100, precision), '%');
+	}
+	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	std::string plus_percentage_string_precision(T number, qpl::u32 precision) {
+		return qpl::to_string(number >= 0 ? "+" : "", qpl::big_number_string(number * 100, precision), '%');
 	}
 	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
 	std::string to_radians_string(T number) {

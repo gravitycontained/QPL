@@ -2,7 +2,7 @@
 #define QPLSF_COLOR_HPP
 #pragma once
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#ifndef QPL_NO_SFML
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>

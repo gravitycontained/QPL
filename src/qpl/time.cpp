@@ -240,13 +240,13 @@ namespace qpl {
 
 		stream << '[';
 		stream << this->years() << "y : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->days_mod()), '0', qpl::number_of_digits(this->days_in_year)) << this->days_mod() << "d : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->hours_mod()), '0', qpl::number_of_digits(this->hours_in_day)) << this->hours_mod() << "h : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->mins_mod()), '0', qpl::number_of_digits(this->mins_in_hour)) << this->mins_mod() << "m : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->secs_mod()), '0', qpl::number_of_digits(this->secs_in_min)) << this->secs_mod() << "s : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->msecs_mod()), '0', qpl::number_of_digits(this->msecs_in_sec)) << this->msecs_mod() << "ms : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->usecs_mod()), '0', qpl::number_of_digits(this->usecs_in_msec)) << this->usecs_mod() << "us : ";
-		stream << qpl::string_to_fit(qpl::to_string(this->nsecs_mod()), '0', qpl::number_of_digits(this->msecs_in_sec)) << this->nsecs_mod() << "ns]";
+		stream << qpl::string_to_fit(qpl::to_string(this->days_mod()), '0', qpl::number_of_digits(this->days_in_year - 1)) << this->days_mod() << "d : ";
+		stream << qpl::string_to_fit(qpl::to_string(this->hours_mod()), '0', qpl::number_of_digits(this->hours_in_day - 1)) << this->hours_mod() << "h : ";
+		stream << qpl::string_to_fit(qpl::to_string(this->mins_mod()), '0', qpl::number_of_digits(this->mins_in_hour - 1)) << this->mins_mod() << "m : ";
+		stream << qpl::string_to_fit(qpl::to_string(this->secs_mod()), '0', qpl::number_of_digits(this->secs_in_min - 1)) << this->secs_mod() << "s : ";
+		stream << qpl::string_to_fit(qpl::to_string(this->msecs_mod()), '0', qpl::number_of_digits(this->msecs_in_sec - 1)) << this->msecs_mod() << "ms : ";
+		stream << qpl::string_to_fit(qpl::to_string(this->usecs_mod()), '0', qpl::number_of_digits(this->usecs_in_msec - 1)) << this->usecs_mod() << "us : ";
+		stream << qpl::string_to_fit(qpl::to_string(this->nsecs_mod()), '0', qpl::number_of_digits(this->msecs_in_sec - 1)) << this->nsecs_mod() << "ns]";
 		return stream.str();
 	}
 	qpl::f64 qpl::time::frequency() const {
@@ -490,9 +490,9 @@ namespace qpl {
 	qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed) {
 		qpl::time f = 0;
 		if (progress) {
-			f = elapsed.nsecs() / progress;
+			f = qpl::u64_cast(elapsed.nsecs() / progress);
 		}
-		return f.nsecs() * (1 - progress);
+		return qpl::u64_cast(f.nsecs() * (1 - progress));
 	}
 	qpl::time get_remaining_time(qpl::f64 progress, qpl::clock timer) {
 		return qpl::get_remaining_time(progress, timer.elapsed());
@@ -609,10 +609,10 @@ namespace qpl {
 	void qpl::print_benchmark() {
 		qpl::time sum = 0;
 
-		qpl::u32 length_max = 0u;
+		qpl::size length_max = 0u;
 		std::vector<std::pair<std::string, double>> sorted;
 		for (auto i : qpl::detail::benchmark_clocks) {
-			length_max = qpl::max<qpl::u32>(length_max, i.first.length());
+			length_max = qpl::max(length_max, i.first.length());
 			sum += i.second.elapsed();
 			sorted.push_back(std::make_pair(i.first, i.second.elapsed_f()));
 		}
@@ -644,7 +644,7 @@ namespace qpl {
 			length_max = 0u;
 			sorted.clear();
 			for (auto i : sub.second) {
-				length_max = qpl::max<qpl::u32>(length_max, i.first.length());
+				length_max = qpl::max(length_max, i.first.length());
 				sum += i.second.elapsed();
 				sorted.push_back(std::make_pair(i.first, i.second.elapsed_f()));
 			}

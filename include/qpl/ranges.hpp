@@ -120,9 +120,9 @@ namespace qpl {
 				result.back()[i] = array[indices[i]];
 			}
 
-			qpl::i32 index = size - 1;
+			qpl::size index = size - 1;
 
-			qpl::u32 max = array.size() - 1;
+			qpl::size max = array.size() - 1;
 			while (indices[index] >= max) {
 				if (index < 1) {
 					return result;
@@ -133,7 +133,7 @@ namespace qpl {
 			}
 
 			++indices[index];
-			for (qpl::u32 j = index; j < size; ++j) {
+			for (qpl::size j = index; j < size; ++j) {
 				if (j < size - 1) {
 					indices[j + 1] = indices[j] + 1;
 				}

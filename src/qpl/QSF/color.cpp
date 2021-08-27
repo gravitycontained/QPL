@@ -1,5 +1,7 @@
 #include <qpl/QSF/color.hpp>
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+
+#ifndef QPL_NO_SFML
+
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
 
@@ -273,7 +275,7 @@ namespace qsf {
 		return qsf::rgb(qpl::random(qpl::u32_max));
 	}
 	qsf::rgb qsf::get_rainbow_color(qpl::f64 f) {
-		static std::vector<qsf::rgb> rainbow = { qsf::rgb::red, qsf::rgb::yellow, qsf::rgb::green, qsf::rgb::cyan, qsf::rgb::blue, qsf::rgb::magenta, qsf::rgb::red };
+		const static std::vector<qsf::rgb> rainbow = { qsf::rgb::red, qsf::rgb::yellow, qsf::rgb::green, qsf::rgb::cyan, qsf::rgb::blue, qsf::rgb::magenta, qsf::rgb::red };
 		return qsf::rgb::interpolation(rainbow, f);
 	}
 }

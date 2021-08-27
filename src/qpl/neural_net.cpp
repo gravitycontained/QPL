@@ -510,8 +510,10 @@ namespace qpl {
 			double wrong = excpected_outputs[i] - this->output_layer()[i].get_output();
 			this->m_error += wrong * wrong;
 		}
-		this->m_error /= (this->output_layer().size() - 1);
-		this->m_error = std::sqrt(this->m_error);
+		if (this->output_layer().size() > 1) {
+			this->m_error /= (this->output_layer().size() - 1);
+			this->m_error = std::sqrt(this->m_error);
+		}
 
 		this->accuracy_sum += (1.0 - this->m_error);
 
@@ -724,10 +726,10 @@ namespace qpl {
 		this->accuracy_sum += this->accuracy;
 		++this->generation_ctr;
 
-		for (qpl::u32 l = this->layers.size() - 1; l > 1u; --l) {
+		for (qpl::size l = this->layers.size() - 1; l > 1u; --l) {
 			this->layers[l].calculate_gradients(this->layers[l - 1]);
 		}
-		for (qpl::u32 l = this->layers.size() - 1; l > 0u; --l) {
+		for (qpl::size l = this->layers.size() - 1; l > 0u; --l) {
 			this->layers[l].calculate_weights(this->layers[l - 1], this->eta, this->alpha);
 		}
 	}
@@ -887,10 +889,10 @@ namespace qpl {
 		this->accuracy_sum += this->accuracy;
 		++this->generation_ctr;
 
-		for (qpl::u32 l = this->layers.size() - 1; l > 1u; --l) {
+		for (qpl::size l = this->layers.size() - 1; l > 1u; --l) {
 			this->layers[l].calculate_gradients(this->layers[l - 1]);
 		}
-		for (qpl::u32 l = this->layers.size() - 1; l > 0u; --l) {
+		for (qpl::size l = this->layers.size() - 1; l > 0u; --l) {
 			this->layers[l].calculate_weights(this->layers[l - 1], this->eta, this->alpha);
 		}
 	}

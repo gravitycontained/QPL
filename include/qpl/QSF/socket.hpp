@@ -2,6 +2,7 @@
 #define QSF_SOCKET_HPP
 #pragma once
 
+#ifndef QPL_NO_SFML
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 #include <SFML/Network.hpp>
@@ -30,4 +31,5 @@ namespace qsf {
 	};
 }
 
+#endif
 #endif

@@ -36,6 +36,7 @@
 #include <qpl/camera.hpp>
 #include <qpl/objects.hpp>
 #include <qpl/rgb.hpp>
+#include <qpl/socket.hpp>
 #include <qpl/window.hpp>
 #endif
 

@@ -7,13 +7,13 @@ namespace qpl {
 	void qpl::date_ms::set(std::string string) {
 		auto nums = qpl::split_numbers(string);
 
-		this->years = nums[0];
-		this->months = nums[1];
-		this->days = nums[2];
-		this->hours = nums[3];
-		this->minutes = nums[4];
-		this->seconds = nums[5];
-		this->milliseconds = nums[6];
+		this->years = qpl::u16_cast(nums[0]);
+		this->months = qpl::u8_cast(nums[1]);
+		this->days = qpl::u8_cast(nums[2]);
+		this->hours = qpl::u8_cast(nums[3]);
+		this->minutes = qpl::u8_cast(nums[4]);
+		this->seconds = qpl::u8_cast(nums[5]);
+		this->milliseconds = qpl::u16_cast(nums[6]);
 	}
 	std::string qpl::date_ms::string() const {
 		std::ostringstream stream;

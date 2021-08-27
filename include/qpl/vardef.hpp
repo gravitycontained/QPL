@@ -14,7 +14,9 @@
 #include <tuple>
 #include <limits>
 
+
 namespace qpl {
+
 	using size = std::size_t;
 
 	using i8 = std::int8_t;
@@ -355,14 +357,16 @@ namespace qpl {
 	constexpr qpl::size f64_digits = std::numeric_limits<qpl::f64>::max_digits10;
 	constexpr qpl::size f32_digits = std::numeric_limits<qpl::f32>::max_digits10;
 
-	constexpr qpl::f64 pi = 3.1415926535897932384626433832795;
-	constexpr qpl::f32 pi_32 = 3.1415926535897932384626433832795f;
+	constexpr qpl::f64 pi = 3.141592653589793238462;
+	constexpr qpl::f32 pi_32 = static_cast<qpl::f32>(qpl::pi);
 	constexpr qpl::f64 sqrt1_2 = 0.707106781186547524401;
-	constexpr qpl::f64 sqrt1_2_32 = 0.707106781186547524401f;
-	constexpr qpl::f64 e = 2.7182818284590452353602874713526624977572;
-	constexpr qpl::f64 e_32 = 2.7182818284590452353602874713526624977572f;
-	constexpr qpl::f64 ln2 = 0.69314718055994530941723212145817;
-	constexpr qpl::f64 log2_log10 = 3.3219280948873623478703194294894;
+	constexpr qpl::f32 sqrt1_2_32 = static_cast<qpl::f32>(qpl::sqrt1_2);
+	constexpr qpl::f64 e = 2.718281828459045235360;
+	constexpr qpl::f32 e_32 = static_cast<qpl::f32>(qpl::e);
+	constexpr qpl::f64 ln2 = 0.69314718055994530941;
+	constexpr qpl::f32 log2_32 = static_cast<qpl::f32>(qpl::ln2);
+	constexpr qpl::f64 ln10 = 2.30258509299404568402;
+	constexpr qpl::f32 log10_32 = static_cast<qpl::f32>(qpl::ln10);
 
 	constexpr qpl::size f32_mantissa_size() {
 		return 23;

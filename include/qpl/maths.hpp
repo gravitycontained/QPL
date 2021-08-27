@@ -237,7 +237,6 @@ namespace qpl {
 						this->result[i].number = std::pow(this->result[i].number, right); break;
 					}
 
-
 					if (is_c_non) {
 						//qpl::println("=> ", this->result[i].number);
 						if (c == this->result.size() - 2) {

@@ -1,6 +1,6 @@
 #include <qpl/QSF/resources.hpp>
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#ifndef QPL_NO_SFML
 #include <qpl/string.hpp>
 
 namespace qsf {
@@ -15,6 +15,9 @@ namespace qsf {
 			this->add_texture(name, path);
 		}
 		this->sprites[name].setTexture(this->textures[name]);
+	}
+	void qsf::resources::add_sprite(const std::string& name, sf::Texture& texture) {
+		this->sprites[name].setTexture(texture);
 	}
 	bool qsf::resources::find_font(const std::string& name) const {
 		return this->fonts.find(name) != this->fonts.cend();
@@ -74,6 +77,9 @@ namespace qsf {
 	}
 	void qsf::add_sprite(const std::string& name, const std::string& path) {
 		qsf::detail::resources.add_sprite(name, path);
+	}
+	void qsf::add_sprite(const std::string& name, sf::Texture& texture) {
+		qsf::detail::resources.add_sprite(name, texture);
 	}
 
 	sf::Font& qsf::get_font(const std::string& name) {

@@ -92,12 +92,6 @@ namespace qpl {
 	constexpr qpl::size significant_bit(qpl::u32 n) {
 		qpl::u32 y = 0;
 
-		//1111 1111 1111 1111 0000 0000 0000 0000 16
-		//1111 1111 0000 0000 1111 1111 0000 0000  8 
-		//1111 0000 1111 0000 1111 0000 1111 0000  4
-		//1100 1100 1100 1100 1100 1100 1100 1100  2
-		//1010 1010 1010 1010 1010 1010 1010 1010  1
-
 		qpl::size result = 0u;
 		if ((y = (n & 0xffff0000u))) { result |= 0b10000u; n = y; }
 		if ((y = (n & 0xff00ff00u))) { result |= 0b1000u; n = y; }
@@ -654,8 +648,8 @@ namespace qpl {
 	}
 
 
-	template<typename T>
-	std::vector<T> vector_0_to_n(T n, T shift = T{}) {
+	template<typename T, typename T1 = T>
+	std::vector<T> vector_0_to_n(T n, T1 shift = T{}) {
 		std::vector<T> vec(n);
 		std::iota(vec.begin(), vec.end(), shift);
 		return vec;
@@ -891,6 +885,26 @@ namespace qpl {
 		return result;
 	}
 
+
+	template<typename T>
+	std::decay_t<T> linear_vector_interpolation_at(qpl::span<T> data, qpl::f64 progress) {
+		if (data.empty()) {
+			return {};
+		}
+
+		auto index = static_cast<qpl::u32>(progress * (data.size() - 1));
+
+		std::decay_t<T> a = data[index];
+		std::decay_t<T> b = a;
+
+		if (index < data.size() - 1) {
+			b = data[index + 1];
+		}
+
+		auto left_over = ((data.size() - 1) * progress) - index;
+
+		return qpl::linear_interpolation(a, b, left_over);
+	}
 
 
 	template<typename T, typename F>

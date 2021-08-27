@@ -6,6 +6,7 @@
 #include <qpl/vardef.hpp>
 #include <qpl/memory.hpp>
 #include <string>
+
 #include <filesystem>
 #include <functional>
 #include <regex>
@@ -580,8 +581,8 @@ namespace qpl {
         QPLDLL qpl::filesys::paths search_where_name_doesnt_equal(const qpl::filesys::path& directory, const std::string& name);
         QPLDLL qpl::filesys::paths search_where_name_doesnt_contain(const qpl::filesys::path& directory, const std::string& regex);
 
-
         QPLDLL std::string read_file(const std::string& path);
+        QPLDLL std::string read_rest_of_file(std::ifstream& file, bool close_file = true);
         QPLDLL std::filesystem::file_time_type file_last_write_time(const std::string& path);
         QPLDLL std::string file_last_write_time_str(const std::string& path);
         QPLDLL void write_to_file(const std::string& text, const std::string& path);

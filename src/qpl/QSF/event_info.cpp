@@ -1,11 +1,14 @@
 #include <qpl/QSF/event_info.hpp>
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#ifndef QPL_NO_SFML
 
 namespace qsf {
 
 	bool qsf::event_info::key_single_pressed(sf::Keyboard::Key key) const {
 		return this->m_keys_single_pressed.find(key) != this->m_keys_single_pressed.cend();
+	}
+	bool qsf::event_info::key_single_released(sf::Keyboard::Key key) const {
+		return this->m_keys_single_released.find(key) != this->m_keys_single_released.cend();
 	}
 	bool qsf::event_info::key_pressed(sf::Keyboard::Key key) const {
 		return this->m_keys_pressed.find(key) != this->m_keys_pressed.cend();
@@ -122,6 +125,9 @@ namespace qsf {
 	}
 	bool qsf::event_info::key_released() const {
 		return this->m_key_released;
+	}
+	bool qsf::event_info::key_single_released() const {
+		return this->m_key_single_released;
 	}
 	bool qsf::event_info::key_holding() const {
 		return this->m_key_holding;

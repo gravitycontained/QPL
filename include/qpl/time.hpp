@@ -186,7 +186,7 @@ namespace qpl {
 			this->ema.time_period = time_period;
 		}
 		qpl::u32 get_time_period() const {
-			return this->ema.time_period;
+			return qpl::u32_cast(this->ema.time_period);
 		}
 
 		void reset() {
@@ -300,6 +300,7 @@ namespace qpl {
 
 	template<typename T>
 	struct animation_key_frame {
+
 		animation_key_frame(T& value, T new_value, qpl::f32 duration) {
 			this->reference = &value;
 			this->old_value = value;
@@ -329,7 +330,7 @@ namespace qpl {
 			return this->time / this->duration;
 		}
 		void set(T& value, T new_value, qpl::f32 duration) const {
-			this->reconfigure = &value;
+			this->reference = &value;
 			this->old_value = value;
 			this->new_value = new_value;
 			this->time = qpl::f32{};

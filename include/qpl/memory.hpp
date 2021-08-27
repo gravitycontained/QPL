@@ -18,7 +18,7 @@ namespace qpl {
 	constexpr inline C string_to_container_memory(const std::string& data) {
 		C result;
 		if (data.empty()) {
-			return C;
+			return result;
 		}
 		result.resize((data.size() - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
 		memcpy(result.data(), data.data(), data.size());
@@ -40,6 +40,13 @@ namespace qpl {
 		memcpy(result.data(), data.data(), result.size());
 		return result;
 	}
+	template<typename C>
+	inline std::string stack_memory_to_string(const C& data) {
+		std::string result;
+		result.resize(sizeof(C));
+		memcpy(result.data(), &data, result.size());
+		return result;
+	}
 	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
 	constexpr inline void container_memory_to_string(const C& data, std::string& destination) {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
@@ -52,6 +59,14 @@ namespace qpl {
 		}
 		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
 		memcpy(destination.data(), data.data(), data.size());
+	}
+	template<typename C>
+	inline void string_to_stack_memory(const std::string& data, C& destination) {
+		if (data.size() != sizeof(C)) {
+			qpl::println("string_to_stack_memory: sizes not equal: string: ", data.size(), " stack object: ", sizeof(C));
+			return;
+		}
+		memcpy(&destination, data.data(), data.size());
 	}
 	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
 	constexpr inline void string_to_vector_memory(const qpl::string_view& data, C& destination) {
@@ -112,7 +127,14 @@ namespace qpl {
 	}
 	template<typename C>
 	constexpr inline void clear_array(C& destination) {
-		memset(&destination, 0, sizeof(C));
+		if constexpr (qpl::is_vector_like<C>()) {
+			for (auto& i : destination) {
+				i = qpl::container_subtype<C>{ 0 };
+			}
+		}
+		else {
+			memset(&destination, 0, sizeof(C));
+		}
 	}
 	template<typename C>
 	constexpr inline void clear_array_offset(C& destination, qpl::size offset = 0u) {
@@ -547,17 +569,17 @@ namespace qpl {
 		}
 
 
-		constexpr T& front(qpl::size index) {
-			return this->memory.front(index);
+		constexpr T& front() {
+			return this->memory.front();
 		}
-		constexpr const T& front(qpl::size index) const {
-			return this->memory.front(index);
+		constexpr const T& front() const {
+			return this->memory.front();
 		}
-		constexpr T& back(qpl::size index) {
-			return this->memory.back(index);
+		constexpr T& back() {
+			return this->memory.back();
 		}
-		constexpr const T& back(qpl::size index) const {
-			return this->memory.back(index);
+		constexpr const T& back() const {
+			return this->memory.back();
 		}
 
 		constexpr qpl::size size() const {
@@ -661,7 +683,7 @@ namespace qpl {
 		constexpr vector(First first, Args&&... args) : memory() {
 			auto result = qpl::type_cast<T>(first, args...);
 			for (qpl::u32 i = 0u; i < qpl::min(this->size(), result.size()); ++i) {
-				this->data[i] = result[i];
+				this->memory[i] = result[i];
 			}
 		}
 
@@ -739,29 +761,29 @@ namespace qpl {
 		}
 
 
-		constexpr T& front(qpl::size index) {
+		constexpr T& front() {
 			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(index, true);
+				this->front_check(true);
 			}
-			return this->memory.front(index);
+			return this->memory.front();
 		}
-		constexpr const T& front(qpl::size index) const {
+		constexpr const T& front() const {
 			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(index, true);
+				this->front_check(true);
 			}
-			return this->memory.front(index);
+			return this->memory.front();
 		}
-		constexpr T& back(qpl::size index) {
+		constexpr T& back() {
 			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(index, false);
+				this->front_check(false);
 			}
-			return this->memory.back(index);
+			return this->memory.back();
 		}
-		constexpr const T& back(qpl::size index) const {
+		constexpr const T& back() const {
 			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(index, false);
+				this->front_check(false);
 			}
-			return this->memory.back(index);
+			return this->memory.back();
 		}
 
 		constexpr qpl::size size() const {

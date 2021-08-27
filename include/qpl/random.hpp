@@ -186,7 +186,7 @@ namespace qpl {
 		using type = typename qpl::conditional<
 			qpl::if_true<bits == 32u>, qpl::mt19937_32,
 			qpl::if_true<bits == 64u>, qpl::mt19937_64>;
-
+		
 		void seed(qpl::u64 value) {
 			this->engine.seed(value);
 		}
@@ -284,9 +284,9 @@ namespace qpl {
 	QPLDLL qpl::f64 random_falling(qpl::f64 n);
 
 	template<typename C>
-	void shuffle(C& data) {
-		
-		std::shuffle(data.begin(), data.end(), qpl::detail::rng.rng.engine);
+	void shuffle(C& data, qpl::u32 offset = 0u) {
+		qpl::detail::rng.rng.discard(1);
+		std::shuffle(data.begin() + offset, data.end(), qpl::detail::rng.rng.engine);
 	}
 
 	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>

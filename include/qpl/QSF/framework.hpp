@@ -1,7 +1,8 @@
 #ifndef QPLSF_FRAMEWORK_HPP
 #define QPLSF_FRAMEWORK_HPP
 #pragma once
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+
+#ifndef QPL_NO_SFML
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
@@ -12,7 +13,6 @@
 #include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
-#include <qpl/QSF/utility.hpp>
 #include <qpl/time.hpp>
 
 namespace qsf {
@@ -29,7 +29,7 @@ namespace qsf {
 	*/
 	struct framework {
 		framework() {
-			this->set_title("");
+			this->set_title(" ");
 			this->set_dimension({ 1280, 720 });
 			this->set_style(sf::Style::Default);
 			this->m_created = false;
@@ -90,13 +90,13 @@ namespace qsf {
 
 		template<typename T>
 		void draw_graph(const std::vector<T>& data, const std::string name = "") {
-			qsf::drawing_graph[name].set_data(data);
-			this->window.draw(qsf::drawing_graph);
+			qsf::drawing_graph.get_standard_graph(name).set_data(data);
+			qsf::drawing_graph.draw(this->window);
 		}
 		template<typename T>
 		void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
-			qsf::drawing_graph[name].color = color;
-			qsf::drawing_graph[name].thickness = thickness;
+			qsf::drawing_graph.get_standard_graph(name).color = color;
+			qsf::drawing_graph.get_standard_graph(name).thickness = thickness;
 			this->draw_graph(data);
 		}
 		QPLDLL void set_graph_axis_font(const std::string& font_name);
@@ -116,12 +116,12 @@ namespace qsf {
 		sf::RenderWindow window;
 		std::string m_title;
 		qsf::vector2u m_dimension;
-		qpl::u32 m_style;
+		qpl::u32 m_style = sf::Style::Default;
 		qpl::clock m_run_time_clock;
 		qpl::clock m_frametime_clock;
 		qpl::time m_frametime;
 		qpl::u32 m_antialising = 12u;
-		bool m_created;
+		bool m_created = false;
 	};
 	
 	/* TO OVERLOAD:
@@ -155,16 +155,16 @@ namespace qsf {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}
-			else if constexpr (qsf::has_draw_object<T>) {
+			else if constexpr (qsf::has_draw_object<T>()) {
 				draw_object draw(this->framework->window, states);
 				drawable.draw(draw);
 			}
-			else if constexpr (qsf::has_draw_sf<T>) {
+			else if constexpr (qsf::has_draw_sf<T>()) {
 				drawable.draw(this->framework->window, states);
 			}
 		}
-		template<typename T>
-		void draw(const T& drawable, qsf::view_rectangle view) {
+		template<typename T, typename V>
+		void draw(const T& drawable, qsf::view_rectangle<V> view) {
 			sf::RenderStates states = view.get_render_states();
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
@@ -197,6 +197,7 @@ namespace qsf {
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
+		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
 		QPLDLL void add_text(const std::string& name);
 
 		QPLDLL sf::Font& get_font(const std::string& name);

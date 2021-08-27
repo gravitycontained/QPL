@@ -47,7 +47,13 @@ namespace qpl {
 				this->span_data.size = std::distance(begin, end);
 			}
 		}
-
+		template<typename It>
+		constexpr span(It begin, It end) noexcept {
+			this->span_data.ptr = &(*begin);
+			if constexpr (is_dynamic()) {
+				this->span_data.size = std::distance(&(*begin), &(*(end - 1))) + 1;
+			}
+		}
 
 		constexpr T& operator[](qpl::size index) {
 			return this->span_data.ptr[index];
@@ -183,7 +189,7 @@ namespace qpl {
 		constexpr basic_string_view(const std::wstring& string) {
 			if constexpr (qpl::is_wstring_type<T>()) {
 				this->ptr = string.data();
-				this->size = string.size();
+				this->str_size = string.size();
 			}
 			else {
 				static_assert("incompatible string type");

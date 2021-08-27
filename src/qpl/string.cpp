@@ -34,6 +34,7 @@ namespace qpl {
 		return true;
 	}
 
+
 	std::wstring qpl::string_to_wstring(const std::string& s) {
 		int len;
 		int slength = (int)s.length() + 1;
@@ -68,6 +69,8 @@ namespace qpl {
 		return r;
 	}
 
+
+	QPLDLL std::wostringstream detail::stream_wstr;
 
 	std::string qpl::to_string(const std::string& first) {
 		return first;
@@ -158,16 +161,16 @@ namespace qpl {
 	std::string qpl::console_space(qpl::size n, const std::string& string) {
 		return qpl::prepended_to_string_to_fit(string, ' ', n);
 	}
-	std::wstring qpl::wstring_to_fit(const std::wstring& string, char append, qpl::size length) {
+	std::wstring qpl::wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length) {
 		return std::wstring(string.length() >= length ? 0ull : length - string.length(), append);
 	}
-	std::wstring qpl::appended_to_wstring_to_fit(const std::wstring& string, char append, qpl::size length) {
+	std::wstring qpl::appended_to_wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length) {
 		if (string.length() >= length) {
 			return string;
 		}
 		return string + std::wstring(length - string.length(), append);
 	}
-	std::wstring qpl::prepended_to_wstring_to_fit(const std::wstring& string, char prepend, qpl::size length) {
+	std::wstring qpl::prepended_to_wstring_to_fit(const std::wstring& string, wchar_t prepend, qpl::size length) {
 		if (string.length() >= length) {
 			return string;
 		}
@@ -629,7 +632,7 @@ namespace qpl {
 	std::string qpl::string_seperation(const std::string& string, const std::string& seperation, qpl::size n, bool left) {
 		std::ostringstream stream;
 		if (left) {
-			for (qpl::u32 i = 0u; i < string.length(); i += n) {
+			for (qpl::size i = 0u; i < string.length(); i += n) {
 				if (i) {
 					stream << seperation;
 				}
@@ -644,7 +647,7 @@ namespace qpl {
 					stream << seperation;
 				}
 			}
-			for (qpl::u32 i = mod; i < string.length(); i += n) {
+			for (qpl::size i = mod; i < string.length(); i += n) {
 				if (i != mod) {
 					stream << seperation;
 				}
@@ -656,7 +659,7 @@ namespace qpl {
 	std::string qpl::string_seperation(const std::string& string, char seperation, qpl::size n, bool left) {
 		std::ostringstream stream;
 		if (left) {
-			for (qpl::u32 i = 0u; i < string.length(); i += n) {
+			for (qpl::size i = 0u; i < string.length(); i += n) {
 				if (i) {
 					stream << seperation;
 				}
@@ -671,7 +674,7 @@ namespace qpl {
 					stream << seperation;
 				}
 			}
-			for (qpl::u32 i = mod; i < string.length(); i += n) {
+			for (qpl::size i = mod; i < string.length(); i += n) {
 				if (i != mod) {
 					stream << seperation;
 				}

@@ -448,7 +448,7 @@ namespace qpl {
 		monitor_capture& qpl::winsys::get_capture_monitor(qpl::size index) {
 			return qpl::winsys::impl::monitor_captures[index];
 		}
-		void qpl::winsys::scan_monitor(qpl::size index) {
+		void qpl::winsys::scan_monitor(qpl::u32 index) {
 			qpl::winsys::impl::loop_monitor_index = 0u;
 			qpl::winsys::impl::looping_monitors = true;
 			qpl::winsys::impl::update_monitor_index = index;
@@ -610,7 +610,7 @@ namespace qpl {
 			NULL,                    // default security
 			PAGE_READWRITE,          // read/write access
 			0,                       // maximum object size (high-order DWORD)
-			size,                // maximum object size (low-order DWORD)
+			qpl::u32_cast(size),                // maximum object size (low-order DWORD)
 			qpl::string_to_wstring(name).c_str());                 // name of mapping object
 
 		if (this->hMapFile == nullptr) {

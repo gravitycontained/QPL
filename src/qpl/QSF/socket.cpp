@@ -1,4 +1,7 @@
 #include <qpl/QSF/socket.hpp>
+
+#ifndef QPL_NO_SFML
+
 #include <qpl/system.hpp>
 #include <qpl/time.hpp>
 
@@ -75,3 +78,5 @@ namespace qsf {
 		return this->connected;
 	}
 }
+
+#endif

@@ -2,10 +2,11 @@
 #define QPLSF_DRAWABLES_HPP
 #pragma once
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#ifndef QPL_NO_SFML
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
+#include <qpl/QSF/event_info.hpp>
 #include <qpl/string.hpp>
 
 #include <functional>
@@ -336,7 +337,7 @@ namespace qsf {
 				this->value = outline_thickness;
 				this->duration = duration;
 			}
-			qpl::u32 value;
+			qpl::f32 value;
 			duration_type duration;
 		};
 		struct outline_color {
@@ -352,7 +353,7 @@ namespace qsf {
 				this->value = spacing;
 				this->duration = duration;
 			}
-			qpl::u32 value;
+			qpl::f32 value;
 			duration_type duration;
 		};
 
@@ -1527,7 +1528,9 @@ namespace qsf {
 		qsf::rectangle background;
 	};
 
+	template<typename T>
 	struct view_rectangle;
+
 	struct vbutton {
 
 		vbutton() {
@@ -1547,7 +1550,38 @@ namespace qsf {
 		QPLDLL bool is_hovering() const;
 		QPLDLL bool is_clicked() const;
 		QPLDLL void update(const event_info& event_info);
-		QPLDLL void update(const event_info& event_info, qsf::view_rectangle view);
+
+		template<typename T>
+		void update(const event_info& event_info, qsf::view_rectangle<T> view) {
+
+			auto pos = view.mouse_position;
+
+			auto new_hovering = this->background.contains(pos);
+			if (new_hovering != this->hovering) {
+				if (this->invert_on_hover) {
+					if (new_hovering) {
+						this->background.set_color(this->background_color.inverted());
+						this->text.set_color(this->text_color.inverted());
+					}
+					else {
+						this->background.set_color(this->background_color);
+						this->text.set_color(this->text_color);
+					}
+				}
+				else {
+					if (new_hovering) {
+						this->background.set_color(this->hover_background_color);
+					}
+					else {
+						this->background.set_color(this->background_color);
+					}
+				}
+			}
+
+			this->hovering = new_hovering;
+
+			this->clicked = this->hovering && event_info.left_mouse_clicked();
+		}
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL qsf::vbutton& operator=(const qsf::vbutton& button);
@@ -1588,7 +1622,38 @@ namespace qsf {
 		QPLDLL bool is_clicked() const;
 		QPLDLL void update(const event_info& event_info);
 		QPLDLL void update(const event_info& event_info, bool& hovering);
-		QPLDLL void update(const event_info& event_info, qsf::view_rectangle view);
+
+		template<typename T>
+		void update(const event_info& event_info, qsf::view_rectangle<T> view) {
+
+			auto pos = view.mouse_position;
+
+			auto new_hovering = this->background.contains(pos);
+			if (new_hovering != this->hovering) {
+				if (this->invert_on_hover) {
+					if (new_hovering) {
+						this->background.set_color(this->background_color.inverted());
+						this->text.set_color(this->text_color.inverted());
+					}
+					else {
+						this->background.set_color(this->background_color);
+						this->text.set_color(this->text_color);
+					}
+				}
+				else {
+					if (new_hovering) {
+						this->background.set_color(this->hover_background_color);
+					}
+					else {
+						this->background.set_color(this->background_color);
+					}
+				}
+			}
+
+			this->hovering = new_hovering;
+
+			this->clicked = this->hovering && event_info.left_mouse_clicked();
+		}
 
 		bool outline_on_hover = true;
 		bool invert_on_hover = true;

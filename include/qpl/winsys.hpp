@@ -80,7 +80,7 @@ namespace qpl {
 
 
 		struct monitor_capture {
-			qpl::size index = 0u;
+			qpl::u32 index = 0u;
 			bool initialized = false;
 			qpl::winsys::rect rect;
 			RECT rc_client;
@@ -159,7 +159,7 @@ namespace qpl {
 		QPLDLL std::string get_screen_pixels_bmp_string();
 
 		QPLDLL monitor_capture& get_capture_monitor(qpl::size index);
-		QPLDLL void scan_monitor(qpl::size index);
+		QPLDLL void scan_monitor(qpl::u32 index);
 		QPLDLL void init_monitor_captures();
 		QPLDLL void scan_monitor_captures();
 		QPLDLL void screen_shot_monitors();

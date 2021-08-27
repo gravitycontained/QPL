@@ -152,7 +152,7 @@ namespace qpl {
 		if (enable_specific_values) {
 			this->enable_specific_values();
 		}
-		this->update(values.size());
+		this->update(qpl::f64_cast(values.size()));
 	}
 	void qpl::cubic_generator::fill(double initial_value, bool enable_specific_values) {
 		this->set_specific_values({ initial_value, initial_value, initial_value, initial_value }, enable_specific_values);

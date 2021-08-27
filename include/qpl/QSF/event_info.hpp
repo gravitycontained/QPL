@@ -1,7 +1,8 @@
 #ifndef QPLSF_EVENTINFO_HPP
 #define QPLSF_EVENTINFO_HPP
 #pragma once
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+
+#ifndef QPL_NO_SFML
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
@@ -12,6 +13,7 @@ namespace qsf {
 
 	struct event_info {
 		QPLDLL bool key_single_pressed(sf::Keyboard::Key key) const;
+		QPLDLL bool key_single_released(sf::Keyboard::Key key) const;
 		QPLDLL bool key_pressed(sf::Keyboard::Key key) const;
 		QPLDLL bool key_released(sf::Keyboard::Key key) const;
 		QPLDLL bool key_holding(sf::Keyboard::Key key) const;
@@ -39,6 +41,7 @@ namespace qsf {
 		QPLDLL bool key_pressed() const;
 		QPLDLL bool key_single_pressed() const;
 		QPLDLL bool key_released() const;
+		QPLDLL bool key_single_released() const;
 		QPLDLL bool key_holding() const;
 
 		QPLDLL bool resized() const;
@@ -77,6 +80,7 @@ namespace qsf {
 		bool m_key_pressed;
 		bool m_key_single_pressed;
 		bool m_key_released;
+		bool m_key_single_released;
 		bool m_key_holding;
 		bool m_mouse_moved;
 		bool m_window_closed;
@@ -96,8 +100,8 @@ namespace qsf {
 		std::set<sf::Keyboard::Key> m_keys_pressed;
 		std::set<sf::Keyboard::Key> m_keys_released;
 		std::set<sf::Keyboard::Key> m_keys_single_pressed;
+		std::set<sf::Keyboard::Key> m_keys_single_released;
 		std::set<sf::Keyboard::Key> m_keys_holding;
-
 	};
 }
 

@@ -1477,7 +1477,7 @@ namespace qpl {
 
             qpl::filesys::path tree_destination = destination;
             auto levels = this->m_paths.front().branch_size() - 1;
-            qpl::u32 depth_ctr = levels;
+            qpl::u32 depth_ctr = qpl::u32_cast(levels);
 
             for (auto& i : this->m_paths) {
 
@@ -1485,8 +1485,8 @@ namespace qpl {
 
                 if (depth_ctr != branch_size) {
                     tree_destination = destination;
-                    depth_ctr = levels;
-                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                    depth_ctr = qpl::u32_cast(levels);
+                    for (qpl::size l = levels; l < i.branch_size(); ++l) {
                         tree_destination.go_into(i.branch_at(l).get_name());
                         ++depth_ctr;
                     }
@@ -1510,7 +1510,7 @@ namespace qpl {
 
             qpl::filesys::path tree_destination = destination;
             auto levels = this->m_paths.front().branch_size() - 1;
-            qpl::u32 depth_ctr = levels;
+            qpl::size depth_ctr = levels;
 
             for (auto& i : this->m_paths) {
 
@@ -1519,7 +1519,7 @@ namespace qpl {
                 if (depth_ctr != branch_size) {
                     tree_destination = destination;
                     depth_ctr = levels;
-                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                    for (qpl::size l = levels; l < i.branch_size(); ++l) {
                         tree_destination.go_into(i.branch_at(l).get_name());
                         ++depth_ctr;
                     }
@@ -1544,7 +1544,7 @@ namespace qpl {
 
             qpl::filesys::path tree_destination = destination;
             auto levels = this->m_paths.front().branch_size() - 1;
-            qpl::u32 depth_ctr = levels;
+            qpl::u32 depth_ctr = qpl::u32_cast(levels);
 
             for (auto& i : this->m_paths) {
 
@@ -1552,7 +1552,7 @@ namespace qpl {
 
                 if (depth_ctr != branch_size) {
                     tree_destination = destination;
-                    depth_ctr = levels;
+                    depth_ctr = qpl::u32_cast(levels);
                     for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
                         tree_destination.go_into(i.branch_at(l).get_name());
                         ++depth_ctr;
@@ -1783,7 +1783,7 @@ namespace qpl {
 
         void qpl::filesys::paths::list_remove_where_directory_matches(const std::string& str) {
 
-            qpl::u32 level = 0u;
+            qpl::size level = 0u;
             bool remove = false;
 
 
@@ -2727,6 +2727,27 @@ namespace qpl {
             file.read(buffer.data(), file_size);
 
             file.close();
+
+            return buffer;
+        }
+        std::string read_rest_of_file(std::ifstream& file, bool close_file) {
+            if (!file.is_open()) {
+                return "";
+            }
+
+            auto file_pos = (size_t)file.tellg();
+            file.seekg(0, std::ios::end);
+            auto file_size = ((size_t)file.tellg() - file_pos);
+
+            std::string buffer;
+            buffer.resize(file_size);
+
+            file.seekg(file_pos);
+            file.read(buffer.data(), file_size);
+
+            if (close_file) {
+                file.close();
+            }
 
             return buffer;
         }

@@ -200,14 +200,14 @@ namespace qpl {
 				return *this;
 			}
 			bool operator|(bool value) const {
-				return this->ptr->get(this->index) | value;
+				return this->ptr->get(this->index) || value;
 			}
 			bitset_proxy operator&=(bool value) const {
 				this->ptr->set(this->index, this->ptr->get(this->index) & value);
 				return *this;
 			}
 			bool operator&(bool value) const {
-				return this->ptr->get(this->index) & value;
+				return this->ptr->get(this->index) && value;
 			}
 			bitset_proxy operator^=(bool value) const {
 				this->ptr->set(this->index, this->ptr->get(this->index) ^ value);
@@ -236,10 +236,10 @@ namespace qpl {
 				return this->get();
 			}
 			bool operator|(bool value) const {
-				return this->ptr->get(this->index) | value;
+				return this->ptr->get(this->index) || value;
 			}
 			bool operator&(bool value) const {
-				return this->ptr->get(this->index) & value;
+				return this->ptr->get(this->index) && value;
 			}
 			bool operator^(bool value) const {
 				return this->ptr->get(this->index) ^ value;
@@ -505,7 +505,19 @@ namespace qpl {
 				return this->data == holding_type{ 0 };
 			}
 		}
-
+		constexpr bool full() const {
+			if constexpr (is_array()) {
+				for (auto& i : this->data) {
+					if (i != qpl::u64_max) {
+						return false;
+					}
+				}
+				return true;
+			}
+			else {
+				return this->data == ~holding_type{ 0 };
+			}
+		}
 
 		std::string string() const {
 			if constexpr (is_array()) {

@@ -8,6 +8,7 @@
 #include <string>
 #include <limits>
 #include <utility>
+#include <typeinfo>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 
@@ -210,19 +211,20 @@ namespace qpl {
 	constexpr bool is_same() {
 		return std::is_same_v<T, U>;
 	}
-	template<typename T, typename U, typename... Args>
-	constexpr bool all_equal() {
-		return qpl::is_same<T, U>() && (qpl::is_same<T, Args>() && ...);
-	}
 	template<typename T, typename U>
 	constexpr bool is_same_decayed() {
 		return std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
+	}
+
+
+	template<typename T, typename U, typename... Args>
+	constexpr bool all_equal() {
+		return qpl::is_same<T, U>() && (qpl::is_same<T, Args>() && ...);
 	}
 	template<typename T, typename U, typename... Args>
 	constexpr bool all_equal_decayed() {
 		return qpl::is_same_decayed<T, U>() && (qpl::is_same_decayed<T, Args>() && ...);
 	}
-
 	template<class compare, class... Args>
 	constexpr bool is_equal_to_any() {
 		return (qpl::is_same<compare, Args>() || ...);
@@ -233,20 +235,6 @@ namespace qpl {
 	}
 
 
-#ifdef QPL_CPP17
-	template<typename T>
-	constexpr bool is_string_type() {
-		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, wchar_t, const wchar_t*, const wchar_t[], wchar_t*, std::wstring>();
-	}
-	template<typename T>
-	constexpr bool is_standard_string_type() {
-		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string>();
-	}
-	template<typename T>
-	constexpr bool is_wstring_type() {
-		return qpl::is_equal_to_any_decayed<T, wchar_t, const wchar_t*, wchar_t*, const wchar_t[], std::wstring>();
-	}
-#else
 	template<typename T>
 	constexpr bool is_string_type() {
 		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view, wchar_t, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
@@ -260,7 +248,6 @@ namespace qpl {
 		return qpl::is_equal_to_any_decayed<T, wchar_t, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
 	}
 
-#endif
 	template<typename T>
 	constexpr bool is_string_type(T value) {
 		return is_string_type<T>();
@@ -449,66 +436,6 @@ namespace qpl {
 		return static_cast<qpl::i64>(data);
 	}
 
-	template<typename T>
-	constexpr inline qpl::u128 u128_cast(T&& data) {
-		return static_cast<qpl::u128>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::i128 i128_cast(T&& data) {
-		return static_cast<qpl::i128>(data);
-	}
-
-	template<typename T>
-	constexpr inline qpl::u256 u256_cast(T&& data) {
-		return static_cast<qpl::u256>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::i256 i256_cast(T&& data) {
-		return static_cast<qpl::i256>(data);
-	}
-
-	template<typename T>
-	constexpr inline qpl::u512 u512_cast(T&& data) {
-		return static_cast<qpl::u512>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::i512 i512_cast(T&& data) {
-		return static_cast<qpl::i512>(data);
-	}
-
-
-	template<typename T>
-	inline qpl::u u_cast(T&& data) {
-		return static_cast<qpl::u>(data);
-	}
-	template<typename T>
-	inline qpl::i i_cast(T&& data) {
-		return static_cast<qpl::i>(data);
-	}
-	template<typename T>
-	inline qpl::uh uh_cast(T&& data) {
-		return static_cast<qpl::uh>(data);
-	}
-	template<typename T>
-	inline qpl::ih ih_cast(T&& data) {
-		return static_cast<qpl::ih>(data);
-	}
-	template<typename T>
-	inline qpl::ub ub_cast(T&& data) {
-		return static_cast<qpl::ub>(data);
-	}
-	template<typename T>
-	inline qpl::ib ib_cast(T&& data) {
-		return static_cast<qpl::ib>(data);
-	}
-	template<qpl::u32 base, typename T>
-	inline qpl::ubase<base> ubase_cast(T&& data) {
-		return static_cast<qpl::ubase<base>>(data);
-	}
-	template<qpl::u32 base, typename T>
-	inline qpl::ibase<base> ibase_cast(T&& data) {
-		return static_cast<qpl::ibase<base>>(data);
-	}
 
 	template<typename T>
 	constexpr inline qpl::size size_cast(T&& data) {
@@ -552,39 +479,6 @@ namespace qpl {
 		return std::is_same_v<std::decay_t<U>, std::decay_t<T>>;
 	}
 
-#ifdef QPL_CPP17
-	template<typename T, typename = void>
-	struct is_container_t : std::false_type {};
-	template<typename T>
-	struct is_container_t<T, std::void_t<decltype(std::declval<T>().begin()), decltype(std::declval<T>().end()), decltype(std::declval<T>().cbegin()), decltype(std::declval<T>().cend())>> : std::true_type {};
-
-	template<typename T>
-	constexpr bool is_container() {
-		return is_container_t<T>::value;
-	}
-
-	template<typename T, typename = void>
-	struct is_vector_like_t : std::false_type {};
-	template<typename T>
-	struct is_vector_like_t<T, std::void_t<decltype(std::declval<T>().data()), decltype(std::declval<T>().size()), decltype(std::declval<T>().resize(0))>> : std::true_type {};
-
-	template<typename T>
-	constexpr bool is_vector_like() {
-		return is_vector_like_t<T>::value;
-	}
-
-
-
-	template<typename T, typename = void>
-	struct has_size_t : std::false_type {};
-	template<typename T>
-	struct has_size_t < T, std::void_t<decltype(std::declval<T>().size())>> : std::true_type {};
-
-	template<typename T>
-	constexpr bool has_size() {
-		return has_size_t<T>::value;
-	}
-#else
 	template<typename T>
 	concept is_container_c = requires(T a, const T b) {
 		a.begin();
@@ -599,7 +493,7 @@ namespace qpl {
 
 	template<typename T>
 	concept is_vector_like_c = requires(T a, const T b) {
-		requires is_container<T>;
+		requires is_container<T>();
 		a.resize(0u);
 		a.data();
 		b.size();
@@ -618,7 +512,7 @@ namespace qpl {
 	constexpr bool has_size() {
 		return has_size_c<T>;
 	}
-#endif
+
 
 
 	namespace impl {

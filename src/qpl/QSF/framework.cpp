@@ -1,7 +1,7 @@
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#ifndef QPL_NO_SFML
 
 namespace qsf {
 
@@ -174,10 +174,13 @@ namespace qsf {
 		qsf::add_font(name, path);
 	}
 	void qsf::base_state::add_texture(const std::string& name, const std::string& path) {
-		qsf::add_font(name, path);
+		qsf::add_texture(name, path);
 	}
 	void qsf::base_state::add_sprite(const std::string& name, const std::string& path) {
-		qsf::add_font(name, path);
+		qsf::add_sprite(name, path);
+	}
+	void qsf::base_state::add_sprite(const std::string & name, sf::Texture& texture) {
+		qsf::add_sprite(name, texture);
 	}
 	void qsf::base_state::add_text(const std::string& name) {
 		qsf::add_text(name);
@@ -461,7 +464,8 @@ namespace qsf {
 			sf::ContextSettings settings;
 			settings.antialiasingLevel = this->m_antialising;
 
-			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), this->m_title, this->m_style, settings);
+			sf::String s = this->m_title.c_str(); //??? SFML why is this needed
+			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, settings);
 			this->m_created = true;
 
 			if (this->states.size()) {
@@ -481,11 +485,9 @@ namespace qsf {
 		this->set_style(style);
 	}
 	void qsf::framework::set_title(const std::string& title) {
+		this->m_title = title;
 		if (this->m_created) {
 			this->window.setTitle(title);
-		}
-		else {
-			this->m_title = title;
 		}
 	}
 	void qsf::framework::set_dimension(qsf::vector2u dimension) {

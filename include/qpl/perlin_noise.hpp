@@ -61,15 +61,14 @@ namespace qpl {
 			return smooth_inter(low, high, y_frac);
 		}
 
-		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::size depth) {
+		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::u32 depth) {
 			qpl::fbit<bits> xa = x * freq;
 			qpl::fbit<bits> ya = y * freq;
 			qpl::fbit<bits> amp = 1.0;
 			qpl::fbit<bits> fin = 0;
 			qpl::fbit<bits> div = 0.0;
 
-			int i;
-			for (i = 0; i < depth; i++) {
+			for (qpl::u32 i = 0u; i < depth; ++i) {
 				div += N * amp;
 				fin += noise2d(xa, ya) * amp;
 				amp /= 2;
@@ -82,7 +81,7 @@ namespace qpl {
 		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y) {
 			return this->get(x, y, this->frequency, this->depth);
 		}
-		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::size depth) {
+		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::u32 depth) {
 			return this->get(x, y, freq, depth);
 		}
 		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y) {
@@ -119,13 +118,13 @@ namespace qpl {
 
 		QPLDLL qpl::f64 get() const;
 		QPLDLL qpl::f64 update(qpl::f64 fx, qpl::f64 fy = 0.0);
-		QPLDLL void set_octaves(qpl::f64 octaves);
+		QPLDLL void set_octaves(qpl::u32 octaves);
 		QPLDLL void set_frequency(qpl::f64 frequency);
 
 		qpl::f64 value = 0.0;
 		qpl::f64 progress_x = 0.0;
 		qpl::f64 progress_y = 0.0;
-		qpl::f64 octaves = 12;
+		qpl::u32 octaves = 12;
 		qpl::f64 frequency = 3.0;
 		perlin_noise noise;
 	};

@@ -1,5 +1,7 @@
 #include <qpl/QSF/drawables.hpp>
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+
+#ifndef QPL_NO_SFML
+
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/utility.hpp>
@@ -256,7 +258,8 @@ namespace qsf {
 	}
 	void qsf::text::set_string(const std::string& string) {
 		this->m_string = string;
-		this->m_text.setString(this->m_string);
+		sf::String s = this->m_string.c_str();
+		this->m_text.setString(s);
 	}
 	void qsf::text::centerize() {
 		auto pos = this->m_text.getPosition();
@@ -313,11 +316,13 @@ namespace qsf {
 
 	void qsf::text::clear() {
 		this->m_string.clear();
-		this->m_text.setString(this->m_string);
+		sf::String s = this->m_string.c_str();
+		this->m_text.setString(s);
 	}
 	qsf::text& qsf::text::operator<<(const std::string& string) {
 		this->m_string.append(string);
-		this->m_text.setString(this->m_string);
+		sf::String s = this->m_string.c_str();
+		this->m_text.setString(s);
 		return *this;
 	}
 	qsf::text& qsf::text::operator=(const qsf::vtext& text) {
@@ -342,7 +347,7 @@ namespace qsf {
 		auto hb = this->visible_hitbox();
 
 		auto rect = states.transform.transformRect(sf::FloatRect(hb.position.x, hb.position.y, hb.dimension.x, hb.dimension.y));
-		auto fov = sf::FloatRect(0, 0, window.getSize().x, window.getSize().y);
+		auto fov = sf::FloatRect(0, 0, qpl::f32_cast(window.getSize().x), qpl::f32_cast(window.getSize().y));
 
 
 		if (rect.intersects(fov)) {
@@ -462,7 +467,8 @@ namespace qsf {
 		auto hitbox = this->line_hitbox(this->lines() - 1);
 		this->apply_state();
 		this->texts.back().back().m_string = qpl::wstring_to_string(string);
-		this->texts.back().back().m_text.setString(string);
+		sf::String s = string.c_str();
+		this->texts.back().back().m_text.setString(s);
 		this->texts.back().back().set_position(hitbox.position + hitbox.dimension.just_x() + qsf::vector2f(this->states.back().letter_spacing, -this->texts.back().back().offset().y));
 
 		this->centerize_line(this->lines() - 1);
@@ -501,7 +507,7 @@ namespace qsf {
 		hitbox.dimension.x = (back_hitbox.position.x + back_hitbox.dimension.x) - hitbox.position.x;
 
 		if (this->texts[index].size() == 1 && this->texts[index].front().get_string().empty()) {
-			hitbox.dimension.y = this->texts[index].back().get_character_size();
+			hitbox.dimension.y = qpl::f32_cast(this->texts[index].back().get_character_size());
 		}
 		return hitbox;
 
@@ -662,7 +668,7 @@ namespace qsf {
 		return this->outline_thickness;
 	}
 	qsf::rgb qsf::vrectangle::get_outline_color() const {
-		return this->outline_thickness;
+		return this->color;
 	}
 	void qsf::vrectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::rectangle = *this;
@@ -1131,13 +1137,13 @@ namespace qsf {
 
 		return this->get_position() + qsf::vector2f{ this->get_radius(), this->get_radius() };
 	}
-	qsf::vector2f qsf::circle::get_position() const const {
+	qsf::vector2f qsf::circle::get_position() const {
 		return this->circle_shape.getPosition();
 	}
 	void qsf::circle::set_color(qsf::rgb color) {
 		this->circle_shape.setFillColor(color);
 	}
-	qsf::rgb qsf::circle::get_color() const const {
+	qsf::rgb qsf::circle::get_color() const {
 		return this->circle_shape.getFillColor();
 	}
 
@@ -1332,14 +1338,14 @@ namespace qsf {
 	qpl::f32 qsf::line::angle_from_a() const {
 		auto angle = std::atan2(this->vertices[1].position.y - this->vertices[0].position.y, this->vertices[1].position.x - this->vertices[0].position.x);
 		if (angle < 0) {
-			angle += qpl::pi * 2;
+			angle += qpl::pi_32 * 2;
 		}
 		return angle;
 	}
 	qpl::f32 qsf::line::angle_from_b() const {
 		auto angle = std::atan2(this->vertices[0].position.y - this->vertices[1].position.y, this->vertices[0].position.x - this->vertices[1].position.x);
 		if (angle < 0) {
-			angle += qpl::pi * 2;
+			angle += qpl::pi_32 * 2;
 		}
 		return angle;
 	}
@@ -3186,8 +3192,8 @@ namespace qsf {
 			}
 		}
 
+		this->mouse_position = event_info.mouse_position();
 		if (event_info.mouse_moved()) {
-			this->mouse_position = event_info.mouse_position();
 
 			if (this->drag) {
 				auto diff = this->click_position - event_info.mouse_position();
@@ -3206,132 +3212,142 @@ namespace qsf {
 					if (this->index_end >= this->graph_element_size()) {
 						this->index_end = this->graph_element_size();
 						this->index_start -= over;
+
+						this->enable_track_new_entries();
 					}
 				}
 			}
-			if (this->display_closest_graph_at_cursor) {
+		}
 
-				this->update_change();
+		if (this->display_closest_graph_at_cursor) {
 
-				qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
+			this->update_change();
 
-				auto visible_size = this->visible_element_size() - 1;
-				auto offset = this->position.x + this->y_axis_text_space;
-				auto progress = (event_info.mouse_position().x - offset) / this->true_graph_width();
-				auto index = visible_size * progress;
-				auto int_index = qpl::int_cast(index);
-				auto left_over = index - int_index;
-				auto [low, high] = this->low_high_graph;
+			qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
 
-				this->closest_graph_at_cursor = "";
-				if (index >= 0 && index <= visible_size) {
-					qpl::f64 min_distance = qpl::f64_max;
+			auto visible_size = this->visible_element_size() - 1;
+			auto offset = this->position.x + this->y_axis_text_space;
+			auto progress = (event_info.mouse_position().x - offset) / this->true_graph_width();
+			auto index = visible_size * progress;
+			auto int_index = qpl::int_cast(index);
+			auto left_over = index - int_index;
+			auto [low, high] = this->low_high_graph;
 
-					for (auto& g : this->info_graphs) {
-						interpolation = interpolation;
-						if (interpolation == qsf::vgraph::interpolation_type::unset) {
-							interpolation = this->interpolation;
-						}
+			auto y_range = (high - low);
+			if (high == qpl::f64_min && low == qpl::f64_max) {
+				y_range = 0.0;
+			}
+			auto low_padded = low - y_range * this->y_axis_padding;
+			auto high_padded = high + y_range * this->y_axis_padding;
 
-						qpl::f64 value = 0.0;
-						if (left_over == 0.0) {
-							value = g.second.data[this->visible_index_start() + int_index].data;
-						}
-						else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
-							value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
-						}
-						else if (interpolation == qsf::vgraph::interpolation_type::linear) {
-							value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
-						}
+			this->closest_graph_at_cursor = "";
+			if (index >= 0 && index <= visible_size) {
+				qpl::f64 min_distance = qpl::f64_max;
 
-						auto y_progress = (value - low) / (high - low);
-						y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
-						auto pos_y = this->position.y + this->dimension.y * y_progress;
-
-						auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
-
-						if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
-							min_distance = distance;
-							this->closest_graph_at_cursor = g.first;
-							this->closest_graph_at_cursor_value = value;
-							this->closest_graph_at_cursor_color = g.second.color;
-							this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
-							if (this->closest_graph_at_cursor_color.is_unset()) {
-								this->closest_graph_at_cursor_color = this->color;
-							}
-						}
+				for (auto& g : this->info_graphs) {
+					interpolation = interpolation;
+					if (interpolation == qsf::vgraph::interpolation_type::unset) {
+						interpolation = this->interpolation;
 					}
-					for (auto& g : this->standard_graphs) {
-						interpolation = interpolation;
-						if (interpolation == qsf::vgraph::interpolation_type::unset) {
-							interpolation = this->interpolation;
-						}
 
-						qpl::f64 value = 0.0;
-						if (left_over == 0.0) {
-							value = g.second.data[this->visible_index_start() + int_index].data;
-						}
-						else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
-							value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
-						}
-						else if (interpolation == qsf::vgraph::interpolation_type::linear) {
-							value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
-						}
-
-						auto y_progress = (value - low) / (high - low);
-						y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
-						auto pos_y = this->position.y + this->dimension.y * y_progress;
-
-						auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
-
-						if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
-							min_distance = distance;
-							this->closest_graph_at_cursor = g.first;
-							this->closest_graph_at_cursor_value = value;
-							this->closest_graph_at_cursor_color = g.second.color;
-							this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
-							if (this->closest_graph_at_cursor_color.is_unset()) {
-								this->closest_graph_at_cursor_color = this->color;
-							}
-						}
+					qpl::f64 value = 0.0;
+					if (left_over == 0.0) {
+						value = g.second.data[this->visible_index_start() + int_index].data;
 					}
-					for (auto& g : this->simple_graphs) {
-						interpolation = interpolation;
-						if (interpolation == qsf::vgraph::interpolation_type::unset) {
-							interpolation = this->interpolation;
-						}
+					else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+						value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+					}
+					else if (interpolation == qsf::vgraph::interpolation_type::linear) {
+						value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+					}
 
-						qpl::f64 value = 0.0;
-						if (left_over == 0.0) {
-							value = g.second.data[this->visible_index_start() + int_index].data;
-						}
-						else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
-							value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
-						}
-						else if (interpolation == qsf::vgraph::interpolation_type::linear) {
-							value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
-						}
+					auto y_progress = (value - low_padded) / (high_padded - low_padded);
+					y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
+					auto pos_y = this->position.y + this->dimension.y * y_progress;
 
-						auto y_progress = (value - low) / (high - low);
-						y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
-						auto pos_y = this->position.y + this->dimension.y * y_progress;
+					auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
 
-						auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
-
-						if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
-							min_distance = distance;
-							this->closest_graph_at_cursor = g.first;
-							this->closest_graph_at_cursor_value = value;
-							this->closest_graph_at_cursor_color = g.second.color;
-							this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
-							if (this->closest_graph_at_cursor_color.is_unset()) {
-								this->closest_graph_at_cursor_color = this->color;
-							}
+					if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
+						min_distance = distance;
+						this->closest_graph_at_cursor = g.first;
+						this->closest_graph_at_cursor_value = value;
+						this->closest_graph_at_cursor_color = g.second.color;
+						this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+						if (this->closest_graph_at_cursor_color.is_unset()) {
+							this->closest_graph_at_cursor_color = this->color;
 						}
 					}
 				}
-				
+				for (auto& g : this->standard_graphs) {
+					interpolation = interpolation;
+					if (interpolation == qsf::vgraph::interpolation_type::unset) {
+						interpolation = this->interpolation;
+					}
+
+					qpl::f64 value = 0.0;
+					if (left_over == 0.0) {
+						value = g.second.data[this->visible_index_start() + int_index].data;
+					}
+					else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+						value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+					}
+					else if (interpolation == qsf::vgraph::interpolation_type::linear) {
+						value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+					}
+
+					auto y_progress = (value - low_padded) / (high_padded - low_padded);
+					y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
+					auto pos_y = this->position.y + this->dimension.y * y_progress;
+
+					auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
+
+					if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
+						min_distance = distance;
+						this->closest_graph_at_cursor = g.first;
+						this->closest_graph_at_cursor_value = value;
+						this->closest_graph_at_cursor_color = g.second.color;
+						this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+						if (this->closest_graph_at_cursor_color.is_unset()) {
+							this->closest_graph_at_cursor_color = this->color;
+						}
+					}
+				}
+				for (auto& g : this->simple_graphs) {
+					interpolation = interpolation;
+					if (interpolation == qsf::vgraph::interpolation_type::unset) {
+						interpolation = this->interpolation;
+					}
+
+					qpl::f64 value = 0.0;
+					if (left_over == 0.0) {
+						value = g.second.data[this->visible_index_start() + int_index].data;
+					}
+					else if (interpolation == qsf::vgraph::interpolation_type::cubic) {
+						value = qpl::cubic_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+					}
+					else if (interpolation == qsf::vgraph::interpolation_type::linear) {
+						value = qpl::linear_interpolation(g.second.data[this->visible_index_start() + int_index].data, g.second.data[this->visible_index_start() + int_index + this->index_skip_size].data, left_over);
+					}
+
+					auto y_progress = (value - low_padded) / (high_padded - low_padded);
+					y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - this->height_delta) + (this->height_delta) / 2);
+					auto pos_y = this->position.y + this->dimension.y * y_progress;
+
+					auto distance = qpl::abs(pos_y - event_info.mouse_position().y);
+
+					if (min_distance > distance && distance < this->closest_graph_at_cursor_distance) {
+						min_distance = distance;
+						this->closest_graph_at_cursor = g.first;
+						this->closest_graph_at_cursor_value = value;
+						this->closest_graph_at_cursor_color = g.second.color;
+						this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+						if (this->closest_graph_at_cursor_color.is_unset()) {
+							this->closest_graph_at_cursor_color = this->color;
+						}
+					}
+				}
 			}
+
 		}
 		if (event_info.left_mouse_released()) {
 			this->drag = false;
@@ -3539,6 +3555,7 @@ namespace qsf {
 				low = 0;
 			}
 		}
+
 		return std::make_pair(low, high);
 	}
 	qpl::size qsf::vgraph::total_graph_size() const {
@@ -3734,6 +3751,13 @@ namespace qsf {
 		qpl::f64 low, high;
 		std::tie(low, high) = graph.get_low_high();
 
+		auto y_range = (high - low);
+		if (high == qpl::f64_min && low == qpl::f64_max) {
+			y_range = 0.0;
+		}
+		auto low_padded = low - y_range * graph.y_axis_padding;
+		auto high_padded = high + y_range * graph.y_axis_padding;
+
 		qpl::u32 u = 0u;
 		for (auto& g : graph.info_graphs) {
 			std::vector<qsf::vgraph::data_point_info> interpolated_data;
@@ -3787,7 +3811,7 @@ namespace qsf {
 				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space;
 
 
-				auto y_progress = (interpolated_data[i].data - low) / (high - low);
+				auto y_progress = (interpolated_data[i].data - low_padded) / (high_padded - low_padded);
 				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
 				position.y = graph.position.y + graph.dimension.y * y_progress;
 
@@ -3875,7 +3899,7 @@ namespace qsf {
 				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space;
 
 
-				auto y_progress = (interpolated_data[i].data - low) / (high - low);
+				auto y_progress = (interpolated_data[i].data - low_padded) / (high_padded - low_padded);
 				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
 				position.y = graph.position.y + graph.dimension.y * y_progress;
 
@@ -3923,7 +3947,7 @@ namespace qsf {
 				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space;
 
 
-				auto y_progress = (interpolated_data[i].data - low) / (high - low);
+				auto y_progress = (interpolated_data[i].data - low_padded) / (high_padded - low_padded);
 				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
 				position.y = graph.position.y + graph.dimension.y * y_progress;
 
@@ -3942,12 +3966,6 @@ namespace qsf {
 
 
 			if (graph.use_y_axis) {
-				auto y_range = (high - low);
-				if (high == qpl::f64_min && low == qpl::f64_max) {
-					y_range = 0.0;
-				}
-				auto low_padded = low - y_range * graph.y_axis_padding;
-				auto high_padded = high + y_range * graph.y_axis_padding;
 				auto exponent = static_cast<qpl::i64>(std::log10(y_range)) - 1;
 				auto multiply = std::pow(10, -exponent);
 				y_range *= multiply;
@@ -4106,7 +4124,7 @@ namespace qsf {
 			this->cursor_graph_text.set_position(graph.mouse_position);
 
 			auto hitbox = this->cursor_graph_text.visible_hitbox();
-			this->cursor_graph_text.move(qsf::vector2f{ 15, -hitbox.dimension.y - 15 });
+			this->cursor_graph_text.move(qsf::vector2f{ 15, - hitbox.dimension.y - 15 });
 			hitbox = this->cursor_graph_text.visible_hitbox();
 			auto diff = (hitbox.position.x + hitbox.dimension.x) - (graph.position.x + graph.dimension.x) + 15;
 			if (diff > 0) {
@@ -4204,35 +4222,6 @@ namespace qsf {
 	}
 	void qsf::vbutton::update(const event_info& event_info) {
 		auto pos = event_info.mouse_position();
-
-		auto new_hovering = this->background.contains(pos);
-		if (new_hovering != this->hovering) {
-			if (this->invert_on_hover) {
-				if (new_hovering) {
-					this->background.set_color(this->background_color.inverted());
-					this->text.set_color(this->text_color.inverted());
-				}
-				else {
-					this->background.set_color(this->background_color);
-					this->text.set_color(this->text_color);
-				}
-			}
-			else {
-				if (new_hovering) {
-					this->background.set_color(this->hover_background_color);
-				}
-				else {
-					this->background.set_color(this->background_color);
-				}
-			}
-		}
-
-		this->hovering = new_hovering;
-
-		this->clicked = this->hovering && event_info.left_mouse_clicked();
-	}
-	void qsf::vbutton::update(const event_info& event_info, qsf::view_rectangle rectangle) {
-		auto pos = rectangle.mouse_position;
 
 		auto new_hovering = this->background.contains(pos);
 		if (new_hovering != this->hovering) {
@@ -4364,35 +4353,6 @@ namespace qsf {
 	void qsf::button::update(const event_info& event_info, bool& hovering) {
 		this->update(event_info);
 		hovering = hovering || this->hovering;
-	}
-	void qsf::button::update(const event_info& event_info, qsf::view_rectangle view) {
-		auto pos = view.mouse_position;
-
-		auto new_hovering = this->background.contains(pos);
-		if (new_hovering != this->hovering) {
-			if (this->invert_on_hover) {
-				if (new_hovering) {
-					this->background.set_color(this->background_color.inverted());
-					this->text.set_color(this->text_color.inverted());
-				}
-				else {
-					this->background.set_color(this->background_color);
-					this->text.set_color(this->text_color);
-				}
-			}
-			else {
-				if (new_hovering) {
-					this->background.set_color(this->hover_background_color);
-				}
-				else {
-					this->background.set_color(this->background_color);
-				}
-			}
-		}
-
-		this->hovering = new_hovering;
-
-		this->clicked = this->hovering && event_info.left_mouse_clicked();
 	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;
