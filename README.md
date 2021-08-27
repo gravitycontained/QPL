@@ -324,7 +324,7 @@ clicking on screen addds connected cirlcles:
 
 **Graph example**: 
 
-```
+```cpp
 #include <qpl/qpl.hpp>
 
 struct game_state : qsf::base_state {
