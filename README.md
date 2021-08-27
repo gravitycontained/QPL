@@ -276,7 +276,6 @@ possible output:
 ----------
 
 **2D - SFML example**: 
-`QPL_USE_SFML` as preprocessor define
 
 ```cpp
 #include <qpl/qpl.hpp>
