@@ -594,25 +594,35 @@ namespace qpl {
 
         template<typename C>
         void container_memory_to_file(const C& data, const std::string& path) {
-            std::ofstream file(path, std::ios::binary);
-            file.write(reinterpret_cast<const char*>(data.data()), data.size() * qpl::bytes_in_type<qpl::container_subtype<C>>());
-            file.close();
+            if constexpr (qpl::is_vector_like<C>()) {
+                qpl::filesys::write_data_file(qpl::container_memory_to_string(data), path);
+            }
+            else {
+                std::ofstream file(path, std::ios::binary);
+                file.write(reinterpret_cast<const char*>(data.data()), data.size() * qpl::bytes_in_type<qpl::container_subtype<C>>());
+                file.close();
+            }
         }
         template<typename C>
         void container_memory_from_file(C& data, const std::string& path) {
-            std::ifstream file(path, std::ios::ate | std::ios::binary);
-
-            if (!file.is_open()) {
-                throw std::runtime_error(qpl::to_string("failed to open file \"", path, "\"").c_str());
+            if constexpr (qpl::is_vector_like<C>()) {
+                qpl::string_to_container_memory(qpl::filesys::read_file(path), data);
             }
+            else {
+                std::ifstream file(path, std::ios::ate | std::ios::binary);
 
-            auto file_size = (size_t)file.tellg();
-            data.resize((file_size - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
+                if (!file.is_open()) {
+                    throw std::runtime_error(qpl::to_string("failed to open file \"", path, "\"").c_str());
+                }
 
-            file.seekg(0);
-            file.read(reinterpret_cast<char*>(data.data()), file_size);
+                auto file_size = (size_t)file.tellg();
+                data.resize((file_size - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
 
-            file.close();
+                file.seekg(0);
+                file.read(reinterpret_cast<char*>(data.data()), file_size);
+
+                file.close();
+            }
         }
         
     }

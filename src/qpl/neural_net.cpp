@@ -240,8 +240,10 @@ namespace qpl {
 			qpl::f64 wrong = excpected_outputs[i] - this->output_layer()[i].get_output();
 			this->m_error += wrong * wrong;
 		}
-		this->m_error /= (this->output_layer().size() - 1);
-		this->m_error = std::sqrt(this->m_error);
+		if (this->output_layer().size() > 1u) {
+			this->m_error /= (this->output_layer().size() - 1);
+			this->m_error = std::sqrt(this->m_error);
+		}
 		this->m_accuracy_sum += this->get_accuracy();
 
 		for (std::size_t i = 0; i < this->output_layer().size() - 1; ++i) {

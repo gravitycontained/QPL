@@ -1241,7 +1241,7 @@ namespace qsf {
 		bool y_axis_text_left = true;
 		bool y_axis_text_percent = false;
 		bool y_axis_text_integer = false;
-		qpl::size y_axis_text_precision = 5u;
+		qpl::size y_axis_text_precision = 3u;
 		bool use_y_axis = true;
 		bool y_axis_start_at_0 = false;
 		qpl::f64 y_axis_padding = 0.1;
@@ -1251,13 +1251,14 @@ namespace qsf {
 		qsf::vtext x_axis_text;
 		bool x_axis_text_left = true;
 		bool x_axis_text_percent = false;
-		qpl::size x_axis_text_precision = 5u;
+		qpl::size x_axis_text_precision = 3u;
 
 
 		qpl::size x_data_steps = 10u;
 		qpl::u32 desired_x_axis_lines = 10u;
 		qpl::u32 desired_visible_size = 200u;
 
+		bool enable_last_n_when_dragging_right_lock = true;
 		qpl::size display_last_n_entries = qpl::size_max;
 		qpl::size index_start = 0u;
 		qpl::size index_end = qpl::size_max;

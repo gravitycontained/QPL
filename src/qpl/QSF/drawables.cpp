@@ -3209,12 +3209,16 @@ namespace qsf {
 					this->index_start = qpl::max(qpl::i32_cast(0), qpl::i32_cast(this->visible_index_start()) + index_delta);
 					this->index_end = this->index_start + size;
 					auto over = qpl::i32_cast(this->index_end) - qpl::i32_cast(this->graph_element_size());
+					
 					if (this->index_end >= this->graph_element_size()) {
 						this->index_end = this->graph_element_size();
 						this->index_start -= over;
 
-						this->enable_track_new_entries();
+						this->enable_last_n_when_dragging_right_lock = true;
 					}
+				}
+				if (this->enable_last_n_when_dragging_right_lock) {
+					this->enable_track_new_entries();
 				}
 			}
 		}
@@ -3351,6 +3355,7 @@ namespace qsf {
 		}
 		if (event_info.left_mouse_released()) {
 			this->drag = false;
+			this->enable_last_n_when_dragging_right_lock = false;
 		}
 		if (event_info.scrolled_up()) {
 			qsf::vrectangle rect(this->position, this->true_graph_dimension());
@@ -3554,6 +3559,10 @@ namespace qsf {
 			if (low > 0 && high > 0) {
 				low = 0;
 			}
+		}
+		if (low == high) {
+			low -= 1;
+			high += 1;
 		}
 
 		return std::make_pair(low, high);
@@ -4118,7 +4127,12 @@ namespace qsf {
 				this->cursor_graph_text.set_string(graph.closest_graph_at_cursor_string_function(graph.closest_graph_at_cursor, graph.closest_graph_at_cursor_value, graph.closest_graph_at_cursor_index));
 			}
 			else {
-				this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " : ", graph.closest_graph_at_cursor_value));
+				if (graph.y_axis_string_function) {
+					this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " : ", graph.y_axis_string_function(graph.closest_graph_at_cursor_value)));
+				}
+				else {
+					this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " = ", graph.closest_graph_at_cursor_value));
+				}
 			}
 			this->cursor_graph_text.set_color(graph.closest_graph_at_cursor_color.with_alpha(255));
 			this->cursor_graph_text.set_position(graph.mouse_position);
