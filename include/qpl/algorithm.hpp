@@ -967,12 +967,12 @@ namespace qpl {
 				a = data[(index - 1) * index_skip_size];
 			}
 
-			if (index < (data.size() - 1) / index_skip_size) {
+			if ((index + 1) * index_skip_size < data.size()) {
 				c = data[(index + 1) * index_skip_size];
 			}
 			d = c;
 
-			if (index < (data.size() - 2) / index_skip_size) {
+			if ((index + 2) * index_skip_size < data.size()) {
 				d = data[(index + 2) * index_skip_size];
 			}
 
@@ -1007,19 +1007,17 @@ namespace qpl {
 
 			auto index = static_cast<qpl::u32>(f * (data.size() / index_skip_size - 1));
 
-
-
 			c = a = b = data[index * index_skip_size];
 			if (index >= 1u) {
 				a = data[(index - 1) * index_skip_size];
 			}
 
-			if (index < (data.size() - 1) / index_skip_size) {
+			if ((index + 1) * index_skip_size < data.size()) {
 				c = data[(index + 1) * index_skip_size];
 			}
 			d = c;
 
-			if (index < (data.size() - 2) / index_skip_size) {
+			if ((index + 2) * index_skip_size < data.size()) {
 				d = data[(index + 2) * index_skip_size];
 			}
 

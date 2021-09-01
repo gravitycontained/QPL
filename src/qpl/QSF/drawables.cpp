@@ -3131,6 +3131,11 @@ namespace qsf {
 		return this->data.cend();
 	}
 
+	void qsf::vgraph::clear_data() {
+		this->simple_graphs.clear();
+		this->standard_graphs.clear();
+		this->info_graphs.clear();
+	}
 	bool qsf::vgraph::empty() const {
 		return this->simple_graphs.empty() && this->standard_graphs.empty() && this->info_graphs.empty();
 	}
@@ -3152,6 +3157,7 @@ namespace qsf {
 			this->x_axis_line_frequency /= 2;
 			if (!this->x_axis_line_frequency) {
 				this->x_axis_line_frequency = 1u;
+				break;
 			}
 		}
 		while (this->visible_element_size() / this->x_axis_line_frequency > this->desired_x_axis_lines * 2) {
@@ -4127,11 +4133,16 @@ namespace qsf {
 				this->cursor_graph_text.set_string(graph.closest_graph_at_cursor_string_function(graph.closest_graph_at_cursor, graph.closest_graph_at_cursor_value, graph.closest_graph_at_cursor_index));
 			}
 			else {
-				if (graph.y_axis_string_function) {
-					this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " : ", graph.y_axis_string_function(graph.closest_graph_at_cursor_value)));
+				if (graph.y_axis_cursor_string_function) {
+					this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " : ", graph.y_axis_cursor_string_function(graph.closest_graph_at_cursor_value)));
 				}
 				else {
-					this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " = ", graph.closest_graph_at_cursor_value));
+					if (graph.y_axis_string_function) {
+						this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " : ", graph.y_axis_string_function(graph.closest_graph_at_cursor_value)));
+					}
+					else {
+						this->cursor_graph_text.set_string(qpl::to_string(graph.closest_graph_at_cursor, " = ", graph.closest_graph_at_cursor_value));
+					}
 				}
 			}
 			this->cursor_graph_text.set_color(graph.closest_graph_at_cursor_color.with_alpha(255));

@@ -1268,6 +1268,7 @@ namespace qsf {
 		bool use_x_axis = true;
 		std::function<std::string(qpl::size)> x_axis_string_function;
 		std::function<std::string(qpl::f64)> y_axis_string_function;
+		std::function<std::string(qpl::f64)> y_axis_cursor_string_function;
 
 		qsf::rgb axis_line_color = qsf::rgb(30, 30, 30);
 		qpl::f64 axis_thickness = 1.5f;
@@ -1460,6 +1461,7 @@ namespace qsf {
 		bool drag = false;
 		qsf::vector2f click_position;
 
+		QPLDLL void clear_data();
 		QPLDLL bool empty() const;
 		QPLDLL bool changed() const;
 		QPLDLL void update_change() const;
