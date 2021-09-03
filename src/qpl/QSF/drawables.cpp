@@ -3173,6 +3173,7 @@ namespace qsf {
 		this->display_last_n_entries = this->visible_element_size();
 		this->index_start = 0u;
 		this->index_end = qpl::size_max;
+		this->enable_last_n_when_dragging_right_lock = false;
 	}
 	void qsf::vgraph::disable_track_new_entries() {
 		auto size = this->visible_element_size();
@@ -3208,6 +3209,7 @@ namespace qsf {
 				auto index_f = (diff.x / this->true_graph_width()) * size;
 				auto index_delta = qpl::i32_cast(index_f);
 
+
 				if (index_delta) {
 					this->click_position = event_info.mouse_position();
 					this->click_position.x += ((index_f - index_delta) / size) * this->true_graph_width();
@@ -3215,7 +3217,7 @@ namespace qsf {
 					this->index_start = qpl::max(qpl::i32_cast(0), qpl::i32_cast(this->visible_index_start()) + index_delta);
 					this->index_end = this->index_start + size;
 					auto over = qpl::i32_cast(this->index_end) - qpl::i32_cast(this->graph_element_size());
-					
+
 					if (this->index_end >= this->graph_element_size()) {
 						this->index_end = this->graph_element_size();
 						this->index_start -= over;
@@ -3230,8 +3232,6 @@ namespace qsf {
 		}
 
 		if (this->display_closest_graph_at_cursor) {
-
-			this->update_change();
 
 			qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
 
@@ -3413,7 +3413,7 @@ namespace qsf {
 				end += qpl::i32_cast(change * (1 - progress));
 
 				if (end >= this->graph_element_size()) {
-					end = this->graph_element_size() - 1;
+					end = this->graph_element_size();
 				}
 				if (start < 0) {
 					start = 0;
@@ -3426,6 +3426,13 @@ namespace qsf {
 		}
 	}
 
+	void qsf::vgraph::copy_visible_range(const vgraph& other) {
+		this->visible_index_range_before = this->visible_index_range();
+		this->index_start = other.index_start;
+		this->index_end = other.index_end;
+		this->index_skip_size = other.index_skip_size;
+		this->display_last_n_entries = other.display_last_n_entries;
+	}
 	void qsf::vgraph::set_font(std::string name) {
 		this->font = name;
 		this->enable_axis_info();
@@ -3709,6 +3716,25 @@ namespace qsf {
 
 		auto begin = this->get_simple_graph(name).data.begin();
 		return qpl::make_span(begin + start, begin + end);
+	}
+
+	void qsf::vgraph::add_y_axis_line(qpl::f64 value) {
+		this->add_y_axis_line(value, qsf::rgb::red, this->axis_thickness / 2);
+	}
+	void qsf::vgraph::add_y_axis_line(qpl::f64 value, qsf::rgb color, qpl::f64 thickness, bool foreground) {
+		this->y_axis_highlighted_lines[value].color = color;
+		this->y_axis_highlighted_lines[value].thickness = thickness;
+		this->y_axis_highlighted_lines[value].foreground = foreground;
+	}
+	qsf::vgraph::highlighted_line& qsf::vgraph::get_y_axis_line(qpl::f64 value) {
+		if (this->y_axis_highlighted_lines.find(value) == this->y_axis_highlighted_lines.cend()) {
+			this->y_axis_highlighted_lines[value].color = qsf::rgb::red;
+			this->y_axis_highlighted_lines[value].thickness = this->axis_thickness;
+		}
+		return this->y_axis_highlighted_lines[value];
+	}
+	const qsf::vgraph::highlighted_line& qsf::vgraph::get_y_axis_line(qpl::f64 value) const {
+		return this->y_axis_highlighted_lines.at(value);
 	}
 
 	qsf::graph& qsf::graph::operator=(const qsf::vgraph& graph) {
@@ -3999,8 +4025,38 @@ namespace qsf {
 				}
 
 				this->y_lines.resize(y_steps);
+				this->y_lines_foreground.clear();
 				this->y_texts.resize(y_steps);
 
+				for (auto& y : graph.y_axis_highlighted_lines) {
+					if (y.first >= low_padded && y.first <= high_padded) {
+
+						auto y_position = y.first;
+						auto y_progress = ((y_position)-low_padded) / (high_padded - low_padded);
+						y_progress = (1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2;
+
+						qsf::vector2f position;
+						position.x = graph.position.x;
+						position.y = graph.position.y + graph.true_graph_height() * y_progress + graph.x_axis_text_space;
+
+						auto a = position;
+						auto b = a;
+						b.x += graph.dimension.x;
+
+						if (y.second.foreground) {
+							this->y_lines_foreground.resize(this->y_lines_foreground.size() + 1);
+							this->y_lines_foreground.back().clear();
+							this->y_lines_foreground.back().add_thick_line(a, y.second.color, y.second.thickness);
+							this->y_lines_foreground.back().add_thick_line(b, y.second.color, y.second.thickness);
+						}
+						else {
+							this->y_lines.resize(this->y_lines.size() + 1);
+							this->y_lines.back().clear();
+							this->y_lines.back().add_thick_line(a, y.second.color, y.second.thickness);
+							this->y_lines.back().add_thick_line(b, y.second.color, y.second.thickness);
+						}
+					}
+				}
 				for (qpl::u32 i = 0u; i < y_steps; ++i) {
 					auto y_position = y_start + y_delta * i;
 					auto y_progress = ((y_position)-low_padded) / (high_padded - low_padded);
@@ -4063,6 +4119,7 @@ namespace qsf {
 					this->y_lines[i].add_thick_line(a, graph.axis_line_color, graph.axis_thickness);
 					this->y_lines[i].add_thick_line(b, graph.axis_line_color, graph.axis_thickness);
 				}
+
 			}
 			else {
 				this->y_lines.clear();
@@ -4197,6 +4254,9 @@ namespace qsf {
 			for (auto& i : this->circle_texts[i]) {
 				i.draw(window, states);
 			}
+		}
+		for (qpl::u32 i = 0u; i < this->y_lines_foreground.size(); ++i) {
+			this->y_lines_foreground[i].draw(window, states);
 		}
 		if (!this->cursor_graph_text.get_color().is_unset()) {
 			this->cursor_graph_background.draw(window, states);

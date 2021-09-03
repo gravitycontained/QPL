@@ -5,7 +5,7 @@ namespace qpl {
 
 
 	void qpl::date_ms::set(std::string string) {
-		auto nums = qpl::split_numbers(string);
+		auto nums = qpl::split_numbers<qpl::u16>(string);
 
 		this->years = qpl::u16_cast(nums[0]);
 		this->months = qpl::u8_cast(nums[1]);

@@ -1147,6 +1147,12 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
 
+		struct highlighted_line {
+			qsf::rgb color;
+			qpl::f64 thickness;
+			bool foreground;
+		};
+
 		struct data_point_info {
 			qpl::f64 data = 0.0;
 			qpl::f64 thickness = qpl::f64_min;
@@ -1258,7 +1264,7 @@ namespace qsf {
 		qpl::u32 desired_x_axis_lines = 10u;
 		qpl::u32 desired_visible_size = 200u;
 
-		bool enable_last_n_when_dragging_right_lock = true;
+		bool enable_last_n_when_dragging_right_lock = false;
 		qpl::size display_last_n_entries = qpl::size_max;
 		qpl::size index_start = 0u;
 		qpl::size index_end = qpl::size_max;
@@ -1272,6 +1278,8 @@ namespace qsf {
 
 		qsf::rgb axis_line_color = qsf::rgb(30, 30, 30);
 		qpl::f64 axis_thickness = 1.5f;
+
+
 
 		std::string font;
 		qpl::f64 zoom_factor = 1.3;
@@ -1470,6 +1478,7 @@ namespace qsf {
 		QPLDLL void disable_track_new_entries();
 		QPLDLL void enable_axis_info();
 		QPLDLL void update(const event_info& event_info);
+		QPLDLL void copy_visible_range(const vgraph& other);
 
 		QPLDLL void set_font(std::string name);
 		QPLDLL std::string get_font() const;
@@ -1502,10 +1511,17 @@ namespace qsf {
 		QPLDLL const simple_graph& get_simple_graph(std::string name) const;
 		QPLDLL qpl::span<const data_point_simple> get_simple_graph_span(std::string name) const;
 
+		QPLDLL void add_y_axis_line(qpl::f64 value);
+		QPLDLL void add_y_axis_line(qpl::f64 value, qsf::rgb color, qpl::f64 thickness = 2.0, bool foreground = true);
+		QPLDLL highlighted_line& get_y_axis_line(qpl::f64 value);
+		QPLDLL const highlighted_line& get_y_axis_line(qpl::f64 value) const;
 
 		std::unordered_map<std::string, info_graph> info_graphs;
 		std::unordered_map<std::string, standard_graph> standard_graphs;
 		std::unordered_map<std::string, simple_graph> simple_graphs;
+
+
+		std::unordered_map<qpl::f64, highlighted_line> y_axis_highlighted_lines;
 
 		qsf::rgb background_color = qsf::rgb::black;
 	};
@@ -1519,6 +1535,7 @@ namespace qsf {
 		std::vector<std::vector<qsf::text>> circle_texts;
 		std::vector<qsf::circles> circles;
 		std::vector<qsf::thick_lines> y_lines;
+		std::vector<qsf::thick_lines> y_lines_foreground;
 		std::vector<qsf::text> y_texts;
 		std::vector<qsf::thick_lines> x_lines;
 		std::vector<qsf::text> x_texts;

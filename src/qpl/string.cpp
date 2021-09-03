@@ -1,6 +1,5 @@
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
-#include <regex>
 
 namespace qpl {
 	std::string qpl::str_spaced(const std::string& string, qpl::size length, char prepend) {
@@ -506,7 +505,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split(const std::string& string, char by_what) {
+	std::vector<std::string> qpl::split_string(const std::string& string, char by_what) {
 		std::vector<std::string> result;
 
 		int before = 0;
@@ -530,7 +529,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split(const std::string& string, const std::string& expression) {
+	std::vector<std::string> qpl::split_string(const std::string& string, const std::string& expression) {
 		std::vector<std::string> result;
 		std::smatch smatch;
 		std::regex reg = std::regex{ "[^" + expression + "]+" };
@@ -541,7 +540,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split(const std::string& string) {
+	std::vector<std::string> qpl::split_string(const std::string& string) {
 		std::vector<std::string> result;
 
 		int before = 0;
@@ -565,7 +564,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split(const std::wstring& string, char by_what) {
+	std::vector<std::wstring> qpl::split_string(const std::wstring& string, char by_what) {
 		std::vector<std::wstring> result;
 		std::wsmatch smatch;
 		std::wregex reg{ L"[^" + qpl::to_wstring(by_what) + L"]+" };
@@ -576,7 +575,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split(const std::wstring& string, const std::wstring& expression) {
+	std::vector<std::wstring> qpl::split_string(const std::wstring& string, const std::wstring& expression) {
 		std::vector<std::wstring> result;
 		std::wsmatch smatch;
 		std::wregex reg = std::wregex{ L"[^" + expression + L"]+" };
@@ -587,36 +586,13 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split(const std::wstring& string) {
+	std::vector<std::wstring> qpl::split_string(const std::wstring& string) {
 		std::vector<std::wstring> result;
 		std::wsmatch smatch;
 		std::wregex reg{ L"[^\\s]+" };
 		auto s = std::wsregex_iterator(string.cbegin(), string.cend(), reg);
 		while (s != std::wsregex_iterator()) {
 			result.push_back(s->str());
-			++s;
-		}
-		return result;
-	}
-
-	std::vector<qpl::u64> split_numbers(const std::string& string) {
-		std::vector<qpl::u64> result;
-		std::smatch smatch;
-		static std::regex reg{ "[0-9]+" };
-		auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
-		while (s != std::sregex_iterator()) {
-			result.push_back(qpl::string_cast<qpl::u64>(s->str()));
-			++s;
-		}
-		return result;
-	}
-	std::vector<qpl::f64> split_floats(const std::string& string) {
-		std::vector<qpl::f64> result;
-		std::smatch smatch;
-		static std::regex reg{ "[0-9.e+]+" };
-		auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
-		while (s != std::sregex_iterator()) {
-			result.push_back(qpl::string_cast<qpl::f64>(s->str()));
 			++s;
 		}
 		return result;

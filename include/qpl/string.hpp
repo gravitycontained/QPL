@@ -16,6 +16,7 @@
 #include <vector>
 #include <iomanip>
 #include <bitset>
+#include <regex>
 
 
 #ifdef _WIN32
@@ -1713,15 +1714,81 @@ namespace qpl {
 	QPLDLL std::string to_lower(const std::string& string);
 	QPLDLL std::string to_upper(const std::string& string);
 
-	QPLDLL std::vector<std::string> split(const std::string& string, char by_what);
-	QPLDLL std::vector<std::string> split(const std::string& string, const std::string& expression);
-	QPLDLL std::vector<std::string> split(const std::string& string);
-	QPLDLL std::vector<std::wstring> split(const std::wstring& string, char by_what);
-	QPLDLL std::vector<std::wstring> split(const std::wstring& string, const std::wstring& expression);
-	QPLDLL std::vector<std::wstring> split(const std::wstring& string);
+	QPLDLL std::vector<std::string> split_string(const std::string& string, char by_what);
+	QPLDLL std::vector<std::string> split_string(const std::string& string, const std::string& expression);
+	QPLDLL std::vector<std::string> split_string(const std::string& string);
+	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, char by_what);
+	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, const std::wstring& expression);
+	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
 
-	QPLDLL std::vector<qpl::u64> split_numbers(const std::string& string);
-	QPLDLL std::vector<qpl::f64> split_floats(const std::string& string);
+
+	template<typename T>
+	T string_cast(const qpl::string_view& string) {
+		T value;
+		std::from_chars(string.data(), string.data() + string.size(), value);
+
+		return value;
+	}
+	template<typename T>
+	T string_cast(const std::string& string) {
+		if constexpr (std::is_same_v<T, qpl::f64>) {
+			return std::stod(string);
+		}
+		else if constexpr (std::is_same_v<T, qpl::f32>) {
+			return std::stof(string);
+		}
+		else if constexpr (std::is_same_v<T, qpl::i8>) {
+			return static_cast<qpl::i8>(std::stoi(string));
+		}
+		else if constexpr (std::is_same_v<T, qpl::u8>) {
+			return static_cast<qpl::u8>(std::stoul(string));
+		}
+		else if constexpr (std::is_same_v<T, qpl::i16>) {
+			return static_cast<qpl::i16>(std::stoi(string));
+		}
+		else if constexpr (std::is_same_v<T, qpl::u16>) {
+			return static_cast<qpl::u16>(std::stoul(string));
+		}
+		else if constexpr (std::is_same_v<T, qpl::i32>) {
+			return std::stoi(string);
+		}
+		else if constexpr (std::is_same_v<T, qpl::u32>) {
+			return static_cast<qpl::u32>(std::stoul(string));
+		}
+		else if constexpr (std::is_same_v<T, qpl::i64>) {
+			return std::stoll(string);
+		}
+		else if constexpr (std::is_same_v<T, qpl::u64>) {
+			return std::stoull(string);
+		}
+	}
+
+	template<typename T>
+	std::vector<T> split_numbers(const std::string& string) {
+		std::vector<T> result;
+
+		if constexpr (qpl::is_floating_point<T>()) {
+			static std::regex reg{ "[0-9.e+]+" };
+			auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
+			while (s != std::sregex_iterator()) {
+				result.push_back(qpl::string_cast<T>(s->str()));
+				++s;
+			}
+		}
+		else if constexpr (qpl::is_integer<T>()) {
+			static std::regex reg{ "[0-9]+" };
+			auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
+			while (s != std::sregex_iterator()) {
+				result.push_back(qpl::string_cast<T>(s->str()));
+				++s;
+			}
+		}
+		else {
+			static_assert("split_numbers<T>: T is not arithmetic");
+		}
+		return result;
+	}
+
 
 	QPLDLL std::string string_first_n_characters(const std::string& string, qpl::size n);
 	constexpr qpl::string_view string_first_n_characters(const qpl::string_view& string, qpl::size n) {
@@ -2092,46 +2159,6 @@ namespace qpl {
 		return qpl::to_string((number / qpl::pi) * 180);
 	}
 
-	template<typename T>
-	T string_cast(const qpl::string_view& string) {
-		T value;
-		std::from_chars(string.data(), string.data() + string.size(), value);
-
-		return value;
-	}
-	template<typename T>
-	T string_cast(const std::string& string) {
-		if constexpr (std::is_same_v<T, qpl::f64>) {
-			return std::stod(string);
-		}
-		else if constexpr (std::is_same_v<T, qpl::f32>) {
-			return std::stof(string);
-		}
-		else if constexpr (std::is_same_v<T, qpl::i8>) {
-			return static_cast<qpl::i8>(std::stoi(string));
-		}
-		else if constexpr (std::is_same_v<T, qpl::u8>) {
-			return static_cast<qpl::u8>(std::stoul(string));
-		}
-		else if constexpr (std::is_same_v<T, qpl::i16>) {
-			return static_cast<qpl::i16>(std::stoi(string));
-		}
-		else if constexpr (std::is_same_v<T, qpl::u16>) {
-			return static_cast<qpl::u16>(std::stoul(string));
-		}
-		else if constexpr (std::is_same_v<T, qpl::i32>) {
-			return std::stoi(string);
-		}
-		else if constexpr (std::is_same_v<T, qpl::u32>) {
-			return static_cast<qpl::u32>(std::stoul(string));
-		}
-		else if constexpr (std::is_same_v<T, qpl::i64>) {
-			return std::stoll(string);
-		}
-		else if constexpr (std::is_same_v<T, qpl::u64>) {
-			return std::stoull(string);
-		}
-	}
 }
 
 #endif

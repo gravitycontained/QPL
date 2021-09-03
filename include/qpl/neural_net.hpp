@@ -26,8 +26,8 @@ namespace qpl {
 
 		friend class neuron;
 	private:
-		qpl::f64 m_weight;
-		qpl::f64 m_delta_weight;
+		qpl::f64 m_weight = 0.0;
+		qpl::f64 m_delta_weight = 0.0;
 	};
 
 	class neuron {
@@ -56,9 +56,9 @@ namespace qpl {
 		QPLDLL void load_from_stream(std::stringstream& stream);
 		QPLDLL std::string info_string() const;
 	private:
-		qpl::f64 m_gradient;
-		qpl::f64 m_output;
-		qpl::u32 m_index;
+		qpl::f64 m_gradient = 0.0;
+		qpl::f64 m_output = 0.0;
+		qpl::u32 m_index = 0.0;
 		std::vector<neural_connection> m_connections;
 	};
 

@@ -510,6 +510,25 @@ namespace qpl {
 	}
 
 
+	std::string get_current_time_string_ymd_hms() {
+		std::time_t rawtime;
+		std::tm* timeinfo;
+		char buffer[80];
+
+		std::time(&rawtime);
+
+
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		timeinfo = std::localtime(&rawtime);
+#pragma warning( pop ) 
+
+
+
+		std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
+
+		return qpl::to_string(buffer);
+	}
 	std::string get_current_time_string_ymd_hmsms() {
 		std::time_t rawtime;
 		std::tm* timeinfo;

@@ -85,6 +85,9 @@ namespace qpl {
 
 
 	struct ema {
+		ema(qpl::f64 time_period = 5.0) {
+			this->time_period = time_period;
+		}
 		qpl::f64 time_period;
 		qpl::size time_ctr = 0u;
 		qpl::f64 last_ma = 0.0;

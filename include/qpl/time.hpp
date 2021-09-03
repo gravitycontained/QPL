@@ -250,6 +250,7 @@ namespace qpl {
 	//YYYY-MM-DD-HH-MM-SS
 	QPLDLL std::string get_current_time_string();
 	QPLDLL std::string get_current_time_string_ms();
+	QPLDLL std::string get_current_time_string_ymd_hms();
 	QPLDLL std::string get_current_time_string_ymd_hmsms();
 	QPLDLL std::string get_current_time_string_ymd_hmsms_compact();
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
