@@ -513,6 +513,17 @@ namespace qpl {
 		system("cls");
 	}
 
+
+	std::ostream& qpl::operator<<(std::ostream& os, color color) {
+		return os;
+	}
+	std::ostream& qpl::operator<<(std::ostream& os, foreground foreground) {
+		return os;
+	}
+	std::ostream& qpl::operator<<(std::ostream& os, background background) {
+		return os;
+	}
+
 	qpl::cc qpl::cc::def() {
 		qpl::cc result;
 		result.foreground = qpl::foreground::white;

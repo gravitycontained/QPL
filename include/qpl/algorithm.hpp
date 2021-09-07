@@ -43,15 +43,15 @@ namespace qpl {
 		return std::make_pair(div, mod);
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::size number_of_digits(T value, T base = T{ 10 }) {
 		return value < base ? 1 : 1 + number_of_digits(value / base, base);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T approximate_multiple_down(T value, T multiple) {
 		return (value / multiple) * multiple;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T approximate_multiple_up(T value, T multiple) {
 		return (((value - 1) / multiple) + 1) * multiple;
 	}
@@ -63,28 +63,28 @@ namespace qpl {
 	constexpr T square(T value) {
 		return value * value;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T factorial(T a) {
 		return a <= T{ 1 } ? T{ 1 } : (a == T{ 2 } ? T{ 2 } : static_cast<T>(a * qpl::factorial(a - 1)));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T log(T a, T b) {
 		return b < a ? T{} : T{ 1 } + qpl::log(a, static_cast<T>(b / a));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr qpl::i64 log2(T a) {
 		return a ? qpl::i64{ 1 } + qpl::log2(static_cast<T>(a >> 1)) : qpl::i64{ -1 };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T shift(T a, T b) {
 		return b == T{} ? T{ 1 } : static_cast<T>(a * qpl::pow<T>(a, b - T{ 1 }));
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr qpl::size significant_digit(T n, T base = 10) {
 		return n ? qpl::size{ 1 } + qpl::significant_digit(static_cast<T>(n / base), base) : qpl::size{};
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr qpl::size significant_bit(T n) {
 		return n ? qpl::size{ 1 } + qpl::significant_bit(static_cast<T>(n >> 1)) : qpl::size{};
 	}
@@ -136,7 +136,7 @@ namespace qpl {
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr qpl::size number_of_set_bits(T n) {
 		return qpl::number_of_set_bits(qpl::u64_cast(n));
 	}
@@ -147,53 +147,52 @@ namespace qpl {
 		return (((n + (n >> 4)) & 0x0F0F'0F0F'0F0F'0F0Full) * 0x0101'0101'0101'0101ull) >> 56;
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr bool get_bit(T value, qpl::size position) {
 		return qpl::bool_cast(value & (T{ 1 } << position));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void set_bit(T& value, qpl::size position, bool flag) {
 		value = flag ? (value | (T{ 1 } << position)) : (value & ~(T{ 1 } << position));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T set_bit_copied(T value, qpl::size position, bool flag) {
 		return flag ? (value | (T{ 1 } << position)) : (value & ~(T{ 1 } << position));
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void toggle_bit(T& value, qpl::size position) {
 		value = (value & (T{ 1 } << position)) ? (value & ~(T{ 1 } << position)) : (value | (T{ 1 } << position));
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void flip_bits(T& value) {
 		value = ~value;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T flipped_bits(T value) {
 		return ~value;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void flip_bits_until(T& value, qpl::size position) {
 		value = (value & (~T{} << position)) | (~value & ~(~T{} << position));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T flipped_bits_until(T value, qpl::size position) {
 		return (value & (~T{} << position)) | (~value & ~(~T{} << position));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void flip_bits_until_msb(T& value) {
 		qpl::flip_bits_until(value, qpl::significant_bit(value));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T flipped_bits_until_msb(T value) {
 		return qpl::flipped_bits_until(value, qpl::significant_bit(value));
 	}
 
 
-
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void reverse_bits(T& value) {
 
 		if constexpr (qpl::is_same<T, qpl::u32>()) {
@@ -219,19 +218,18 @@ namespace qpl {
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T reverse_bits_copied(T value) {
 		T copy;
 		qpl::reverse_bits(copy);
 		return copy;
 	}
 
-
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T get_digit(T value, qpl::size position, T base = 10) {
 		return static_cast<T>((value / qpl::pow<qpl::size>(base, position)) % base);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void set_digit(T& value, qpl::size position, T digit, T base = 10) {
 		auto pow = qpl::pow<qpl::size>(base, position);
 		auto original_digit = static_cast<T>((value / pow) % base);
@@ -242,75 +240,75 @@ namespace qpl {
 			value += (digit - original_digit) * pow;
 		}
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T set_digit_copied(T value, qpl::size position, T digit, T base = 10) {
 		auto copy = value;
 		qpl::set_digit(copy, position, digit, base);
 		return copy;
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T log_approximation(T a, T b, T c = T{ 1 }) {
 		return c > static_cast<T>(b / a) ? c : qpl::log_approximation(a, b, static_cast<T>(c * a));
 	}
 
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr bool is_power_of_two(T n) {
 		return n == T{} ? false : (n == (T{ 1 } << (qpl::significant_bit(n) - 1)));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr bool base_full_bit_usage(T base) {
 		return is_power_of_two(base) ? qpl::bits_in_type<T>() % (qpl::significant_bit(base) - 1) == 0 : false;
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T base_max_log(T base) {
 		return qpl::base_full_bit_usage(base) ? static_cast<T>(qpl::bits_in_type<T>() / (qpl::significant_bit(base) - 1)) : qpl::log<T>(base, T{ 1 } << (qpl::bits_in_type<T>() - 1));
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T base_max(T base) {
 		return qpl::base_full_bit_usage(base) ? T{} : qpl::pow(base, qpl::base_max_log(base));
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void flip_digits(T& value, qpl::u32 base = 10) {
 		value = qpl::base_max<T>(static_cast<T>(base)) - 1 - value;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T flipped_digits(T value, qpl::u32 base = 10) {
 		return qpl::base_max<T>(static_cast<T>(base)) - 1 - value;
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void flip_digits_until(T& value, qpl::size position, qpl::u32 base = 10) {
 		auto pow = qpl::pow<qpl::size>(base, position);
 		value = (value + (pow - 1 - (value % pow) * 2));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T flipped_digits_until(T value, qpl::size position, qpl::u32 base = 10) {
 		auto pow = qpl::pow<qpl::size>(base, position);
 		return (value + (pow - 1 - (value % pow) * 2));
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr void flip_digits_until_msd(T& value, qpl::u32 base = 10) {
 		qpl::flip_digits_until(value, qpl::significant_digit(value, base), base);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T flipped_digits_until_msd(T value, qpl::u32 base = 10) {
 		return qpl::flipped_digits_until(value, qpl::significant_digit(value, base), base);
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	T constexpr cantor_pairing(T x, T y) {
 		return (x + y) * (x + y + 1) / 2 + y;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::pair<T, T> cantor_pairing_inverse(T z) {
 		std::pair<T, T> result;
 		auto w = static_cast<T>((std::sqrt(T{ 8 } *z + T{ 1 }) - T{ 1 }) / T{ 2 });
@@ -319,11 +317,11 @@ namespace qpl {
 		return result;
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	T constexpr rosenberg_pairing(T x, T y) {
 		return ((x > y ? x : y) * (x > y ? x : y)) + (x > y ? x : y) + x - y;
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::pair<T, T> rosenberg_pairing_inverse(T z) {
 		auto m = static_cast<T>(std::sqrt(z));
 		if (z - m * m < m) {
@@ -336,7 +334,7 @@ namespace qpl {
 
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T binary_configurations(T n) {
 		return T{ 1 } << n;
 	}
@@ -499,7 +497,7 @@ namespace qpl {
 	}
 
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
 	qpl::size container_size(const C& data) {
 		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
 			qpl::size sum = qpl::size{};

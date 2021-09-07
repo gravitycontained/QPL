@@ -18,33 +18,6 @@
 namespace qsf {
 	struct draw_object;
 
-#ifdef QPL_CPP17
-	template<typename T, typename = void>
-	struct has_draw_object_impl : std::false_type {
-
-	};
-	template<typename T>
-	struct has_draw_object_impl<T, std::void_t<decltype(std::declval<const T>().draw(std::declval<draw_object&>()))>> : std::true_type {
-
-	};
-	template<typename C>
-	constexpr bool has_draw_object() {
-		return has_draw_object_impl<C>::value;
-	}
-
-	template<typename T, typename = void>
-	struct has_draw_sf_impl : std::false_type {
-
-	};
-	template<typename T>
-	struct has_draw_sf_impl<T, std::void_t<decltype(std::declval<const T>().draw(std::declval<sf::RenderTarget&>(), std::declval<sf::RenderStates>()))>> : std::true_type {
-
-	};
-	template<typename C>
-	constexpr bool has_draw_sf() {
-		return has_draw_sf_impl<C>::value;
-	}
-#else
 
 	template<typename C>
 	concept has_draw_object_c = requires (const C x, draw_object & object) {
@@ -62,26 +35,31 @@ namespace qsf {
 	constexpr bool has_draw_sf() {
 		return has_draw_sf_c<C>;
 	}
-#endif
+
+	template<typename C>
+	concept has_any_draw_c = has_draw_sf_c<C> || has_draw_object_c<C> || std::is_base_of_v<sf::Drawable, C>;
+
+	template<typename C>
+	constexpr bool has_any_draw() {
+		return has_any_draw_c<C>;
+	}
 
 	struct draw_object {
 		draw_object(sf::RenderWindow& window, sf::RenderStates states = sf::RenderStates::Default) {
 			this->window = &window;
 			this->states = states;
 		}
-		template<typename T>
+
+		template<typename T> requires qsf::has_any_draw_c<T>
 		void draw(const T& object) {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->window->draw(object, this->states);
 			}
 			else if constexpr (qsf::has_draw_object<T>()) {
-				object.draw(*this->window, this->states);
+				object.draw(*this);
 			}
 			else if constexpr (qsf::has_draw_sf<T>()) {
 				object.draw(*this->window, this->states);
-			}
-			else {
-				qpl::println(qpl::type_name<T>(), " is not drawable");
 			}
 		}
 		sf::RenderWindow* window;
@@ -1242,7 +1220,7 @@ namespace qsf {
 		qsf::rgb y_axis_color = qsf::rgb::unset;
 		qsf::rgb axis_color = qsf::rgb::white;
 		qpl::f64 y_axis_text_space = 40.0;
-		qpl::size y_axis_line_count = 10u;
+		qpl::size desired_y_axis_lines = 10u;
 		qsf::vtext y_axis_text;
 		bool y_axis_text_left = true;
 		bool y_axis_text_percent = false;

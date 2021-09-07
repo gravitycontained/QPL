@@ -12,8 +12,6 @@
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 
-#define QPLCONCEPT(x) std::enable_if_t<x>* = nullptr
-
 namespace qpl {
 	template<qpl::u32 base, bool sign>
 	struct dynamic_integer;

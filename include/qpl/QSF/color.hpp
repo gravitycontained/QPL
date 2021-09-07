@@ -39,7 +39,7 @@ namespace qsf {
 		QPLDLL frgb& operator=(const frgb& other);
 		QPLDLL frgb& operator=(const rgb& other);
 
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb& operator/=(T value) {
 
 			this->r /= value;
@@ -52,13 +52,13 @@ namespace qsf {
 			//this->a = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->a) / value, static_cast<qpl::f32>(1.0f));
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb operator/(T value) const {
 			auto copy = *this;
 			copy /= value;
 			return copy;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb& operator*=(T value) {
 
 			this->r *= value;
@@ -71,13 +71,13 @@ namespace qsf {
 			//this->a = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->a) * value, static_cast<qpl::f32>(1.0f));
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb operator*(T value) const {
 			auto copy = *this;
 			copy *= value;
 			return copy;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb& operator+=(T value) {
 			this->r += value;
 			this->g += value;
@@ -89,13 +89,13 @@ namespace qsf {
 			//this->a = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->a) + value, static_cast<qpl::f32>(1.0f));
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb operator+(T value) const {
 			auto copy = *this;
 			copy += value;
 			return copy;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb& operator-=(T value) {
 			this->r -= value;
 			this->g -= value;
@@ -107,7 +107,7 @@ namespace qsf {
 			//this->a = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->a) - value, static_cast<qpl::f32>(1.0f));
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb operator-(T value) const {
 			auto copy = *this;
 			copy -= value;
@@ -182,53 +182,53 @@ namespace qsf {
 		QPLDLL qsf::rgb inverted() const;
 		QPLDLL qsf::rgb with_alpha(qpl::u8 alpha) const;
 
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator/=(T value) {
 			this->c.r /= value;
 			this->c.g /= value;
 			this->c.b /= value;
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb operator/(T value) const {
 			auto copy = *this;
 			copy /= value;
 			return copy;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator*=(T value) {
 			this->c.r *= value;
 			this->c.g *= value;
 			this->c.b *= value;
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb operator*(T value) const {
 			auto copy = *this;
 			copy *= value;
 			return copy;
 		}		
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator+=(T value) {
 			this->c.r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.r) + value, static_cast<qpl::i16>(qpl::u8_max));
 			this->c.g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.g) + value, static_cast<qpl::i16>(qpl::u8_max));
 			this->c.b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.b) + value, static_cast<qpl::i16>(qpl::u8_max));
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb operator+(T value) const {
 			auto copy = *this;
 			copy += value;
 			return copy;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator-=(T value) {
 			this->c.r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.r) - value, static_cast<qpl::i16>(qpl::u8_max));
 			this->c.g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.g) - value, static_cast<qpl::i16>(qpl::u8_max));
 			this->c.b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.b) - value, static_cast<qpl::i16>(qpl::u8_max));
 			return *this;
 		}
-		template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb operator-(T value) const {
 			auto copy = *this;
 			copy -= value;

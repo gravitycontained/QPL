@@ -69,6 +69,22 @@ namespace qsf {
 
 	qsf::resources qsf::detail::resources;
 
+	void qsf::load_font(sf::Font& font, const std::string& path) {
+		if (!font.loadFromFile(path)) {
+			throw std::exception(qpl::to_cstring("load font: couldn't find / load \"", path, "\""));
+		}
+	}
+	void qsf::load_texture(sf::Texture& texture, const std::string& path) {
+		if (!texture.loadFromFile(path)) {
+			throw std::exception(qpl::to_cstring("load texture: couldn't find / load \"", path, "\""));
+		}
+	}
+	void qsf::load_sound(sf::SoundBuffer& sound, const std::string& path) {
+		if (!sound.loadFromFile(path)) {
+			throw std::exception(qpl::to_cstring("load sound: couldn't find / load \"", path, "\""));
+		}
+	}
+
 	void qsf::add_font(const std::string& name, const std::string& path) {
 		qsf::detail::resources.add_font(name, path);
 	}

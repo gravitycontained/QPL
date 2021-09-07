@@ -3231,7 +3231,7 @@ namespace qsf {
 			}
 		}
 
-		if (this->display_closest_graph_at_cursor) {
+		if (this->display_closest_graph_at_cursor && this->visible_element_size()) {
 
 			qsf::vgraph::interpolation_type interpolation = qsf::vgraph::interpolation_type::unset;
 
@@ -3738,7 +3738,7 @@ namespace qsf {
 	}
 
 	qsf::graph& qsf::graph::operator=(const qsf::vgraph& graph) {
-		if (graph.empty()) {
+		if (graph.empty() || graph.graph_element_size() == 0u) {
 			return *this;
 		}
 		graph.update_change();
@@ -4017,7 +4017,7 @@ namespace qsf {
 				qpl::u32 y_steps = 0;
 
 				if (!used_font.empty() && y_range != 0) {
-					y_delta = qpl::i64_cast(y_range) / (multiply * graph.y_axis_line_count);
+					y_delta = qpl::i64_cast(y_range) / (multiply * graph.desired_y_axis_lines);
 
 					y_start = qpl::i64_cast(low_padded / y_delta + 1) * y_delta;
 					y_end = qpl::i64_cast(high_padded / y_delta) * y_delta;

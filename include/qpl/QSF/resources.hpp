@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 namespace qsf {
 	struct resources {
@@ -39,6 +40,9 @@ namespace qsf {
 		QPLDLL extern qsf::resources resources;
 	}
 
+	QPLDLL void load_font(sf::Font& Font, const std::string& path);
+	QPLDLL void load_texture(sf::Texture& texture, const std::string& path);
+	QPLDLL void load_sound(sf::SoundBuffer& sound, const std::string& path);
 
 	QPLDLL void add_font(const std::string& name, const std::string& path);
 	QPLDLL void add_texture(const std::string& name, const std::string& path);

@@ -18,11 +18,11 @@ namespace qpl {
 		return result;
 	}
 
-	void qpl::ema::reset() {
+	void qpl::exponential_moving_average::reset() {
 		this->last_ma = 0.0;
 		this->time_ctr = 0;
 	}
-	void qpl::ema::add_value(double value) {
+	void qpl::exponential_moving_average::add_value(double value) {
 		++this->time_ctr;
 		this->time_ctr = qpl::min(static_cast<qpl::size>(this->time_period), this->time_ctr);
 
@@ -30,7 +30,7 @@ namespace qpl {
 		this->last_ma = m * value + (1 - m) * this->last_ma;
 	}
 
-	double qpl::ema::get_average() const {
+	double qpl::exponential_moving_average::get_average() const {
 		return this->last_ma;
 	}
 	std::string qpl::mathematical_operation_string(mathematical_operation op) {

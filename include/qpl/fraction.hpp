@@ -8,7 +8,7 @@
 #include <string>
 
 namespace qpl {
-	template<typename T, typename F, QPLCONCEPT(qpl::is_integer<T>() && qpl::is_signed<T>() && qpl::is_floating_point<F>())>
+	template<typename T, typename F> requires(qpl::is_integer<T>() && qpl::is_signed<T>() && qpl::is_floating_point<F>())
 	struct fraction_type {
 		T n;
 		T d;

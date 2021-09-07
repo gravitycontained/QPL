@@ -175,6 +175,9 @@ namespace qpl {
 		}
 		return std::wstring(length - string.length(), prepend) + string;
 	}
+	std::ostream& qpl::operator<<(std::ostream& os, print_effect effect) {
+		return os;
+	}
 
 	t_cclearln qpl::cclearln;
 	t_cclear qpl::cclear;

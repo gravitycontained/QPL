@@ -150,7 +150,8 @@ namespace qsf {
 		QPLDLL bool game_loop_update_segment();
 		QPLDLL bool game_loop_segment();
 		QPLDLL bool game_loop_segment_no_display();
-		template<typename T>
+
+		template<typename T> requires qsf::has_any_draw_c<T>
 		void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
@@ -163,7 +164,8 @@ namespace qsf {
 				drawable.draw(this->framework->window, states);
 			}
 		}
-		template<typename T, typename V>
+
+		template<typename T, typename V> requires qsf::has_any_draw_c<T>
 		void draw(const T& drawable, qsf::view_rectangle<V> view) {
 			sf::RenderStates states = view.get_render_states();
 			if constexpr (std::is_base_of<sf::Drawable, T>()) {
@@ -177,7 +179,8 @@ namespace qsf {
 				drawable.draw(this->framework->window, states);
 			}
 		}
-		template<typename T>
+
+		template<typename T> requires qsf::has_update_c<T>
 		void update(T& updatable) {
 			updatable.update(this->event);
 		}

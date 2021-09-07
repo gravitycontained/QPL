@@ -11,6 +11,8 @@
 
 namespace qsf {
 
+
+
 	struct event_info {
 		QPLDLL bool key_single_pressed(sf::Keyboard::Key key) const;
 		QPLDLL bool key_single_released(sf::Keyboard::Key key) const;
@@ -103,6 +105,16 @@ namespace qsf {
 		std::set<sf::Keyboard::Key> m_keys_single_released;
 		std::set<sf::Keyboard::Key> m_keys_holding;
 	};
+
+
+	template<typename C>
+	concept has_update_c = requires (C x, const event_info& event) {
+		x.update(event);
+	};
+	template<typename C>
+	constexpr bool has_update() {
+		return has_update_c<C>;
+	}
 }
 
 #endif

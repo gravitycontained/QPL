@@ -11,35 +11,35 @@
 #include <array>
 
 namespace qpl {
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 kilobyte(T n) {
 		return qpl::u64_cast(1000ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 kibibyte(T n) {
 		return qpl::u64_cast(0x400ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 megabyte(T n) {
 		return qpl::u64_cast(1000'000ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 mebibyte(T n) {
 		return qpl::u64_cast(0x100000ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 gigabyte(T n) {
 		return qpl::u64_cast(1000'000'000ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 gebibyte(T n) {
 		return qpl::u64_cast(0x40000000ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 terabyte(T n) {
 		return qpl::u64_cast(1'000'000'000'000ull * n);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr qpl::u64 tebibyte(T n) {
 		return qpl::u64_cast(0x10000000000ull * n);
 	}

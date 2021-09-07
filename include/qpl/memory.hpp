@@ -14,7 +14,7 @@
 
 
 namespace qpl {
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline C string_to_container_memory(const std::string& data) {
 		C result;
 		if (data.empty()) {
@@ -24,7 +24,7 @@ namespace qpl {
 		memcpy(result.data(), data.data(), data.size());
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void string_to_container_memory(const std::string& source, C& dest) {
 		if (source.empty()) {
 			return;
@@ -33,7 +33,7 @@ namespace qpl {
 		memcpy(dest.data(), source.data(), source.size());
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline std::string container_memory_to_string(const C& data) {
 		std::string result;
 		result.resize(data.size() * sizeof(qpl::container_subtype<C>));
@@ -47,12 +47,12 @@ namespace qpl {
 		memcpy(result.data(), &data, result.size());
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void container_memory_to_string(const C& data, std::string& destination) {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(destination.data(), data.data(), destination.size());
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void string_to_vector_memory(const std::string& data, C& destination) {
 		if (data.empty()) {
 			return;
@@ -68,7 +68,7 @@ namespace qpl {
 		}
 		memcpy(&destination, data.data(), data.size());
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void string_to_vector_memory(const qpl::string_view& data, C& destination) {
 		if (data.empty()) {
 			return;
@@ -76,7 +76,7 @@ namespace qpl {
 		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
 		memcpy(destination.data(), data.data(), data.size());
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void add_string_to_container_memory(const std::string& data, C& destination) {
 		if (data.empty()) {
 			return;
@@ -86,42 +86,42 @@ namespace qpl {
 		memcpy(destination.data() + size, data.data(), data.size());
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr std::wstring container_memory_to_wstring(const C& data) {
 		std::wstring result;
 		result.resize(data.size() * sizeof(qpl::container_subtype<C>) / (sizeof(wchar_t) / sizeof(char)));
 		memcpy(result.data(), data.data(), result.size() * (sizeof(wchar_t) / sizeof(char)));
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr void container_memory_to_wstring(const C& data, std::wstring& destination) {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(destination.data(), data.data(), destination.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr C wstring_to_container_memory(const std::wstring& data) {
 		C result;
 		result.resize(((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>) + 1));
 		memcpy(result.data(), data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 		return result;
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr void wstring_to_container_memory(const std::wstring& data, C& destination) {
 		destination.resize(((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>) + 1));
 		memcpy(destination.data(), data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr void add_wstring_to_container_memory(const std::wstring& data, C& destination) {
 		auto size = destination.size();
 		destination.resize(size + ((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>)) + 1);
 		memcpy(destination.data() + size, data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
 
-	template<typename T, typename U, QPLCONCEPT(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())>
+	template<typename T, typename U> requires(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())
 	constexpr inline void copy_memory(const T& source, U& destination) {
 		memcpy(&destination, &source, qpl::bytes_in_type<T>());
 	}
-	template<typename T, typename U, QPLCONCEPT(qpl::bytes_in_type<T>() != qpl::bytes_in_type<U>())>
+	template<typename T, typename U> requires(qpl::bytes_in_type<T>() != qpl::bytes_in_type<U>())
 	constexpr inline void copy_memory(const T& source, U& destination) {
 		memcpy(&destination, &source, qpl::min(qpl::bytes_in_type<T>(), qpl::bytes_in_type<U>()));
 	}
@@ -140,7 +140,7 @@ namespace qpl {
 	constexpr inline void clear_array_offset(C& destination, qpl::size offset = 0u) {
 		memset(reinterpret_cast<std::byte*>(&destination) + offset * qpl::bytes_in_type<qpl::container_subtype<C>>(), 0, sizeof(C) - offset * qpl::bytes_in_type<qpl::container_subtype<C>>());
 	}
-	template<typename U, typename T, QPLCONCEPT(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())>
+	template<typename T, typename U = T> requires(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())
 	constexpr inline U convert_memory(const T& source) {
 		U destination;
 		memcpy(&destination, &source, qpl::bytes_in_type<T>());
@@ -459,6 +459,7 @@ namespace qpl {
 		qpl::conditional<qpl::if_true<N == 0>, std::vector<T>, std::array<T, N>> data;
 	};
 
+	
 	namespace detail {
 #ifdef QPL_NO_ARRAY_BOUNDARY_CHECK
 		constexpr bool array_boundary_check = false;

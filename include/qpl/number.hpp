@@ -2241,27 +2241,27 @@ namespace qpl {
 		holding_type content;
 	};
 
-	template<typename T, qpl::u32 base, bool sign, QPLCONCEPT(!qpl::is_qpl_dynamic_integer<T>())>
+	template<typename T, qpl::u32 base, bool sign> requires (!qpl::is_qpl_dynamic_integer<T>())
 	constexpr bool operator==(T value, qpl::dynamic_integer<base, sign> dynamic) {
 		return dynamic == value;
 	}
-	template<typename T, qpl::u32 base, bool sign, QPLCONCEPT(!qpl::is_qpl_dynamic_integer<T>())>
+		template<typename T, qpl::u32 base, bool sign> requires (!qpl::is_qpl_dynamic_integer<T>())
 	constexpr bool operator!=(T value, qpl::dynamic_integer<base, sign> dynamic) {
 		return dynamic != value;
 	}
-	template<typename T, qpl::u32 base, bool sign, QPLCONCEPT(!qpl::is_qpl_dynamic_integer<T>())>
+		template<typename T, qpl::u32 base, bool sign> requires (!qpl::is_qpl_dynamic_integer<T>())
 	constexpr bool operator<(T value, qpl::dynamic_integer<base, sign> dynamic) {
 		return dynamic >= value;
 	}
-	template<typename T, qpl::u32 base, bool sign, QPLCONCEPT(!qpl::is_qpl_dynamic_integer<T>())>
+		template<typename T, qpl::u32 base, bool sign> requires (!qpl::is_qpl_dynamic_integer<T>())
 	constexpr bool operator>(T value, qpl::dynamic_integer<base, sign> dynamic) {
 		return dynamic <= value;
 	}
-	template<typename T, qpl::u32 base, bool sign, QPLCONCEPT(!qpl::is_qpl_dynamic_integer<T>())>
+		template<typename T, qpl::u32 base, bool sign> requires (!qpl::is_qpl_dynamic_integer<T>())
 	constexpr bool operator<=(T value, qpl::dynamic_integer<base, sign> dynamic) {
 		return dynamic > value;
 	}
-	template<typename T, qpl::u32 base, bool sign, QPLCONCEPT(!qpl::is_qpl_dynamic_integer<T>())>
+		template<typename T, qpl::u32 base, bool sign> requires (!qpl::is_qpl_dynamic_integer<T>())
 	constexpr bool operator>=(T value, qpl::dynamic_integer<base, sign> dynamic) {
 		return dynamic < value;
 	}
@@ -5494,7 +5494,7 @@ namespace qpl {
 
 
 
-	template<qpl::size bits, bool sign, typename T, QPLCONCEPT(!qpl::is_qpl_floating_point<T>())>
+	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_floating_point<T>())
 	constexpr qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>> operator*(T value, qpl::integer<bits, sign> other) {
 		if constexpr (qpl::is_same<qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>>, qpl::integer<bits, sign>>()) {
 			return other * value;
@@ -5509,7 +5509,7 @@ namespace qpl {
 		return value = (other * value);
 	}
 
-	template<qpl::size bits, bool sign, typename T, QPLCONCEPT(!qpl::is_qpl_floating_point<T>())>
+	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_floating_point<T>())
 	constexpr qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>> operator+(T value, qpl::integer<bits, sign> other) {
 		if constexpr (qpl::is_same<qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>>, qpl::integer<bits, sign>>()) {
 			return other + value;
@@ -5523,7 +5523,7 @@ namespace qpl {
 		return value = (other + value);
 	}
 
-	template<qpl::size bits, bool sign, typename T, QPLCONCEPT(!qpl::is_qpl_floating_point<T>())>
+	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_floating_point<T>())
 	constexpr qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>> operator-(T value, const qpl::integer<bits, sign>& other) {
 		if constexpr (qpl::is_same<qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>>, qpl::integer<bits, sign>>()) {
 			return qpl::integer<bits, sign>(value) - other;
@@ -5537,7 +5537,7 @@ namespace qpl {
 		return value = (qpl::integer<bits, sign>(value) - other);
 	}
 
-	template<qpl::size bits, bool sign, typename T, QPLCONCEPT(!qpl::is_qpl_floating_point<T>())>
+	template<typename T, qpl::size bits, qpl::u32 base, bool sign> requires (!qpl::is_qpl_floating_point<T>())
 	constexpr qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>> operator/(T value, const qpl::integer<bits, sign>& other) {
 		if constexpr (qpl::is_same<qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>>, qpl::integer<bits, sign>>()) {
 			return qpl::integer<bits, sign>(value) / other;
@@ -5551,7 +5551,7 @@ namespace qpl {
 		return value = (qpl::integer<bits, sign>(value) / other);
 	}
 
-	template<qpl::size bits, bool sign, typename T, QPLCONCEPT(!qpl::is_qpl_floating_point<T>())>
+	template<typename T, qpl::size bits, qpl::u32 base, bool sign> requires (!qpl::is_qpl_floating_point<T>())
 	constexpr qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>> operator%(T value, const qpl::integer<bits, sign>& other) {
 		if constexpr (qpl::is_same<qpl::superior_arithmetic_type<T, qpl::integer<bits, sign>>, qpl::integer<bits, sign>>()) {
 			return qpl::integer<bits, sign>(value) % other;
@@ -7801,7 +7801,7 @@ namespace qpl {
 			//this->mantissa.back() = true;
 		}
 
-		template<typename T, QPLCONCEPT(qpl::is_stl_integer<T>())>
+		template<typename T> requires(qpl::is_stl_integer<T>())
 		constexpr void set(T value) {
 			if constexpr (qpl::is_signed<T>()) {
 				if (value < T{}) {

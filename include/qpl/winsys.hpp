@@ -232,10 +232,16 @@ namespace qpl {
 		size = 16,
 	};
 
+
+	QPLDLL std::ostream& operator<<(std::ostream& os, color color);
+	QPLDLL std::ostream& operator<<(std::ostream& os, foreground foreground);
+	QPLDLL std::ostream& operator<<(std::ostream& os, background background);
+
 	struct cc {
 		cc() {
 			this->foreground = qpl::foreground::white;
 			this->background = qpl::background::black;
+
 		}
 		cc(const cc& other) {
 			*this = other;

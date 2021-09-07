@@ -265,17 +265,17 @@ namespace qpl {
 	QPLDLL qpl::f64 random_f(qpl::f64 max);
 	QPLDLL qpl::u64 random();
 
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random(T min, T max) {
 		qpl::distribution<T> dist(min, max);
 		return qpl::detail::rng.rng.generate(dist);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random(T max) {
 		qpl::distribution<T> dist(T{}, max);
 		return qpl::detail::rng.rng.generate(dist);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random() {
 		qpl::distribution<T> dist(qpl::type_min<T>(), qpl::type_max<T>());
 		return qpl::detail::rng.rng.generate(dist);
@@ -289,7 +289,7 @@ namespace qpl {
 		std::shuffle(data.begin() + offset, data.end(), qpl::detail::rng.rng.engine);
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>() && qpl::has_size<C>())>
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
 	qpl::container_subtype<C> random_element(const C& data) {
 		auto size = data.size();
 		auto index = qpl::random_i(qpl::size{}, size - qpl::size{ 1 });

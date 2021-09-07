@@ -100,35 +100,35 @@ namespace qpl {
 
 	QPLDLL std::ostream& operator<<(std::ostream& os, const qpl::time& time);
 
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time nsecs(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time usecs(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_usec) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time msecs(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_msec) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time secs(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_sec) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time mins(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_min) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time hours(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_hour) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time days(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_day) };
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires(qpl::is_arithmetic<T>())
 	constexpr qpl::time years(T value) {
 		return qpl::time{ static_cast<qpl::u64>(value * qpl::time::nsecs_in_year) };
 	}
@@ -221,7 +221,7 @@ namespace qpl {
 
 		bool start;
 		qpl::clock clock;
-		qpl::ema ema;
+		qpl::exponential_moving_average ema;
 	};
 
 	QPLDLL void wait(qpl::time duration);
@@ -258,11 +258,11 @@ namespace qpl {
 	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed);
 	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::clock timer);
 
-	template<typename T, typename U, QPLCONCEPT(qpl::is_integer<T>() && qpl::is_integer<U>())>
+	template<typename T, typename U> requires(qpl::is_integer<T>() && qpl::is_integer<U>())
 	qpl::time get_remaining_time(T start, U end, qpl::time elapsed) {
 		return qpl::get_remaining_time(qpl::f64_cast(start) / end, elapsed);
 	}
-	template<typename T, typename U, QPLCONCEPT(qpl::is_integer<T>() && qpl::is_integer<U>())>
+	template<typename T, typename U> requires(qpl::is_integer<T>() && qpl::is_integer<U>())
 	qpl::time get_remaining_time(T start, U end, qpl::clock timer) {
 		return qpl::get_remaining_time(qpl::f64_cast(start) / end, timer.elapsed());
 	}

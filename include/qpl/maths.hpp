@@ -84,8 +84,8 @@ namespace qpl {
 	}
 
 
-	struct ema {
-		ema(qpl::f64 time_period = 5.0) {
+	struct exponential_moving_average {
+		exponential_moving_average(qpl::f64 time_period = 5.0) {
 			this->time_period = time_period;
 		}
 		qpl::f64 time_period;
@@ -97,6 +97,48 @@ namespace qpl {
 		QPLDLL double get_average() const;
 	};
 
+
+	template<typename T>
+	struct fast_moving_average {
+		void reset() {
+			this->ctr = 0u;
+			this->sum = T{ 0 };
+			this->progress = 0u;
+		}
+		void set_time_period(qpl::u32 time_period) {
+			this->time_period = time_period;
+		}
+		void set_step(qpl::u32 ctr) {
+			this->ctr = ctr;
+			this->sum = T{ 0 };
+			this->progress = 0u;
+		}
+		qpl::size used_size() const {
+			return qpl::min(this->time_period, this->progress);
+		}
+		template<typename R = qpl::f64>
+		R get_average() const {
+			return static_cast<R>(this->sum) / static_cast<R>(this->used_size());
+		}
+		void add(T add, T subtract) {
+
+			this->sum += add;
+			if (this->progress >= this->time_period) {
+				this->sum -= subtract;
+			}
+			++this->ctr;
+			++this->progress;
+		}
+		qpl::size get_needed_index(qpl::u32 index) const {
+			return index - this->used_size();
+		}
+
+
+		T sum = T{ 0 };
+		qpl::u32 time_period = 1u;
+		qpl::u32 ctr = 0u;
+		qpl::u32 progress = 0u;
+	};
 
 
 	enum class mathematical_operation {

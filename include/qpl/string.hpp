@@ -15,6 +15,7 @@
 #include <array>
 #include <vector>
 #include <iomanip>
+#include <iostream>
 #include <bitset>
 #include <regex>
 
@@ -27,12 +28,65 @@
 #endif
 
 namespace qpl {
+	template<typename T>
+	concept is_cout_printable_c = requires(const T t) {
+		std::cout << t;
+	};
+	template<typename... Args>
+	constexpr bool is_cout_printable() {
+		return (is_cout_printable_c<Args> && ...);
+	}
+	template<typename T>
+	concept is_cin_readable_c = requires(T & t) {
+		std::cin >> t;
+	};
+	template<typename... Args>
+	constexpr bool is_cin_readable() {
+		return (is_cin_readable_c<Args> && ...);
+	}
+
+	template<typename T>
+	concept is_wcout_printable_c = requires(const T t) {
+		std::wcout << t;
+	};
+	template<typename... Args>
+	constexpr bool is_wcout_printable() {
+		return (is_wcout_printable_c<Args> && ...);
+	}
+	template<typename T>
+	concept is_wcin_readable_c = requires(T & t) {
+		std::wcin >> t;
+	};
+	template<typename... Args>
+	constexpr bool is_wcin_readable() {
+		return (is_wcin_readable_c<Args> && ...);
+	}
+
+
+	template<typename T>
+	concept is_printable_c = is_cout_printable_c<T> || is_wcout_printable_c<T>;
+
+	template<typename T>
+	concept is_readable_c = is_cin_readable_c<T> || is_wcin_readable_c<T>;
+
+	template<typename... Args>
+	constexpr bool is_printable() {
+		return (is_printable_c<Args> && ...);
+	}
+	template<typename... Args>
+	constexpr bool is_readable() {
+		return (is_readable_c<Args> && ...);
+	}
+
+
+
 
 	QPLDLL std::wstring string_to_wstring(const std::string& str);
 	QPLDLL std::wstring string_to_unicode_wstring(const std::string& str);
 	QPLDLL std::string wstring_to_string(const std::wstring& str);
 
-	template<typename T>
+
+	template<typename T> requires qpl::is_printable_c<T>
 	std::string to_string(const T& first) {
 		std::ostringstream stream;
 		if constexpr (qpl::is_wstring_type<T>()) {
@@ -45,7 +99,8 @@ namespace qpl {
 		//return std::to_string(first);
 	}
 
-	template<typename T>
+
+	template<typename T> requires qpl::is_wcout_printable_c<T>
 	std::wstring to_wstring(const T& first) {
 		std::wostringstream stream;
 		if constexpr (qpl::is_standard_string_type<T>()) {
@@ -71,7 +126,7 @@ namespace qpl {
 		}
 	}
 
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_wcout_printable<T, Args...>())
 	std::wstring to_wstring(T&& first, Args&&... args) {
 		detail::stream_wstr.str(L"");
 
@@ -131,7 +186,7 @@ namespace qpl {
 
 	QPLDLL bool string_equals_ignore_case(const std::string& a, const std::string& b);
 
-	template<typename... Args>
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	std::string to_string(Args&&... args) {
 		std::ostringstream stream;
 		((stream << args), ...);
@@ -144,8 +199,10 @@ namespace qpl {
 		((stream << args), ...);
 		return stream.str();
 	}
-	template<typename... Args>
-	const char* to_cstring(Args&&... args) {
+
+
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+		const char* to_cstring(Args&&... args) {
 		std::ostringstream stream;
 		((stream << args), ...);
 		return stream.str().c_str();
@@ -524,9 +581,9 @@ namespace qpl {
 	QPLDLL std::wstring prepended_to_wstring_to_fit(const std::wstring& string, wchar_t prepend, qpl::size length);
 
 	struct print_effect {
-
+		
 	};
-
+	QPLDLL std::ostream& operator<<(std::ostream& os, print_effect effect);
 	struct t_cclearln : print_effect {
 		const t_cclearln& operator()() const {
 			return *this;
@@ -678,7 +735,7 @@ namespace qpl {
 		QPLDLL extern qpl::cc println_default_color;
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C> requires qpl::is_container_c<C>
 	inline std::string container_to_string(const C& data, qpl::string_view delimiter = ", ", qpl::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
@@ -704,7 +761,7 @@ namespace qpl {
 	}
 
 
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void single_print(T&& value) {
 		if constexpr (!qpl::is_derived<std::decay_t<T>, qpl::print_effect>() && !qpl::is_same<std::decay_t<T>, qpl::color>() && !qpl::is_same<std::decay_t<T>, qpl::background>() && !qpl::is_same<std::decay_t<T>, qpl::foreground>() && !qpl::is_same<std::decay_t<T>, qpl::cc>()) {
 			bool backslashn = false;
@@ -823,200 +880,191 @@ namespace qpl {
 			return;
 		}
 	}
-	template<typename... Args>
+
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print(Args&&... args) {
 		((qpl::single_print(args)), ...);
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_ln(T&& first, Args&&... args) {
 		qpl::print(first);
 		(qpl::print('\n', args), ...);
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_s(T&& first, Args&&... args) {
 		qpl::print(first);
 		(qpl::print(' ', args), ...);
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_dash(T&& first, Args&&... args) {
 		qpl::print(first);
 		(qpl::print(" - ", args), ...);
 	}
-	template<qpl::size N = 10, typename... Args>
+	template<qpl::size N = 10, typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print_space(Args&&... args) {
 		qpl::print(qpl::to_string_space<N>(args...));
 	}
-	template<qpl::size N = 10, typename... Args>
+	template<qpl::size N = 10, typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print_rspace(Args&&... args) {
 		qpl::print(qpl::to_string_rspace<N>(args...));
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_dash_space(T&& first, Args&&... args) {
 		qpl::print(qpl::to_string_dash_space<N>(first, args...));
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_descriptspace(T&& first, Args&&... args) {
 		qpl::print(qpl::to_descriptspace_string<N>(first, args...));
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_descriptspace_dash(T&& first, Args&&... args) {
 		qpl::print(qpl::to_descriptspace_dash_string<N>(first, args...));
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_format(T&& first, Args&&... args) {
 		qpl::print_descriptspace_dash<N>(first, args...);
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_seq(T&& first, Args&&... args) {
 		qpl::print(first);
 		(qpl::print(", ", args), ...);
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_par(T&& first, Args&&... args) {
 		qpl::print('(', first);
 		(qpl::print(", ", args), ...);
 		qpl::print(')');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void print_sq(T&& first, Args&&... args) {
 		qpl::print('[', first);
 		(qpl::print(", ", args), ...);
 		qpl::print(']');
 	}
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void print_repeat(T&& value, qpl::size repeat) {
 		qpl::print(qpl::to_string_repeat(value, repeat));
 	}
-	template<typename... Args>
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print_precision(qpl::size precision, Args&&... args) {
 		qpl::print(qpl::to_string_precision(precision, args...));
 	}
-	template<typename... Args>
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print_full_precision(Args&&... args) {
 		qpl::print(qpl::to_string_full_precision(args...));
 	}
-	template<typename T, typename U>
+	template<typename T, typename U> requires (qpl::is_printable<T, U>())
 	inline void vprint(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::print(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(' ', b), length, insert, rotation));
 	}
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void vprint(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vprint("value", a, length, insert, rotation);
 	}
-	template<typename T, typename U>
+	template<typename T, typename U> requires (qpl::is_printable<T, U>())
 	inline void vsprint(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::print(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(" \"", b, "\""), insert, length, rotation));
 	}
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void vsprint(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vsprint("value", a, length, insert, rotation);
 	}
 
-	template<typename... Args>
-	inline void println(Args&&... args) {
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+		inline void println(Args&&... args) {
 		qpl::print(args...);
 		qpl::print('\n');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_ln(T&& first, Args&&... args) {
 		qpl::print_ln(first, args...);
 		qpl::print('\n');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_s(T&& first, Args&&... args) {
 		qpl::print_s(first, args...);
 		qpl::print('\n');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_dash(T&& first, Args&&... args) {
 		qpl::print_dash(first, args...);
 		qpl::print('\n');
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_dash_space(T&& first, Args&&... args) {
 		qpl::print_dash_space<N>(first, args...);
 		qpl::print('\n');
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_descriptspace(T&& first, Args&&... args) {
 		qpl::print_descriptspace<N>(first, args...);
 		qpl::print('\n');
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_descriptspace_dash(T&& first, Args&&... args) {
 		qpl::print_descriptspace_dash<N>(first, args...);
 		qpl::print('\n');
 	}
-	template<qpl::size N = 10, typename T, typename... Args>
+	template<qpl::size N = 10, typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_format(T&& first, Args&&... args) {
 		qpl::print_format<N>(first, args...);
 		qpl::print('\n');
 	}
-	template<qpl::size N = 10, typename... Args>
+	template<qpl::size N = 10, typename... Args> requires (qpl::is_printable<Args...>())
 	inline void println_space(Args&&... args) {
 		qpl::print_space<N>(args...);
 		qpl::print('\n');
 	}
-	template<qpl::size N = 10, typename... Args>
+	template<qpl::size N = 10, typename... Args> requires (qpl::is_printable<Args...>())
 	inline void println_rspace(Args&&... args) {
 		qpl::print_rspace<N>(args...);
 		qpl::print('\n');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_seq(T&& first, Args&&... args) {
 		qpl::print_seq(first, args...);
 		qpl::print('\n');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_par(T&& first, Args&&... args) {
 		qpl::print_par(first, args...);
 		qpl::print('\n');
 	}
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires (qpl::is_printable<T, Args...>())
 	inline void println_sq(T&& first, Args&&... args) {
 		qpl::print_sq(first, args...);
 		qpl::print('\n');
 	}
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void println_repeat(T&& value, qpl::size repeat) {
 		qpl::print_repeat(value, repeat);
 		qpl::print('\n');
 	}
-	template<typename... Args>
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void println_precision(qpl::size precision, Args&&... args) {
 		qpl::println(qpl::to_string_precision(precision, args...));
 	}
-	template<typename... Args>
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void println_full_precision(Args&&... args) {
 		qpl::println(qpl::to_string_full_precision(args...));
 	}
-	template<typename T, typename U>
+	template<typename T, typename U> requires (qpl::is_printable<T, U>())
 	inline void vprintln(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::println(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(' ', b), insert, length, rotation));
 	}
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void vprintln(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vprintln("value", a, length, insert, rotation);
 	}
-	template<typename T, typename U>
+	template<typename T, typename U> requires (qpl::is_printable<T>())
 	inline void vsprintln(const T& a, const U& b, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::println(qpl::two_strings_fixed_insert(qpl::to_string(a, ": "), qpl::to_string(" \"", b, "\""), insert, length, rotation));
 	}
-	template<typename T>
+	template<typename T> requires (qpl::is_printable<T>())
 	inline void vsprintln(const T& a, qpl::size length = 60, const qpl::string_view& insert = ".  ", qpl::u32 rotation = 0u) {
 		qpl::vsprintln("value", a, length, insert, rotation);
 	}
 
-
-#ifdef _WIN32
-	//template<typename ... Args>
-	//void dprintln(Args&&... args) {
-	//	auto string = qpl::to_wstring(args...);
-	//	qpl::wprintln(string);
-	//	OutputDebugString(string.c_str());
-	//	OutputDebugString(L"\n");
-	//}
-#endif
 
 	template<typename T, typename U>
 	inline void print_diff_green_red(T&& first, U&& second) {
@@ -1098,7 +1146,7 @@ namespace qpl {
 		qpl::println();
 	}
 
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C>  requires qpl::is_container_c<C>
 	inline void print_container(const C& data, qpl::string_view delimiter = ", ") {
 		qpl::print(qpl::container_to_string(data));
 	}
@@ -1106,7 +1154,7 @@ namespace qpl {
 	std::string pair_to_string(const std::pair<T, U>& pair) {
 		return qpl::to_string('{', pair.first, ", ", pair.second, '}');
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>())>
+	template<typename C>  requires qpl::is_container_c<C>
 	inline void println_container(const C& data) {
 		qpl::println(qpl::container_to_string(data));
 	}
@@ -1315,7 +1363,7 @@ namespace qpl {
 
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::string base_string(T value, T base, const std::string& prefix = "", base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		if (value == T{}) {
 			if (prepend_zeroes) {
@@ -1403,7 +1451,7 @@ namespace qpl {
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	char base_char(T value, T base, bool upper36 = false) {
 		if (base <= 36) {
 			if (upper36) {
@@ -1418,7 +1466,7 @@ namespace qpl {
 		}
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	T from_base_char(char c, T base) {
 		if (base <= 36) {
 			return qpl::detail::base_36_inv[c];
@@ -1428,7 +1476,7 @@ namespace qpl {
 		}
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	constexpr T from_string(const qpl::string_view& string) {
 		if constexpr (qpl::is_same_decayed<T, std::string>()) {
 			return string;
@@ -1446,12 +1494,12 @@ namespace qpl {
 			return static_cast<T>(std::atoll(string.data()));
 		}
 	}
-	template<typename T, QPLCONCEPT((qpl::is_same_decayed<T, std::string>()))>
+	template<typename T> requires (qpl::is_same_decayed<T, std::string>())
 	constexpr T from_string(const std::string& string) {
 		return string;
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T from_base_string(const qpl::string_view& string, T base, base_format base_format = base_format::base36l) {
 		bool negative = false;
 		if (string.front() == '-') {
@@ -1485,25 +1533,24 @@ namespace qpl {
 	}
 
 
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::string hex_string(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, prepend_zeroes);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::string hex_string_full(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, true);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::string binary_string(T value, base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		return qpl::base_string(value, T{ 2 }, "", base_format, prepend_zeroes);
 	}
-	template<typename T, QPLCONCEPT(qpl::is_integer<T>())>
+	template<typename T> requires (qpl::is_integer<T>())
 	std::string binary_string_full(T value, base_format base_format = base_format::base36l) {
 		return qpl::base_string(value, T{ 2 }, "", base_format, true);
 	}
 
-
-	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
+	template<typename C> requires (qpl::is_container<C>())
 	inline std::string container_to_hex_string(const C& data, qpl::string_view delimiter = ", ", qpl::string_view brackets = "{}") {
 		std::ostringstream str;
 		str << brackets.front();
@@ -1530,7 +1577,8 @@ namespace qpl {
 		str << brackets.back();
 		return str.str();
 	}
-	template<typename C, QPLCONCEPT(qpl::is_container<C>)>
+
+	template<typename C> requires (qpl::is_container<C>())
 	inline void println_container_hex(const C& data) {
 		qpl::println(qpl::container_to_hex_string(data));
 	}
@@ -2089,7 +2137,8 @@ namespace qpl {
 
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string big_number_string(T number, qpl::u32 precision = 2) {
 		if (number == T{}) {
 			return qpl::to_string(number);
@@ -2138,23 +2187,23 @@ namespace qpl {
 		}
 	}
 
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string percentage_plus_string(T number) {
 		return qpl::to_string(number >= 0 ? "+" : "", qpl::big_number_string(number * 100), '%');
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string percentage_string(T number) {
 		return qpl::to_string(qpl::big_number_string(number * 100), '%');
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string percentage_string_precision(T number, qpl::u32 precision) {
 		return qpl::to_string(qpl::big_number_string(number * 100, precision), '%');
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string plus_percentage_string_precision(T number, qpl::u32 precision) {
 		return qpl::to_string(number >= 0 ? "+" : "", qpl::big_number_string(number * 100, precision), '%');
 	}
-	template<typename T, QPLCONCEPT(qpl::is_arithmetic<T>())>
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string to_radians_string(T number) {
 		return qpl::to_string((number / qpl::pi) * 180);
 	}
