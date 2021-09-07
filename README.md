@@ -356,7 +356,7 @@ struct game_state : qsf::base_state {
 	}
 
 	qsf::vgraph graph;
-	qpl::ema ema;
+	qpl::exponential_moving_average ema;
 };
 
 
