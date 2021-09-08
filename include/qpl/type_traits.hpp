@@ -76,6 +76,11 @@ namespace qpl {
 		return is_qpl_dynamic_integer_impl<T>{};
 	}
 
+	template<typename T>
+	constexpr bool is_qpl_arithmetic() {
+		return is_qpl_dynamic_integer<T>() || is_qpl_integer<T>() || is_qpl_floating_point<T>();
+	}
+
 #ifdef QPL_USE_INTRINSICS
 	template<qpl::size bits, bool sign>
 	struct x64_integer;

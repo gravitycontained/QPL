@@ -71,11 +71,11 @@ namespace qpl {
 
 	template<typename... Args>
 	constexpr bool is_printable() {
-		return (is_printable_c<Args> && ...);
+		return (static_cast<bool>(is_printable_c<Args>) && ...);
 	}
 	template<typename... Args>
 	constexpr bool is_readable() {
-		return (is_readable_c<Args> && ...);
+		return (static_cast<bool>(is_readable_c<Args>) && ...);
 	}
 
 
@@ -96,7 +96,6 @@ namespace qpl {
 			stream << first;
 		}
 		return stream.str();
-		//return std::to_string(first);
 	}
 
 
@@ -971,7 +970,7 @@ namespace qpl {
 	}
 
 	template<typename... Args> requires (qpl::is_printable<Args...>())
-		inline void println(Args&&... args) {
+	inline void println(Args&&... args) {
 		qpl::print(args...);
 		qpl::print('\n');
 	}
