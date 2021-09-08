@@ -4794,7 +4794,8 @@ namespace qpl {
 			copy.add(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr integer operator+(qpl::integer<bits2, sign2> other) const {
 			auto copy = *this;
 			copy.add(other);
@@ -4832,7 +4833,7 @@ namespace qpl {
 			return copy;
 		}
 
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator*(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			copy.mul(other);
@@ -4856,7 +4857,8 @@ namespace qpl {
 			copy.sub(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator-(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			copy.sub(other);
@@ -4880,7 +4882,7 @@ namespace qpl {
 			copy.div(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator/(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			copy.div(other);
@@ -4892,7 +4894,7 @@ namespace qpl {
 			this->mod(value);
 			return *this;
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr integer& operator%=(qpl::integer<bits2, sign2> other) {
 			this->mod(other);
 			return *this;
@@ -4903,7 +4905,7 @@ namespace qpl {
 			copy.mod(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator%(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			return copy.moded(other);
@@ -4959,7 +4961,7 @@ namespace qpl {
 			return this->less(value);
 		}
 
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr bool operator<(qpl::integer<bits2, sign2> value) const {
 			return this->less(value);
 		}
@@ -4967,7 +4969,7 @@ namespace qpl {
 		constexpr bool operator<=(T value) const {
 			return !this->greater(value);
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr bool operator<=(qpl::integer<bits2, sign2> value) const {
 			return !this->greater(value);
 		}
@@ -4976,7 +4978,7 @@ namespace qpl {
 		constexpr bool operator>(T value) const {
 			return this->greater(value);
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr bool operator>(qpl::integer<bits2, sign2> value) const {
 			return this->greater(value);
 		}
@@ -4985,7 +4987,7 @@ namespace qpl {
 		constexpr bool operator>=(T value) const {
 			return !this->less(value);
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr bool operator>=(qpl::integer<bits2, sign2> value) const {
 			return !this->less(value);
 		}
@@ -5016,7 +5018,7 @@ namespace qpl {
 			this->bitwise_xor(value);
 			return *this;
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr integer& operator^=(qpl::integer<bits2, sign2> other) {
 			this->bitwise_xor(other);
 			return *this;
@@ -5027,7 +5029,7 @@ namespace qpl {
 			copy.bitwise_xor(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator^(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			copy.bitwise_xor(other);
@@ -5050,7 +5052,7 @@ namespace qpl {
 			copy.bitwise_and(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator&(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			copy.bitwise_and(other);
@@ -5073,7 +5075,8 @@ namespace qpl {
 			copy.bitwise_or(value);
 			return copy;
 		}
-		template<qpl::size bits2, bool sign2>
+
+		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator|(qpl::integer<bits2, sign2> other) const {
 			qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> copy = *this;
 			copy.bitwise_or(other);
@@ -5374,12 +5377,6 @@ namespace qpl {
 						helper[i] = qpl::u32_cast(m % base_max);
 					}
 				}
-
-				//qpl::println_container(multiplication);
-				//qpl::println_container(result);
-				//qpl::println(this->memory[j]);
-				//qpl::println_container(helper);
-				//qpl::println_repeat("- ", 50);
 			}
 
 			std::ostringstream stream;
@@ -5475,32 +5472,32 @@ namespace qpl {
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_dynamic_integer<T>() && !qpl::is_qpl_integer<T>())
 	constexpr bool operator==(T value, qpl::integer<bits, sign> other) {
-		return other == value;
+		return other.operator ==(value);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_dynamic_integer<T>() && !qpl::is_qpl_integer<T>())
 	constexpr bool operator!=(T value, qpl::integer<bits, sign> other) {
-		return other != value;
+		return other.operator != (value);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_dynamic_integer<T>() && !qpl::is_qpl_integer<T>())
 	constexpr bool operator<(T value, qpl::integer<bits, sign> other) {
-		return other >= value;
+		return other.operator >= (value);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_dynamic_integer<T>() && !qpl::is_qpl_integer<T>())
 	constexpr bool operator<=(T value, qpl::integer<bits, sign> other) {
-		return other > value;
+		return other.operator > (value);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_dynamic_integer<T>() && !qpl::is_qpl_integer<T>())
 	constexpr bool operator>(T value, qpl::integer<bits, sign> other) {
-		return other <= value;
+		return other.operator  <= (value);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_dynamic_integer<T>() && !qpl::is_qpl_integer<T>())
 	constexpr bool operator>=(T value, qpl::integer<bits, sign> other) {
-		return other < value;
+		return other.operator  < (value);
 	}
 
 
@@ -5517,7 +5514,7 @@ namespace qpl {
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
 	constexpr T& operator*=(T& value, const qpl::integer<bits, sign>& other) {
-		return value = (other * value);
+		return value = (value * other);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
@@ -5532,7 +5529,7 @@ namespace qpl {
 	}
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
 	constexpr T& operator+=(T& value, const qpl::integer<bits, sign>& other) {
-		return value = (other + value);
+		return value = (value + other);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
@@ -5584,7 +5581,7 @@ namespace qpl {
 	}
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
 	constexpr T& operator^=(T& value, const qpl::integer<bits, sign>& other) {
-		return value = (other ^ value);
+		return value = (value ^ other);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
@@ -5593,7 +5590,7 @@ namespace qpl {
 	}
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
 	constexpr T& operator&=(T& value, qpl::integer<bits, sign> other) {
-		return value = (other & value);
+		return value = (value & other);
 	}
 
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
@@ -5602,7 +5599,7 @@ namespace qpl {
 	}
 	template<qpl::size bits, bool sign, typename T> requires(!qpl::is_qpl_arithmetic<T>())
 	constexpr T& operator|=(T& value, qpl::integer<bits, sign> other) {
-		return value = (other | value);
+		return value = (value | other);
 	}
 
 
@@ -9245,7 +9242,7 @@ namespace qpl {
 	}
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
 		constexpr T& operator*=(T& value, const qpl::floating_point<exponent_bits, mantissa_bits>& other) {
-		return value = (other * value);
+		return value = (value * other);
 	}
 
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
@@ -9259,7 +9256,7 @@ namespace qpl {
 	}
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
 		constexpr T& operator/=(T& value, const qpl::floating_point<exponent_bits, mantissa_bits>& other) {
-		return value = (other / value);
+		return value = (value / other);
 	}
 
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
@@ -9273,7 +9270,7 @@ namespace qpl {
 	}
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
 	constexpr T& operator+=(T& value, const qpl::floating_point<exponent_bits, mantissa_bits>& other) {
-		return value = (other + value);
+		return value = (value + other);
 	}
 
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
@@ -9287,7 +9284,7 @@ namespace qpl {
 	}
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
 		constexpr T& operator-=(T& value, const qpl::floating_point<exponent_bits, mantissa_bits>& other) {
-		return value = (other - value);
+		return value = (value - other);
 	}
 
 	template<typename T>
@@ -9311,7 +9308,7 @@ namespace qpl {
 	}
 	template<qpl::size exponent_bits, qpl::size mantissa_bits, typename T> requires(!qpl::is_qpl_floating_point<T>())
 		constexpr T& operator^=(T& value, const qpl::floating_point<exponent_bits, mantissa_bits>& other) {
-		return value = (other ^ value);
+		return value = (value ^ other);
 	}
 
 	template<typename T>
