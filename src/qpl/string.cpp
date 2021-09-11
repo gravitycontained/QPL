@@ -90,7 +90,7 @@ namespace qpl {
 		}
 		return string + std::string(length - string.length(), append);
 	}
-	std::string qpl::appended_to_string_to_fit(const std::string& string, const qpl::string_view& prepend, qpl::size length) {
+	std::string qpl::appended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length) {
 		if (string.length() >= length) {
 			return string;
 		}
@@ -124,7 +124,7 @@ namespace qpl {
 		}
 		return std::string(length - string.length(), prepend) + string;
 	}
-	std::string qpl::prepended_to_string_to_fit(const std::string& string, const qpl::string_view& prepend, qpl::size length) {
+	std::string qpl::prepended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length) {
 		if (string.length() >= length) {
 			return string;
 		}
@@ -144,7 +144,7 @@ namespace qpl {
 		return stream.str();
 	}
 
-	std::string qpl::two_strings_fixed_insert(const std::string& a, const std::string& b, const qpl::string_view& insert, qpl::size length, qpl::u32 rotation) {
+	std::string qpl::two_strings_fixed_insert(const std::string& a, const std::string& b, const std::string_view& insert, qpl::size length, qpl::u32 rotation) {
 		std::ostringstream stream;
 		auto size = ((a.length() - 1) / insert.length() + 1) * insert.length() + rotation % insert.length();
 		size = qpl::min(size, a.length() + (length - (a.length() + b.length())));

@@ -319,7 +319,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	qpl::u32 random_weighted_index(qpl::span<T> weights) {
+	qpl::u32 random_weighted_index(std::span<T> weights) {
 		std::decay_t<T> sum = 0;
 		for (auto& i : weights) {
 			sum += i;

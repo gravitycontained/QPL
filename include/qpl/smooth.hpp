@@ -103,7 +103,7 @@ namespace qpl {
 				*this->pointer = this->end_value;
 			}
 			else {
-				*this->pointer = this->start_value + (this->end_value - this->start_value) * qpl::smooth_progression(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f());
+				*this->pointer = this->start_value + (this->end_value - this->start_value) * qpl::smooth_slope(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f());
 			}
 		}
 		bool is_running() const {
@@ -145,7 +145,7 @@ namespace qpl {
 				this->set_function(this->end_value);
 			}
 			else {
-				this->set_function(this->start_value + (this->end_value - this->start_value) * qpl::smooth_progression(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f()));
+				this->set_function(this->start_value + (this->end_value - this->start_value) * qpl::smooth_slope(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f()));
 			}
 
 		}

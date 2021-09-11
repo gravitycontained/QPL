@@ -26,7 +26,7 @@ namespace qpl {
 	glm::ivec2 qpl::window::m_dimension = { 1600, 900 };
 	bool qpl::window::m_dimension_changed = false;
 	bool qpl::window::m_created = false;
-	qpl::string_view qpl::window::m_title = "qpl application";
+	std::string_view qpl::window::m_title = "qpl application";
 
 	void qpl::window::reset_events() {
 		qpl::window::m_key_pressed = false;
@@ -202,10 +202,10 @@ namespace qpl {
 	bool qpl::window::is_created() {
 		return qpl::window::m_created;
 	}
-	void qpl::window::set_title(qpl::string_view title) {
+	void qpl::window::set_title(std::string_view title) {
 		qpl::window::m_title = title;
 	}
-	qpl::string_view qpl::window::get_title() {
+	std::string_view qpl::window::get_title() {
 		return qpl::window::m_title;
 	}
 	bool qpl::window::is_open() {

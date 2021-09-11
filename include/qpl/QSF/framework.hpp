@@ -6,6 +6,7 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <vector>
 #include <memory>
 
@@ -49,17 +50,22 @@ namespace qsf {
 			this->states.back()->init();
 		}
 
+		QPLDLL void play_sound(const std::string& name, qpl::f32 volume = 100.0f, qpl::f32 speed = 1.0f);
 		QPLDLL void add_font(const std::string& name, const std::string& path);
+		QPLDLL void add_sound(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
+		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
 		QPLDLL void add_text(const std::string& name);
 
 		QPLDLL sf::Font& get_font(const std::string& name);
+		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
 		QPLDLL qsf::text& get_text(const std::string& name);
 
 		QPLDLL const sf::Font& get_font(const std::string& name) const;
+		QPLDLL const sf::SoundBuffer& get_sound(const std::string& name) const;
 		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;
@@ -197,18 +203,22 @@ namespace qsf {
 		QPLDLL qsf::vector2i dimension() const;
 		QPLDLL qsf::vector2f center() const;
 
+		QPLDLL void play_sound(const std::string& name, qpl::f32 volume = 100.0f, qpl::f32 speed = 1.0f);
 		QPLDLL void add_font(const std::string& name, const std::string& path);
+		QPLDLL void add_sound(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
 		QPLDLL void add_text(const std::string& name);
 
 		QPLDLL sf::Font& get_font(const std::string& name);
+		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
 		QPLDLL qsf::text& get_text(const std::string& name);
 
 		QPLDLL const sf::Font& get_font(const std::string& name) const;
+		QPLDLL const sf::SoundBuffer& get_sound(const std::string& name) const;
 		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;

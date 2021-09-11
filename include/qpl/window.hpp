@@ -181,8 +181,8 @@ namespace qpl {
 		QPLDLL static bool is_created();
 		QPLDLL static void destroy();
 
-		QPLDLL static void set_title(qpl::string_view title);
-		QPLDLL static qpl::string_view get_title();
+		QPLDLL static void set_title(std::string_view title);
+		QPLDLL static std::string_view get_title();
 
 		QPLDLL static void consider_minimize();
 
@@ -240,7 +240,7 @@ namespace qpl {
 		static bool m_created;
 		static glm::ivec2 m_dimension;
 		static bool m_dimension_changed;
-		static qpl::string_view m_title;
+		static std::string_view m_title;
 	};
 
 }

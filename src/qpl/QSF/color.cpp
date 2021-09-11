@@ -12,10 +12,10 @@ namespace qsf {
 			*this = qsf::frgb::unset;
 		}
 		else {
-			this->r = other.c.r / 255.0f;
-			this->g = other.c.g / 255.0f;
-			this->b = other.c.b / 255.0f;
-			this->a = other.c.a / 255.0f;
+			this->r = other.r / 255.0f;
+			this->g = other.g / 255.0f;
+			this->b = other.b / 255.0f;
+			this->a = other.a / 255.0f;
 		}
 		return *this;
 	}
@@ -91,7 +91,7 @@ namespace qsf {
 	const qsf::frgb qsf::frgb::unset = qsf::frgb(-1.0f, -1.0f, -1.0f, -1.0f);
 
 	qsf::rgb& qsf::rgb::operator=(const rgb& other) {
-		this->uint = other.uint;
+		memcpy(this, &other, sizeof(rgb));
 		return *this;
 	}
 	qsf::rgb& qsf::rgb::operator=(const frgb& other) {
@@ -99,18 +99,18 @@ namespace qsf {
 			*this = qsf::rgb::unset;
 		}
 		else {
-			this->c.r = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.r, qpl::f32{ 1 }) * 255);
-			this->c.g = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.g, qpl::f32{ 1 }) * 255);
-			this->c.b = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.b, qpl::f32{ 1 }) * 255);
-			this->c.a = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.a, qpl::f32{ 1 }) * 255);
+			this->r = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.r, qpl::f32{ 1 }) * 255);
+			this->g = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.g, qpl::f32{ 1 }) * 255);
+			this->b = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.b, qpl::f32{ 1 }) * 255);
+			this->a = static_cast<qpl::u8>(qpl::clamp(qpl::f32{}, other.a, qpl::f32{ 1 }) * 255);
 		}
 		return *this;
 	}
 	qsf::rgb& qsf::rgb::operator=(sf::Color color) {
-		this->c.r = color.r;
-		this->c.g = color.g;
-		this->c.b = color.b;
-		this->c.a = color.a;
+		this->r = color.r;
+		this->g = color.g;
+		this->b = color.b;
+		this->a = color.a;
 		return *this;
 	}
 	qsf::rgb& qsf::rgb::operator=(qpl::u32 uint) {
@@ -120,31 +120,31 @@ namespace qsf {
 			uint |= 0xFFu;
 		}
 
-		this->uint = ((uint & 0xFF000000u) >> 24) | ((uint & 0x000000FFu) << 24) | ((uint & 0x00FF0000u) >> 8) | ((uint & 0x0000FF00u) << 8);
-
+		qpl::u32 n = ((uint & 0xFF000000u) >> 24) | ((uint & 0x000000FFu) << 24) | ((uint & 0x00FF0000u) >> 8) | ((uint & 0x0000FF00u) << 8);
+		memcpy(this, &n, sizeof(qpl::u32));
 		return *this;
 	}
 	bool qsf::rgb::operator==(const rgb& other) const {
-		return this->uint == other.uint;
+		return this->uint() == other.uint();
 	}
 
 	qsf::rgb::operator sf::Color() const {
 		sf::Color color;
-		color.r = this->c.r;
-		color.g = this->c.g;
-		color.b = this->c.b;
-		color.a = this->c.a;
+		color.r = this->r;
+		color.g = this->g;
+		color.b = this->b;
+		color.a = this->a;
 		return color;
 	}
 
 	std::string qsf::rgb::string() const {
 		std::ostringstream stream;
 		stream << '(';
-		stream << static_cast<qpl::i16>(this->c.r) << ", ";
-		stream << static_cast<qpl::i16>(this->c.g) << ", ";
-		stream << static_cast<qpl::i16>(this->c.b);
-		if (this->c.a != qpl::u8_max) {
-			stream << ", " << static_cast<qpl::i16>(this->c.a);
+		stream << static_cast<qpl::i16>(this->r) << ", ";
+		stream << static_cast<qpl::i16>(this->g) << ", ";
+		stream << static_cast<qpl::i16>(this->b);
+		if (this->a != qpl::u8_max) {
+			stream << ", " << static_cast<qpl::i16>(this->a);
 		}
 		stream << ')';
 		return stream.str();
@@ -152,26 +152,31 @@ namespace qsf {
 	std::string qsf::rgb::hex_string() const {
 		std::ostringstream stream;
 		stream << "0x";
-		stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->c.r, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);
-		stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->c.g, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);
-		stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->c.b, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);  //0 -> "00"
+		stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->r, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);
+		stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->g, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);
+		stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->b, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);  //0 -> "00"
 
-		if (this->c.a != qpl::u8_max) {
-			stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->c.a, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);
+		if (this->a != qpl::u8_max) {
+			stream << qpl::prepended_to_string_to_fit(qpl::base_string(this->a, qpl::u8{ 16 }, "", qpl::base_format::base36u), '0', 2);
 		}
 		return stream.str();
 	}
 	bool qsf::rgb::is_unset() const {
 		return (*this == qsf::rgb::unset);
 	}
+	qpl::u32 qsf::rgb::uint() const {
+		qpl::u32 n;
+		memcpy(&n, this, sizeof(qpl::u32));
+		return n;
+	}
 
 
 	qsf::rgb& qsf::rgb::interpolate(qsf::rgb color, qpl::f64 strength) {
 		strength = qpl::clamp(qpl::f64{ 0 }, strength, qpl::f64{ 1 });
-		this->c.r = static_cast<qpl::u8>((this->c.r * (1 - strength) + color.c.r * strength));
-		this->c.g = static_cast<qpl::u8>((this->c.g * (1 - strength) + color.c.g * strength));
-		this->c.b = static_cast<qpl::u8>((this->c.b * (1 - strength) + color.c.b * strength));
-		this->c.a = static_cast<qpl::u8>((this->c.a * (1 - strength) + color.c.a * strength));
+		this->r = static_cast<qpl::u8>((this->r * (1 - strength) + color.r * strength));
+		this->g = static_cast<qpl::u8>((this->g * (1 - strength) + color.g * strength));
+		this->b = static_cast<qpl::u8>((this->b * (1 - strength) + color.b * strength));
+		this->a = static_cast<qpl::u8>((this->a * (1 - strength) + color.a * strength));
 		return *this;
 	}
 	qsf::rgb qsf::rgb::interpolated(qsf::rgb color, qpl::f64 strength) const {
@@ -190,11 +195,14 @@ namespace qsf {
 
 		return colors[index].interpolated(colors[index + 1], left_over);
 	}
+	qsf::rgb qsf::rgb::grey_shade(qpl::u8 strength) {
+		return qsf::rgb(strength, strength, strength);
+	}
 
 	qsf::rgb& qsf::rgb::invert() {
-		this->c.r = 255 - this->c.r;
-		this->c.g = 255 - this->c.g;
-		this->c.b = 255 - this->c.b;
+		this->r = 255 - this->r;
+		this->g = 255 - this->g;
+		this->b = 255 - this->b;
 		return *this;
 	}
 	qsf::rgb qsf::rgb::inverted() const {
@@ -204,14 +212,19 @@ namespace qsf {
 	}
 	qsf::rgb qsf::rgb::with_alpha(qpl::u8 alpha) const {
 		auto copy = *this;
-		copy.c.a = alpha;
+		copy.a = alpha;
+		return copy;
+	}
+	qsf::rgb qsf::rgb::multiplied_alpha(qpl::u8 alpha) const {
+		auto copy = *this;
+		copy.a = qpl::u8_cast(qpl::f32_cast(this->a) * (qpl::f32_cast(alpha) / 255.f));
 		return copy;
 	}
 
 	qsf::rgb& qsf::rgb::operator*=(qsf::rgb other) {
-		this->c.r *= other.c.r;
-		this->c.g *= other.c.g;
-		this->c.b *= other.c.b;
+		this->r *= other.r;
+		this->g *= other.g;
+		this->b *= other.b;
 		return *this;
 	}
 	qsf::rgb qsf::rgb::operator*(qsf::rgb other) const {
@@ -220,9 +233,9 @@ namespace qsf {
 		return copy;
 	}
 	qsf::rgb& qsf::rgb::operator-=(qsf::rgb other) {
-		this->c.r -= other.c.r;
-		this->c.g -= other.c.g;
-		this->c.b -= other.c.b;
+		this->r -= other.r;
+		this->g -= other.g;
+		this->b -= other.b;
 		return *this;
 	}
 	qsf::rgb qsf::rgb::operator-(qsf::rgb other) const {
@@ -231,9 +244,9 @@ namespace qsf {
 		return copy;
 	}
 	qsf::rgb& qsf::rgb::operator/=(qsf::rgb other) {
-		this->c.r /= other.c.r;
-		this->c.g /= other.c.g;
-		this->c.b /= other.c.b;
+		this->r /= other.r;
+		this->g /= other.g;
+		this->b /= other.b;
 		return *this;
 	}
 	qsf::rgb qsf::rgb::operator/(qsf::rgb other) const {
@@ -242,9 +255,9 @@ namespace qsf {
 		return copy;
 	}
 	qsf::rgb& qsf::rgb::operator+=(qsf::rgb other) {
-		this->c.r += other.c.r;
-		this->c.g += other.c.g;
-		this->c.b += other.c.b;
+		this->r += other.r;
+		this->g += other.g;
+		this->b += other.b;
 		return *this;
 	}
 	qsf::rgb qsf::rgb::operator+(qsf::rgb other) const {

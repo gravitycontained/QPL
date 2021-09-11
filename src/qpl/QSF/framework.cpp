@@ -170,8 +170,15 @@ namespace qsf {
 	qsf::vector2f qsf::base_state::center() const {
 		return qsf::vector2f(this->framework->m_dimension) / 2;
 	}
+
+	void qsf::base_state::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
+		qsf::play_sound(name, volume, speed);
+	}
 	void qsf::base_state::add_font(const std::string& name, const std::string& path) {
 		qsf::add_font(name, path);
+	}
+	void qsf::base_state::add_sound(const std::string& name, const std::string& path) {
+		qsf::add_sound(name, path);
 	}
 	void qsf::base_state::add_texture(const std::string& name, const std::string& path) {
 		qsf::add_texture(name, path);
@@ -190,6 +197,9 @@ namespace qsf {
 	sf::Font& qsf::base_state::get_font(const std::string& name) {
 		return qsf::get_font(name);
 	}
+	sf::SoundBuffer& qsf::base_state::get_sound(const std::string& name) {
+		return qsf::get_sound(name);
+	}
 	sf::Texture& qsf::base_state::get_texture(const std::string& name) {
 		return qsf::get_texture(name);
 	}
@@ -202,6 +212,9 @@ namespace qsf {
 
 	const sf::Font& qsf::base_state::get_font(const std::string& name) const {
 		return qsf::get_font(name);
+	}
+	const sf::SoundBuffer& qsf::base_state::get_sound(const std::string& name) const {
+		return qsf::get_sound(name);
 	}
 	const sf::Texture& qsf::base_state::get_texture(const std::string& name) const {
 		return qsf::get_texture(name);
@@ -303,6 +316,7 @@ namespace qsf {
 			this->m_dimension = new_dimension;
 			this->states.back()->call_on_resize();
 		}
+		qsf::update_sounds();
 		this->states.back()->updating();
 		this->states.back()->update_close_window();
 
@@ -332,6 +346,7 @@ namespace qsf {
 			this->m_dimension = new_dimension;
 			this->states.back()->call_on_resize();
 		}
+		qsf::update_sounds();
 		this->states.back()->updating();
 		this->states.back()->update_close_window();
 
@@ -354,6 +369,7 @@ namespace qsf {
 
 		this->m_frametime = this->m_frametime_clock.elapsed_reset();
 
+		qsf::update_sounds();
 		this->states.back()->event_update();
 
 		if (this->states.back()->event.resized()) {
@@ -419,14 +435,23 @@ namespace qsf {
 		return this->m_frametime;
 	}
 
+	void qsf::framework::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
+		qsf::play_sound(name, volume, speed);
+	}
 	void qsf::framework::add_font(const std::string& name, const std::string& path) {
 		qsf::add_font(name, path);
+	}
+	void qsf::framework::add_sound(const std::string& name, const std::string& path) {
+		qsf::add_sound(name, path);
 	}
 	void qsf::framework::add_texture(const std::string& name, const std::string& path) {
 		qsf::add_texture(name, path);
 	}
 	void qsf::framework::add_sprite(const std::string& name, const std::string& path) {
 		qsf::add_sprite(name, path);
+	}
+	void qsf::framework::add_sprite(const std::string& name, sf::Texture& texture) {
+		qsf::add_sprite(name, texture);
 	}
 	void qsf::framework::add_text(const std::string& name) {
 		qsf::add_text(name);
@@ -435,6 +460,9 @@ namespace qsf {
 
 	sf::Font& qsf::framework::get_font(const std::string& name) {
 		return qsf::get_font(name);
+	}
+	sf::SoundBuffer& qsf::framework::get_sound(const std::string& name) {
+		return qsf::get_sound(name);
 	}
 	sf::Texture& qsf::framework::get_texture(const std::string& name) {
 		return qsf::get_texture(name);
@@ -448,6 +476,9 @@ namespace qsf {
 
 	const sf::Font& qsf::framework::get_font(const std::string& name) const {
 		return qsf::get_font(name);
+	}
+	const sf::SoundBuffer& qsf::framework::get_sound(const std::string& name) const {
+		return qsf::get_sound(name);
 	}
 	const sf::Texture& qsf::framework::get_texture(const std::string& name) const {
 		return qsf::get_texture(name);

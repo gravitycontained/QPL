@@ -149,7 +149,6 @@ namespace qpl {
 		QPLDLL std::string elapsed_str() const;
 		QPLDLL qpl::f64 elapsed_f() const;
 
-
 		QPLDLL qpl::time elapsed_reset();
 		QPLDLL std::string elapsed_str_reset();
 		QPLDLL qpl::f64 elapsed_f_reset();
@@ -173,6 +172,34 @@ namespace qpl {
 		halted_clock() : qpl::clock(false) {
 		}
 	};
+
+
+
+	class small_clock {
+	public:
+		small_clock() {
+			this->reset();
+		}
+		QPLDLL void reset();
+
+		QPLDLL qpl::time elapsed() const;
+		QPLDLL std::string elapsed_str() const;
+		QPLDLL qpl::f64 elapsed_f() const;
+
+		QPLDLL qpl::time elapsed_reset();
+		QPLDLL std::string elapsed_str_reset();
+		QPLDLL qpl::f64 elapsed_f_reset();
+
+		QPLDLL bool has_elapsed(qpl::f64 seconds) const;
+		QPLDLL bool has_elapsed(qpl::time duration) const;
+		QPLDLL bool has_elapsed_reset(qpl::f64 seconds);
+		QPLDLL bool has_elapsed_reset(qpl::time duration);
+	private:
+
+		qpl::time m_begin;
+	};
+
+
 	QPLDLL std::ostream& operator<<(std::ostream& os, const qpl::clock& clock);
 	QPLDLL std::ostream& operator<<(std::ostream& os, const qpl::halted_clock& clock);
 
@@ -295,362 +322,82 @@ namespace qpl {
 	QPLDLL bool get_time_signal(double seconds);
 	QPLDLL bool get_time_signal(qpl::time time);
 
-
 	QPLDLL void reset_count_signal();
 	QPLDLL bool get_count_signal(qpl::u64 when);
 
-	template<typename T>
-	struct animation_key_frame {
+	struct animation {
+		qpl::small_clock timer;
+		qpl::f64 duration = 1.0;
+		qpl::f64 offset = 0.0;
+		mutable bool running = false;
+		mutable bool just_finish = false;
+		bool started = false;
 
-		animation_key_frame(T& value, T new_value, qpl::f32 duration) {
-			this->reference = &value;
-			this->old_value = value;
-			this->new_value = new_value;
-			this->time = qpl::f32{};
+		animation(qpl::f64 duration = 1.0) {
 			this->duration = duration;
-			this->before = value;
 		}
-		animation_key_frame(const animation_key_frame& other) {
-			this->reference = other.reference;
-			this->old_value = other.old_value;
-			this->new_value = other.new_value;
-			this->time = other.time;
-			this->duration = other.duration;
-			this->before = other.before;
-		}
-		mutable T* reference;
-		mutable T old_value;
-		mutable T new_value;
-		mutable T diff;
-		mutable T before;
-		mutable qpl::f32 time = qpl::f32{};
-		mutable qpl::f32 duration = qpl::f32{ 1 };
-
-
-		qpl::f32 get_progress() const {
-			return this->time / this->duration;
-		}
-		void set(T& value, T new_value, qpl::f32 duration) const {
-			this->reference = &value;
-			this->old_value = value;
-			this->new_value = new_value;
-			this->time = qpl::f32{};
+		void set_duration(qpl::f64 duration) {
 			this->duration = duration;
-			this->diff = T{};
-			this->before = value;
 		}
-		void reconfigure(T new_value, qpl::f32 duration) const {
-			this->old_value = *reference;
-			this->new_value = new_value;
-			this->time = qpl::f32{};
-			this->duration = duration;
-			this->diff = T{};
-			this->before = *reference;
+		void stop() {
+			this->started = false;
 		}
-
-		void update(qpl::f32 delta_time) const {
-			if (this->get_progress() < 1.0f) {
-				this->time += delta_time;
-				*this->reference = static_cast<T>(qpl::linear_interpolation(this->old_value, this->new_value, qpl::smooth_progression(this->get_progress())));
+		void reset(bool running = false) {
+			this->timer.reset();
+			this->running = running;
+			this->offset = 0.0;
+			this->started = true;
+		}
+		void start() {
+			this->timer.reset();
+			this->running = true;
+			this->offset = 0.0;
+			this->started = true;
+		}
+		void reset_and_start() {
+			this->start();
+		}
+		void start_in(qpl::f64 time) {
+			if (!time) {
+				this->start();
+				return;
 			}
-			this->diff = *this->reference - this->before;
-			this->before = *this->reference;
+			this->timer.reset();
+			this->running = false;
+			this->offset = time;
+			this->started = true;
 		}
-		T get_difference() const {
-			return this->diff;
+		bool is_running() {
+			if (this->offset) {
+				auto result = (this->timer.elapsed_f() - this->offset) / this->duration;
+				this->running = (result >= 0.0 && result <= 1.0);
+			}
+			return this->running;
 		}
+		bool is_started() {
+			return this->started;
+		}
+		bool just_finished() {
+			return this->just_finish;
+		}
+		bool is_done() const {
+			return this->started && this->get_progress() >= 1.0;
+		}
+		qpl::f64 get_progress() const {
+			if (!this->started) {
+				this->running = false;
+				return 0.0;
+			}
+			auto result = (this->timer.elapsed_f() - this->offset) / this->duration;
+			auto before = this->running;
+			this->running = (result >= 0.0 && result < 1.0);
+			if (before && !this->running) {
+				this->just_finish = true;
+			}
+			return qpl::clamp_0_1(result);
+		}
+
 	};
-	namespace detail {
-		QPLDLL extern std::vector<animation_key_frame<qpl::u8>> animation_key_frames_u8;
-		QPLDLL extern std::vector<animation_key_frame<qpl::i8>> animation_key_frames_i8;
-		QPLDLL extern std::vector<animation_key_frame<qpl::u16>> animation_key_frames_u16;
-		QPLDLL extern std::vector<animation_key_frame<qpl::i16>> animation_key_frames_i16;
-		QPLDLL extern std::vector<animation_key_frame<qpl::u32>> animation_key_frames_u32;
-		QPLDLL extern std::vector<animation_key_frame<qpl::i32>> animation_key_frames_i32;
-		QPLDLL extern std::vector<animation_key_frame<qpl::u64>> animation_key_frames_u64;
-		QPLDLL extern std::vector<animation_key_frame<qpl::i64>> animation_key_frames_i64;
-		QPLDLL extern std::vector<animation_key_frame<qpl::f32>> animation_key_frames_f32;
-		QPLDLL extern std::vector<animation_key_frame<qpl::f64>> animation_key_frames_f64;
-
-	}
-
-
-	template<typename T>
-	void add_animation_key_frame(T& value, T new_value, qpl::f32 duration) {
-		if constexpr (std::is_same_v<std::decay_t<T>, qpl::u8>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_u8.begin(); it != qpl::detail::animation_key_frames_u8.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_u8.emplace_back(qpl::animation_key_frame<qpl::u8>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i8>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_i8.begin(); it != qpl::detail::animation_key_frames_i8.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_i8.emplace_back(qpl::animation_key_frame<qpl::i8>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u16>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_u16.begin(); it != qpl::detail::animation_key_frames_u16.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_u16.emplace_back(qpl::animation_key_frame<qpl::u16>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i16>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_i16.begin(); it != qpl::detail::animation_key_frames_i16.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_i16.emplace_back(qpl::animation_key_frame<qpl::i16>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u32>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_u32.begin(); it != qpl::detail::animation_key_frames_u32.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_u32.emplace_back(qpl::animation_key_frame<qpl::u32>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i32>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_i32.begin(); it != qpl::detail::animation_key_frames_i32.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_i32.emplace_back(qpl::animation_key_frame<qpl::i32>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u64>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_u64.begin(); it != qpl::detail::animation_key_frames_u64.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_u64.emplace_back(qpl::animation_key_frame<qpl::u64>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i64>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_i64.begin(); it != qpl::detail::animation_key_frames_i64.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_i64.emplace_back(qpl::animation_key_frame<qpl::i64>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::f32>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_f32.begin(); it != qpl::detail::animation_key_frames_f32.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_f32.emplace_back(qpl::animation_key_frame<qpl::f32>(value, new_value, duration));
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::f64>) {
-			bool found = false;
-			for (auto it = qpl::detail::animation_key_frames_f64.begin(); it != qpl::detail::animation_key_frames_f64.end(); ++it) {
-				if (it->reference == &value) {
-					it->reconfigure(new_value, duration); found = true; return;
-				}
-			}
-			if (!found) {
-				qpl::detail::animation_key_frames_f64.emplace_back(qpl::animation_key_frame<qpl::f64>(value, new_value, duration));
-			}
-		}
-		else {
-			static_assert("unkown animation_key_frame type");
-		}
-	}
-	template<typename T>
-	qpl::f32 get_animation_key_frame_progress(T& value) {
-		if constexpr (std::is_same_v<std::decay_t<T>, qpl::u8>) {
-			for (auto& i : qpl::detail::animation_key_frames_u8) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i8>) {
-			for (auto& i : qpl::detail::animation_key_frames_i8) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u16>) {
-			for (auto& i : qpl::detail::animation_key_frames_u16) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i16>) {
-			for (auto& i : qpl::detail::animation_key_frames_i16) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u32>) {
-			for (auto& i : qpl::detail::animation_key_frames_u32) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i32>) {
-			for (auto& i : qpl::detail::animation_key_frames_i32) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u64>) {
-			for (auto& i : qpl::detail::animation_key_frames_u64) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i64>) {
-			for (auto& i : qpl::detail::animation_key_frames_i64) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::f32>) {
-			for (auto& i : qpl::detail::animation_key_frames_f32) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::f64>) {
-			for (auto& i : qpl::detail::animation_key_frames_f64) {
-				if (i.reference == &value) {
-					return i.get_progress();
-				}
-			}
-		}
-		return qpl::f32{-1.f};
-	}
-
-	template<typename T>
-	T get_animation_key_frame_difference(T& value) {
-		if constexpr (std::is_same_v<std::decay_t<T>, qpl::u8>) {
-			for (auto& i : qpl::detail::animation_key_frames_u8) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i8>) {
-			for (auto& i : qpl::detail::animation_key_frames_i8) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u16>) {
-			for (auto& i : qpl::detail::animation_key_frames_u16) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i16>) {
-			for (auto& i : qpl::detail::animation_key_frames_i16) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u32>) {
-			for (auto& i : qpl::detail::animation_key_frames_u32) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i32>) {
-			for (auto& i : qpl::detail::animation_key_frames_i32) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::u64>) {
-			for (auto& i : qpl::detail::animation_key_frames_u64) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::i64>) {
-			for (auto& i : qpl::detail::animation_key_frames_i64) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::f32>) {
-			for (auto& i : qpl::detail::animation_key_frames_f32) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		else if constexpr (std::is_same_v<std::decay_t<T>, qpl::f64>) {
-			for (auto& i : qpl::detail::animation_key_frames_f64) {
-				if (i.reference == &value) {
-					return i.get_difference();
-				}
-			}
-		}
-		return qpl::f32{ 0.f };
-	}
-	QPLDLL void update_all_animation_key_frames(qpl::f32 delta_time);
-
-	template<typename T>
-	qpl::f32 is_animation_key_frame_running(T& value) {
-		auto progress = qpl::get_animation_key_frame_progress(value);
-		return progress > 0.0f && progress < 1.0f;
-	}
-	template<typename T>
-	qpl::f32 is_animation_key_frame_done(T& value) {
-		return !(qpl::is_animation_key_frame_running(value));
-	}
 }
 
 #endif

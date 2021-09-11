@@ -199,6 +199,7 @@ namespace qpl {
 		}
 	}
 	void qpl::cubic_generator::init() {
+		this->m_prog = 0.0;
 		this->reset_specific_index();
 		this->enable_random_values();
 		this->disable_clamp();

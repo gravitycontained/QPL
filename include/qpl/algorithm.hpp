@@ -5,16 +5,18 @@
 
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
-#include <qpl/span.hpp>
 #include <cmath>
 #include <vector>
 #include <iostream>
 #include <numeric>
 #include <algorithm>
+#include <array>
 #include <iterator>
 #include <iostream>
 #include <functional>
 #include <tuple>
+#include <span>
+
 
 namespace qpl {
 
@@ -636,13 +638,9 @@ namespace qpl {
 	constexpr auto to_array(Args... args) {
 		return qpl::tuple_to_array(std::make_tuple(args...));
 	}
-	template<typename It>
-	constexpr auto make_span(It begin, It end) {
-		return qpl::span<std::remove_pointer_t<It::pointer>>(&(*begin), std::distance(begin, end));
-	}
 	template<typename C>
 	constexpr auto make_span(const C& container) {
-		return qpl::make_span(container.begin(), container.end());
+		return std::span(container.begin(), container.end());
 	}
 
 
@@ -660,7 +658,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const qpl::span<T>& data, qpl::u32 skip_size) {
+	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const std::span<T>& data, qpl::u32 skip_size) {
 		if (data.empty()) {
 			return std::make_pair(std::decay_t<T>{}, std::decay_t<T>{});
 		}
@@ -803,7 +801,7 @@ namespace qpl {
 
 
 	template<qpl::size N>
-	std::array<qpl::u8, N> static_split(const qpl::string_view& string, const std::string& delimiter = ",") {
+	std::array<qpl::u8, N> static_split(const std::string_view& string, const std::string& delimiter = ",") {
 		std::array<qpl::u8, N> result;
 		unsigned ctr = 0u;
 		for (int i = 0; i < string.size(); ++i) {
@@ -838,6 +836,7 @@ namespace qpl {
 		return a * (F{ 1 } -delta) + (b * delta);
 	}
 
+
 	template<typename T, typename F>
 	constexpr auto linear_interpolation_2D(T xx, T xy, T yx, T yy, F fx, F fy) {
 		return qpl::linear_interpolation(qpl::linear_interpolation(xx, xy, fx), qpl::linear_interpolation(yx, yy, fx), fy);
@@ -845,7 +844,7 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<std::decay_t<T>> linear_vector_interpolation(qpl::span<T> data, qpl::size interpolations, qpl::size index_skip_size = 1u) {
+	std::vector<std::decay_t<T>> linear_vector_interpolation(std::span<T> data, qpl::size interpolations, qpl::size index_skip_size = 1u) {
 		if (data.empty()) {
 			return {};
 		}
@@ -885,11 +884,12 @@ namespace qpl {
 
 
 	template<typename T>
-	std::decay_t<T> linear_vector_interpolation_at(qpl::span<T> data, qpl::f64 progress) {
+	std::decay_t<T> linear_vector_interpolation_at(std::span<T> data, qpl::f64 progress) {
 		if (data.empty()) {
 			return {};
 		}
 
+		progress = qpl::clamp_0_1(progress);
 		auto index = static_cast<qpl::u32>(progress * (data.size() - 1));
 
 		std::decay_t<T> a = data[index];
@@ -906,6 +906,17 @@ namespace qpl {
 
 
 	template<typename T, typename F>
+	constexpr auto linear_interpolation(const std::vector<T>& data, F delta) {
+		return qpl::linear_vector_interpolation_at(qpl::make_span(data), delta);
+	}
+	template<typename T, typename F>
+	constexpr auto linear_interpolation(const std::initializer_list<T>& data, F delta) {
+		return qpl::linear_vector_interpolation_at(qpl::make_span(data), delta);
+	}
+
+
+
+	template<typename T, typename F>
 	constexpr auto cubic_interpolation(T a, T b, T c, T d, F delta) {
 		return
 			(d - c - a + b) * (delta * delta * delta) +
@@ -916,6 +927,9 @@ namespace qpl {
 	constexpr auto cubic_interpolation(T a, T b, F delta) {
 		return qpl::cubic_interpolation(a, a, b, b, delta);
 	}
+
+
+
 	template<typename T, typename F>
 	constexpr auto cubic_interpolation_2D(
 		T a1, T b1, T c1, T d1,
@@ -937,7 +951,7 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<std::decay_t<T>> cubic_vector_interpolation(qpl::span<T> data, qpl::size interpolations, qpl::size index_skip_size = 1u) {
+	std::vector<std::decay_t<T>> cubic_vector_interpolation(std::span<T> data, qpl::size interpolations, qpl::size index_skip_size = 1u) {
 		if (data.empty()) {
 			return {};
 		}
@@ -945,13 +959,6 @@ namespace qpl {
 			return std::vector<std::decay_t<T>>{ data[0] };
 		}
 		std::vector<std::decay_t<T>> result(qpl::size_cast(data.size() / index_skip_size * interpolations));
-
-		//if (result.size() == data.size()) {
-		//	for (qpl::u32 i = 0; i < result.size(); ++i) {
-		//		result[i] = data[i];
-		//	}
-		//	return result;
-		//}
 
 		std::decay_t<T> a, b, c, d;
 
@@ -984,7 +991,45 @@ namespace qpl {
 
 
 	template<typename T>
-	std::pair<std::decay_t<T>, std::decay_t<T>> cubic_vector_interpolation_min_max(qpl::span<T> data, qpl::size interpolations, qpl::f64 interpolation_offset = 0.0, qpl::size index_skip_size = 1u, std::decay_t<T> low = qpl::type_max<T>(), std::decay_t<T> high = qpl::type_min<T>()) {
+	std::decay_t<T> cubic_vector_interpolation_at(std::span<T> data, qpl::f64 progress) {
+		if (data.empty()) {
+			return {};
+		}
+		progress = qpl::clamp_0_1(progress);
+		auto index = static_cast<qpl::u32>(progress * (data.size() - 1));
+		std::decay_t<T> a, b, c, d;
+
+		c = a = b = data[index];
+		if (index >= 1u) {
+			a = data[(index - 1)];
+		}
+
+		if ((index + 1) < data.size()) {
+			c = data[(index + 1)];
+		}
+		d = c;
+
+		if ((index + 2) < data.size()) {
+			d = data[(index + 2)];
+		}
+
+		auto left_over = ((data.size() - 1) * progress) - index;
+
+		return qpl::cubic_interpolation(a, b, c, d, left_over);
+	}
+
+
+	template<typename T, typename F>
+	constexpr auto cubic_interpolation(const std::vector<T>& data, F delta) {
+		return qpl::cubic_vector_interpolation_at(qpl::make_span(data), delta);
+	}
+	template<typename T, typename F>
+	constexpr auto cubic_interpolation(const std::initializer_list<T>& data, F delta) {
+		return qpl::cubic_vector_interpolation_at(qpl::make_span(data), delta);
+	}
+
+	template<typename T>
+	std::pair<std::decay_t<T>, std::decay_t<T>> cubic_vector_interpolation_min_max(std::span<T> data, qpl::size interpolations, qpl::f64 interpolation_offset = 0.0, qpl::size index_skip_size = 1u, std::decay_t<T> low = qpl::type_max<T>(), std::decay_t<T> high = qpl::type_min<T>()) {
 		if (data.empty()) {
 			return std::make_pair(T{}, T{});
 		}
@@ -1040,10 +1085,116 @@ namespace qpl {
 	inline F cumulative_pow_distribution(F x, F p, F c = F{ 3 }) {
 		return std::pow(qpl::cumulative_normal_distribution(x, c), p);
 	}
+
 	template<typename F>
-	constexpr F smooth_progression(F x) {
-		return qpl::clamp(F{}, (qpl::cumulative_pow_distribution(x, F{ 0.5 }, F{ 1.9 }) - F{ 0.17 }) * F { 1.22 }, F{ 1 });
+	constexpr F curve_slope(F progress, F slope = 2.0) {
+		return std::pow(1 - std::pow(1 - progress, slope), 1.0 / slope);
 	}
+
+
+	constexpr std::array<std::pair<qpl::f64, qpl::f64>, 23> slope_values = {
+		std::pair{0.00000000000000000, 0.00000000000000000},
+		std::pair{0.00008000000000000, 0.03314374470072128},
+		std::pair{0.00012000000000000, 0.03897919509779974},
+		std::pair{0.00018000000000000, 0.04584178845821749},
+		std::pair{0.00027000000000000, 0.05391210997762626},
+		std::pair{0.00040500000000000, 0.06340233339708143},
+		std::pair{0.00060750000000000, 0.07456162357553127},
+		std::pair{0.00091125000000000, 0.08768236842376569},
+		std::pair{0.00136687500000000, 0.10310729301498289},
+		std::pair{0.00205031250000000, 0.12123744666133446},
+		std::pair{0.00307546875000000, 0.14254092614039940},
+		std::pair{0.00461320312500000, 0.16756195149924544},
+		std::pair{0.00691980468750000, 0.19692944941761062},
+		std::pair{0.01037970703125000, 0.23136345252564658},
+		std::pair{0.01556956054687501, 0.27167608658909514},
+		std::pair{0.02335434082031251, 0.31876114394764743},
+		std::pair{0.03503151123046876, 0.37356124233337512},
+		std::pair{0.05254726684570314, 0.43699254043729757},
+		std::pair{0.07882090026855471, 0.50979060096969120},
+		std::pair{0.11823135040283206, 0.59221106275204727},
+		std::pair{0.17734702560424809, 0.68346377446896467},
+		std::pair{0.26602053840637213, 0.78065875326097234},
+		std::pair{0.39903080760955822, 0.87687417030023973},
+	};
+
+	template<typename F>
+	constexpr F smooth_slope_impl(F progress, F slope, F cutoff, F sub) {
+		auto stretch = (1 - cutoff);
+		auto multiply = 1.0 / (1 - sub);
+		return (curve_slope(progress * stretch + cutoff, slope) - sub) * multiply;
+	}
+
+	template<typename F>
+	constexpr F smooth_slope(F progress, qpl::u32 strength = 21u) {
+		auto p = qpl::clamp_0_1(progress);
+		if (strength >= slope_values.size()) {
+			auto diff = std::pow(0.9, (strength - (slope_values.size() - 1)) / 2.0);
+			auto val = smooth_slope_impl(p, F{ 2.5 }, slope_values.back().first, slope_values.back().second);
+			return qpl::linear_interpolation(p, val, diff);
+		}
+		else {
+			auto slope_info = slope_values[strength];
+			return smooth_slope_impl(p, F{ 2.5 }, slope_info.first, slope_info.second);
+		}
+	}
+
+	template<typename F>
+	constexpr F smooth_slope_triangle(F progress, qpl::u32 strength = 21u) {
+		if (progress >= 0.5) {
+			return smooth_slope_triangle(1.0 - progress, strength);
+		}
+		return smooth_slope(progress * 2, strength);
+	}
+
+	template<typename F>
+	constexpr F smooth_slope_s(F progress, qpl::u32 strength = 21u) {
+		if (progress >= 0.5) {
+			return 1 - smooth_slope_s(1 - progress, strength);
+		}
+		return 0.5 - smooth_slope(1 - progress * 2.0, strength) / 2;
+	}
+
+
+	template<typename F>
+	constexpr F smooth_curve(F progress, F slope) {
+		return curve_slope(qpl::clamp_0_1(progress), slope);
+	}
+
+	template<typename F>
+	constexpr F smooth_curve_triangle(F progress, F slope) {
+		if (progress >= 0.5) {
+			return smooth_curve_triangle(1.0 - progress, slope);
+		}
+		return smooth_curve(progress * 2, slope);
+	}
+
+	template<typename F>
+	constexpr F smooth_curve_s(F progress, F slope) {
+		if (progress >= 0.5) {
+			return 1 - smooth_curve_s(1 - progress, slope);
+		}
+		return 0.5 - smooth_curve(1 - progress * 2.0, slope) / 2;
+	}
+
+
+
+	template<typename T, typename F>
+	constexpr T smooth_slope_interpolation(T a, T b, F x, qpl::u32 strength = 21u) {
+		auto n = qpl::smooth_slope(x, strength);
+		return a * (F{ 1 } - n) + (b * n);
+	}
+	template<typename T, typename F>
+	constexpr T smooth_slope_triangle_interpolation(T a, T b, F x, qpl::u32 strength = 21u) {
+		auto n = qpl::smooth_slope_triangle(x, strength);
+		return a * (F{ 1 } - n) + (b * n);
+	}
+	template<typename T, typename F>
+	constexpr T smooth_slope_s_interpolation(T a, T b, F x, qpl::u32 strength = 21u) {
+		auto n = qpl::smooth_slope_s(x, strength);
+		return a * (F{ 1 } - n) + (b * n);
+	}
+
 
 	template<typename F>
 	constexpr F normal_distribution(F x, F o = F{ 1 }, F u = F{ 0.5 }) {

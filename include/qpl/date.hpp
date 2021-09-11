@@ -48,14 +48,14 @@ namespace qpl {
 		year_month_day() {
 
 		}
-		year_month_day(qpl::string_view str) {
+		year_month_day(std::string_view str) {
 			*this = str;
 		}
 
 
 		QPLDLL week_days get_week_day() const;
 
-		QPLDLL qpl::string_view get_week_day_string() const;
+		QPLDLL std::string_view get_week_day_string() const;
 		QPLDLL bool is_monday() const;
 		QPLDLL bool is_tuesday() const;
 		QPLDLL bool is_wednesday() const;
@@ -64,7 +64,7 @@ namespace qpl {
 		QPLDLL bool is_saturday() const;
 		QPLDLL bool is_sunday() const;
 
-		QPLDLL year_month_day& operator=(qpl::string_view date);
+		QPLDLL year_month_day& operator=(std::string_view date);
 		QPLDLL bool operator==(const year_month_day& other) const;
 		QPLDLL bool operator>(const year_month_day& other) const;
 		QPLDLL bool operator<=(const year_month_day& other) const;
@@ -82,12 +82,12 @@ namespace qpl {
 		hour_minutes() {
 
 		}
-		hour_minutes(qpl::string_view str) {
+		hour_minutes(std::string_view str) {
 			*this = str;
 		}
 		QPLDLL double days() const;
 		QPLDLL qpl::size minutes() const;
-		QPLDLL hour_minutes& operator=(qpl::string_view date);
+		QPLDLL hour_minutes& operator=(std::string_view date);
 		QPLDLL bool operator==(const hour_minutes& other) const;
 		QPLDLL bool operator>(const hour_minutes& other) const;
 		QPLDLL bool operator<=(const hour_minutes& other) const;
@@ -102,7 +102,7 @@ namespace qpl {
 		date() {
 
 		}
-		date(const qpl::string_view& ymd, const qpl::string_view& hm) : ymd(ymd), hm(hm) {
+		date(const std::string_view& ymd, const std::string_view& hm) : ymd(ymd), hm(hm) {
 
 		}
 		QPLDLL void set(const date_ms& date);

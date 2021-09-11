@@ -33,7 +33,7 @@ namespace qsf {
 		constexpr vector2(const sf::Vector2<U>& other) : x(), y() {
 			*this = other;
 		}
-		template<typename U, typename V>
+		template<typename U, typename V> requires (qpl::is_arithmetic<U>() && qpl::is_arithmetic<V>())
 		constexpr vector2(U u, V v) : x(), y() {
 			this->x = static_cast<T>(u);
 			this->y = static_cast<T>(v);
@@ -81,7 +81,7 @@ namespace qsf {
 			return qsf::vector2<U>(*this);
 		}
 
-		template<typename U, typename V>
+		template<typename U, typename V> requires (qpl::is_arithmetic<U>() && qpl::is_arithmetic<V>())
 		constexpr void move(U x, V y) {
 			this->x = static_cast<T>(this->x + x);
 			this->y = static_cast<T>(this->y + y);
@@ -92,7 +92,7 @@ namespace qsf {
 			this->y = static_cast<T>(this->y + position.y);
 		}
 
-		template<typename U, typename V>
+		template<typename U, typename V> requires (qpl::is_arithmetic<U>() && qpl::is_arithmetic<V>())
 		constexpr qsf::vector2<T> moved(U x, V y) const {
 			auto copy = *this;
 			copy.move(x, y);

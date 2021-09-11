@@ -466,14 +466,14 @@ namespace qpl {
 				const qpl::vk::command_pool& command_pool,
 				const qpl::vk::present_queue& present_queue
 			);
-			QPLDLL void set_path(qpl::string_view path);
+			QPLDLL void set_path(std::string_view path);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
 		private:
 			QPLDLL void construct();
 
 			bool m_created;
-			qpl::string_view m_path;
+			std::string_view m_path;
 		};
 
 		class texture_view {
@@ -1130,8 +1130,8 @@ namespace qpl {
 
 			QPLDLL void set_dimension(glm::ivec2 dim) const;
 			QPLDLL glm::ivec2 get_dimension() const;
-			QPLDLL void set_title(qpl::string_view title) const;
-			QPLDLL qpl::string_view get_title() const;
+			QPLDLL void set_title(std::string_view title) const;
+			QPLDLL std::string_view get_title() const;
 
 			QPLDLL qpl::time get_run_time() const;
 

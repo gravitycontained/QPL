@@ -14,11 +14,11 @@
 #include <vector>
 #include <iostream>
 #include <unordered_map>
-
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/pictures.hpp>
-#include <qpl/span.hpp>
+#include <string_view>
+#include <span>
 
 namespace qpl {
 	namespace winsys {
@@ -316,10 +316,10 @@ namespace qpl {
 			return reinterpret_cast<T*>(this->ptr);
 		}
 		template <typename T>
-		qpl::span<T> get_array() {
+		std::span<T> get_array() {
 			auto p = reinterpret_cast<T*>(reinterpret_cast<char*>(this->ptr) + qpl::bytes_in_type<qpl::size>());
 			auto size = this->array_byte_size() / sizeof(T);
-			qpl::span<T> result(p, p + size);
+			std::span<T> result(p, p + size);
 			return result;
 		}
 		QPLDLL void* get();
@@ -348,7 +348,7 @@ namespace qpl {
 		return qpl::detail::shared_memories[name].get<T>();
 	}
 	template <typename T>
-	qpl::span<T> create_shared_memory_array(std::string name, qpl::size size) {
+	std::span<T> create_shared_memory_array(std::string name, qpl::size size) {
 		qpl::create_shared_memory_array(name, sizeof(T) * size);
 		return qpl::detail::shared_memories[name].get_array<T>();
 	}
@@ -367,7 +367,7 @@ namespace qpl {
 	}
 
 	template <typename T>
-	qpl::span<T> get_shared_memory_array(std::string name) {
+	std::span<T> get_shared_memory_array(std::string name) {
 		if (qpl::detail::shared_memories.find(name) == qpl::detail::shared_memories.cend()) {
 			if (qpl::find_shared_memory(name)) {
 				qpl::open_shared_memory_array(name);

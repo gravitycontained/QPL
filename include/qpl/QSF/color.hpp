@@ -12,7 +12,7 @@
 
 namespace qsf {
 
-	union rgb;
+	struct rgb;
 	struct frgb {
 		qpl::f32 r = 0.0;
 		qpl::f32 g = 0.0;
@@ -130,7 +130,7 @@ namespace qsf {
 		static const qsf::frgb unset;
 	};
 
-	union rgb {
+	struct rgb {
 		rgb() {
 			*this = rgb::white;
 		}
@@ -138,10 +138,10 @@ namespace qsf {
 			*this = color;
 		}
 		rgb(qpl::u8 r, qpl::u8 g, qpl::u8 b, qpl::u8 a = qpl::u8_max) {
-			this->c.r = r;
-			this->c.g = g;
-			this->c.b = b;
-			this->c.a = a;
+			this->r = r;
+			this->g = g;
+			this->b = b;
+			this->a = a;
 		}
 		rgb(qpl::u32 hex) {
 			*this = hex;
@@ -153,13 +153,10 @@ namespace qsf {
 			*this = other;
 		}
 
-		struct {
-			qpl::u8 r;
-			qpl::u8 g;
-			qpl::u8 b;
-			qpl::u8 a;
-		} c;
-		qpl::u32 uint;
+		qpl::u8 r;
+		qpl::u8 g;
+		qpl::u8 b;
+		qpl::u8 a;
 
 		QPLDLL qsf::rgb& operator=(const rgb& other);
 		QPLDLL qsf::rgb& operator=(const frgb& other);
@@ -172,21 +169,24 @@ namespace qsf {
 		QPLDLL std::string string() const;
 		QPLDLL std::string hex_string() const;
 		QPLDLL bool is_unset() const;
+		QPLDLL qpl::u32 uint() const;
 
 		QPLDLL qsf::rgb& interpolate(qsf::rgb color, qpl::f64 strength = qpl::f64{ 1 });
 		QPLDLL qsf::rgb interpolated(qsf::rgb color, qpl::f64 strength = qpl::f64{ 1 }) const;
 
 		QPLDLL static qsf::rgb interpolation(const std::vector<qsf::rgb>& colors, qpl::f64 strength);
+		QPLDLL static qsf::rgb grey_shade(qpl::u8 strength = 128);
 
 		QPLDLL qsf::rgb& invert();
 		QPLDLL qsf::rgb inverted() const;
 		QPLDLL qsf::rgb with_alpha(qpl::u8 alpha) const;
+		QPLDLL qsf::rgb multiplied_alpha(qpl::u8 alpha) const;
 
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator/=(T value) {
-			this->c.r /= value;
-			this->c.g /= value;
-			this->c.b /= value;
+			this->r /= value;
+			this->g /= value;
+			this->b /= value;
 			return *this;
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
@@ -197,9 +197,9 @@ namespace qsf {
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator*=(T value) {
-			this->c.r *= value;
-			this->c.g *= value;
-			this->c.b *= value;
+			this->r *= value;
+			this->g *= value;
+			this->b *= value;
 			return *this;
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
@@ -210,9 +210,9 @@ namespace qsf {
 		}		
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator+=(T value) {
-			this->c.r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.r) + value, static_cast<qpl::i16>(qpl::u8_max));
-			this->c.g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.g) + value, static_cast<qpl::i16>(qpl::u8_max));
-			this->c.b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.b) + value, static_cast<qpl::i16>(qpl::u8_max));
+			this->r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->r) + value, static_cast<qpl::i16>(qpl::u8_max));
+			this->g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->g) + value, static_cast<qpl::i16>(qpl::u8_max));
+			this->b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->b) + value, static_cast<qpl::i16>(qpl::u8_max));
 			return *this;
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
@@ -223,9 +223,9 @@ namespace qsf {
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator-=(T value) {
-			this->c.r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.r) - value, static_cast<qpl::i16>(qpl::u8_max));
-			this->c.g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.g) - value, static_cast<qpl::i16>(qpl::u8_max));
-			this->c.b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->c.b) - value, static_cast<qpl::i16>(qpl::u8_max));
+			this->r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->r) - value, static_cast<qpl::i16>(qpl::u8_max));
+			this->g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->g) - value, static_cast<qpl::i16>(qpl::u8_max));
+			this->b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->b) - value, static_cast<qpl::i16>(qpl::u8_max));
 			return *this;
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())

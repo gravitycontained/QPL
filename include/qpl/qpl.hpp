@@ -24,7 +24,6 @@
 #include <qpl/ranges.hpp>
 #include <qpl/singleton.hpp>
 #include <qpl/smooth.hpp>
-#include <qpl/span.hpp>
 #include <qpl/string.hpp>
 #include <qpl/system.hpp>
 #include <qpl/time.hpp>

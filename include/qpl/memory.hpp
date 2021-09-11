@@ -3,13 +3,13 @@
 #pragma once
 
 #include <qpl/algorithm.hpp>
-#include <qpl/span.hpp>
 #include <qpl/string.hpp>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/system.hpp>
 #include <qpl/vardef.hpp>
 #include <array>
+#include <string_view>
 
 
 
@@ -69,7 +69,7 @@ namespace qpl {
 		memcpy(&destination, data.data(), data.size());
 	}
 	template<typename C> requires (qpl::is_container<C>())
-	constexpr inline void string_to_vector_memory(const qpl::string_view& data, C& destination) {
+	constexpr inline void string_to_vector_memory(const std::string_view& data, C& destination) {
 		if (data.empty()) {
 			return;
 		}
@@ -162,7 +162,7 @@ namespace qpl {
 	}
 
 
-	QPLDLL void print_character_bool_table(qpl::string_view characters);
+	QPLDLL void print_character_bool_table(std::string_view characters);
 
 	template<qpl::size exponent_bytes, qpl::size mantissa_bytes>
 	struct float_memory {

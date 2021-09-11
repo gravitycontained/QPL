@@ -11,7 +11,7 @@
 #include <qpl/random.hpp>
 #include <qpl/bits.hpp>
 #include <qpl/system.hpp>
-#include <qpl/span.hpp>
+#include <span>
 #include <array>
 #include <vector>
 #include <iostream>
@@ -526,7 +526,7 @@ namespace qpl {
 			}
 		}
 
-		void set(qpl::string_view string, qpl::u32 string_base = base) {
+		void set(std::string_view string, qpl::u32 string_base = base) {
 			if (string.empty()) {
 				this->clear();
 			}
@@ -567,7 +567,7 @@ namespace qpl {
 					negative = true;
 				}
 
-				qpl::string_view substr;
+				std::string_view substr;
 				if (string.length() >= 2 + negative) {
 					substr = string.substr(negative, 2);
 				}
@@ -631,7 +631,7 @@ namespace qpl {
 		}
 
 		void set(const char* string) {
-			this->set(qpl::string_view{ string });
+			this->set(std::string_view{ string });
 		}
 
 		template<qpl::u32 base2 = base, bool sign2 = sign>
@@ -1611,7 +1611,7 @@ namespace qpl {
 		}
 
 
-		std::string memory_string(qpl::u32 result_base = base, qpl::u32 seperation = 0u, qpl::string_view prefix = "") const {
+		std::string memory_string(qpl::u32 result_base = base, qpl::u32 seperation = 0u, std::string_view prefix = "") const {
 			std::ostringstream stream;
 			if constexpr (is_signed()) {
 				if (this->is_negative()) {
@@ -2358,7 +2358,7 @@ namespace qpl {
 		}
 
 		constexpr integer& operator=(const char* string) {
-			this->set(qpl::string_view(string));
+			this->set(std::string_view(string));
 			return *this;
 		}
 
@@ -2768,8 +2768,8 @@ namespace qpl {
 		}
 
 
-		constexpr void set_hex_string(qpl::string_view string) {
-			qpl::string_view substr;
+		constexpr void set_hex_string(std::string_view string) {
+			std::string_view substr;
 			this->clear();
 
 			bool negative = false;
@@ -2815,8 +2815,8 @@ namespace qpl {
 				}
 			}
 		}
-		constexpr void set_binary_string(qpl::string_view string) {
-			qpl::string_view substr;
+		constexpr void set_binary_string(std::string_view string) {
+			std::string_view substr;
 			this->clear();
 
 
@@ -2863,7 +2863,7 @@ namespace qpl {
 				}
 			}
 		}
-		constexpr void set_base_string(qpl::string_view string, qpl::u32 base = 10u) {
+		constexpr void set_base_string(std::string_view string, qpl::u32 base = 10u) {
 			this->clear();
 
 			bool negative = false;
@@ -2871,7 +2871,7 @@ namespace qpl {
 				negative = true;
 			}
 
-			qpl::string_view substr;
+			std::string_view substr;
 			if (string.length() >= 2 + negative) {
 				substr = string.substr(negative, 2);
 			}
@@ -2922,14 +2922,14 @@ namespace qpl {
 				this->flip_sign();
 			}
 		}
-		constexpr void set_base_string_vector(qpl::string_view string, qpl::u32 base) {
+		constexpr void set_base_string_vector(std::string_view string, qpl::u32 base) {
 			this->clear();
 			bool negative = false;
 			if (string.front() == '-') {
 				negative = true;
 			}
 
-			qpl::string_view substr;
+			std::string_view substr;
 			if (string.length() >= 2 + negative) {
 				substr = string.substr(negative, 2);
 			}
@@ -2978,7 +2978,7 @@ namespace qpl {
 				}
 			}
 		}
-		constexpr void set(qpl::string_view string, qpl::u32 base = qpl::u32_max) {
+		constexpr void set(std::string_view string, qpl::u32 base = qpl::u32_max) {
 			qpl::u32 start = 0u;
 			while (start < string.length() && qpl::is_character_white_space(string[start])) { ++start; }
 
@@ -3001,7 +3001,7 @@ namespace qpl {
 					return;
 				}
 
-				qpl::string_view substr;
+				std::string_view substr;
 
 				bool negative = string.front() == '-';
 
@@ -5982,7 +5982,7 @@ namespace qpl {
 				this->memory[i] = qpl::u64{};
 			}
 		}
-		constexpr void set(qpl::string_view string, qpl::u32 base = qpl::u32_max) {
+		constexpr void set(std::string_view string, qpl::u32 base = qpl::u32_max) {
 			qpl::integer<bits, sign> copy;
 			copy.set(string, base);
 			this->set(copy);
@@ -7230,7 +7230,7 @@ namespace qpl {
 		}
 
 		template<bool check_sign = sign>
-		constexpr std::string memory_base_string(qpl::u32 base, qpl::size seperation = 0, qpl::string_view prefix = "") const {
+		constexpr std::string memory_base_string(qpl::u32 base, qpl::size seperation = 0, std::string_view prefix = "") const {
 			std::ostringstream prefix_stuff;
 			if constexpr (check_sign) {
 				if (this->is_negative()) {
@@ -7298,7 +7298,7 @@ namespace qpl {
 			}
 		}
 		template<bool check_sign = sign>
-		constexpr std::string memory_base_string_full(qpl::u32 base, qpl::size seperation = 0, qpl::string_view prefix = "") const {
+		constexpr std::string memory_base_string_full(qpl::u32 base, qpl::size seperation = 0, std::string_view prefix = "") const {
 			std::ostringstream prefix_stuff;
 			if constexpr (check_sign) {
 				if (this->is_negative()) {
@@ -7353,11 +7353,11 @@ namespace qpl {
 
 
 		template<bool check_sign = sign>
-		constexpr std::string hex_string(qpl::size seperation = 0, qpl::string_view prefix = "0x") const {
+		constexpr std::string hex_string(qpl::size seperation = 0, std::string_view prefix = "0x") const {
 			return this->memory_base_string<check_sign>(16u, seperation, prefix);
 		}
 		template<bool check_sign = sign>
-		constexpr std::string hex_string_full(qpl::size seperation = 0, qpl::string_view prefix = "0x") const {
+		constexpr std::string hex_string_full(qpl::size seperation = 0, std::string_view prefix = "0x") const {
 			return this->memory_base_string_full<check_sign>(16u, seperation, prefix);
 		}
 		template<bool check_sign = sign>
@@ -7651,7 +7651,7 @@ namespace qpl {
 			this->sign = false;
 		}
 
-		constexpr void set(qpl::string_view string, qpl::u32 base = 10u) {
+		constexpr void set(std::string_view string, qpl::u32 base = 10u) {
 			qpl::i32 off = 0u;
 			if (string.front() == '-') {
 				this->sign = true;
@@ -7762,7 +7762,7 @@ namespace qpl {
 		}
 
 		constexpr void set(qpl::f64 value) {
-			this->set(qpl::string_view{ qpl::to_string(value) });
+			this->set(std::string_view{ qpl::to_string(value) });
 			//auto content = qpl::double_content(value);
 			//
 			//this->sign = (qpl::u64)content.sign;
@@ -8851,7 +8851,7 @@ namespace qpl {
 			return result.str();
 		}
 
-		std::string quick_scientific_notation(qpl::u32 base = 16u, qpl::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
+		std::string quick_scientific_notation(qpl::u32 base = 16u, std::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
 			auto m = this->mantissa;
 			m <<= 1;
 
@@ -8912,7 +8912,7 @@ namespace qpl {
 			return result.str();
 		}
 
-		std::string scientific_notation(qpl::u32 base = 10u, qpl::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
+		std::string scientific_notation(qpl::u32 base = 10u, std::string_view prefix = "", qpl::u32 precision = qpl::u32_max) const {
 			if (precision == qpl::u32_max) {
 				precision = precision_digits(base);
 			}
@@ -9044,7 +9044,7 @@ namespace qpl {
 
 			return result.str();
 		}
-		std::string hex_scientific_notation(qpl::string_view prefix = "0x", qpl::u32 precision = qpl::u32_max) {
+		std::string hex_scientific_notation(std::string_view prefix = "0x", qpl::u32 precision = qpl::u32_max) {
 			return this->scientific_notation(16u, prefix, precision);
 		}
 
@@ -9115,7 +9115,7 @@ namespace qpl {
 		std::string string_precision(qpl::u32 precision) const {
 			return this->base_string(10u, precision);
 		}
-		std::string hex_string(qpl::string_view prefix = "0x") const {
+		std::string hex_string(std::string_view prefix = "0x") const {
 			return qpl::to_string(prefix, this->base_string(16u));
 		}
 		std::string binary_string(qpl::u32 precision = qpl::u32_max) const {

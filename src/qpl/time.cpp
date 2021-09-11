@@ -436,7 +436,58 @@ namespace qpl {
 			this->m_pause = this->m_begin;
 		}
 	}	
-	
+
+	void qpl::small_clock::reset() {
+		this->m_begin = qpl::time::clock_time();
+	}
+	qpl::time qpl::small_clock::elapsed() const {
+		auto time = qpl::time::clock_time();
+		return time - this->m_begin;
+	}
+	std::string qpl::small_clock::elapsed_str() const {
+		return this->elapsed().string();
+	}
+	qpl::f64 qpl::small_clock::elapsed_f() const {
+		return this->elapsed().secs_f();
+	}
+
+	qpl::time qpl::small_clock::elapsed_reset() {
+		auto result = this->elapsed();
+		this->reset();
+		return result;
+	}
+	std::string qpl::small_clock::elapsed_str_reset() {
+		auto result = this->elapsed_str();
+		this->reset();
+		return result;
+	}
+	qpl::f64 qpl::small_clock::elapsed_f_reset() {
+		auto result = this->elapsed_f();
+		this->reset();
+		return result;
+	}
+
+	bool qpl::small_clock::has_elapsed(qpl::f64 seconds) const {
+		return this->elapsed_f() > seconds;
+	}
+	bool qpl::small_clock::has_elapsed(qpl::time duration) const {
+		return this->elapsed() > duration;
+	}
+	bool qpl::small_clock::has_elapsed_reset(qpl::f64 seconds) {
+		auto result = this->has_elapsed(seconds);
+		if (result) {
+			this->reset();
+		}
+		return result;
+	}
+	bool qpl::small_clock::has_elapsed_reset(qpl::time duration) {
+		auto result = this->has_elapsed(duration);
+		if (result) {
+			this->reset();
+		}
+		return result;
+	}
+
 	std::ostream& operator<<(std::ostream& os, const qpl::clock& clock) {
 		return (os << clock.elapsed().string());
 	}
@@ -720,49 +771,5 @@ namespace qpl {
 			return true;
 		}
 		return false;
-	}
-
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::u8>> qpl::detail::animation_key_frames_u8;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::i8>> qpl::detail::animation_key_frames_i8;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::u16>> qpl::detail::animation_key_frames_u16;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::i16>> qpl::detail::animation_key_frames_i16;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::u32>> qpl::detail::animation_key_frames_u32;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::i32>> qpl::detail::animation_key_frames_i32;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::u64>> qpl::detail::animation_key_frames_u64;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::i64>> qpl::detail::animation_key_frames_i64;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::f32>> qpl::detail::animation_key_frames_f32;
-	QPLDLL std::vector<qpl::animation_key_frame<qpl::f64>> qpl::detail::animation_key_frames_f64;
-
-	void qpl::update_all_animation_key_frames(qpl::f32 delta_time) {
-		for (auto& i : qpl::detail::animation_key_frames_u8) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_i8) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_u16) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_i16) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_u32) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_i32) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_u64) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_i64) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_f32) {
-			i.update(delta_time);
-		}
-		for (auto& i : qpl::detail::animation_key_frames_f64) {
-			i.update(delta_time);
-		}
 	}
 }
