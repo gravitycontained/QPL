@@ -428,6 +428,16 @@ namespace qsf {
 	void qsf::framework::set_graph_position(qsf::vector2f position) {
 		qsf::drawing_graph.position = position;
 	}
+
+	void qsf::framework::set_framerate_limit(qpl::u32 value) {
+		this->m_framerate_limit = value;
+	}
+	qpl::u32 qsf::framework::get_framerate_limit() const {
+		return this->m_framerate_limit;
+	}
+	void qsf::framework::disable_framerate_limit() {
+		this->m_framerate_limit = qpl::u32_max;
+	}
 	qpl::time qsf::framework::run_time() const {
 		return this->m_run_time_clock.elapsed();
 	}
@@ -496,6 +506,9 @@ namespace qsf {
 			settings.antialiasingLevel = this->m_antialising;
 
 			sf::String s = this->m_title.c_str(); //??? SFML why is this needed
+			if (this->m_framerate_limit != qpl::u32_max) {
+				this->window.setFramerateLimit(this->m_framerate_limit);
+			}
 			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, settings);
 			this->m_created = true;
 

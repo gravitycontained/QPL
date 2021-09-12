@@ -681,6 +681,71 @@ namespace qsf {
 	using vector6i = qsf::vectorN<6, qpl::i32>;
 	using vector6u = qsf::vectorN<6, qpl::u32>;
 
+	template<typename T>
+	struct hitbox_t {
+		hitbox_t() {
+
+		}
+		hitbox_t(qsf::vector2f position, qsf::vector2f dimension) {
+			this->position = position;
+			this->dimension = dimension;
+		}
+
+		void set_dimension(qsf::vector2f dimension) {
+			this->dimension = dimension;
+		}
+		void set_position(qsf::vector2f position) {
+			this->position = position;
+		}
+		void set_center(qsf::vector2f position) {
+			this->position = position - this->dimension / 2;
+		}
+
+
+		qsf::vector2f get_center() const {
+			return this->position + this->dimension / 2;
+		}
+		qsf::vector2f get_dimension() const {
+			return this->dimension;
+		}
+		qsf::vector2f get_position() const {
+			return this->position;
+		}
+
+		std::string string() const {
+			return qpl::to_string('[', this->position.string(), ", ", this->dimension.string(), ']');
+		}
+
+		void increase(qpl::f32 delta) {
+			this->position -= qsf::vector2f(delta, delta) / 2;
+			this->dimension += qsf::vector2f(delta, delta);
+		}
+		qsf::hitbox_t<T> increased(qpl::f32 delta) const {
+			auto copy = *this;
+			copy.increase(delta);
+			return copy;
+		}
+		bool contains(qsf::vector2f position) const {
+			return (position.x > this->position.x && position.x < (this->position.x + this->dimension.x) &&
+				position.y > this->position.y && position.y < (this->position.y + this->dimension.y));
+		}
+		template<typename U>
+		void move(qsf::vector2<U> delta) {
+			this->position += qsf::vector2<T>(delta);
+		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+		void move(U x, U y) {
+			this->position += qsf::vector2<T>(x, y);
+		}
+
+
+
+		qsf::vector2<T> dimension;
+		qsf::vector2<T> position;
+	};
+
+	using hitbox = hitbox_t<qpl::f32>;
+
 }
 
 

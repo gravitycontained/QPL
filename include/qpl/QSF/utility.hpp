@@ -173,7 +173,7 @@ namespace qsf {
 			return states;
 		}
 
-		qsf::vrectangle hitbox;
+		qsf::hitbox hitbox;
 		qsf::vector2<T> position = { 0,0 };
 		qsf::vector2<T> dimension;
 		qsf::vector2<T> scale = { 1, 1 };

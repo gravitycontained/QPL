@@ -66,6 +66,8 @@ namespace qsf {
 		sf::RenderStates states;
 	};
 
+	
+
 	struct vtext;
 	struct text;
 	struct vrectangle;
@@ -95,12 +97,14 @@ namespace qsf {
 
 	struct event_info;
 
-	QPLDLL qsf::vrectangle get_text_hitbox(const sf::Text& text);
-	QPLDLL qsf::vrectangle get_text_hitbox(const qsf::text& text);
+
+
+	QPLDLL qsf::hitbox get_text_hitbox(const sf::Text& text);
+	QPLDLL qsf::hitbox get_text_hitbox(const qsf::text& text);
 	QPLDLL void centerize_text(sf::Text& text);
 	QPLDLL void centerize_text(qsf::text& text);
 
-	QPLDLL qsf::vrectangle get_sprite_hitbox(const sf::Sprite& sprite);
+	QPLDLL qsf::hitbox get_sprite_hitbox(const sf::Sprite& sprite);
 	QPLDLL void centerize_sprite(sf::Sprite& sprite);
 
 	namespace detail {
@@ -194,6 +198,10 @@ namespace qsf {
 		QPLDLL void set_string(const std::string& string);
 		QPLDLL bool operator==(const vtext& other) const;
 
+		template<typename T, typename ...Args> requires (qpl::is_printable<T, Args...>())
+			void set_string(T first, Args... values) {
+			this->set_string(qpl::to_string(first, values...));
+		}
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
@@ -229,6 +237,12 @@ namespace qsf {
 		QPLDLL void set_position(qsf::vector2f position);
 		QPLDLL void set_center(qsf::vector2f position);
 		QPLDLL void set_string(const std::string& string);
+
+		template<typename T, typename ...Args> requires (qpl::is_printable<T, Args...>())
+		void set_string(T first, Args... values) {
+			this->set_string(qpl::to_string(first, values...));
+		}
+
 		QPLDLL void centerize();
 		QPLDLL void centerize_x();
 		QPLDLL void centerize_y();
@@ -241,8 +255,8 @@ namespace qsf {
 			*this = other;
 		}
 
-		QPLDLL qsf::vrectangle get_visible_hitbox() const;
-		QPLDLL qsf::vrectangle get_standard_hitbox() const;
+		QPLDLL qsf::hitbox get_visible_hitbox() const;
+		QPLDLL qsf::hitbox get_standard_hitbox() const;
 		QPLDLL qsf::vector2f offset() const;
 
 		
@@ -259,8 +273,8 @@ namespace qsf {
 
 
 		std::string m_font;
-		std::string m_string;
 		sf::Text m_text;
+		std::string m_string;
 	};
 
 	struct endl_type {
@@ -269,21 +283,23 @@ namespace qsf {
 
 	QPLDLL extern endl_type endl;
 
-
 	struct text_stream {
 		enum class duration_type {
 			next_entry, end_of_line, until_end
 		};
 
-		struct sprite_t {
-			qpl::u32 line_index;
-			sf::Sprite sprite;
-			qsf::vector2f shift;
-		};
-		struct text_t {
+		struct object_t {
 			qsf::text text;
+			qsf::hitbox hitbox;
+			qpl::u32 sprite_index = qpl::u32_max;
 			qsf::vector2f shift;
+			qsf::vector2f shift_before;
+
+			bool is_text() const {
+				return this->sprite_index == qpl::u32_max;
+			}
 		};
+
 		constexpr static duration_type next_entry = duration_type::next_entry;
 		constexpr static duration_type end_of_line = duration_type::end_of_line;
 		constexpr static duration_type until_end = duration_type::until_end;
@@ -342,6 +358,14 @@ namespace qsf {
 		struct letter_spacing {
 			letter_spacing(qpl::f32 spacing, duration_type duration = next_entry) {
 				this->value = spacing;
+				this->duration = duration;
+			}
+			qpl::f32 value;
+			duration_type duration;
+		};
+		struct spacing {
+			spacing(qpl::f32 space, duration_type duration = next_entry) {
+				this->value = space;
 				this->duration = duration;
 			}
 			qpl::f32 value;
@@ -467,6 +491,18 @@ namespace qsf {
 			return *this;
 		}
 		template<>
+		text_stream& operator<<(const text_stream::spacing& space) {
+			if (this->states.back().duration == space.duration) {
+				this->states.back().spacing = space.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().spacing = space.value;
+				this->states.back().duration = space.duration;
+			}
+			return *this;
+		}
+		template<>
 		text_stream& operator<<(const text_stream::shift& shift) {
 			if (this->states.back().duration == shift.duration) {
 				this->states.back().shift = shift.value;
@@ -521,18 +557,29 @@ namespace qsf {
 		QPLDLL text_stream& add_sprite(const sf::Sprite& sprite);
 		QPLDLL text_stream& add_string(const std::string& string, bool has_no_newline = false, bool pop_state = true);
 		QPLDLL text_stream& add_string(const std::wstring& string, bool has_no_newline = false, bool pop_state = true);
-		QPLDLL qsf::vrectangle line_text_hitbox(qpl::size index) const;
-		QPLDLL qsf::vrectangle line_sprite_hitbox(qpl::size index) const;
-		QPLDLL qsf::vrectangle line_hitbox(qpl::size index) const;
-		QPLDLL void centerize_line(qpl::size index) const;
+		QPLDLL qsf::hitbox line_text_hitbox(qpl::size index) const;
+		QPLDLL qsf::hitbox line_sprite_hitbox(qpl::size index) const;
+		QPLDLL qsf::hitbox line_hitbox(qpl::size index) const;
+
+		//I don't have seen it get stuck yet, but because there is a possibility due to floating points being weird, I have a loop check here
+		QPLDLL void centerize_line(qpl::size index, qpl::u32 loop = 0u) const;
 		QPLDLL void centerize_lines() const;
+
 		QPLDLL qpl::size size() const;
 		QPLDLL qpl::size lines() const;
-		QPLDLL qsf::text& operator[](qpl::size index);
-		QPLDLL const qsf::text& operator[](qpl::size index) const;
-		QPLDLL std::vector<qsf::text_stream::text_t>& line(qpl::size index);
-		QPLDLL const std::vector<qsf::text_stream::text_t>& line(qpl::size index) const;
-		QPLDLL void note_change();
+		QPLDLL object_t& operator[](qpl::size index);
+		QPLDLL const object_t& operator[](qpl::size index) const;
+
+		QPLDLL qpl::size text_size() const;
+		QPLDLL qsf::text& get_text(qpl::size index);
+		QPLDLL const qsf::text& get_text(qpl::size index) const;
+
+		QPLDLL qpl::size sprite_size() const;
+		QPLDLL sf::Sprite& get_sprite(qpl::size index);
+		QPLDLL const sf::Sprite& get_sprite(qpl::size index) const;
+
+		QPLDLL std::vector<qsf::text_stream::object_t>& line(qpl::size index);
+		QPLDLL const std::vector<qsf::text_stream::object_t>& line(qpl::size index) const;
 		QPLDLL void finalize() const;
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL void set_font(const std::string& font);
@@ -543,11 +590,9 @@ namespace qsf {
 		QPLDLL void set_outline_color(qsf::rgb color);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
 		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL qsf::vrectangle get_visible_hitbox() const;
+		QPLDLL qsf::hitbox get_visible_hitbox() const;
 
-		QPLDLL sf::Sprite& get_sprite(qpl::u32 index);
-		QPLDLL const sf::Sprite& get_sprite(qpl::u32 index) const;
-		QPLDLL qpl::size sprite_sizes() const;
+		QPLDLL void update_size_changes();
 
 		struct state {
 			std::string font;
@@ -559,13 +604,14 @@ namespace qsf {
 			qpl::f32 letter_spacing = 1.0f;
 			qsf::vector2f scaling = qsf::vector2f(qpl::f32_max, qpl::f32_max);
 			qsf::vector2f shift = qsf::vector2f(0, 0);
+			qpl::f32 spacing = 0;
 			duration_type duration = duration_type::until_end;
 		};
 
 
 		std::vector<state> states;
-		mutable std::vector<sprite_t> sprites;
-		mutable std::vector<std::vector<text_t>> texts;
+		mutable std::vector<sf::Sprite> sprites;
+		mutable std::vector<std::vector<object_t>> objects;
 		mutable bool changed = false;
 		qpl::f32 line_spacing = 5.0f;
 
@@ -585,6 +631,10 @@ namespace qsf {
 			this->dimension = dimension;
 			this->color = color;
 		}
+		vrectangle(hitbox hitbox) {
+			this->set_position(hitbox.position);
+			this->set_dimension(hitbox.dimension);
+		}
 
 		QPLDLL void set_dimension(qsf::vector2f dimension);
 		QPLDLL void set_position(qsf::vector2f position);
@@ -596,6 +646,7 @@ namespace qsf {
 		QPLDLL qsf::vector2f get_dimension() const;
 		QPLDLL qsf::vector2f get_position() const;
 		QPLDLL qsf::vector2f get_center() const;
+		QPLDLL qsf::hitbox get_hitbox() const;
 		QPLDLL qsf::rgb get_color() const;
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qsf::rgb get_outline_color() const;
@@ -630,7 +681,7 @@ namespace qsf {
 
 		QPLDLL qsf::vector2f get_position() const;
 		QPLDLL qsf::vector2f get_dimension() const;
-		QPLDLL qsf::vrectangle get_hitbox() const;
+		QPLDLL qsf::hitbox get_hitbox() const;
 		QPLDLL qsf::rgb get_color() const;
 
 		QPLDLL qsf::vlines as_lines() const;
@@ -1838,7 +1889,7 @@ namespace qsf {
 		qsf::vector2f get_dimension() const {
 			return this->background.get_dimension();
 		}
-		qsf::vector2f get_hitbox() const {
+		qsf::hitbox get_hitbox() const {
 			return this->background.get_hitbox();
 		}
 		qsf::vector2f get_knob_dimension() const {
@@ -1856,7 +1907,7 @@ namespace qsf {
 		qpl::f32 get_knob_width() const {
 			return this->knob.get_dimension().x;
 		}
-		qsf::vector2f get_knob_hitbox() const {
+		qsf::hitbox get_knob_hitbox() const {
 			return this->knob.get_hitbox();
 		}
 		void set_dimensions(qsf::vector2f slider_dimension, qsf::vector2f knob_dimension) {

@@ -114,6 +114,11 @@ namespace qsf {
 		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
 		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
 		QPLDLL void set_graph_position(qsf::vector2f position);
+
+		QPLDLL void set_framerate_limit(qpl::u32 value);
+		QPLDLL qpl::u32 get_framerate_limit() const;
+		QPLDLL void disable_framerate_limit();
+
 		QPLDLL qpl::time run_time() const;
 		QPLDLL qpl::time frame_time() const;
 
@@ -127,6 +132,7 @@ namespace qsf {
 		qpl::clock m_frametime_clock;
 		qpl::time m_frametime;
 		qpl::u32 m_antialising = 12u;
+		qpl::u32 m_framerate_limit = 144u;
 		bool m_created = false;
 	};
 	
