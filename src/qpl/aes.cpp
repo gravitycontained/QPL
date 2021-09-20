@@ -6,39 +6,39 @@
 #include <sstream>
 
 namespace qpl {
-	qpl::detail::aes_tables_t qpl::detail::aes_tables;
+	std::unique_ptr<qpl::detail::aes_tables_t> qpl::detail::aes_tables;
 
 	qpl::u8 qpl::detail::galois_field_mul(qpl::u8 x, qpl::u8 y) {
 		return (((y & 1) * x) ^
-			((y >> 1 & 1) * qpl::detail::aes_tables.mul2[x]) ^
-			((y >> 2 & 1) * qpl::detail::aes_tables.mul2[qpl::detail::aes_tables.mul2[x]]) ^
-			((y >> 3 & 1) * qpl::detail::aes_tables.mul2[qpl::detail::aes_tables.mul2[qpl::detail::aes_tables.mul2[x]]]) ^
-			((y >> 4 & 1) * qpl::detail::aes_tables.mul2[qpl::detail::aes_tables.mul2[qpl::detail::aes_tables.mul2[qpl::detail::aes_tables.mul2[x]]]]));
+			((y >> 1 & 1) * qpl::detail::aes_tables->mul2[x]) ^
+			((y >> 2 & 1) * qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[x]]) ^
+			((y >> 3 & 1) * qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[x]]]) ^
+			((y >> 4 & 1) * qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[x]]]]));
 	}
 	void qpl::detail::calculate_mul1() {
 		for (int i = 0; i < 256; ++i) {
-			qpl::detail::aes_tables.mul1[i] = static_cast<qpl::u8>(i);
+			qpl::detail::aes_tables->mul1[i] = static_cast<qpl::u8>(i);
 		}
 	}
 
 	void qpl::detail::calculate_mul2() {
 		for (int i = 0; i < 256; ++i) {
-			qpl::detail::aes_tables.mul2[i] = static_cast<qpl::u8>((i << 1) ^ ((i & 0x80) ? 0x1B : 0x00));
+			qpl::detail::aes_tables->mul2[i] = static_cast<qpl::u8>((i << 1) ^ ((i & 0x80) ? 0x1B : 0x00));
 		}
 	}
 
 	void qpl::detail::calculate_mul3() {
 		for (int i = 0; i < 256; ++i) {
-			qpl::detail::aes_tables.mul3[i] = static_cast<qpl::u8>(qpl::detail::aes_tables.mul2[i] ^ i);
+			qpl::detail::aes_tables->mul3[i] = static_cast<qpl::u8>(qpl::detail::aes_tables->mul2[i] ^ i);
 		}
 	}
 
 	void qpl::detail::calculate_rcon() {
-		qpl::detail::aes_tables.rcon[0] = 0x8d;
+		qpl::detail::aes_tables->rcon[0] = 0x8d;
 		qpl::u8 x = 1;
 		for (int i = 1; i < 255; ++i) {
-			qpl::detail::aes_tables.rcon[i] = static_cast<qpl::u8>(x);
-			x = qpl::detail::aes_tables.mul2[x];
+			qpl::detail::aes_tables->rcon[i] = static_cast<qpl::u8>(x);
+			x = qpl::detail::aes_tables->mul2[x];
 		}
 	}
 
@@ -57,21 +57,24 @@ namespace qpl {
 
 			//compute affine transformation
 			unsigned char xformed = q ^ qpl::rotate_left(q, 1) ^ qpl::rotate_left(q, 2) ^ qpl::rotate_left(q, 3) ^ qpl::rotate_left(q, 4);
-			qpl::detail::aes_tables.sbox[p] = xformed ^ 0x63;
+			qpl::detail::aes_tables->sbox[p] = xformed ^ 0x63;
 
 		} while (p - 1);
 
 		//0 is a special case since it has no inverse
-		qpl::detail::aes_tables.sbox[0] = 0x63;
+		qpl::detail::aes_tables->sbox[0] = 0x63;
 	}
 
 	void qpl::detail::calculate_sbox_inv() {
 		for (int i = 0; i < 256; ++i) {
-			qpl::detail::aes_tables.sbox_inv[qpl::detail::aes_tables.sbox[i]] = static_cast<qpl::u8>(i);
+			qpl::detail::aes_tables->sbox_inv[qpl::detail::aes_tables->sbox[i]] = static_cast<qpl::u8>(i);
 		}
 	}
 
 	void qpl::generate_all_aes_tables() {
+		if (!qpl::detail::aes_tables) {
+			qpl::detail::aes_tables = std::make_unique<detail::aes_tables_t>();
+		}
 		qpl::detail::calculate_mul1();
 		qpl::detail::calculate_mul2();
 		qpl::detail::calculate_mul3();
@@ -81,10 +84,20 @@ namespace qpl {
 	}
 
 	void qpl::AES::construct() {
+		this->m_constructed = true;
 		this->set_mode(mode::AES_128);
-		if (qpl::detail::aes_tables.created == false) {
+		if (!qpl::detail::aes_tables) {
 			qpl::generate_all_aes_tables();
-			qpl::detail::aes_tables.created = true;
+		}
+	}
+	void qpl::AES::error_if_not_constructed() const {
+		if (!this->m_constructed) {
+			throw std::exception(qpl::to_string("qpl::AES: tries to access, but it was not constructed yet. call construct()").c_str());
+		}
+	}
+	void qpl::AES::check_constructed() {
+		if (!this->m_constructed) {
+			this->construct();
 		}
 	}
 	void qpl::AES::destroy() {
@@ -93,6 +106,7 @@ namespace qpl {
 	}
 
 	std::string qpl::AES::encrypted(const qpl::u8 message[16], const std::string& key) {
+		this->check_constructed();
 		this->set_state(message);
 		this->set_key(key);
 		this->expand_key();
@@ -100,6 +114,7 @@ namespace qpl {
 		return this->get_message();
 	}
 	std::vector<qpl::u8> qpl::AES::encrypted(const qpl::u8* message, qpl::size size, const std::string& key) {
+		this->check_constructed();
 		this->set_key(key);
 		this->expand_key();
 
@@ -186,6 +201,7 @@ namespace qpl {
 	}
 
 	std::string qpl::AES::decrypted(const qpl::u8 message[16], const std::string& key) {
+		this->check_constructed();
 		this->set_state(message);
 		this->set_key(key);
 		this->expand_key();
@@ -193,6 +209,7 @@ namespace qpl {
 		return this->get_message();
 	}
 	std::vector<qpl::u8> qpl::AES::decrypted(const qpl::u8* message, qpl::size size, const std::string& key, bool remove_null_terminations) {
+		this->check_constructed();
 		this->set_key(key);
 		this->expand_key();
 
@@ -295,6 +312,7 @@ namespace qpl {
 
 
 	void qpl::AES::set_mode(mode m) {
+		this->check_constructed();
 		this->m_mode = m;
 
 		if (m == mode::AES_128) {
@@ -321,6 +339,7 @@ namespace qpl {
 		return this->m_cipher_rounds;
 	}
 	void qpl::AES::set_cipher_rounds(qpl::size count) {
+		this->check_constructed();
 		this->m_cipher_rounds = count;
 		this->m_round_key_size = 16 * (this->m_cipher_rounds + 1);
 		delete[] this->m_round_key;
@@ -328,18 +347,23 @@ namespace qpl {
 	}
 
 	void qpl::AES::copy_message(qpl::u8* newState) const {
+		this->error_if_not_constructed();
 		for (int i = 0; i < 16; ++i) {
 			newState[i] = this->m_state[i];
 		}
 	}
 
 	std::string qpl::AES::get_message() const {
+		this->error_if_not_constructed();
 		std::string result;
 		result.reserve(16);
 		for (int i = 0; i < 16; ++i) {
 			result += this->m_state[i];
 		}
 		return result;
+	}
+	bool qpl::AES::is_constructed() const {
+		return this->m_constructed;
 	}
 
 	void qpl::AES::set_state(const qpl::u8 state[16]) {
@@ -402,15 +426,15 @@ namespace qpl {
 				helperWORD[3] = temp;
 
 				for (int i = 0; i < 4; ++i) {
-					helperWORD[i] = qpl::detail::aes_tables.sbox[helperWORD[i]];
+					helperWORD[i] = qpl::detail::aes_tables->sbox[helperWORD[i]];
 				}
 
-				helperWORD[0] ^= qpl::detail::aes_tables.rcon[bytes_generated / this->m_key_size];
+				helperWORD[0] ^= qpl::detail::aes_tables->rcon[bytes_generated / this->m_key_size];
 			}
 
 			if (this->m_key_size == 32u && bytes_generated % this->m_key_size == 16) {
 				for (int i = 0; i < 4; ++i) {
-					helperWORD[i] = qpl::detail::aes_tables.sbox[helperWORD[i]];
+					helperWORD[i] = qpl::detail::aes_tables->sbox[helperWORD[i]];
 				}
 			}
 
@@ -458,13 +482,13 @@ namespace qpl {
 
 	void qpl::AES::sub_bytes() {
 		for (int i = 0; i < 16; ++i) {
-			this->m_state[i] = qpl::detail::aes_tables.sbox[this->m_state[i]];
+			this->m_state[i] = qpl::detail::aes_tables->sbox[this->m_state[i]];
 		}
 	}
 
 	void qpl::AES::unsub_bytes() {
 		for (int i = 0; i < 16; ++i) {
-			this->m_state[i] = qpl::detail::aes_tables.sbox_inv[this->m_state[i]];
+			this->m_state[i] = qpl::detail::aes_tables->sbox_inv[this->m_state[i]];
 		}
 	}
 
@@ -501,10 +525,10 @@ namespace qpl {
 			int index3 = columns * 4 + 3;
 
 			qpl::u8 temp[4];
-			temp[0] = qpl::detail::aes_tables.mul2[this->m_state[index0]] ^ qpl::detail::aes_tables.mul3[this->m_state[index1]] ^ qpl::detail::aes_tables.mul1[this->m_state[index2]] ^ qpl::detail::aes_tables.mul1[this->m_state[index3]];
-			temp[1] = qpl::detail::aes_tables.mul1[this->m_state[index0]] ^ qpl::detail::aes_tables.mul2[this->m_state[index1]] ^ qpl::detail::aes_tables.mul3[this->m_state[index2]] ^ qpl::detail::aes_tables.mul1[this->m_state[index3]];
-			temp[2] = qpl::detail::aes_tables.mul1[this->m_state[index0]] ^ qpl::detail::aes_tables.mul1[this->m_state[index1]] ^ qpl::detail::aes_tables.mul2[this->m_state[index2]] ^ qpl::detail::aes_tables.mul3[this->m_state[index3]];
-			temp[3] = qpl::detail::aes_tables.mul3[this->m_state[index0]] ^ qpl::detail::aes_tables.mul1[this->m_state[index1]] ^ qpl::detail::aes_tables.mul1[this->m_state[index2]] ^ qpl::detail::aes_tables.mul2[this->m_state[index3]];
+			temp[0] = qpl::detail::aes_tables->mul2[this->m_state[index0]] ^ qpl::detail::aes_tables->mul3[this->m_state[index1]] ^ qpl::detail::aes_tables->mul1[this->m_state[index2]] ^ qpl::detail::aes_tables->mul1[this->m_state[index3]];
+			temp[1] = qpl::detail::aes_tables->mul1[this->m_state[index0]] ^ qpl::detail::aes_tables->mul2[this->m_state[index1]] ^ qpl::detail::aes_tables->mul3[this->m_state[index2]] ^ qpl::detail::aes_tables->mul1[this->m_state[index3]];
+			temp[2] = qpl::detail::aes_tables->mul1[this->m_state[index0]] ^ qpl::detail::aes_tables->mul1[this->m_state[index1]] ^ qpl::detail::aes_tables->mul2[this->m_state[index2]] ^ qpl::detail::aes_tables->mul3[this->m_state[index3]];
+			temp[3] = qpl::detail::aes_tables->mul3[this->m_state[index0]] ^ qpl::detail::aes_tables->mul1[this->m_state[index1]] ^ qpl::detail::aes_tables->mul1[this->m_state[index2]] ^ qpl::detail::aes_tables->mul2[this->m_state[index3]];
 																																								
 			for (int i = 0; i < 4; ++i) {
 				this->m_state[columns * 4 + i] = temp[i];
@@ -533,7 +557,7 @@ namespace qpl {
 	}
 	
 
-	qpl::AES qpl::detail::aes;
+	qpl::AES qpl::detail::aes(false);
 
 	std::string qpl::AES_256_encrypted(const std::string& message, const std::string & key) {
 		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);

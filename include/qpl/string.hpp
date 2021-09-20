@@ -198,13 +198,6 @@ namespace qpl {
 		return stream.str();
 	}
 
-
-	template<typename... Args> requires (qpl::is_printable<Args...>())
-		const char* to_cstring(Args&&... args) {
-		std::ostringstream stream;
-		((stream << args), ...);
-		return stream.str().c_str();
-	}
 	template<typename T, typename... Args>
 	std::string to_string_dash(const T& first, Args&&... args) {
 		std::ostringstream stream;

@@ -18,10 +18,9 @@ namespace qpl {
 				qpl::u8 rcon[255];
 				qpl::u8 sbox[256];
 				qpl::u8 sbox_inv[256];
-
-				bool created = false;
 			};
-			QPLDLL extern qpl::detail::aes_tables_t aes_tables;
+			QPLDLL extern std::unique_ptr<qpl::detail::aes_tables_t> aes_tables;
+
 
 			QPLDLL qpl::u8 galois_field_mul(qpl::u8 x, qpl::u8 y);
 
@@ -43,8 +42,10 @@ namespace qpl {
 				AES_128, AES_192, AES_256
 			};
 
-			AES() {
-				this->construct();
+			AES(bool construct = true) {
+				if (construct) {
+					this->construct();
+				}
 			}
 			~AES() {
 				this->destroy();
@@ -76,8 +77,11 @@ namespace qpl {
 			QPLDLL void copy_message(qpl::u8* newState) const;
 			QPLDLL std::string get_message() const;
 
-		private:
+			QPLDLL bool is_constructed() const;
 			QPLDLL void construct();
+		private:
+			QPLDLL void error_if_not_constructed() const;
+			QPLDLL void check_constructed();
 			QPLDLL void destroy();
 
 			QPLDLL void set_state(const qpl::u8 state[16]);
@@ -97,7 +101,7 @@ namespace qpl {
 			QPLDLL void mix_columns();
 			QPLDLL void unmix_columns();
 
-
+			bool m_constructed = false;
 			mode m_mode;
 			qpl::u8 m_state[16];
 			qpl::u8* m_key;

@@ -3,7 +3,7 @@
 #pragma once
 
 
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 

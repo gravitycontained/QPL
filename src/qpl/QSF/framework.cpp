@@ -1,7 +1,7 @@
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 
 namespace qsf {
 

@@ -2,7 +2,7 @@
 #define QSF_SOCKET_HPP
 #pragma once
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 #include <SFML/Network.hpp>

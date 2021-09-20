@@ -28,7 +28,7 @@ namespace qpl {
 	}	
 	qpl::time& qpl::time::operator-=(const qpl::time& other) {
 		if (other.m_ns >= this->m_ns) {
-			this->m_ns = other.m_ns - this->m_ns;
+			this->m_ns = 0;
 		}
 		else {
 			this->m_ns -= other.m_ns;
@@ -386,6 +386,12 @@ namespace qpl {
 		this->reset();
 		return result;
 	}
+	void qpl::clock::add(qpl::f64 seconds) {
+		this->m_begin += qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
+	}
+	void qpl::clock::subtract(qpl::f64 seconds) {
+		this->m_begin -= qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
+	}
 
 	bool qpl::clock::has_elapsed(qpl::f64 seconds) const {
 		return this->elapsed_f() > seconds;
@@ -465,6 +471,12 @@ namespace qpl {
 		auto result = this->elapsed_f();
 		this->reset();
 		return result;
+	}
+	void qpl::small_clock::add(qpl::f64 seconds) {
+		this->m_begin += qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
+	}
+	void qpl::small_clock::subtract(qpl::f64 seconds) {
+		this->m_begin -= qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
 	}
 
 	bool qpl::small_clock::has_elapsed(qpl::f64 seconds) const {

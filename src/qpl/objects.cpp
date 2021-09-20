@@ -1,5 +1,5 @@
 #include <qpl/objects.hpp>
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 
 namespace qpl {
     std::array<VkVertexInputBindingDescription, static_cast<qpl::size>(qpl::vk::vertex_binding::count)> qpl::vk::get_binding_descriptions() {

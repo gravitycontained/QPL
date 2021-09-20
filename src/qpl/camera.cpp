@@ -1,5 +1,5 @@
 #include <qpl/camera.hpp>
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #include <cmath>
 #include <algorithm>
 

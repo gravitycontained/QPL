@@ -39,7 +39,7 @@
 #include <qpl/window.hpp>
 #endif
 
-#if defined(QPL_USE_SFML) || defined(QPL_USE_ALL)
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/event_info.hpp>

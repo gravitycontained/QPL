@@ -1,6 +1,6 @@
 #include <qpl/QSF/drawables.hpp>
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/event_info.hpp>
@@ -180,7 +180,8 @@ namespace qsf {
 			this->outline_color == other.outline_color &&
 			this->letter_spacing == other.letter_spacing &&
 			this->position == other.position &&
-			this->string == other.string;
+			this->string == other.string &&
+			this->multiplied_color == other.multiplied_color;
 	}
 	void qsf::vtext::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::text = *this;
@@ -234,13 +235,15 @@ namespace qsf {
 		this->m_text.setCharacterSize(character_size);
 	}
 	void qsf::text::set_color(qsf::rgb color) {
-		this->m_text.setFillColor(color);
+		this->color = color;
+		this->m_text.setFillColor(this->color.multiplied_color(this->multiplied_color));
 	}
 	void qsf::text::set_outline_thickness(qpl::f32 outline_thickness) {
 		this->m_text.setOutlineThickness(outline_thickness);
 	}
 	void qsf::text::set_outline_color(qsf::rgb color) {
-		this->m_text.setOutlineColor(color);
+		this->outline_color = color;
+		this->m_text.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
 	}
 	void qsf::text::set_letter_spacing(qpl::f32 spacing) {
 		this->m_text.setLetterSpacing(spacing);
@@ -256,6 +259,14 @@ namespace qsf {
 		this->m_string = string;
 		sf::String s = this->m_string.c_str();
 		this->m_text.setString(s);
+	}
+	void qsf::text::set_multiplied_color(qsf::rgb color) {
+		this->multiplied_color = color;
+		this->m_text.setFillColor(this->color.multiplied_color(color));
+		this->m_text.setOutlineColor(this->outline_color.multiplied_color(color));
+	}
+	qsf::rgb qsf::text::get_multiplied_color() const {
+		return this->multiplied_color;
 	}
 	void qsf::text::centerize() {
 		auto pos = this->m_text.getPosition();
@@ -321,6 +332,7 @@ namespace qsf {
 		return *this;
 	}
 	qsf::text& qsf::text::operator=(const qsf::vtext& text) {
+		this->multiplied_color = qsf::rgb::white;
 		this->set_character_size(text.character_size);
 		this->set_color(text.color);
 		this->set_letter_spacing(text.letter_spacing);
@@ -331,6 +343,7 @@ namespace qsf {
 		this->set_string(text.string);
 		this->m_font = text.font_name;
 		this->set_font(text.font_name);
+		this->set_multiplied_color(text.multiplied_color);
 		return *this;
 	}
 
@@ -364,30 +377,13 @@ namespace qsf {
 		this->objects.back().back().text.set_outline_thickness(this->states.back().outline_thickness);
 		this->objects.back().back().text.set_outline_color(this->states.back().outline_color);
 	}
-	void qsf::text_stream::new_line(bool pop_state) {
-		if (this->objects.empty()) {
-			this->objects.push_back({});
-			this->objects.back().push_back({});
-			this->objects.back().back().hitbox.set_position(this->position);
-		}
-		auto hitbox = this->line_hitbox(this->lines() - 1);
-
+	void qsf::text_stream::new_line() {
 		this->objects.push_back({});
-		this->objects.back().push_back({});
-		this->objects.back().back().hitbox.position = qsf::vector2f(hitbox.position + qsf::vector2f(0, hitbox.dimension.y + this->line_spacing));
-
-		this->apply_state();
-
-		if (pop_state && this->states.size() > 1) {
-			if (this->states.back().duration == qsf::text_stream::duration_type::next_entry || this->states.back().duration == qsf::text_stream::duration_type::end_of_line) {
-				this->states.pop_back();
-			}
-		}
 	}
 	void qsf::text_stream::clear() {
+		this->sprites.clear();
 		this->objects.clear();
 		this->states.resize(1);
-		this->changed = true;
 	}
 	text_stream& qsf::text_stream::operator<<(const sf::Texture& texture) {
 		return this->add_texture(texture);
@@ -402,22 +398,12 @@ namespace qsf {
 		return this->add_string(string);
 	}
 	text_stream& qsf::text_stream::add_texture(const sf::Texture& texture) {
-		if (this->objects.empty()) {
-			this->objects.push_back({});
-		}
 
-		qsf::hitbox hitbox;
-
-		if (this->objects.back().empty()) {
-			hitbox.position = this->position;
-		}
-		else {
-			hitbox = this->objects.back().back().hitbox;
-		}
+		this->prepare_next_entry();
+		auto hitbox = this->objects.back().back().hitbox;
 
 		auto pos = hitbox.position + qsf::vector2f(hitbox.dimension.x + this->states.back().spacing, 0);
 
-		this->objects.back().push_back({});
 		this->objects.back().back().shift = this->states.back().shift;
 		this->objects.back().back().shift_before = this->states.back().shift;
 		this->objects.back().back().sprite_index = this->sprites.size();
@@ -451,18 +437,8 @@ namespace qsf {
 	}
 
 	text_stream& qsf::text_stream::add_sprite(const sf::Sprite& sprite) {
-		if (this->objects.empty()) {
-			this->objects.push_back({});
-		}
 
-		qsf::hitbox hitbox;
-
-		if (this->objects.back().empty()) {
-			hitbox.position = this->position;
-		}
-		else {
-			hitbox = this->objects.back().back().hitbox;
-		}
+		this->prepare_next_entry();
 
 		auto line_hitbox = this->line_hitbox(this->lines() - 1);
 		auto pos = line_hitbox.position + qsf::vector2f(line_hitbox.dimension.x + this->states.back().spacing, 0);
@@ -508,7 +484,7 @@ namespace qsf {
 						this->add_string(sub, true, false);
 					}
 					while (i < string.length() && string[i] == '\n') {
-						this->new_line(false);
+						this->new_line();
 						++i;
 					}
 					last = i;
@@ -526,17 +502,7 @@ namespace qsf {
 			return this->add_string(sub, true, true);
 		}
 		if (!string.empty()) {
-			if (this->objects.empty()) {
-				this->objects.push_back({});
-				this->objects.back().push_back({});
-				this->objects.back().back().hitbox.set_position(this->position);
-
-			}
-			else {
-				auto hitbox = this->objects.back().back().hitbox;
-				this->objects.back().push_back({});
-				this->objects.back().back().hitbox = hitbox;
-			}
+			this->prepare_next_entry();
 
 
 			auto hitbox = this->objects.back().back().hitbox;
@@ -571,7 +537,7 @@ namespace qsf {
 						this->add_string(sub, true, false);
 					}
 					while (i < string.length() && string[i] == L'\n') {
-						this->new_line(false);
+						this->new_line();
 						++i;
 					}
 					last = i;
@@ -588,16 +554,8 @@ namespace qsf {
 			return this->add_string(sub, true, false);
 		}
 		if (!string.empty()) {
-			if (this->objects.empty()) {
-				this->objects.push_back({});
-				this->objects.back().push_back({});
-				this->objects.back().back().hitbox.set_position(this->position);
-			}
-			else {
-				auto hitbox = this->objects.back().back().hitbox;
-				this->objects.back().push_back({});
-				this->objects.back().back().hitbox = hitbox;
-			}
+			this->prepare_next_entry();
+
 			auto hitbox = this->objects.back().back().hitbox;
 			this->apply_state();
 			this->objects.back().back().text.m_string = qpl::wstring_to_string(string);
@@ -841,7 +799,7 @@ namespace qsf {
 	}
 	qsf::text& qsf::text_stream::get_text(qpl::size index) {
 		if (index >= this->text_size()) {
-			throw std::exception(qpl::to_cstring("qsf::text_stream::get_text(", index, "): size of text is only ", this->text_size()));
+			throw std::exception(qpl::to_string("qsf::text_stream::get_text(", index, "): size of text is only ", this->text_size()).c_str());
 		}
 
 		qpl::size ctr = 0u;
@@ -851,6 +809,7 @@ namespace qsf {
 					if (ctr == index) {
 						return i.text;
 					}
+
 					++ctr;
 				}
 			}
@@ -859,7 +818,7 @@ namespace qsf {
 	}
 	const qsf::text& qsf::text_stream::get_text(qpl::size index) const {
 		if (index >= this->text_size()) {
-			throw std::exception(qpl::to_cstring("qsf::text_stream::get_text(", index, "): size of text is only ", this->text_size()));
+			throw std::exception(qpl::to_string("qsf::text_stream::get_text(", index, "): size of text is only ", this->text_size()).c_str());
 		}
 
 		qpl::size ctr = 0u;
@@ -876,23 +835,110 @@ namespace qsf {
 		return this->objects.back().back().text;
 	}
 
+	qsf::text& qsf::text_stream::get_text(qpl::size line, qpl::size index) {
+		if (line >= this->lines()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_text(", line, ", ", index, "): total line size is only ", this->lines()).c_str());
+		}
+		qpl::size ctr = 0u;
+		for (auto& i : this->objects[line]) {
+			if (i.is_text()) {
+				if (ctr == index) {
+					return i.text;
+				}
+				++ctr;
+			}
+		}
+		throw std::exception(qpl::to_string("qsf::text_stream::get_text(", line, ", ", index, "): text size of line #", line, " is only ", ctr).c_str());
+		return this->objects[line].back().text;
+	}
+	const qsf::text& qsf::text_stream::get_text(qpl::size line, qpl::size index) const {
+		if (line >= this->lines()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_text(", line, ", ", index, "): total line size is only ", this->lines()).c_str());
+		}
+		qpl::size ctr = 0u;
+		for (auto& i : this->objects[line]) {
+			if (i.is_text()) {
+				if (ctr == index) {
+					return i.text;
+				}
+				++ctr;
+			}
+		}
+		throw std::exception(qpl::to_string("qsf::text_stream::get_text(", line, ", ", index, "): text size of line #", line, " is only ", ctr).c_str());
+		return this->objects[line].back().text;
+	}
 
 	qpl::size qsf::text_stream::sprite_size() const {
 		return this->sprites.size();
 	}
 	sf::Sprite& qsf::text_stream::get_sprite(qpl::size index) {
 		if (index >= this->sprite_size()) {
-			throw std::exception(qpl::to_cstring("qsf::text_stream::get_sprite(", index, "): size of sprites is only ", this->sprite_size()));
+			throw std::exception(qpl::to_string("qsf::text_stream::get_sprite(", index, "): size of sprites is only ", this->sprite_size()).c_str());
 		}
 
 		return this->sprites[index];
 	}
 	const sf::Sprite& qsf::text_stream::get_sprite(qpl::size index) const {
 		if (index >= this->sprite_size()) {
-			throw std::exception(qpl::to_cstring("qsf::text_stream::get_sprite(", index, "): size of sprites is only ", this->sprite_size()));
+			throw std::exception(qpl::to_string("qsf::text_stream::get_sprite(", index, "): size of sprites is only ", this->sprite_size()).c_str());
 		}
 
 		return this->sprites[index];
+	}
+	sf::Sprite& qsf::text_stream::get_sprite(qpl::size line, qpl::size index) {
+		if (line >= this->lines()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_sprite(", line, ", ", index, "): total line size is only ", this->lines()).c_str());
+		}
+
+		qpl::size ctr = 0u;
+		for (auto& i : this->objects[line]) {
+			if (!i.is_text()) {
+				if (ctr == index) {
+					return this->sprites[i.sprite_index];
+				}
+				++ctr;
+			}
+		}		
+		throw std::exception(qpl::to_string("qsf::text_stream::get_sprite(", line, ", ", index, "): sprite size of line #", line, " is only ", ctr).c_str());
+		return this->sprites[this->objects[line].back().sprite_index];
+	}
+	const sf::Sprite& qsf::text_stream::get_sprite(qpl::size line, qpl::size index) const {
+		if (line >= this->lines()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_sprite(", line, ", ", index, "): total line size is only ", this->lines()).c_str());
+		}
+
+		qpl::size ctr = 0u;
+		for (auto& i : this->objects[line]) {
+			if (!i.is_text()) {
+				if (ctr == index) {
+					return this->sprites[i.sprite_index];
+				}
+				++ctr;
+			}
+		}
+		throw std::exception(qpl::to_string("qsf::text_stream::get_sprite(", line, ", ", index, "): sprite size of line #", line, " is only ", ctr).c_str());
+		return this->sprites[this->objects[line].back().sprite_index];
+	}
+
+
+	qsf::text_stream::object_t& qsf::text_stream::get_object(qpl::size line, qpl::size index) {
+		if (line >= this->lines()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_object(", line, ", ", index, "): total line size is only ", this->lines()).c_str());
+		}
+		if (line >= this->objects[line].size()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_object(", line, ", ", index, "): size of line #", line, " is only ", this->objects[line].size()).c_str());
+		}
+		return this->objects[line][index];
+	}
+
+	const qsf::text_stream::object_t& qsf::text_stream::get_object(qpl::size line, qpl::size index)const {
+		if (line >= this->lines()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_object(", line, ", ", index, "): total line size is only ", this->lines()).c_str());
+		}
+		if (line >= this->objects[line].size()) {
+			throw std::exception(qpl::to_string("qsf::text_stream::get_object(", line, ", ", index, "): size of line #", line, " is only ", this->objects[line].size()).c_str());
+		}
+		return this->objects[line][index];
 	}
 
 	std::vector<qsf::text_stream::object_t>& qsf::text_stream::line(qpl::size index) {
@@ -912,11 +958,13 @@ namespace qsf {
 		this->finalize();
 		for (auto& i : this->objects) {
 			for (auto& j : i) {
-				if (j.is_text()) {
-					j.text.draw(window, states);
-				}
-				else {
-					window.draw(this->sprites[j.sprite_index]);
+				if (j.visible) {
+					if (j.is_text()) {
+						j.text.draw(window, states);
+					}
+					else {
+						window.draw(this->sprites[j.sprite_index]);
+					}
 				}
 			}
 		}
@@ -931,6 +979,18 @@ namespace qsf {
 			i.color = color;
 		}
 	}
+	void qsf::text_stream::set_alpha(qpl::u8 alpha) {
+		for (auto& j : this->objects) {
+			for (auto& i : j) {
+				if (i.is_text()) {
+					i.text.set_color(i.text.get_color().with_alpha(alpha));
+				}
+			}
+		}
+		for (auto& i : this->sprites) {
+			i.setColor(qsf::rgb(i.getColor()).with_alpha(alpha));
+		}
+	}
 	void qsf::text_stream::set_style(qpl::u32 style) {
 		for (auto& i : this->states) {
 			i.style = style;
@@ -940,6 +1000,10 @@ namespace qsf {
 		for (auto& i : this->states) {
 			i.character_size = character_size;
 		}
+	}
+
+	void qsf::text_stream::set_line_spacing(qpl::f32 spacing) {
+		this->line_spacing = spacing;
 	}
 	void qsf::text_stream::set_outline_thickness(qpl::f32 thickness) {
 		for (auto& i : this->states) {
@@ -1047,6 +1111,25 @@ namespace qsf {
 		}
 		this->changed = true;
 	}
+	void qsf::text_stream::prepare_next_entry() {
+		if (this->objects.empty()) {
+			this->objects.push_back({});
+			this->objects.back().push_back({});
+			this->objects.back().back().hitbox.set_position(this->position);
+		}
+		else if (this->objects.back().empty()) {
+			auto hitbox = this->line_hitbox(this->lines() - 2);
+
+			this->objects.back().push_back({});
+			this->objects.back().back().hitbox.position = qsf::vector2f(hitbox.position + qsf::vector2f(0, hitbox.dimension.y + this->line_spacing));
+			//this->apply_state();
+		}
+		else {
+			auto hitbox = this->objects.back().back().hitbox;
+			this->objects.back().push_back({});
+			this->objects.back().back().hitbox = hitbox;
+		}
+	}
 
 	void qsf::vrectangle::set_dimension(qsf::vector2f dimension) {
 		this->dimension = dimension;
@@ -1065,6 +1148,9 @@ namespace qsf {
 	}
 	void qsf::vrectangle::set_outline_color(qsf::rgb outline_color) {
 		this->outline_color = outline_color;
+	}
+	void qsf::vrectangle::set_multiplied_color(qsf::rgb color) {
+		this->multiplied_color = color;
 	}
 	qsf::vector2f qsf::vrectangle::get_dimension() const {
 		return this->dimension;
@@ -1086,6 +1172,9 @@ namespace qsf {
 	}
 	qsf::rgb qsf::vrectangle::get_outline_color() const {
 		return this->color;
+	}
+	qsf::rgb qsf::vrectangle::get_multiplied_color() const {
+		return this->multiplied_color;
 	}
 	void qsf::vrectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::rectangle = *this;
@@ -1120,14 +1209,22 @@ namespace qsf {
 	void qsf::rectangle::set_center(qsf::vector2f position) {
 		this->m_rect.setPosition(position - this->get_dimension() / 2);
 	}
-	void qsf::rectangle::set_color(qsf::rgb color) {
-		this->m_rect.setFillColor(color);
-	}
 	void qsf::rectangle::set_outline_thickness(qpl::f32 outline_thickness) {
 		this->m_rect.setOutlineThickness(outline_thickness);
 	}
+	void qsf::rectangle::set_color(qsf::rgb color) {
+		this->color = color;
+		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
+	}
 	void qsf::rectangle::set_outline_color(qsf::rgb color) {
+		this->outline_color = color;
+		this->m_rect.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
+	}
+	void qsf::rectangle::set_multiplied_color(qsf::rgb color) {
+		this->outline_color = color;
 		this->m_rect.setOutlineColor(color);
+		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
+		this->m_rect.setFillColor(this->outline_color.multiplied_color(this->multiplied_color));
 	}
 	bool qsf::rectangle::contains(qsf::vector2f position) const {
 		auto pos = this->get_position();
@@ -1145,6 +1242,15 @@ namespace qsf {
 		window.draw(this->m_rect, states);
 	}
 
+	qsf::rgb qsf::rectangle::get_color() const {
+		return this->color;
+	}
+	qsf::rgb qsf::rectangle::get_outline_color() const {
+		return this->outline_color;
+	}
+	qsf::rgb qsf::rectangle::get_multiplied_color() const {
+		return this->multiplied_color;
+	}
 	qsf::vector2f qsf::rectangle::get_position() const {
 		return this->m_rect.getPosition();
 	}
@@ -1156,9 +1262,6 @@ namespace qsf {
 		result.position = this->get_position();
 		result.dimension = this->get_dimension();
 		return result;
-	}
-	qsf::rgb qsf::rectangle::get_color() const {
-		return this->m_rect.getFillColor();
 	}
 	qsf::vlines qsf::rectangle::as_lines() const {
 		qsf::vlines lines;
@@ -1184,11 +1287,13 @@ namespace qsf {
 	}
 
 	qsf::rectangle& qsf::rectangle::operator=(const qsf::vrectangle& rectangle) {
+		this->multiplied_color = qsf::rgb::white;
 		this->set_color(rectangle.color);
 		this->set_position(rectangle.position);
 		this->set_dimension(rectangle.dimension);
 		this->set_outline_color(rectangle.outline_color);
 		this->set_outline_thickness(rectangle.outline_thickness);
+		this->set_multiplied_color(rectangle.multiplied_color);
 		return *this;
 	}
 
@@ -3874,6 +3979,9 @@ namespace qsf {
 	void qsf::vgraph::set_dimension(qsf::vector2f dimension) {
 		this->dimension = dimension;
 	}
+	void qsf::vgraph::set_position(qsf::vector2f position) {
+		this->position = position;
+	}
 
 	qpl::f64 qsf::vgraph::true_graph_width() const {
 		return this->dimension.x - this->y_axis_text_space;
@@ -4025,7 +4133,7 @@ namespace qsf {
 			}
 			else {
 				if (result != i.second.size()) {
-					throw std::exception(qpl::to_cstring("qsf::vgraph: graphs have different element sizes (", i.first, ")"));
+					throw std::exception(qpl::to_string("qsf::vgraph: graphs have different element sizes (", i.first, ")").c_str());
 				}
 			}
 		}
@@ -4035,7 +4143,7 @@ namespace qsf {
 			}
 			else {
 				if (result != i.second.size()) {
-					throw std::exception(qpl::to_cstring("qsf::vgraph: graphs have different element sizes (", i.first, ")"));
+					throw std::exception(qpl::to_string("qsf::vgraph: graphs have different element sizes (", i.first, ")").c_str());
 				}
 			}
 		}
@@ -4045,7 +4153,7 @@ namespace qsf {
 			}
 			else {
 				if (result != i.second.size()) {
-					throw std::exception(qpl::to_cstring("qsf::vgraph: graphs have different element sizes (", i.first, ")"));
+					throw std::exception(qpl::to_string("qsf::vgraph: graphs have different element sizes (", i.first, ")").c_str());
 				}
 			}
 		}

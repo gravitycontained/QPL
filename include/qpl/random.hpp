@@ -214,6 +214,22 @@ namespace qpl {
 			return dist.m_dist(this->engine);
 		}
 		template<typename T>
+		T generate(std::normal_distribution<T> dist) {
+			return dist(this->engine);
+		}
+		template<typename T>
+		T generate(std::binomial_distribution<T> dist) {
+			return dist(this->engine);
+		}
+		template<typename T>
+		T generate(std::uniform_real_distribution<T> dist) {
+			return dist(this->engine);
+		}
+		template<typename T>
+		T generate(std::uniform_int_distribution<T> dist) {
+			return dist(this->engine);
+		}
+		template<typename T>
 		T generate(T min, T max) {
 			qpl::distribution<T> dist(min, max);
 			return dist.m_dist(this->engine);
@@ -278,6 +294,22 @@ namespace qpl {
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random() {
 		qpl::distribution<T> dist(qpl::type_min<T>(), qpl::type_max<T>());
+		return qpl::detail::rng.rng.generate(dist);
+	}
+	template<typename T> requires (qpl::is_arithmetic<T>())
+	T random(std::normal_distribution<T> dist) {
+		return qpl::detail::rng.rng.generate(dist);
+	}
+	template<typename T> requires (qpl::is_integer<T>())
+		T random(std::binomial_distribution<T> dist) {
+		return qpl::detail::rng.rng.generate(dist);
+	}
+	template<typename T> requires (qpl::is_integer<T>())
+	T random(std::uniform_int_distribution<T> dist) {
+		return qpl::detail::rng.rng.generate(dist);
+	}
+	template<typename T> requires (qpl::is_floating_point<T>())
+	T random(std::uniform_real_distribution<T> dist) {
 		return qpl::detail::rng.rng.generate(dist);
 	}
 
@@ -369,6 +401,45 @@ namespace qpl {
 		return result;
 	}
 
+
+	template<typename T>
+	std::vector<T> random_distribution_frequency(T min, T max, qpl::size N, const std::vector<qpl::f64>& probabilities) {
+		auto size = (max - min + 1);
+		std::vector<T> result(size, T{ 0 });
+
+		qpl::f64 div = size;
+		qpl::f64 sum = 0.0;
+
+		auto probability = probabilities[0u];
+		for (T i = min; i <= max; ++i) {
+			div = (1 / probabilities[i - min]) * (1 - sum);
+			probability = 1.0 / div;
+
+			std::binomial_distribution<qpl::i64> dist(N, probability);
+			auto value = qpl::random(dist);
+			result[i - min] = value;
+			N -= value;
+
+			sum += probabilities[i - min];
+		}
+		return result;
+	}
+
+	template<typename T>
+	std::vector<T> random_distribution_frequency(T min, T max, qpl::size N) {
+		auto size = (max - min + 1);
+		std::vector<T> result(size, T{ 0 });
+
+		for (T i = min; i <= max; ++i) {
+			auto probability = 1.0 / (size - (i - min));
+
+			std::binomial_distribution<qpl::i64> dist(N, probability);
+			auto value = qpl::random(dist);
+			result[i - min] = value;
+			N -= value;
+		}
+		return result;
+	}
 }
 
 #endif

@@ -2,7 +2,7 @@
 #define QPL_CAMERA_HPP
 #pragma once
 
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

@@ -1,6 +1,6 @@
 #include <qpl/QSF/color.hpp>
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
@@ -218,6 +218,20 @@ namespace qsf {
 	qsf::rgb qsf::rgb::multiplied_alpha(qpl::u8 alpha) const {
 		auto copy = *this;
 		copy.a = qpl::u8_cast(qpl::f32_cast(this->a) * (qpl::f32_cast(alpha) / 255.f));
+		return copy;
+	}
+	qsf::rgb qsf::rgb::multiplied_color(qsf::rgb color) const {
+		if (color == qsf::rgb::white) {
+			return *this;
+		}
+		if (*this == qsf::rgb::white) {
+			return color;
+		}
+		auto copy = *this;
+		copy.r = qpl::u8_cast(qpl::f32_cast(this->r) * (qpl::f32_cast(color.r) / 255.f));
+		copy.g = qpl::u8_cast(qpl::f32_cast(this->g) * (qpl::f32_cast(color.g) / 255.f));
+		copy.b = qpl::u8_cast(qpl::f32_cast(this->b) * (qpl::f32_cast(color.b) / 255.f));
+		copy.a = qpl::u8_cast(qpl::f32_cast(this->a) * (qpl::f32_cast(color.a) / 255.f));
 		return copy;
 	}
 

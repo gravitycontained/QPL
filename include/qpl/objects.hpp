@@ -2,7 +2,7 @@
 #define QPL_OBJECTS_HPP
 #pragma once
 
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #include <glm/glm.hpp>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>

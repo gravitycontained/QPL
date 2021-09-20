@@ -2,7 +2,7 @@
 #define QPLSF_DRAWABLES_HPP
 #pragma once
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
@@ -208,9 +208,10 @@ namespace qsf {
 		std::string font_name;
 		qpl::u32 style = sf::Text::Style::Regular;
 		qpl::u32 character_size = 15u;
-		qsf::rgb color = qsf::rgb::black;
 		qpl::f32 outline_thickness;
+		qsf::rgb color = qsf::rgb::black;
 		qsf::rgb outline_color;
+		qsf::rgb multiplied_color = qsf::rgb::white;
 		qpl::f32 letter_spacing = 1.0f;
 		qsf::vector2f position;
 		std::string string;
@@ -237,6 +238,8 @@ namespace qsf {
 		QPLDLL void set_position(qsf::vector2f position);
 		QPLDLL void set_center(qsf::vector2f position);
 		QPLDLL void set_string(const std::string& string);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
+		QPLDLL qsf::rgb get_multiplied_color() const;
 
 		template<typename T, typename ...Args> requires (qpl::is_printable<T, Args...>())
 		void set_string(T first, Args... values) {
@@ -260,7 +263,6 @@ namespace qsf {
 		QPLDLL qsf::vector2f offset() const;
 
 		
-
 		QPLDLL std::string string() const;
 		QPLDLL void clear();
 		QPLDLL qsf::text& operator<<(const std::string& string);
@@ -275,6 +277,9 @@ namespace qsf {
 		std::string m_font;
 		sf::Text m_text;
 		std::string m_string;
+		qsf::rgb color = qsf::rgb::white;
+		qsf::rgb outline_color = qsf::rgb::white;
+		qsf::rgb multiplied_color = qsf::rgb::white;
 	};
 
 	struct endl_type {
@@ -284,6 +289,10 @@ namespace qsf {
 	QPLDLL extern endl_type endl;
 
 	struct text_stream {
+		text_stream() {
+			this->states.push_back({});
+		}
+
 		enum class duration_type {
 			next_entry, end_of_line, until_end
 		};
@@ -294,6 +303,7 @@ namespace qsf {
 			qpl::u32 sprite_index = qpl::u32_max;
 			qsf::vector2f shift;
 			qsf::vector2f shift_before;
+			bool visible = true;
 
 			bool is_text() const {
 				return this->sprite_index == qpl::u32_max;
@@ -312,9 +322,6 @@ namespace qsf {
 			std::string value;
 			duration_type duration;
 		};
-		text_stream() {
-			this->states.push_back({});
-		}
 		struct color {
 			color(qsf::rgb color, duration_type duration = next_entry) {
 				this->value = color;
@@ -546,8 +553,11 @@ namespace qsf {
 			return *this;
 		}
 
+
+
 		QPLDLL void apply_state();
-		QPLDLL void new_line(bool pop_state = true);
+
+		QPLDLL void new_line();
 		QPLDLL void clear();
 		QPLDLL text_stream& operator<<(const sf::Texture& texture);
 		QPLDLL text_stream& operator<<(const sf::Sprite& sprite);
@@ -573,10 +583,17 @@ namespace qsf {
 		QPLDLL qpl::size text_size() const;
 		QPLDLL qsf::text& get_text(qpl::size index);
 		QPLDLL const qsf::text& get_text(qpl::size index) const;
+		QPLDLL qsf::text& get_text(qpl::size line, qpl::size index);
+		QPLDLL const qsf::text& get_text(qpl::size line, qpl::size index) const;
 
 		QPLDLL qpl::size sprite_size() const;
 		QPLDLL sf::Sprite& get_sprite(qpl::size index);
 		QPLDLL const sf::Sprite& get_sprite(qpl::size index) const;
+		QPLDLL sf::Sprite& get_sprite(qpl::size line, qpl::size index);
+		QPLDLL const sf::Sprite& get_sprite(qpl::size line, qpl::size index) const;
+
+		QPLDLL object_t& get_object(qpl::size line, qpl::size index);
+		QPLDLL const object_t& get_object(qpl::size line, qpl::size index) const;
 
 		QPLDLL std::vector<qsf::text_stream::object_t>& line(qpl::size index);
 		QPLDLL const std::vector<qsf::text_stream::object_t>& line(qpl::size index) const;
@@ -584,8 +601,10 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		QPLDLL void set_font(const std::string& font);
 		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_alpha(qpl::u8 alpha);
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void set_character_size(qpl::u32 character_size);
+		QPLDLL void set_line_spacing(qpl::f32 spacing);
 		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_outline_color(qsf::rgb color);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
@@ -616,6 +635,8 @@ namespace qsf {
 		qpl::f32 line_spacing = 5.0f;
 
 		qsf::vector2f position = { 20, 20 };
+	private:
+		QPLDLL void prepare_next_entry();
 	};
 
 	struct vrectangle {
@@ -639,9 +660,10 @@ namespace qsf {
 		QPLDLL void set_dimension(qsf::vector2f dimension);
 		QPLDLL void set_position(qsf::vector2f position);
 		QPLDLL void set_center(qsf::vector2f position);
-		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
+		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_outline_color(qsf::rgb outline_color);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
 
 		QPLDLL qsf::vector2f get_dimension() const;
 		QPLDLL qsf::vector2f get_position() const;
@@ -650,6 +672,7 @@ namespace qsf {
 		QPLDLL qsf::rgb get_color() const;
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qsf::rgb get_outline_color() const;
+		QPLDLL qsf::rgb get_multiplied_color() const;
 
 		QPLDLL std::string string() const;
 
@@ -663,9 +686,10 @@ namespace qsf {
 
 		qsf::vector2f dimension;
 		qsf::vector2f position;
-		qsf::rgb color;
 		qpl::f32 outline_thickness = 0.0f;
+		qsf::rgb color;
 		qsf::rgb outline_color;
+		qsf::rgb multiplied_color = qsf::rgb::white;
 	};
 
 	struct rectangle {
@@ -675,14 +699,17 @@ namespace qsf {
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qsf::rgb outline_color);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
 
 		QPLDLL bool contains(qsf::vector2f position) const;
 		QPLDLL bool contains(qsf::vector2f position, qsf::vector2f hitbox_increase) const;
 
+		QPLDLL qsf::rgb get_multiplied_color() const;
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qsf::rgb get_outline_color() const;
 		QPLDLL qsf::vector2f get_position() const;
 		QPLDLL qsf::vector2f get_dimension() const;
 		QPLDLL qsf::hitbox get_hitbox() const;
-		QPLDLL qsf::rgb get_color() const;
 
 		QPLDLL qsf::vlines as_lines() const;
 		QPLDLL qsf::vlines as_lines_completed() const;
@@ -694,6 +721,9 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
 		sf::RectangleShape m_rect;
+		qsf::rgb color;
+		qsf::rgb outline_color;
+		qsf::rgb multiplied_color = qsf::rgb::white;
 	};
 
 	struct vrectangles {
@@ -1612,6 +1642,7 @@ namespace qsf {
 		QPLDLL void set_font(std::string name);
 		QPLDLL std::string get_font() const;
 		QPLDLL void set_dimension(qsf::vector2f dimension);
+		QPLDLL void set_position(qsf::vector2f position);
 
 		QPLDLL qpl::f64 true_graph_width() const;
 		QPLDLL qpl::f64 true_graph_height() const;
@@ -1843,6 +1874,7 @@ namespace qsf {
 		}
 		void set_value(T value) {
 			*this->ptr = value;
+			this->value_before = *this->ptr;
 		}
 		void set_pointer(T* value) {
 			this->ptr = value;
@@ -1895,6 +1927,9 @@ namespace qsf {
 		qsf::vector2f get_knob_dimension() const {
 			return this->knob.get_dimension();
 		}
+		qsf::vector2f get_knob_position() const {
+			return this->knob.get_position();
+		}
 		void set_knob_dimension(qsf::vector2f dimension) {
 			this->knob.set_dimension(dimension);
 			this->range_pixel_width = this->background.get_dimension().x - this->knob.get_dimension().x;
@@ -1915,8 +1950,8 @@ namespace qsf {
 			this->knob.set_dimension(knob_dimension);
 			this->range_pixel_width = this->background.get_dimension().x - this->knob.get_dimension().x;
 		}
-		void set_dimension(qsf::vector2f dimension) const {
-			this->background.set_dimension(dimension);
+		void set_dimension(qsf::vector2f dimension) {
+			this->set_dimensions(dimension, sf::Vector2f(dimension.y, dimension.y));
 		}
 		void set_colors(qsf::rgb background_color, qsf::rgb knob_color) {
 			this->background.set_color(background_color);
@@ -1928,6 +1963,17 @@ namespace qsf {
 			this->knob_hover_color = knob_color;
 			this->knob_hover_outline_color = knob_color;
 			this->knob_color = knob_color;
+		}
+		void set_alpha(qpl::u8 alpha) {
+			this->background.set_color(this->background.get_color().with_alpha(alpha));
+			this->background_color = this->background_color.with_alpha(alpha);
+			this->background_hover_color = this->background_hover_color.with_alpha(alpha);
+			this->background_hover_outline_color = this->background_hover_outline_color.with_alpha(alpha);
+
+			this->knob.set_color(this->knob.get_color().with_alpha(alpha));
+			this->knob_hover_color = this->knob_hover_color.with_alpha(alpha);
+			this->knob_hover_outline_color = this->knob_hover_outline_color.with_alpha(alpha);
+			this->knob_color = this->knob_color.with_alpha(alpha);
 		}
 		bool value_has_changed() const {
 			return this->value_changed;
@@ -1953,12 +1999,14 @@ namespace qsf {
 		}
 		void set_knob_outline_thickness(qpl::f32 thickness) {
 			this->knob_outline_thickness = thickness;
+			this->knob.set_outline_thickness(thickness);
 		}
 		qpl::f32 get_knob_outline_thickness() const {
 			return this->knob_outline_thickness;
 		}
 		void set_knob_outline_color(qsf::rgb color) {
 			this->knob_outline_color = color;
+			this->knob.set_outline_color(color);
 		}
 		qsf::rgb get_knob_outline_color() const {
 			return this->knob_outline_color;
@@ -1972,12 +2020,18 @@ namespace qsf {
 		}
 		void set_knob_hover_outline_thickness(qpl::f32 thickness) {
 			this->knob_hover_outline_thickness = thickness;
+			if (this->is_hovering_over_knob()) {
+				this->knob.set_outline_thickness(thickness);
+			}
 		}
 		qpl::f32 get_knob_hover_outline_thickness() const {
 			return this->knob_hover_outline_thickness;
 		}
 		void set_knob_hover_outline_color(qsf::rgb color) {
 			this->knob_hover_outline_color = color;
+			if (this->is_hovering_over_knob()) {
+				this->knob.set_outline_color(color);
+			}
 		}
 		qsf::rgb get_knob_hover_outline_color() const {
 			return this->knob_hover_outline_color;
@@ -1994,12 +2048,14 @@ namespace qsf {
 		}
 		void set_background_outline_thickness(qpl::f32 thickness) {
 			this->background_outline_thickness = thickness;
+			this->background.set_outline_thickness(thickness);
 		}
 		qpl::f32 get_background_outline_thickness() const {
 			return this->background_outline_thickness;
 		}
 		void set_background_outline_color(qsf::rgb color) {
 			this->background_outline_color = color;
+			this->background_outline_thickness.set_outline_color(color);
 		}
 		qsf::rgb get_background_outline_color() const {
 			return this->background_outline_color;
@@ -2007,18 +2063,27 @@ namespace qsf {
 
 		void set_background_hover_color(qsf::rgb color) {
 			this->background_hover_color = color;
+			if (this->is_hovering_over_background()) {
+				this->background.set_color(color);
+			}
 		}
 		qsf::rgb get_background_hover_color() const {
 			return this->background_hover_color;
 		}
 		void set_background_hover_outline_thickness(qpl::f32 thickness) {
 			this->background_hover_outline_thickness = thickness;
+			if (this->is_hovering_over_background()) {
+				this->background.set_outline_thickness(thickness);
+			}
 		}
 		qpl::f32 get_background_hover_outline_thickness() const {
 			return this->background_hover_outline_thickness;
 		}
 		void set_background_hover_outline_color(qsf::rgb color) {
 			this->background_hover_outline_color = color;
+			if (this->is_hovering_over_background()) {
+				this->background.set_outline_color(color);
+			}
 		}
 		qsf::rgb get_background_hover_outline_color() const {
 			return this->background_hover_outline_color;
@@ -2065,6 +2130,21 @@ namespace qsf {
 		bool is_hovering_over_background() const {
 			return this->hovering_over_background;
 		}
+		bool is_hovering_over_knob() const {
+			return this->hovering_over_knob;
+		}
+
+		void disallow_dragging() {
+			this->allow_drag = false;
+			this->dragging = false;
+		}
+		void allow_dragging() {
+			this->allow_drag = true;
+		}
+		bool dragging_allowed() const {
+			return this->allow_drag;
+		}
+
 
 
 		void update(const qsf::event_info& event) {
@@ -2076,17 +2156,15 @@ namespace qsf {
 			this->value_modified = false;
 			this->hovering_over_knob = this->knob.contains(pos, { this->hitbox_increase });
 
-			if (this->background_hover_effect) {
-				if (this->hovering_over_background && !this->dragging) {
-					this->background.set_color(this->background_hover_color);
-					this->background.set_outline_color(this->background_hover_outline_color);
-					this->background.set_outline_thickness(this->background_hover_outline_thickness);
-				}
-				else {
-					this->background.set_color(this->background_color);
-					this->background.set_outline_color(this->background_outline_color);
-					this->background.set_outline_thickness(this->background_outline_thickness);
-				}
+			if (this->background_hover_effect && this->hovering_over_background && !this->dragging) {
+				this->background.set_color(this->background_hover_color);
+				this->background.set_outline_color(this->background_hover_outline_color);
+				this->background.set_outline_thickness(this->background_hover_outline_thickness);
+			}
+			else {
+				this->background.set_color(this->background_color);
+				this->background.set_outline_color(this->background_outline_color);
+				this->background.set_outline_thickness(this->background_outline_thickness);
 			}
 
 			if (this->hovering_over_knob) {
@@ -2095,16 +2173,16 @@ namespace qsf {
 					this->knob.set_outline_color(this->knob_hover_outline_color);
 					this->knob.set_outline_thickness(this->knob_hover_outline_thickness);
 				}
-				if (!this->dragging && event.left_mouse_clicked()) {
+				if (!this->dragging && event.left_mouse_clicked() && this->allow_drag) {
 					this->dragging = true;
-					this->click_pos_x = pos.x;
+					this->click_pos_x = qpl::clamp(this->position.x, qpl::f32_cast(pos.x), this->position.x + this->range_pixel_width);
 					this->click_knob_pos_x = pos.x - this->knob.get_position().x;
 				}
 			}
 			else {
-				if (this->click_on_background_to_skip && event.left_mouse_clicked() && this->hovering_over_background && (this->end != this->start)) {
+				if (this->click_on_background_to_skip && event.left_mouse_clicked() && this->allow_drag && this->hovering_over_background && (this->end != this->start)) {
 
-					this->click_pos_x = pos.x;
+					this->click_pos_x = qpl::clamp(this->position.x, qpl::f32_cast(pos.x), this->position.x + this->range_pixel_width);
 					this->click_knob_pos_x = this->knob.get_dimension().x / 2;
 					auto diff = (pos.x - this->position.x - this->click_knob_pos_x);
 					auto progress = qpl::clamp_0_1(diff / this->range_pixel_width);
@@ -2129,13 +2207,12 @@ namespace qsf {
 			}
 
 			if (this->input_smooth_values && event.key_single_pressed(this->smooth_input_key)) {
-				this->click_pos_x = pos.x;
+				this->click_pos_x = qpl::clamp(this->position.x, qpl::f32_cast(pos.x), this->position.x + this->range_pixel_width);
 			}
 
 			if (!this->value_modified && this->dragging && this->allow_change && (this->end != this->start)) {
 				qpl::f64 diff;
 				if (this->input_smooth_values && event.key_holding(this->smooth_input_key)) {
-
 					diff = ((pos.x - this->click_pos_x) * this->smooth_input_multiply) + (this->click_pos_x - this->position.x - this->click_knob_pos_x);
 				}
 				else {
@@ -2195,7 +2272,6 @@ namespace qsf {
 		qpl::f32 background_hover_outline_thickness = 4.0f;
 		qsf::rgb background_hover_outline_color = qsf::rgb::unset;
 
-	private:
 		T start = T{ 0 };
 		T end = T{ 1 };
 		T dummy = T{ 1 };
@@ -2226,6 +2302,7 @@ namespace qsf {
 		bool value_modified = false;
 		bool range_set = false;
 		bool allow_change = true;
+		bool allow_drag = true;
 		bool dragging = false;
 		bool released = false;
 		bool hovering_over_knob = false;

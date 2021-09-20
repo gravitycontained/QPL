@@ -7,6 +7,8 @@
 #include <qpl/memory.hpp>
 
 
+#ifndef QPL_NO_FLOATS
+
 namespace qpl {
 	namespace lut {
 #ifdef QPL_BIG_LUT
@@ -154,5 +156,7 @@ namespace qpl {
 		};
     }
 }
+
+#endif
 
 #endif

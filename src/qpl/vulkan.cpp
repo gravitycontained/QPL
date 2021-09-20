@@ -1,5 +1,5 @@
 #include <qpl/vulkan.hpp>
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #include <qpl/filesys.hpp>
 #include <qpl/string.hpp>
 #include <algorithm>

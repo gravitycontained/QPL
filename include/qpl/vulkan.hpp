@@ -2,7 +2,7 @@
 #define QPL_VULKAN_HPP
 #pragma once
 
-#ifdef QPL_USE_VULKAN
+#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/objects.hpp>

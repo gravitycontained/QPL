@@ -516,6 +516,7 @@ namespace qpl {
 			}
 		}
 
+#ifndef QPL_NO_FLOATS
 		template<qpl::size exponent_bits, qpl::size mantissa_bits>
 		void set(floating_point<exponent_bits, mantissa_bits> value) {
 			if constexpr (this->is_signed()) {
@@ -525,6 +526,7 @@ namespace qpl {
 				this->set(value.integer_part_unsigned());
 			}
 		}
+#endif
 
 		void set(std::string_view string, qpl::u32 string_base = base) {
 			if (string.empty()) {
@@ -7592,6 +7594,7 @@ namespace qpl {
 	};
 #endif
 
+#ifndef QPL_NO_FLOATS
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct floating_point {
 		constexpr floating_point() {
@@ -8171,6 +8174,7 @@ namespace qpl {
 			}
 			this->left_shift(1);
 		}
+
 		constexpr static floating_point pi() {
 			constexpr floating_point pi = qpl::lut::pi;
 			return pi;
@@ -9310,6 +9314,7 @@ namespace qpl {
 		constexpr T& operator^=(T& value, const qpl::floating_point<exponent_bits, mantissa_bits>& other) {
 		return value = (value ^ other);
 	}
+#endif
 
 	template<typename T>
 	constexpr inline qpl::u128 u128_cast(T&& data) {

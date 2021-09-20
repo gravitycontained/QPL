@@ -1,31 +1,31 @@
 #include <qpl/QSF/resources.hpp>
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/string.hpp>
 
 namespace qsf {
 
 	void qsf::load_font(sf::Font& font, const std::string& path) {
 		if (!font.loadFromFile(path)) {
-			throw std::exception(qpl::to_cstring("load font: couldn't find / load \"", path, "\""));
+			throw std::exception(qpl::to_string("load font: couldn't find / load \"", path, "\"").c_str());
 		}
 	}
 	void qsf::load_texture(sf::Texture& texture, const std::string& path, bool set_smooth) {
 		if (!texture.loadFromFile(path)) {
-			throw std::exception(qpl::to_cstring("load texture: couldn't find / load \"", path, "\""));
+			throw std::exception(qpl::to_string("load texture: couldn't find / load \"", path, "\"").c_str());
 		}
 		texture.setSmooth(set_smooth);
 	}
 	void qsf::load_sound(sf::SoundBuffer& sound, const std::string& path) {
 		if (!sound.loadFromFile(path)) {
-			throw std::exception(qpl::to_cstring("load sound: couldn't find / load \"", path, "\""));
+			throw std::exception(qpl::to_string("load sound: couldn't find / load \"", path, "\"").c_str());
 		}
 	}
 
 	void qsf::resources::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
 
 		if (!this->find_sound(name)) {
-			throw std::exception(qpl::to_cstring("play_sound: couldn't find \"", name, "\""));
+			throw std::exception(qpl::to_string("play_sound: couldn't find \"", name, "\"").c_str());
 		}
 		this->active_sounds.push_back(sf::Sound{});
 		this->active_sounds.back().setBuffer(this->sounds[name]);

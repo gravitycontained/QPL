@@ -77,12 +77,18 @@ namespace qpl {
 		qpl::default_type, qpl::x64_integer<bits, 1>>;
 
 
-
+#ifndef QPL_NO_FLOATS
 	template<qpl::u64 bits>
 	using fbit = conditional <
 		qpl::if_true<(bits == 32ull)>, qpl::f32,
 		qpl::if_true<(bits == 64ull)>, qpl::f64,
 		qpl::default_type, qpl::floating_point<32u, bits>>;
+#else
+	template<qpl::u64 bits>
+	using fbit = conditional <
+		qpl::if_true<(bits == 32ull)>, qpl::f32,
+		qpl::if_true<(bits == 64ull)>, qpl::f64, qpl::default_error>;
+#endif
 
 
 	template<qpl::u64 bits, bool BOUNDARY_CHECK = detail::array_boundary_check>

@@ -2,7 +2,7 @@
 #define QPLSF_COLOR_HPP
 #pragma once
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>
@@ -181,6 +181,7 @@ namespace qsf {
 		QPLDLL qsf::rgb inverted() const;
 		QPLDLL qsf::rgb with_alpha(qpl::u8 alpha) const;
 		QPLDLL qsf::rgb multiplied_alpha(qpl::u8 alpha) const;
+		QPLDLL qsf::rgb multiplied_color(qsf::rgb color) const;
 
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator/=(T value) {
@@ -210,9 +211,9 @@ namespace qsf {
 		}		
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator+=(T value) {
-			this->r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->r) + value, static_cast<qpl::i16>(qpl::u8_max));
-			this->g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->g) + value, static_cast<qpl::i16>(qpl::u8_max));
-			this->b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->b) + value, static_cast<qpl::i16>(qpl::u8_max));
+			this->r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->r + value), static_cast<qpl::i16>(qpl::u8_max));
+			this->g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->g + value), static_cast<qpl::i16>(qpl::u8_max));
+			this->b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->b + value), static_cast<qpl::i16>(qpl::u8_max));
 			return *this;
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
@@ -223,9 +224,9 @@ namespace qsf {
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::rgb& operator-=(T value) {
-			this->r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->r) - value, static_cast<qpl::i16>(qpl::u8_max));
-			this->g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->g) - value, static_cast<qpl::i16>(qpl::u8_max));
-			this->b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->b) - value, static_cast<qpl::i16>(qpl::u8_max));
+			this->r = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->r - value), static_cast<qpl::i16>(qpl::u8_max));
+			this->g = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->g - value), static_cast<qpl::i16>(qpl::u8_max));
+			this->b = qpl::clamp(qpl::i16{}, static_cast<qpl::i16>(this->b - value), static_cast<qpl::i16>(qpl::u8_max));
 			return *this;
 		}
 		template<typename T> requires (qpl::is_arithmetic<T>())

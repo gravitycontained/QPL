@@ -2,7 +2,7 @@
 #define QPLSF_VECTOR_HPP
 #pragma once
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 
 #include <SFML/Graphics.hpp>
 #include <qpl/vardef.hpp>
@@ -55,6 +55,15 @@ namespace qsf {
 		constexpr vector2<T> just_y() const {
 			return vector2<T>(T{}, this->y);
 		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+		constexpr vector2<T> with_x(U x) const {
+			return vector2<T>(x, this->y);
+		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+		constexpr vector2<T> with_y(U y) const {
+			return vector2<T>(this->x, y);
+		}
+
 
 		constexpr T normal() const {
 			return static_cast<T>(std::sqrt(this->x * this->x + this->y * this->y));
@@ -154,12 +163,17 @@ namespace qsf {
 			this->y += static_cast<T>(other.y);
 			return *this;
 		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+		constexpr vector2<T>& operator+=(const std::initializer_list<U>& u) const {
+			return *this += vector2<T>(u);
+		}
 		template<typename U>
 		constexpr auto operator+(const vector2<U>& other) const {
 			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
 			copy += other;
 			return copy;
 		}
+
 		template<typename U>
 		constexpr vector2<T>& operator+=(U u) {
 			this->x += static_cast<T>(u);
@@ -178,6 +192,10 @@ namespace qsf {
 			this->x -= static_cast<T>(other.x);
 			this->y -= static_cast<T>(other.y);
 			return *this;
+		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+			constexpr vector2<T>& operator-=(const std::initializer_list<U>& u) const {
+			return *this -= vector2<T>(u);
 		}
 		template<typename U>
 		constexpr auto operator-(const vector2<U>& other) const {
@@ -204,6 +222,10 @@ namespace qsf {
 			this->y /= static_cast<T>(other.y);
 			return *this;
 		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+			constexpr vector2<T>& operator/=(const std::initializer_list<U>& u) const {
+			return *this /= vector2<T>(u);
+		}
 		template<typename U>
 		constexpr auto operator/(const vector2<U>& other) const {
 			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
@@ -228,6 +250,10 @@ namespace qsf {
 			this->x %= static_cast<T>(other.x);
 			this->y %= static_cast<T>(other.y);
 			return *this;
+		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+			constexpr vector2<T>& operator%=(const std::initializer_list<U>& u) const {
+			return *this %= vector2<T>(u);
 		}
 		template<typename U>
 		constexpr auto operator%(const vector2<U>& other) const {
@@ -254,6 +280,10 @@ namespace qsf {
 			this->y *= static_cast<T>(other.y);
 			return *this;
 		}
+		template<typename U> requires (qpl::is_arithmetic<U>())
+			constexpr vector2<T>& operator*=(const std::initializer_list<U>& u) const {
+			return *this *= vector2<T>(u);
+		}
 		template<typename U>
 		constexpr auto operator*(const vector2<U>& other) const {
 			vector2<qpl::superior_arithmetic_type<T, U>> copy = *this;
@@ -278,6 +308,8 @@ namespace qsf {
 		template<typename T>
 		friend std::ostream& operator<<(std::ostream& os, const qsf::vector2<T>& vec);
 	};
+
+
 	template<typename T>
 	std::ostream& operator<<(std::ostream& os, const qsf::vector2<T>& vec) {
 		return os << vec.string();
@@ -299,6 +331,11 @@ namespace qsf {
 				};
 				std::array<T, 1> data;
 			};
+
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_1<T> with_x(U x) const {
+				return vector_impl_1<T>(x);
+			}
 		};
 		template<typename T>
 		struct vector_impl_2 {
@@ -309,6 +346,14 @@ namespace qsf {
 				};
 				std::array<T, 2> data;
 			};
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_2<T> with_x(U x) const {
+				return vector_impl_2<T>(x, this->y);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_2<T> with_y(U y) const {
+				return vector_impl_2<T>(this->x, y);
+			}
 		};
 		template<typename T>
 		struct vector_impl_3 {
@@ -320,6 +365,18 @@ namespace qsf {
 				};
 				std::array<T, 3> data;
 			};
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_3<T> with_x(U x) const {
+				return vector_impl_3<T>(x, this->y, this->z);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_3<T> with_y(U y) const {
+				return vector_impl_3<T>(this->x, y, this->z);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_3<T> with_z(U z) const {
+				return vector_impl_3<T>(this->x, this->y, z);
+			}
 		};
 		template<typename T>
 		struct vector_impl_4 {
@@ -332,6 +389,23 @@ namespace qsf {
 				};
 				std::array<T, 4> data;
 			};
+
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_4<T> with_x(U x) const {
+				return vector_impl_4<T>(x, this->y, this->z, this->w);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_4<T> with_y(U y) const {
+				return vector_impl_4<T>(this->x, y, this->z, this->w);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_4<T> with_z(U z) const {
+				return vector_impl_4<T>(this->x, this->y, z, this->w);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_4<T> with_w(U w) const {
+				return vector_impl_4<T>(this->x, this->y, this->z, w);
+			}
 		};
 		template<typename T>
 		struct vector_impl_5 {
@@ -345,6 +419,27 @@ namespace qsf {
 				};
 				std::array<T, 5> data;
 			};
+
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_5<T> with_a(U a) const {
+				return vector_impl_5<T>(a, this->b, this->c, this->d, this->e);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_5<T> with_b(U b) const {
+				return vector_impl_5<T>(this->a, b, this->c, this->d, this->e);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_5<T> with_c(U c) const {
+				return vector_impl_5<T>(this->a, this->b, c, this->d, this->e);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_5<T> with_d(U d) const {
+				return vector_impl_5<T>(this->a, this->b, this->c, d, this->e);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_5<T> with_e(U e) const {
+				return vector_impl_5<T>(this->a, this->b, this->c, this->d, e);
+			}
 		};
 		template<typename T>
 		struct vector_impl_6 {
@@ -359,6 +454,35 @@ namespace qsf {
 				};
 				std::array<T, 6> data;
 			};
+
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_6<T> with_a(U a) const {
+				return vector_impl_6<T>(a, this->b, this->c, this->d, this->e, this->f);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_6<T> with_b(U b) const {
+				return vector_impl_6<T>(this->a, b, this->c, this->d, this->e, this->f);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_6<T> with_c(U c) const {
+				return vector_impl_6<T>(this->a, this->b, c, this->d, this->e, this->f);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_6<T> with_d(U d) const {
+				return vector_impl_6<T>(this->a, this->b, this->c, d, this->e, this->f);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_6<T> with_e(U e) const {
+				return vector_impl_6<T>(this->a, this->b, this->c, this->d, e, this->f);
+			}
+			template<typename U> requires (qpl::is_arithmetic<U>())
+				constexpr vector_impl_6<T> with_f(U f) const {
+				return vector_impl_6<T>(this->a, this->b, this->c, this->d, this->e, f);
+			}
+		};
+		template<typename T, qpl::size N>
+		struct vector_impl_N {
+			std::array<T, N> data;
 		};
 	}
 
@@ -370,7 +494,7 @@ namespace qsf {
 		qpl::if_true<N == 4>, impl::vector_impl_4<T>,
 		qpl::if_true<N == 5>, impl::vector_impl_5<T>,
 		qpl::if_true<N == 6>, impl::vector_impl_6<T>,
-		qpl::default_error> {
+		qpl::default_type,    impl::vector_impl_N<T, N>> {
 
 		using impl_type = qpl::conditional<
 			qpl::if_true<N == 1>, impl::vector_impl_1<T>,
@@ -379,7 +503,7 @@ namespace qsf {
 			qpl::if_true<N == 4>, impl::vector_impl_4<T>,
 			qpl::if_true<N == 5>, impl::vector_impl_5<T>,
 			qpl::if_true<N == 6>, impl::vector_impl_6<T>,
-			qpl::default_error>;
+			qpl::default_type,    impl::vector_impl_N<T, N>>;
 
 		constexpr std::string string() const {
 			std::ostringstream stream;
@@ -680,6 +804,18 @@ namespace qsf {
 	using vector6d = qsf::vectorN<6, qpl::f64>;
 	using vector6i = qsf::vectorN<6, qpl::i32>;
 	using vector6u = qsf::vectorN<6, qpl::u32>;
+
+
+
+	template <typename T, typename ...Args> requires (qpl::is_arithmetic<T>())
+	constexpr auto vec(T first, Args... rest) {
+		if constexpr (sizeof...(Args) == 1u) {
+			return vector2<T>(first, rest...);
+		}
+		else {
+			return vectorN<T, sizeof...(Args) + 1>(first, rest...);
+		}
+	}
 
 	template<typename T>
 	struct hitbox_t {

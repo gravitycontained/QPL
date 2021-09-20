@@ -19,10 +19,11 @@ namespace qpl {
 	template<qpl::size bits, bool sign>
 	struct integer;
 
-
+#ifndef QPL_NO_FLOATS
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct floating_point;
-	
+#endif
+
 	template<typename T>
 	struct is_qpl_integer_impl : std::false_type
 	{};
@@ -53,7 +54,7 @@ namespace qpl {
 	template<typename T>
 	struct is_qpl_floating_point_impl : std::false_type
 	{};
-
+#ifndef QPL_NO_FLOATS
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct is_qpl_floating_point_impl<qpl::floating_point<exponent_bits, mantissa_bits>> : std::true_type
 	{};
@@ -62,6 +63,13 @@ namespace qpl {
 	constexpr bool is_qpl_floating_point() {
 		return is_qpl_floating_point_impl<T>{};
 	}
+#else
+
+	template<typename T>
+	constexpr bool is_qpl_floating_point() {
+		return false;
+	}
+#endif
 
 	template<typename T>
 	struct is_qpl_dynamic_integer_impl : std::false_type
@@ -178,10 +186,6 @@ namespace qpl {
 
 	template<typename T>
 	std::string type_name(T value) {
-		return std::string(typeid(T).name());
-	}
-	template<typename T>
-	std::string type_name() {
 		return std::string(typeid(T).name());
 	}
 

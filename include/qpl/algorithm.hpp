@@ -1090,6 +1090,10 @@ namespace qpl {
 	constexpr F curve_slope(F progress, F slope = 2.0) {
 		return std::pow(1 - std::pow(1 - progress, slope), 1.0 / slope);
 	}
+	template<typename F>
+	constexpr F curve_slope_inverse(F n, F slope = 2.0) {
+		return 1 - std::pow(1 - std::pow(n, slope), 1.0 / slope);
+	}
 
 
 	constexpr std::array<std::pair<qpl::f64, qpl::f64>, 23> slope_values = {
@@ -1197,10 +1201,19 @@ namespace qpl {
 
 
 	template<typename F>
-	constexpr F normal_distribution(F x, F o = F{ 1 }, F u = F{ 0.5 }) {
-		return (F{ 1 } / (o * std::sqrt(2 * qpl::pi))) * std::pow(qpl::e, -std::pow((x - u) / o, 2) / F{ 2 });
+	constexpr F normal_distribution(F x) {
+		constexpr auto exp = 0.3989422804014327;
+		return exp * std::pow(qpl::e, -0.5 * std::pow(x, 2));
 	}
-
+	template<typename F>
+	constexpr F normal_distribution(F x, F d = F{ 1 }, F u = F{ 0.0 }) {
+		auto exp = 1.0 / (d * std::pow(2 * qpl::pi, 0.5));
+		return exp * std::pow(qpl::e, -0.5 * std::pow((x - u) / d, 2));
+	}
+	template<typename F>
+	constexpr F sigma(qpl::size N, F p) {
+		return std::pow(N * p * (1 - p), 0.5);
+	}
 
 	template<typename F>
 	constexpr F s_slope(F x, F slope = 1) {

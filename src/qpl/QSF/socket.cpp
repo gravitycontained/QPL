@@ -1,6 +1,6 @@
 #include <qpl/QSF/socket.hpp>
 
-#ifndef QPL_NO_SFML
+#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 
 #include <qpl/system.hpp>
 #include <qpl/time.hpp>

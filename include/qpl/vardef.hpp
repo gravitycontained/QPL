@@ -35,9 +35,11 @@ namespace qpl {
 	struct integer;
 	template<qpl::size bits, bool sign>
 	struct x64_integer;
+
+#ifndef QPL_NO_FLOATS
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct floating_point;
-
+#endif
 
 	using ii32 = qpl::integer<32, 1>;
 	using uu32 = qpl::integer<32, 0>;
@@ -179,6 +181,7 @@ namespace qpl {
 	using f32 = float;
 	using f64 = double;
 
+#ifndef QPL_NO_FLOATS
 	using ff32 = qpl::floating_point<32u, 32u>;
 	using ff64 = qpl::floating_point<32u, 64u>;
 	using f128 = qpl::floating_point<32u, 128u>;
@@ -194,6 +197,7 @@ namespace qpl {
 	using f10240 = qpl::floating_point<32u, 10240u>;
 	using f16384 = qpl::floating_point<32u, 16384u>;
 	using f32768 = qpl::floating_point<32u, 32768u>;
+#endif
 
 	using ftypes = std::tuple<qpl::f32, qpl::f64>;
 	using ftype_min = std::tuple_element_t<0, ftypes>;
