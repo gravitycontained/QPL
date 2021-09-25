@@ -319,6 +319,15 @@ namespace qsf {
 				this->value = font;
 				this->duration = duration;
 			}
+			font until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			font until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			font until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
+			}
 			std::string value;
 			duration_type duration;
 		};
@@ -326,6 +335,15 @@ namespace qsf {
 			color(qsf::rgb color, duration_type duration = next_entry) {
 				this->value = color;
 				this->duration = duration;
+			}
+			color until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			color until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			color until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
 			qsf::rgb value;
 			duration_type duration;
@@ -335,6 +353,15 @@ namespace qsf {
 				this->value = character_size;
 				this->duration = duration;
 			}
+			character_size until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			character_size until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			character_size until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
+			}
 			qpl::u32 value;
 			duration_type duration;
 		};
@@ -342,6 +369,15 @@ namespace qsf {
 			style(qpl::u32 style, duration_type duration = next_entry) {
 				this->duration = duration;
 				this->value = style;
+			}
+			style until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			style until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			style until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
 			qpl::u32 value;
 			duration_type duration;
@@ -351,6 +387,16 @@ namespace qsf {
 				this->value = outline_thickness;
 				this->duration = duration;
 			}
+
+			outline_thickness until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			outline_thickness until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			outline_thickness until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
+			}
 			qpl::f32 value;
 			duration_type duration;
 		};
@@ -358,6 +404,16 @@ namespace qsf {
 			outline_color(qsf::rgb outline_color, duration_type duration = next_entry) {
 				this->value = outline_color;
 				this->duration = duration;
+			}
+
+			outline_color until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			outline_color until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			outline_color until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
 			qsf::rgb value;
 			duration_type duration;
@@ -367,6 +423,16 @@ namespace qsf {
 				this->value = spacing;
 				this->duration = duration;
 			}
+
+			letter_spacing until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			letter_spacing until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			letter_spacing until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
+			}
 			qpl::f32 value;
 			duration_type duration;
 		};
@@ -374,6 +440,16 @@ namespace qsf {
 			spacing(qpl::f32 space, duration_type duration = next_entry) {
 				this->value = space;
 				this->duration = duration;
+			}
+
+			spacing until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			spacing until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			spacing until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
 			qpl::f32 value;
 			duration_type duration;
@@ -383,6 +459,16 @@ namespace qsf {
 				this->value = shift;
 				this->duration = next_entry;
 			}
+
+			shift until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			shift until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			shift until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
+			}
 			qsf::vector2f value;
 			duration_type duration;
 		};
@@ -390,6 +476,16 @@ namespace qsf {
 			shift_y(qpl::f32 shift, duration_type duration = next_entry) {
 				this->value = shift;
 				this->duration = next_entry;
+			}
+
+			shift_y until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			shift_y until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			shift_y until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
 			qpl::f32 value;
 			duration_type duration;
@@ -402,6 +498,16 @@ namespace qsf {
 			scaling(qpl::f32 scaling, duration_type duration = next_entry) {
 				this->value = qsf::vector2f(scaling, scaling);
 				this->duration = next_entry;
+			}
+
+			scaling until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			scaling until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			scaling until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
 			qsf::vector2f value;
 			duration_type duration;
@@ -570,6 +676,7 @@ namespace qsf {
 		QPLDLL qsf::hitbox line_text_hitbox(qpl::size index) const;
 		QPLDLL qsf::hitbox line_sprite_hitbox(qpl::size index) const;
 		QPLDLL qsf::hitbox line_hitbox(qpl::size index) const;
+		QPLDLL qsf::hitbox line_visible_hitbox(qpl::size index) const;
 
 		//I don't have seen it get stuck yet, but because there is a possibility due to floating points being weird, I have a loop check here
 		QPLDLL void centerize_line(qpl::size index, qpl::u32 loop = 0u) const;
@@ -700,6 +807,8 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qsf::rgb outline_color);
 		QPLDLL void set_multiplied_color(qsf::rgb color);
+
+		QPLDLL void increase(qpl::f64 delta);
 
 		QPLDLL bool contains(qsf::vector2f position) const;
 		QPLDLL bool contains(qsf::vector2f position, qsf::vector2f hitbox_increase) const;

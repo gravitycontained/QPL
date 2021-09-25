@@ -853,8 +853,8 @@ namespace qsf {
 		}
 
 		void increase(qpl::f32 delta) {
-			this->position -= qsf::vector2f(delta, delta) / 2;
-			this->dimension += qsf::vector2f(delta, delta);
+			this->position -= qsf::vector2f(delta, delta);
+			this->dimension += qsf::vector2f(delta, delta) * 2;
 		}
 		qsf::hitbox_t<T> increased(qpl::f32 delta) const {
 			auto copy = *this;

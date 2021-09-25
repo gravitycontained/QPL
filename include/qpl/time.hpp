@@ -386,6 +386,7 @@ namespace qpl {
 				this->reverse_progress_state = 0.0;
 				this->reversed = true;
 			}
+			this->update();
 		}
 		void reset(bool running = false) {
 			this->timer.reset();
@@ -501,6 +502,12 @@ namespace qpl {
 				this->update();
 			}
 			return this->is_done();
+		}
+		bool is_running_or_done() const {
+			return this->is_running() || this->is_done();
+		}
+		bool is_running_or_done(bool update) {
+			return this->is_running(update) || this->is_done(update);
 		}
 		bool is_done_reverse() const {
 			return this->is_done() && this->reversed;

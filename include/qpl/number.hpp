@@ -4763,12 +4763,58 @@ namespace qpl {
 			}
 			return qpl::i64_cast(qpl::u64_cast(this->memory[0]) | (qpl::u64_cast(this->memory[1]) << base_max_log()));
 		}
-
 		constexpr operator qpl::f64() const {
-			return qpl::f64_cast(this->operator qpl::u64());
+			auto msb = this->significant_bit();
+			if (msb <= qpl::double_content::mantissa_size()) {
+				if (this->is_negative()) {
+					return qpl::f64_cast(this->operator qpl::i64());
+				}
+				else {
+					return qpl::f64_cast(this->operator qpl::u64());
+				}
+			}
+			else {
+				if (this->is_negative()){
+					return -(this->flipped_sign().operator qpl::f64());
+				}
+				auto t = this->last_n_bits(qpl::double_content::mantissa_size());
+				auto mantissa = t.operator qpl::u64();
+				mantissa <<= (qpl::double_content::mantissa_size() - qpl::significant_bit(mantissa) + 1);
+
+				qpl::double_content result;
+				result.sign = 0;
+				
+				result.mantissa = mantissa;
+				result.exponent = (msb) + (1ull << (qpl::double_content::exponent_size() - 1)) - 2;
+				return result.to_double();
+			}
 		}
 		constexpr operator qpl::f32() const {
-			return qpl::f32_cast(this->operator qpl::u64());
+			auto msb = this->significant_bit();
+			if (msb <= qpl::float_content::mantissa_size()) {
+				if (this->is_negative()) {
+					return qpl::f32_cast(this->operator qpl::i64());
+				}
+				else {
+					return qpl::f32_cast(this->operator qpl::u64());
+				}
+			}
+			else {
+				if (this->is_negative()) {
+					return -(this->flipped_sign().operator qpl::f32());
+				}
+				auto t = this->last_n_bits(qpl::float_content::mantissa_size());
+				auto mantissa = t.operator qpl::u32();
+				mantissa <<= (qpl::float_content::mantissa_size() - qpl::significant_bit(mantissa) + 1);
+
+				qpl::float_content result;
+				result.sign = 0;
+
+				result.mantissa = mantissa;
+				result.exponent = (msb)+(1u << (qpl::float_content::exponent_size() - 1)) - 2;
+
+				return result.to_float();
+			}
 		}
 
 
@@ -4796,7 +4842,12 @@ namespace qpl {
 			copy.add(value);
 			return copy;
 		}
-
+		template<typename T> requires (qpl::is_floating_point<T>() && !qpl::is_qpl_floating_point<T>())
+			constexpr T operator+(T value) const {
+			auto copy = static_cast<T>(*this);
+			copy += value;
+			return copy;
+		}
 		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr integer operator+(qpl::integer<bits2, sign2> other) const {
 			auto copy = *this;
@@ -4834,6 +4885,13 @@ namespace qpl {
 			copy.mul(value);
 			return copy;
 		}
+		template<typename T> requires (qpl::is_floating_point<T>() && !qpl::is_qpl_floating_point<T>())
+		constexpr T operator*(T value) const {
+			auto copy = static_cast<T>(*this);
+			copy *= value;
+			return copy;
+		}
+
 
 		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)
 		constexpr qpl::superior_integer<qpl::integer<bits, sign>, qpl::integer<bits2, sign2>> operator*(qpl::integer<bits2, sign2> other) const {
@@ -4852,7 +4910,12 @@ namespace qpl {
 			this->sub(other);
 			return *this;
 		}
-
+		template<typename T> requires (qpl::is_floating_point<T>() && !qpl::is_qpl_floating_point<T>())
+			constexpr T operator-(T value) const {
+			auto copy = static_cast<T>(*this);
+			copy -= value;
+			return copy;
+		}
 		template<typename T> requires (!qpl::is_floating_point<T>())
 		constexpr integer operator-(T value) const {
 			auto copy = *this;
@@ -4882,6 +4945,12 @@ namespace qpl {
 		constexpr integer operator/(T value) const {
 			auto copy = *this;
 			copy.div(value);
+			return copy;
+		}
+		template<typename T> requires (qpl::is_floating_point<T>() && !qpl::is_qpl_floating_point<T>())
+			constexpr T operator/(T value) const {
+			auto copy = static_cast<T>(*this);
+			copy /= value;
 			return copy;
 		}
 		template<qpl::size bits2, bool sign2> requires(bits2 != bits && sign2 != sign)

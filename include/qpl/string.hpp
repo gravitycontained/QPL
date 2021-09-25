@@ -370,13 +370,13 @@ namespace qpl {
 	template<typename... Args>
 	std::string to_string_precision(qpl::size precision, Args&&... args) {
 		std::ostringstream stream;
-		((stream << std::fixed << std::setprecision(precision) << (qpl::is_integer<decltype(args)>() ? static_cast<qpl::f64>(args) : args)), ...);
+		((stream << std::fixed << std::setprecision(precision) << qpl::f64_cast(args)), ...);
 		return stream.str();
 	}
 	template<typename... Args>
 	std::string to_string_full_precision(Args&&... args) {
 		std::ostringstream stream;
-		((stream << std::fixed << std::setprecision(qpl::f64_digits) << (qpl::is_integer<decltype(args)>() ? static_cast<qpl::f64>(args) : args)), ...);
+		((stream << std::fixed << std::setprecision(qpl::f64_digits) << qpl::f64_cast(args)), ...);
 		return stream.str();
 	}
 
@@ -2139,7 +2139,14 @@ namespace qpl {
 				return "-" + qpl::big_number_string(-number, precision);
 			}
 		}
-		auto log = static_cast<qpl::i64>(std::log(number) / std::log(1000.0));
+
+		qpl::i64 log;
+		if constexpr (qpl::is_qpl_integer<T>()) {
+			log = (number.digits() - 1) / 3.0;
+		}
+		else {
+			log = static_cast<qpl::i64>(std::log(number) / std::log(1000.0));
+		}
 		std::string name;
 		bool negative = false;
 
@@ -2167,6 +2174,11 @@ namespace qpl {
 			default: name = qpl::to_string(p_ones[(log - 1) % 10], p_tens[((log - 1) / 10) - 1]);
 			}
 		}
+		if constexpr (qpl::is_integer<T>()) {
+			if (number < 1000) {
+				return qpl::to_string(number);
+			}
+		}
 		if (log == 0) {
 			return qpl::to_string(qpl::to_string_precision(precision, number), name);
 		}
@@ -2177,6 +2189,85 @@ namespace qpl {
 			return qpl::to_string(qpl::to_string_precision(precision, number / std::pow(1000, log)), name);
 		}
 	}
+
+
+	template<typename T> requires (qpl::is_arithmetic<T>())
+	std::string big_number_string_short(T number, qpl::u32 precision = 2) {
+		if (number == T{}) {
+			return qpl::to_string(number);
+		}
+		if constexpr (qpl::is_signed<T>()) {
+			if (number < 0) {
+				return "-" + qpl::big_number_string(-number, precision);
+			}
+		}
+		qpl::i64 log;
+		if constexpr (qpl::is_qpl_integer<T>()) {
+			log = (number.digits() - 1) / 3.0;
+		}
+		else {
+			log = static_cast<qpl::i64>(std::log(number) / std::log(1000.0));
+		}
+		std::string name;
+		bool negative = false;
+
+
+		if (log < 0) {
+			log *= -1;
+			negative = true;
+		}
+
+		const static std::array<std::string, 10> p_ones = { "", "Un", "Dou", "Tre", "Qa", "Qi", "Sx", "Sp", "Oc", "No" };
+		const static std::array<std::string, 10> p_tens = { "Dec", "Vig", "Tri", "Qa", "Qi", "Sx", "Sp", "Oc", "No" };
+
+		if (log >= 1 && log <= 100) {
+			switch (log) {
+			case 1: name = "K"; break;
+			case 2: name = "M"; break;
+			case 3: name = "B"; break;
+			case 4: name = "T"; break;
+			case 5: name = "Qa"; break;
+			case 6: name = "Qi"; break;
+			case 7: name = "Sx"; break;
+			case 8: name = "Sp"; break;
+			case 9: name = "Oc"; break;
+			case 10: name = "No"; break;
+			default: name = qpl::to_string(p_ones[(log - 1) % 10], p_tens[((log - 1) / 10) - 1]);
+			}
+		}
+		if constexpr (qpl::is_integer<T>()) {
+			if (number < 1000) {
+				return qpl::to_string(number);
+			}
+		}
+		if (log == 0) {
+			return qpl::to_string(qpl::to_string_precision(precision, number), name);
+		}
+		if (negative) {
+			qpl::f64 pow;
+			if constexpr (qpl::is_qpl_integer<T>()) {
+				T x = 1000;
+				pow = x.pow(log);
+			}
+			else {
+				pow = std::pow(1000, log);
+			}
+			return qpl::to_string(qpl::to_string_precision(precision, number * pow), " 1/", name);
+		}
+		else {
+			qpl::f64 pow;
+			if constexpr (qpl::is_qpl_integer<T>()) {
+				T x = 1000;
+				pow = x.pow(log);
+			}
+			else {
+				pow = std::pow(1000, log);
+			}
+			
+			return qpl::to_string(qpl::to_string_precision(precision, number / pow), name);
+		}
+	}
+
 
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string percentage_plus_string(T number) {

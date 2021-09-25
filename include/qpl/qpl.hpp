@@ -5,7 +5,6 @@
 
 #include <qpl/aes.hpp>
 #include <qpl/algorithm.hpp>
-#include <qpl/bigint.hpp>
 #include <qpl/bits.hpp>
 #include <qpl/config.hpp>
 #include <qpl/date.hpp>
@@ -22,7 +21,6 @@
 #include <qpl/pictures.hpp>
 #include <qpl/random.hpp>
 #include <qpl/ranges.hpp>
-#include <qpl/singleton.hpp>
 #include <qpl/smooth.hpp>
 #include <qpl/string.hpp>
 #include <qpl/system.hpp>

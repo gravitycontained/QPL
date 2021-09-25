@@ -638,7 +638,7 @@ namespace qpl {
 
 		}
 		double_content(double value) {
-			memcpy(this, &value, sizeof(double));
+			this->from_double(value);
 		}
 		constexpr static qpl::size mantissa_size() {
 			return qpl::f64_mantissa_size();
@@ -656,6 +656,9 @@ namespace qpl {
 			memcpy(&result, this, sizeof(double));
 			return result;
 		}
+		void from_double(double value) {
+			memcpy(this, &value, sizeof(double));
+		}
 		std::string binary_string() const {
 			return qpl::to_string(this->sign, ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->exponent)), '0', 11), ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->mantissa)), '0', 52));
 		}
@@ -665,7 +668,7 @@ namespace qpl {
 
 		}
 		float_content(float value) {
-			memcpy(this, &value, sizeof(float));
+			this->from_float(value);
 		}
 
 		constexpr static qpl::size mantissa_size() {
@@ -678,6 +681,9 @@ namespace qpl {
 			float result;
 			memcpy(&result, this, sizeof(float));
 			return result;
+		}
+		void from_float(float value) {
+			memcpy(this, &value, sizeof(float));
 		}
 		std::string binary_string() const {
 			return qpl::to_string(this->sign, ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->exponent)), '0', 8), ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->mantissa)), '0', 23));

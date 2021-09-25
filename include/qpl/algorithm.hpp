@@ -512,7 +512,7 @@ namespace qpl {
 			return data.size();
 		}
 	}
-	template<typename C>
+	template<typename C> requires (qpl::is_container<C>())
 	constexpr qpl::size container_depth() {
 		return qpl::is_container<C> ?
 			(qpl::is_container<qpl::container_subtype<C>>() ? qpl::container_depth<qpl::container_subtype<C>>() + qpl::size{ 1 } : qpl::size{ 1 }) :
@@ -521,22 +521,17 @@ namespace qpl {
 
 
 
-	template<typename C>
+	template<typename C> requires (qpl::is_container<C>())
 	auto container_sum(const C& data) {
-		if constexpr (!qpl::is_container<C>()) {
-			return data;
+		auto sum = data[0];
+		for (qpl::u32 i = 1u; i < data.size(); ++i) {
+			sum += data[i];
 		}
-		else {
-			auto sum = data[0];
-			for (qpl::u32 i = 1u; i < data.size(); ++i) {
-				sum += data[i];
-			}
-			return sum;
-		}
+		return sum;
 	}
 
 
-	template<typename C1, typename C2>
+	template<typename C1, typename C2> requires (qpl::is_container<C1>() && qpl::is_container<C2>())
 	void combine_containers(C1& destination, const C2& source) {
 		destination.reserve(destination.size() + source.size());
 		destination.insert(destination.end(), source.cbegin(), source.cend());
