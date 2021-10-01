@@ -6,6 +6,7 @@
 #include <qpl/algorithm.hpp>
 #include <qpl/time.hpp>
 #include <qpl/type_traits.hpp>
+
 #include <array>
 #include <iterator>
 #include <type_traits>
@@ -249,12 +250,20 @@ namespace qpl {
 	namespace detail {
 		struct rng_t {
 			rng_t() {
-				this->rng.seed_random();
+				this->seeded = false;
+				set_seed_random();
+			}
+			void set_seed_random() {
+				if (!this->seeded) {
+					this->rng.seed_random();
+					this->seeded = true;
+				}
 			}
 			qpl::random_engine<64> rng;
 			qpl::distribution<qpl::i64> idist;
 			qpl::distribution<qpl::u64> udist;
 			qpl::distribution<qpl::f64> fdist;
+			bool seeded = false;
 		};
 
 		QPLDLL extern qpl::detail::rng_t rng;

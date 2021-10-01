@@ -148,6 +148,8 @@ namespace qpl {
 		QPLDLL void AES_192_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
 		QPLDLL void AES_128_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
 
+
+
 }
 
 #endif

@@ -4,10 +4,10 @@
 
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/qpldeclspec.hpp>
-#include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/string.hpp>
+#include <qpl/vector.hpp>
 
 #include <functional>
 #include <string>
@@ -99,12 +99,14 @@ namespace qsf {
 
 
 
-	QPLDLL qsf::hitbox get_text_hitbox(const sf::Text& text);
-	QPLDLL qsf::hitbox get_text_hitbox(const qsf::text& text);
+	QPLDLL qpl::hitbox get_text_hitbox(const sf::Text& text, bool ignore_outline = true);
+	QPLDLL qpl::hitbox get_text_hitbox(const qsf::text& text, bool ignore_outline = true);
 	QPLDLL void centerize_text(sf::Text& text);
 	QPLDLL void centerize_text(qsf::text& text);
 
-	QPLDLL qsf::hitbox get_sprite_hitbox(const sf::Sprite& sprite);
+	QPLDLL qpl::hitbox get_sprite_hitbox(const sf::Sprite& sprite);
+	QPLDLL qpl::vector2f get_sprite_center(const sf::Sprite& sprite);
+	QPLDLL void centerize_sprite_origin(sf::Sprite& sprite);
 	QPLDLL void centerize_sprite(sf::Sprite& sprite);
 
 	namespace detail {
@@ -128,14 +130,14 @@ namespace qsf {
 		vertex() {
 
 		}
-		vertex(qsf::vector2f position, qsf::rgb color) {
+		vertex(qpl::vector2f position, qsf::rgb color) {
 			this->position = position;
 			this->color = color;
 		}
 
-		qsf::vector2f position;
+		qpl::vector2f position;
 		qsf::rgb color;
-		qsf::vector2f tex_coords;
+		qpl::vector2f tex_coords;
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 	};
@@ -194,7 +196,7 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qsf::rgb color);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
-		QPLDLL void set_position(qsf::vector2f position);
+		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_string(const std::string& string);
 		QPLDLL bool operator==(const vtext& other) const;
 
@@ -213,7 +215,7 @@ namespace qsf {
 		qsf::rgb outline_color;
 		qsf::rgb multiplied_color = qsf::rgb::white;
 		qpl::f32 letter_spacing = 1.0f;
-		qsf::vector2f position;
+		qpl::vector2f position;
 		std::string string;
 	};
 
@@ -225,8 +227,8 @@ namespace qsf {
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qsf::rgb get_outline_color() const;
 		QPLDLL qpl::f32 get_letter_spacing() const;
-		QPLDLL qsf::vector2f get_position() const;
-		QPLDLL qsf::vector2f get_center() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL std::string get_string() const;
 		QPLDLL void set_font(const std::string& font_name);
 		QPLDLL void set_style(qpl::u32 style);
@@ -235,8 +237,8 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qsf::rgb color);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void set_center(qsf::vector2f position);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_string(const std::string& string);
 		QPLDLL void set_multiplied_color(qsf::rgb color);
 		QPLDLL qsf::rgb get_multiplied_color() const;
@@ -249,7 +251,7 @@ namespace qsf {
 		QPLDLL void centerize();
 		QPLDLL void centerize_x();
 		QPLDLL void centerize_y();
-		QPLDLL void move(qsf::vector2f delta);
+		QPLDLL void move(qpl::vector2f delta);
 
 		qsf::text() {
 
@@ -258,9 +260,9 @@ namespace qsf {
 			*this = other;
 		}
 
-		QPLDLL qsf::hitbox get_visible_hitbox() const;
-		QPLDLL qsf::hitbox get_standard_hitbox() const;
-		QPLDLL qsf::vector2f offset() const;
+		QPLDLL qpl::hitbox get_visible_hitbox(bool ignore_outline = true) const;
+		QPLDLL qpl::hitbox get_standard_hitbox() const;
+		QPLDLL qpl::vector2f offset() const;
 
 		
 		QPLDLL std::string string() const;
@@ -288,6 +290,653 @@ namespace qsf {
 
 	QPLDLL extern endl_type endl;
 
+	struct vrectangle {
+		vrectangle() {
+
+		}
+		vrectangle(qpl::vector2f position, qpl::vector2f dimension) {
+			this->position = position;
+			this->dimension = dimension;
+		}
+		vrectangle(qpl::vector2f position, qpl::vector2f dimension, qsf::rgb color) {
+			this->position = position;
+			this->dimension = dimension;
+			this->color = color;
+		}
+		vrectangle(qpl::hitbox hitbox) {
+			this->set_position(hitbox.position);
+			this->set_dimension(hitbox.dimension);
+		}
+
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_outline_color(qsf::rgb outline_color);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
+
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL qpl::hitbox get_hitbox() const;
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qpl::f32 get_outline_thickness() const;
+		QPLDLL qsf::rgb get_outline_color() const;
+		QPLDLL qsf::rgb get_multiplied_color() const;
+
+		QPLDLL std::string string() const;
+
+		QPLDLL void increase(qpl::f32 delta);
+		QPLDLL qsf::vrectangle increased(qpl::f32 delta) const;
+
+		QPLDLL bool contains(qpl::vector2f position) const;
+		QPLDLL bool contains(qpl::vector2f position, qpl::f32 hitbox_increase) const;
+		QPLDLL bool collides(qpl::straight_line line) const;
+		QPLDLL bool collides(qpl::straight_line line, qpl::f32 hitbox_increase) const;
+
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		qpl::vector2f dimension;
+		qpl::vector2f position;
+		qpl::f32 outline_thickness = 0.0f;
+		qsf::rgb color;
+		qsf::rgb outline_color;
+		qsf::rgb multiplied_color = qsf::rgb::white;
+	};
+
+	struct rectangle {
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
+		QPLDLL void set_outline_color(qsf::rgb outline_color);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
+
+		QPLDLL void increase(qpl::f64 delta);
+
+		QPLDLL bool contains(qpl::vector2f position) const;
+		QPLDLL bool contains(qpl::vector2f position, qpl::f32 hitbox_increase) const;
+		QPLDLL bool collides(qpl::straight_line line) const;
+		QPLDLL bool collides(qpl::straight_line line, qpl::f32 hitbox_increase) const;
+
+		QPLDLL qsf::rgb get_multiplied_color() const;
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qsf::rgb get_outline_color() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL qpl::f32 get_outline_thickness() const;
+		QPLDLL qpl::hitbox get_hitbox() const;
+
+		QPLDLL qsf::vlines as_lines() const;
+		QPLDLL qsf::vlines as_lines_completed() const;
+
+		QPLDLL qpl::vector2f center() const;
+
+		QPLDLL qsf::rectangle& operator=(const qsf::vrectangle& rectangle);
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		sf::RectangleShape m_rect;
+		qsf::rgb color;
+		qsf::rgb outline_color;
+		qsf::rgb multiplied_color = qsf::rgb::white;
+	};
+
+	struct vrectangles {
+		QPLDLL qpl::size size() const;
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+		QPLDLL void clear();
+		QPLDLL void add(const qsf::vrectangle& rect);
+
+		QPLDLL qsf::vrectangle& operator[](qpl::size index);
+		QPLDLL const qsf::vrectangle& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vrectangle& front();
+		QPLDLL const qsf::vrectangle& front() const;
+
+		QPLDLL qsf::vrectangle& back();
+		QPLDLL const qsf::vrectangle& back() const;
+
+		QPLDLL std::vector<qsf::vrectangle>::iterator begin();
+		QPLDLL std::vector<qsf::vrectangle>::const_iterator begin() const;
+		QPLDLL std::vector<qsf::vrectangle>::const_iterator cbegin() const;
+
+		QPLDLL std::vector<qsf::vrectangle>::iterator end();
+		QPLDLL std::vector<qsf::vrectangle>::const_iterator end() const;
+		QPLDLL std::vector<qsf::vrectangle>::const_iterator cend() const;
+
+		QPLDLL void add_rectangle(vrectangle rectangle);
+		QPLDLL void add_rectangle(qpl::vector2f position, qpl::vector2f dimension);
+		QPLDLL void add_rectangle(qpl::vector2f position, qpl::vector2f dimension, qsf::rgb color);
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL qsf::vrectangles& operator=(const qsf::vrectangles& rectangles);
+
+		std::vector<qsf::vrectangle> rectangles;
+	};
+
+	struct rectangles {
+
+		QPLDLL qpl::size size() const;
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+		QPLDLL void clear();
+		QPLDLL void add(const qsf::rectangle& rect);
+
+		QPLDLL qsf::rectangle& operator[](qpl::size index);
+		QPLDLL const qsf::rectangle& operator[](qpl::size index) const;
+
+		QPLDLL qsf::rectangle& front();
+		QPLDLL const qsf::rectangle& front() const;
+
+		QPLDLL qsf::rectangle& back();
+		QPLDLL const qsf::rectangle& back() const;
+
+		QPLDLL std::vector<qsf::rectangle>::iterator begin();
+		QPLDLL std::vector<qsf::rectangle>::const_iterator begin() const;
+		QPLDLL std::vector<qsf::rectangle>::const_iterator cbegin() const;
+
+		QPLDLL std::vector<qsf::rectangle>::iterator end();
+		QPLDLL std::vector<qsf::rectangle>::const_iterator end() const;
+		QPLDLL std::vector<qsf::rectangle>::const_iterator cend() const;
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL qsf::rectangles& operator=(const qsf::vrectangles& rectangles);
+
+		std::vector<qsf::rectangle> rectangles_;
+	};
+
+	struct vpoint {
+		qpl::vector2f position;
+		qsf::rgb color;
+
+		vpoint() {
+
+		}
+
+		vpoint(qpl::vector2f position, qsf::rgb color) {
+			this->position = position;
+			this->color = color;
+		}
+		vpoint(qpl::vector2f position) {
+			this->position = position;
+		}
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL vpoint& operator=(qpl::vector2f position);
+
+		QPLDLL bool operator==(const vpoint& other) const;
+		QPLDLL bool operator!=(const vpoint& other) const;
+		//QPLDLL vpoint& with_color(qsf::rgb color);
+	};
+	struct point {
+		qsf::vertex vertex;
+
+		QPLDLL qsf::point& operator=(const qsf::vpoint& point);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+	};
+
+	struct vpoints {
+		vpoints(qpl::size size = qpl::size{}) {
+			this->points.resize(size);
+		}
+
+
+		QPLDLL qpl::size size() const;
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vpoint& operator[](qpl::size index);
+		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vpoint& front();
+		QPLDLL const qsf::vpoint& front() const;
+
+		QPLDLL qsf::vpoint& back();
+		QPLDLL const qsf::vpoint& back() const;
+
+
+		QPLDLL std::vector<qsf::vpoint>::iterator begin();
+		QPLDLL std::vector<qsf::vpoint>::const_iterator begin() const;
+		QPLDLL std::vector<qsf::vpoint>::const_iterator cbegin() const;
+
+		QPLDLL std::vector<qsf::vpoint>::iterator end();
+		QPLDLL std::vector<qsf::vpoint>::const_iterator end() const;
+		QPLDLL std::vector<qsf::vpoint>::const_iterator cend() const;
+
+
+		QPLDLL void add_point(qsf::vpoint point);
+		QPLDLL void add_point(qpl::vector2f position, qsf::rgb color);
+		QPLDLL qsf::vlines as_lines() const;
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL void clear();
+
+		std::vector<qsf::vpoint> points;
+	};
+
+	struct points {
+		points() {
+			this->vertices.set_primitive_type(qsf::primitive_type::points);
+		}
+		points(qpl::size size) {
+			this->vertices.resize(size);
+		}
+
+
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vertex& front();
+		QPLDLL const qsf::vertex& front() const;
+
+		QPLDLL qsf::vertex& back();
+		QPLDLL const qsf::vertex& back() const;
+
+
+		QPLDLL qsf::vlines as_lines() const;
+		QPLDLL qsf::points& operator=(const qsf::vpoints& points);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL void clear();
+		QPLDLL qpl::size size() const;
+		qsf::vertex_array vertices;
+	};
+
+
+
+	struct vcircle {
+		vcircle() {
+			this->radius = 0.0f;
+		}
+		vcircle(qsf::vpoint point, qpl::f32 radius) {
+			this->point = point;
+			this->radius = radius;
+			this->point.position.move(qpl::vector2f{ -this->radius, -this->radius });
+		}
+		vcircle(qpl::vector2f center, qpl::f32 radius, qsf::rgb color) {
+			this->point.position = center - qpl::vector2f{ radius, radius };
+			this->point.color = color;
+			this->radius = radius;
+		}
+
+		QPLDLL void set_position(qpl::vector2f center);
+		QPLDLL void set_radius(qpl::f32 radius);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_center(qpl::vector2f center);
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL void centerize();
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		qsf::vpoint point;
+		qpl::f32 radius;
+	};
+	struct circle {
+		circle() {
+
+		}
+		circle(const qsf::vcircle& circle) {
+			*this = circle;
+		}
+		circle(const qsf::circle& circle) {
+			*this = circle;
+		}
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL qsf::circle& operator=(const qsf::vcircle& circle);
+		QPLDLL qsf::circle& operator=(const qsf::circle& circle);
+
+		QPLDLL void set_radius(qpl::f32 radius);
+		QPLDLL qpl::f32 get_radius() const;
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f center);
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL qsf::rgb get_color() const;
+
+		sf::CircleShape circle_shape;
+	};
+
+	struct vcircles {
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vcircle& operator[](qpl::size index);
+		QPLDLL const qsf::vcircle& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vcircle& front();
+		QPLDLL const qsf::vcircle& front() const;
+
+		QPLDLL qsf::vcircle& back();
+		QPLDLL const qsf::vcircle& back() const;
+
+		QPLDLL void add_circle(qsf::vcircle circle);
+		QPLDLL void add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color);
+		QPLDLL void add_circle(qpl::vector2f position, qpl::f32 radius, qsf::rgb color);
+
+		QPLDLL qpl::size size() const;
+		QPLDLL void clear();
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		std::vector<qsf::vcircle> circles;
+	};
+
+	struct circles {
+		circles() {
+
+		}
+		circles(const qsf::vcircles& circles) {
+			*this = circles;
+		}
+		circles(const qsf::circles& circles) {
+			*this = circles;
+		}
+
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::circle& operator[](qpl::size index);
+		QPLDLL const qsf::circle& operator[](qpl::size index) const;
+
+		QPLDLL qsf::circle& front();
+		QPLDLL const qsf::circle& front() const;
+
+		QPLDLL qsf::circle& back();
+		QPLDLL const qsf::circle& back() const;
+
+		QPLDLL void add_circle(const qsf::vcircle& circle);
+		QPLDLL void add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color);
+		QPLDLL void add_circle(qpl::vector2f position, qpl::f32 radius, qsf::rgb color);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL qsf::circles& operator=(const qsf::vcircles& circles);
+		QPLDLL qsf::circles& operator=(const qsf::circles& circles);
+
+		QPLDLL qpl::size size() const;
+		QPLDLL void clear();
+
+		std::vector<qsf::circle> circles_;
+	};
+
+	struct vline {
+
+
+		QPLDLL void set_a(qsf::vpoint point);
+		QPLDLL void set_a(qpl::vector2f position);
+		QPLDLL void set_b(qsf::vpoint point);
+		QPLDLL void set_b(qpl::vector2f position);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_a_color(qsf::rgb color);
+		QPLDLL void set_b_color(qsf::rgb color);
+
+		QPLDLL qpl::vector2f normal() const;
+		QPLDLL qpl::f32 length() const;
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		QPLDLL qsf::vline& rotate_around_a(qpl::f64 degree);
+		QPLDLL qsf::vline& rotate_around_b(qpl::f64 degree);
+
+		QPLDLL operator qpl::straight_line() const;
+
+		vpoint a;
+		vpoint b;
+	};
+
+	struct line {
+		QPLDLL void set_a(qsf::vpoint point);
+		QPLDLL void set_a(qpl::vector2f position);
+		QPLDLL void set_b(qsf::vpoint point);
+		QPLDLL void set_b(qpl::vector2f position);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_a_color(qsf::rgb color);
+		QPLDLL void set_b_color(qsf::rgb color);
+		QPLDLL vpoint get_a() const;
+		QPLDLL vpoint get_b() const;
+
+		QPLDLL qpl::vector2f normal() const;
+		QPLDLL qpl::f32 length() const;
+
+		QPLDLL operator qpl::straight_line() const;
+
+		QPLDLL qsf::line& operator=(const qsf::vline& line);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		std::array<sf::Vertex, 2> vertices;
+	};
+
+	struct vlines {
+
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vpoint& operator[](qpl::size index);
+		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vpoint& front();
+		QPLDLL const qsf::vpoint& front() const;
+
+		QPLDLL qsf::vpoint& back();
+		QPLDLL const qsf::vpoint& back() const;
+
+
+		QPLDLL void clear();
+		QPLDLL qpl::size size() const;
+		QPLDLL void add_point(qsf::vpoint point);
+		QPLDLL void add_point(qpl::vector2f position, qsf::rgb color = qsf::rgb::white);
+		QPLDLL void complete();
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		std::vector<qsf::vpoint> points;
+	};
+
+	struct lines {
+		lines() {
+			this->vertices.set_primitive_type(qsf::primitive_type::line_strip);
+		}
+		lines(const qsf::vlines& lines) {
+			this->vertices.set_primitive_type(qsf::primitive_type::line_strip);
+			*this = lines;
+		}
+
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vertex& front();
+		QPLDLL const qsf::vertex& front() const;
+
+		QPLDLL qsf::vertex& back();
+		QPLDLL const qsf::vertex& back() const;
+
+
+		QPLDLL void complete();
+
+		QPLDLL qsf::lines& operator=(const qsf::vlines& lines);
+		QPLDLL void clear();
+		QPLDLL qpl::size size() const;
+		QPLDLL void add_point(qsf::vpoint point);
+		QPLDLL void add_point(qpl::vector2f position, qsf::rgb color = qsf::rgb::white);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		qsf::vertex_array vertices;
+	};
+
+	struct vthick_line {
+
+		QPLDLL void set_a(qsf::vpoint point);
+		QPLDLL void set_a(qpl::vector2f position);
+		QPLDLL void set_b(qsf::vpoint point);
+		QPLDLL void set_b(qpl::vector2f position);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_a_color(qsf::rgb color);
+		QPLDLL void set_b_color(qsf::rgb color);
+
+		QPLDLL qsf::vpoints as_points() const;
+
+		QPLDLL qpl::vector2f normal() const;
+		QPLDLL qpl::f32 length() const;
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		qsf::vpoint a;
+		qsf::vpoint b;
+		qpl::f32 thickness = 1.0f;
+	};
+
+	struct thick_line {
+		thick_line() {
+
+		}
+		thick_line(const qsf::vthick_line& line) {
+			*this = line;
+		}
+
+		QPLDLL void set_a(qsf::vpoint point);
+		QPLDLL void set_a(qpl::vector2f position);
+		QPLDLL void set_b(qsf::vpoint point);
+		QPLDLL void set_b(qpl::vector2f position);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_a_color(qsf::rgb color);
+		QPLDLL void set_b_color(qsf::rgb color);
+		QPLDLL void set_thickness(qpl::f32 thickness);
+
+		QPLDLL qsf::vpoints as_points() const;
+		QPLDLL qpl::vector2f normal() const;
+		QPLDLL qpl::f32 length() const;
+		QPLDLL qsf::thick_line& operator=(const qsf::vthick_line& line);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		std::array<sf::Vertex, 4> vertices;
+	};
+	struct vthick_lines {
+
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vpoint& operator[](qpl::size index);
+		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vpoint& front();
+		QPLDLL const qsf::vpoint& front() const;
+
+		QPLDLL qsf::vpoint& back();
+		QPLDLL const qsf::vpoint& back() const;
+
+
+		QPLDLL void add_thick_line(qsf::vpoint point);
+		QPLDLL void add_thick_line(qpl::vector2f position, qsf::rgb color);
+		QPLDLL void set_thickness(qpl::f32 thickness);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL void clear();
+		QPLDLL qpl::size size() const;
+
+		qpl::vector2f position;
+		qsf::vpoints points;
+		qpl::f32 thickness = 1.0f;
+	};
+	struct thick_lines {
+		thick_lines() {
+			this->vertices.set_primitive_type(qsf::primitive_type::quads);
+		}
+
+		QPLDLL void resize(qpl::size new_size);
+		QPLDLL void reserve(qpl::size new_size);
+
+		QPLDLL qsf::vertex& operator[](qpl::size index);
+		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
+
+		QPLDLL qsf::vertex& front();
+		QPLDLL const qsf::vertex& front() const;
+
+		QPLDLL qsf::vertex& back();
+		QPLDLL const qsf::vertex& back() const;
+
+
+		QPLDLL void add_thick_line(qsf::vpoint point, qpl::f32 thickness);
+		QPLDLL void add_thick_line(qpl::vector2f position, qsf::rgb color, qpl::f32 thickness);
+
+		QPLDLL void complete();
+
+		QPLDLL qsf::thick_lines& operator=(const qsf::vthick_lines& lines);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		QPLDLL void clear();
+		QPLDLL qpl::size size() const;
+		QPLDLL bool empty() const;
+
+		qsf::vertex_array vertices;
+	};
+
+	struct sprite {
+		sf::Sprite m_sprite;
+		qsf::rgb color = qsf::rgb::white;
+		qsf::rgb multiplied_color = qsf::rgb::white;
+
+		sprite() {
+
+		}
+		sprite(const qsf::sprite& sprite) {
+			*this = sprite;
+		}
+		sprite(const sf::Sprite& sprite) {
+			*this = sprite;
+		}
+
+		QPLDLL void set_texture(const sf::Texture& texture);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_scale(qpl::vector2f scale);
+		QPLDLL void set_scale(qpl::f32 scale);
+		QPLDLL void set_origin(qpl::vector2f origin);
+		QPLDLL void set_rotation(qpl::f32 rotation);
+
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qsf::rgb get_multiplied_color() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_scale() const;
+		QPLDLL qpl::vector2f get_origin() const;
+		QPLDLL qpl::f32 get_rotation() const;
+
+		QPLDLL void move(qpl::vector2f delta);
+
+		QPLDLL operator sf::Sprite& ();
+		QPLDLL operator const sf::Sprite& () const;
+		QPLDLL qsf::sprite& operator=(const sf::Sprite& sprite);
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+	};
+
+	struct pixel_image {
+		pixel_image() {
+			this->vertices.set_primitive_type(qsf::primitive_type::quads);
+		}
+
+		QPLDLL void set_array_dimension(qpl::vector2u dimension);
+		QPLDLL void set_pixel_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void create_positions();
+
+		QPLDLL void set(qpl::size x, qpl::size y, qsf::rgb color);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+
+		qpl::vector2u array_dimension;
+		qpl::vector2f pixel_dimension;
+		qpl::vector2f position;
+		qsf::vertex_array vertices;
+		bool positions_set = false;
+	};
+
+
 	struct text_stream {
 		text_stream() {
 			this->states.push_back({});
@@ -299,11 +948,12 @@ namespace qsf {
 
 		struct object_t {
 			qsf::text text;
-			qsf::hitbox hitbox;
+			qpl::hitbox hitbox;
 			qpl::u32 sprite_index = qpl::u32_max;
-			qsf::vector2f shift;
-			qsf::vector2f shift_before;
+			qpl::vector2f shift;
+			qpl::vector2f shift_before;
 			bool visible = true;
+			bool absolute = false;
 
 			bool is_text() const {
 				return this->sprite_index == qpl::u32_max;
@@ -332,9 +982,8 @@ namespace qsf {
 			duration_type duration;
 		};
 		struct color {
-			color(qsf::rgb color, duration_type duration = next_entry) {
-				this->value = color;
-				this->duration = duration;
+			constexpr color(qsf::rgb color, duration_type duration = next_entry) : value(color), duration(duration) {
+
 			}
 			color until_next_entry() const {
 				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
@@ -454,8 +1103,26 @@ namespace qsf {
 			qpl::f32 value;
 			duration_type duration;
 		};
+		struct absolute_spacing {
+			absolute_spacing(qpl::f32 space, duration_type duration = next_entry) {
+				this->value = space;
+				this->duration = duration;
+			}
+
+			absolute_spacing until_next_entry() const {
+				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
+			}
+			absolute_spacing until_end_of_line() const {
+				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
+			}
+			absolute_spacing until_end() const {
+				auto copy = *this; copy.duration = duration_type::until_end; return copy;
+			}
+			qpl::f32 value;
+			duration_type duration;
+		};
 		struct shift {
-			shift(qsf::vector2f shift, duration_type duration = next_entry) {
+			shift(qpl::vector2f shift, duration_type duration = next_entry) {
 				this->value = shift;
 				this->duration = next_entry;
 			}
@@ -469,7 +1136,7 @@ namespace qsf {
 			shift until_end() const {
 				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
-			qsf::vector2f value;
+			qpl::vector2f value;
 			duration_type duration;
 		};
 		struct shift_y {
@@ -491,12 +1158,12 @@ namespace qsf {
 			duration_type duration;
 		};
 		struct scaling {
-			scaling(qsf::vector2f scaling, duration_type duration = next_entry) {
+			scaling(qpl::vector2f scaling, duration_type duration = next_entry) {
 				this->value = scaling;
 				this->duration = next_entry;
 			}
 			scaling(qpl::f32 scaling, duration_type duration = next_entry) {
-				this->value = qsf::vector2f(scaling, scaling);
+				this->value = qpl::vector2f(scaling, scaling);
 				this->duration = next_entry;
 			}
 
@@ -509,11 +1176,11 @@ namespace qsf {
 			scaling until_end() const {
 				auto copy = *this; copy.duration = duration_type::until_end; return copy;
 			}
-			qsf::vector2f value;
+			qpl::vector2f value;
 			duration_type duration;
 		};
 
-		
+
 
 		template<typename T>
 		text_stream& operator<<(const T& value) {
@@ -616,6 +1283,18 @@ namespace qsf {
 			return *this;
 		}
 		template<>
+		text_stream& operator<<(const text_stream::absolute_spacing& space) {
+			if (this->states.back().duration == space.duration) {
+				this->states.back().absolute_spacing = space.value;
+			}
+			else {
+				this->states.push_back(this->states.back());
+				this->states.back().absolute_spacing = space.value;
+				this->states.back().duration = space.duration;
+			}
+			return *this;
+		}
+		template<>
 		text_stream& operator<<(const text_stream::shift& shift) {
 			if (this->states.back().duration == shift.duration) {
 				this->states.back().shift = shift.value;
@@ -666,17 +1345,17 @@ namespace qsf {
 		QPLDLL void new_line();
 		QPLDLL void clear();
 		QPLDLL text_stream& operator<<(const sf::Texture& texture);
-		QPLDLL text_stream& operator<<(const sf::Sprite& sprite);
+		QPLDLL text_stream& operator<<(const qsf::sprite& sprite);
 		QPLDLL text_stream& operator<<(const std::string& string);
 		QPLDLL text_stream& operator<<(const std::wstring& string);
 		QPLDLL text_stream& add_texture(const sf::Texture& texture);
-		QPLDLL text_stream& add_sprite(const sf::Sprite& sprite);
+		QPLDLL text_stream& add_sprite(const qsf::sprite& sprite);
 		QPLDLL text_stream& add_string(const std::string& string, bool has_no_newline = false, bool pop_state = true);
 		QPLDLL text_stream& add_string(const std::wstring& string, bool has_no_newline = false, bool pop_state = true);
-		QPLDLL qsf::hitbox line_text_hitbox(qpl::size index) const;
-		QPLDLL qsf::hitbox line_sprite_hitbox(qpl::size index) const;
-		QPLDLL qsf::hitbox line_hitbox(qpl::size index) const;
-		QPLDLL qsf::hitbox line_visible_hitbox(qpl::size index) const;
+		QPLDLL qpl::hitbox line_text_hitbox(qpl::size index) const;
+		QPLDLL qpl::hitbox line_sprite_hitbox(qpl::size index) const;
+		QPLDLL qpl::hitbox line_hitbox(qpl::size index) const;
+		QPLDLL qpl::hitbox line_visible_hitbox(qpl::size index) const;
 
 		//I don't have seen it get stuck yet, but because there is a possibility due to floating points being weird, I have a loop check here
 		QPLDLL void centerize_line(qpl::size index, qpl::u32 loop = 0u) const;
@@ -694,10 +1373,10 @@ namespace qsf {
 		QPLDLL const qsf::text& get_text(qpl::size line, qpl::size index) const;
 
 		QPLDLL qpl::size sprite_size() const;
-		QPLDLL sf::Sprite& get_sprite(qpl::size index);
-		QPLDLL const sf::Sprite& get_sprite(qpl::size index) const;
-		QPLDLL sf::Sprite& get_sprite(qpl::size line, qpl::size index);
-		QPLDLL const sf::Sprite& get_sprite(qpl::size line, qpl::size index) const;
+		QPLDLL qsf::sprite& get_sprite(qpl::size index);
+		QPLDLL const qsf::sprite& get_sprite(qpl::size index) const;
+		QPLDLL qsf::sprite& get_sprite(qpl::size line, qpl::size index);
+		QPLDLL const qsf::sprite& get_sprite(qpl::size line, qpl::size index) const;
 
 		QPLDLL object_t& get_object(qpl::size line, qpl::size index);
 		QPLDLL const object_t& get_object(qpl::size line, qpl::size index) const;
@@ -709,14 +1388,15 @@ namespace qsf {
 		QPLDLL void set_font(const std::string& font);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_alpha(qpl::u8 alpha);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void set_character_size(qpl::u32 character_size);
 		QPLDLL void set_line_spacing(qpl::f32 spacing);
 		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_outline_color(qsf::rgb color);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL qsf::hitbox get_visible_hitbox() const;
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL qpl::hitbox get_visible_hitbox() const;
 
 		QPLDLL void update_size_changes();
 
@@ -728,626 +1408,31 @@ namespace qsf {
 			qpl::f32 outline_thickness;
 			qsf::rgb outline_color;
 			qpl::f32 letter_spacing = 1.0f;
-			qsf::vector2f scaling = qsf::vector2f(qpl::f32_max, qpl::f32_max);
-			qsf::vector2f shift = qsf::vector2f(0, 0);
+			qpl::vector2f scaling = qpl::vector2f(qpl::f32_max, qpl::f32_max);
+			qpl::vector2f shift = qpl::vector2f(0, 0);
 			qpl::f32 spacing = 0;
+			qpl::f32 absolute_spacing = qpl::f32_max;
 			duration_type duration = duration_type::until_end;
 		};
 
 
 		std::vector<state> states;
-		mutable std::vector<sf::Sprite> sprites;
+		mutable std::vector<qsf::sprite> sprites;
 		mutable std::vector<std::vector<object_t>> objects;
 		mutable bool changed = false;
 		qpl::f32 line_spacing = 5.0f;
+		mutable qpl::hitbox visible_hitbox;
 
-		qsf::vector2f position = { 20, 20 };
+		qpl::vector2f position = { 20, 20 };
 	private:
 		QPLDLL void prepare_next_entry();
+		QPLDLL void calculate_visible_hitbox() const;
 	};
 
-	struct vrectangle {
-		vrectangle() {
-
-		}
-		vrectangle(qsf::vector2f position, qsf::vector2f dimension) {
-			this->position = position;
-			this->dimension = dimension;
-		}
-		vrectangle(qsf::vector2f position, qsf::vector2f dimension, qsf::rgb color) {
-			this->position = position;
-			this->dimension = dimension;
-			this->color = color;
-		}
-		vrectangle(hitbox hitbox) {
-			this->set_position(hitbox.position);
-			this->set_dimension(hitbox.dimension);
-		}
-
-		QPLDLL void set_dimension(qsf::vector2f dimension);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void set_center(qsf::vector2f position);
-		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_outline_color(qsf::rgb outline_color);
-		QPLDLL void set_multiplied_color(qsf::rgb color);
-
-		QPLDLL qsf::vector2f get_dimension() const;
-		QPLDLL qsf::vector2f get_position() const;
-		QPLDLL qsf::vector2f get_center() const;
-		QPLDLL qsf::hitbox get_hitbox() const;
-		QPLDLL qsf::rgb get_color() const;
-		QPLDLL qpl::f32 get_outline_thickness() const;
-		QPLDLL qsf::rgb get_outline_color() const;
-		QPLDLL qsf::rgb get_multiplied_color() const;
-
-		QPLDLL std::string string() const;
-
-		QPLDLL void increase(qpl::f32 delta);
-		QPLDLL qsf::vrectangle increased(qpl::f32 delta) const;
-
-		QPLDLL bool contains(qsf::vector2f position) const;
-
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		qsf::vector2f dimension;
-		qsf::vector2f position;
-		qpl::f32 outline_thickness = 0.0f;
-		qsf::rgb color;
-		qsf::rgb outline_color;
-		qsf::rgb multiplied_color = qsf::rgb::white;
-	};
-
-	struct rectangle {
-		QPLDLL void set_dimension(qsf::vector2f dimension);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void set_center(qsf::vector2f position);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
-		QPLDLL void set_outline_color(qsf::rgb outline_color);
-		QPLDLL void set_multiplied_color(qsf::rgb color);
-
-		QPLDLL void increase(qpl::f64 delta);
-
-		QPLDLL bool contains(qsf::vector2f position) const;
-		QPLDLL bool contains(qsf::vector2f position, qsf::vector2f hitbox_increase) const;
-
-		QPLDLL qsf::rgb get_multiplied_color() const;
-		QPLDLL qsf::rgb get_color() const;
-		QPLDLL qsf::rgb get_outline_color() const;
-		QPLDLL qsf::vector2f get_position() const;
-		QPLDLL qsf::vector2f get_dimension() const;
-		QPLDLL qsf::hitbox get_hitbox() const;
-
-		QPLDLL qsf::vlines as_lines() const;
-		QPLDLL qsf::vlines as_lines_completed() const;
-
-		QPLDLL qsf::vector2f center() const;
-
-		QPLDLL qsf::rectangle& operator=(const qsf::vrectangle& rectangle);
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		sf::RectangleShape m_rect;
-		qsf::rgb color;
-		qsf::rgb outline_color;
-		qsf::rgb multiplied_color = qsf::rgb::white;
-	};
-
-	struct vrectangles {
-		QPLDLL qpl::size size() const;
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-		QPLDLL void clear();
-		QPLDLL void add(const qsf::vrectangle& rect);
-
-		QPLDLL qsf::vrectangle& operator[](qpl::size index);
-		QPLDLL const qsf::vrectangle& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vrectangle& front();
-		QPLDLL const qsf::vrectangle& front() const;
-
-		QPLDLL qsf::vrectangle& back();
-		QPLDLL const qsf::vrectangle& back() const;
-
-		QPLDLL std::vector<qsf::vrectangle>::iterator begin();
-		QPLDLL std::vector<qsf::vrectangle>::const_iterator begin() const;
-		QPLDLL std::vector<qsf::vrectangle>::const_iterator cbegin() const;
-
-		QPLDLL std::vector<qsf::vrectangle>::iterator end();
-		QPLDLL std::vector<qsf::vrectangle>::const_iterator end() const;
-		QPLDLL std::vector<qsf::vrectangle>::const_iterator cend() const;
-
-		QPLDLL void add_rectangle(vrectangle rectangle);
-		QPLDLL void add_rectangle(qsf::vector2f position, qsf::vector2f dimension);
-		QPLDLL void add_rectangle(qsf::vector2f position, qsf::vector2f dimension, qsf::rgb color);
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL qsf::vrectangles& operator=(const qsf::vrectangles& rectangles);
-
-		std::vector<qsf::vrectangle> rectangles;
-	};
-
-	struct rectangles {
-
-		QPLDLL qpl::size size() const;
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-		QPLDLL void clear();
-		QPLDLL void add(const qsf::rectangle& rect);
-
-		QPLDLL qsf::rectangle& operator[](qpl::size index);
-		QPLDLL const qsf::rectangle& operator[](qpl::size index) const;
-
-		QPLDLL qsf::rectangle& front();
-		QPLDLL const qsf::rectangle& front() const;
-
-		QPLDLL qsf::rectangle& back();
-		QPLDLL const qsf::rectangle& back() const;
-
-		QPLDLL std::vector<qsf::rectangle>::iterator begin();
-		QPLDLL std::vector<qsf::rectangle>::const_iterator begin() const;
-		QPLDLL std::vector<qsf::rectangle>::const_iterator cbegin() const;
-
-		QPLDLL std::vector<qsf::rectangle>::iterator end();
-		QPLDLL std::vector<qsf::rectangle>::const_iterator end() const;
-		QPLDLL std::vector<qsf::rectangle>::const_iterator cend() const;
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL qsf::rectangles& operator=(const qsf::vrectangles& rectangles);
-
-		std::vector<qsf::rectangle> rectangles_;
-	};
-
-	struct vpoint {
-		qsf::vector2f position;
-		qsf::rgb color;
-
-		vpoint() {
-
-		}
-
-		vpoint(qsf::vector2f position, qsf::rgb color) {
-			this->position = position;
-			this->color = color;
-		}
-		vpoint(qsf::vector2f position) {
-			this->position = position;
-		}
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL vpoint& operator=(qsf::vector2f position);
-
-		QPLDLL bool operator==(const vpoint& other) const;
-		QPLDLL bool operator!=(const vpoint& other) const;
-		//QPLDLL vpoint& with_color(qsf::rgb color);
-	};
-	struct point {
-		qsf::vertex vertex;
-
-		QPLDLL qsf::point& operator=(const qsf::vpoint& point);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-	};
-
-	struct vpoints {
-		vpoints(qpl::size size = qpl::size{}) {
-			this->points.resize(size);
-		}
-
-
-		QPLDLL qpl::size size() const;
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vpoint& operator[](qpl::size index);
-		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vpoint& front();
-		QPLDLL const qsf::vpoint& front() const;
-
-		QPLDLL qsf::vpoint& back();
-		QPLDLL const qsf::vpoint& back() const;
-
-
-		QPLDLL std::vector<qsf::vpoint>::iterator begin();
-		QPLDLL std::vector<qsf::vpoint>::const_iterator begin() const;
-		QPLDLL std::vector<qsf::vpoint>::const_iterator cbegin() const;
-
-		QPLDLL std::vector<qsf::vpoint>::iterator end();
-		QPLDLL std::vector<qsf::vpoint>::const_iterator end() const;
-		QPLDLL std::vector<qsf::vpoint>::const_iterator cend() const;
-
-
-		QPLDLL void add_point(qsf::vpoint point);
-		QPLDLL void add_point(qsf::vector2f position, qsf::rgb color);
-		QPLDLL qsf::vlines as_lines() const;
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL void clear();
-
-		std::vector<qsf::vpoint> points;
-	};
-
-	struct points {
-		points() {
-			this->vertices.set_primitive_type(qsf::primitive_type::points);
-		}
-		points(qpl::size size) {
-			this->vertices.resize(size);
-		}
-
-
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vertex& operator[](qpl::size index);
-		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vertex& front();
-		QPLDLL const qsf::vertex& front() const;
-
-		QPLDLL qsf::vertex& back();
-		QPLDLL const qsf::vertex& back() const;
-
-
-		QPLDLL qsf::vlines as_lines() const;
-		QPLDLL qsf::points& operator=(const qsf::vpoints& points);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL void clear();
-		QPLDLL qpl::size size() const;
-		qsf::vertex_array vertices;
-	};
-
-
-
-	struct vcircle {
-		vcircle() {
-			this->radius = 0.0f;
-		}
-		vcircle(qsf::vpoint point, qpl::f32 radius) {
-			this->point = point;
-			this->radius = radius;
-			this->point.position.move(qsf::vector2f{ -this->radius, -this->radius });
-		}
-		vcircle(qsf::vector2f center, qpl::f32 radius, qsf::rgb color) {
-			this->point.position = center - qsf::vector2f{ radius, radius };
-			this->point.color = color;
-			this->radius = radius;
-		}
-
-		QPLDLL void set_position(qsf::vector2f center);
-		QPLDLL void set_radius(qpl::f32 radius);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_center(qsf::vector2f center);
-		QPLDLL qsf::vector2f get_center() const;
-		QPLDLL void centerize();
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		qsf::vpoint point;
-		qpl::f32 radius;
-	};
-	struct circle {
-		circle() {
-
-		}
-		circle(const qsf::vcircle& circle) {
-			*this = circle;
-		}
-		circle(const qsf::circle& circle) {
-			*this = circle;
-		}
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL qsf::circle& operator=(const qsf::vcircle& circle);
-		QPLDLL qsf::circle& operator=(const qsf::circle& circle);
-
-		QPLDLL void set_radius(qpl::f32 radius);
-		QPLDLL qpl::f32 get_radius() const;
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void set_center(qsf::vector2f center);
-		QPLDLL qsf::vector2f get_center() const;
-		QPLDLL qsf::vector2f get_position() const;
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL qsf::rgb get_color() const;
-
-		sf::CircleShape circle_shape;
-	};
-
-	struct vcircles {
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vcircle& operator[](qpl::size index);
-		QPLDLL const qsf::vcircle& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vcircle& front();
-		QPLDLL const qsf::vcircle& front() const;
-
-		QPLDLL qsf::vcircle& back();
-		QPLDLL const qsf::vcircle& back() const;
-
-		QPLDLL void add_circle(qsf::vcircle circle);
-		QPLDLL void add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color);
-		QPLDLL void add_circle(qsf::vector2f position, qpl::f32 radius, qsf::rgb color);
-
-		QPLDLL qpl::size size() const;
-		QPLDLL void clear();
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		std::vector<qsf::vcircle> circles;
-	};
-
-	struct circles {
-		circles() {
-
-		}
-		circles(const qsf::vcircles& circles) {
-			*this = circles;
-		}
-		circles(const qsf::circles& circles) {
-			*this = circles;
-		}
-
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::circle& operator[](qpl::size index);
-		QPLDLL const qsf::circle& operator[](qpl::size index) const;
-
-		QPLDLL qsf::circle& front();
-		QPLDLL const qsf::circle& front() const;
-
-		QPLDLL qsf::circle& back();
-		QPLDLL const qsf::circle& back() const;
-
-		QPLDLL void add_circle(const qsf::vcircle& circle);
-		QPLDLL void add_circle(qsf::vpoint point, qpl::f32 radius, qsf::rgb color);
-		QPLDLL void add_circle(qsf::vector2f position, qpl::f32 radius, qsf::rgb color);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL qsf::circles& operator=(const qsf::vcircles& circles);
-		QPLDLL qsf::circles& operator=(const qsf::circles& circles);
-
-		QPLDLL qpl::size size() const;
-		QPLDLL void clear();
-
-		std::vector<qsf::circle> circles_;
-	};
-
-	struct vline {
-
-
-		QPLDLL void set_a(qsf::vpoint point);
-		QPLDLL void set_a(qsf::vector2f position);
-		QPLDLL void set_b(qsf::vpoint point);
-		QPLDLL void set_b(qsf::vector2f position);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_a_color(qsf::rgb color);
-		QPLDLL void set_b_color(qsf::rgb color);
-
-		QPLDLL qsf::vector2f normal() const;
-		QPLDLL qpl::f32 length() const;
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		//pi radians (0 - 2 pi)
-		QPLDLL qpl::f32 rotation() const;
-		QPLDLL qsf::vline& rotate_around_a(qpl::f64 degree);
-		QPLDLL qsf::vline& rotate_around_b(qpl::f64 degree);
-
-		vpoint a;
-		vpoint b;
-	};
-
-	struct line {
-		QPLDLL void set_a(qsf::vpoint point);
-		QPLDLL void set_a(qsf::vector2f position);
-		QPLDLL void set_b(qsf::vpoint point);
-		QPLDLL void set_b(qsf::vector2f position);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_a_color(qsf::rgb color);
-		QPLDLL void set_b_color(qsf::rgb color);
-
-		QPLDLL qsf::vector2f normal() const;
-		QPLDLL qpl::f32 length() const;
-		QPLDLL qpl::f32 angle_from_a() const;
-		QPLDLL qpl::f32 angle_from_b() const;
-		qsf::vline& rotate_a(qpl::f64 degree);
-		qsf::vline& rotate_b(qpl::f64 degree);
-
-		QPLDLL qsf::line& operator=(const qsf::vline& line);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		std::array<sf::Vertex, 2> vertices;
-	};
-
-	struct vlines {
-
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vpoint& operator[](qpl::size index);
-		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vpoint& front();
-		QPLDLL const qsf::vpoint& front() const;
-
-		QPLDLL qsf::vpoint& back();
-		QPLDLL const qsf::vpoint& back() const;
-
-
-		QPLDLL void clear();
-		QPLDLL qpl::size size() const;
-		QPLDLL void add_point(qsf::vpoint point);
-		QPLDLL void add_point(qsf::vector2f position, qsf::rgb color = qsf::rgb::white);
-		QPLDLL void complete();
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		std::vector<qsf::vpoint> points;
-	};
-
-	struct lines {
-		lines() {
-			this->vertices.set_primitive_type(qsf::primitive_type::line_strip);
-		}
-		lines(const qsf::vlines& lines) {
-			this->vertices.set_primitive_type(qsf::primitive_type::line_strip);
-			*this = lines;
-		}
-
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vertex& operator[](qpl::size index);
-		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vertex& front();
-		QPLDLL const qsf::vertex& front() const;
-
-		QPLDLL qsf::vertex& back();
-		QPLDLL const qsf::vertex& back() const;
-
-
-		QPLDLL void complete();
-
-		QPLDLL qsf::lines& operator=(const qsf::vlines& lines);
-		QPLDLL void clear();
-		QPLDLL qpl::size size() const;
-		QPLDLL void add_point(qsf::vpoint point);
-		QPLDLL void add_point(qsf::vector2f position, qsf::rgb color = qsf::rgb::white);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		qsf::vertex_array vertices;
-	};
-
-	struct vthick_line {
-
-		QPLDLL void set_a(qsf::vpoint point);
-		QPLDLL void set_a(qsf::vector2f position);
-		QPLDLL void set_b(qsf::vpoint point);
-		QPLDLL void set_b(qsf::vector2f position);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_a_color(qsf::rgb color);
-		QPLDLL void set_b_color(qsf::rgb color);
-
-		QPLDLL qsf::vpoints as_points() const;
-
-		QPLDLL qsf::vector2f normal() const;
-		QPLDLL qpl::f32 length() const;
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		qsf::vpoint a;
-		qsf::vpoint b;
-		qpl::f32 thickness = 1.0f;
-	};
-
-	struct thick_line {
-		thick_line() {
-
-		}
-		thick_line(const qsf::vthick_line& line) {
-			*this = line;
-		}
-
-		QPLDLL void set_a(qsf::vpoint point);
-		QPLDLL void set_a(qsf::vector2f position);
-		QPLDLL void set_b(qsf::vpoint point);
-		QPLDLL void set_b(qsf::vector2f position);
-		QPLDLL void set_color(qsf::rgb color);
-		QPLDLL void set_a_color(qsf::rgb color);
-		QPLDLL void set_b_color(qsf::rgb color);
-		QPLDLL void set_thickness(qpl::f32 thickness);
-
-		QPLDLL qsf::vpoints as_points() const;
-		QPLDLL qsf::vector2f normal() const;
-		QPLDLL qpl::f32 length() const;
-		QPLDLL qsf::thick_line& operator=(const qsf::vthick_line& line);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-		std::array<sf::Vertex, 4> vertices;
-	};
-	struct vthick_lines {
-
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vpoint& operator[](qpl::size index);
-		QPLDLL const qsf::vpoint& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vpoint& front();
-		QPLDLL const qsf::vpoint& front() const;
-
-		QPLDLL qsf::vpoint& back();
-		QPLDLL const qsf::vpoint& back() const;
-
-
-		QPLDLL void add_thick_line(qsf::vpoint point);
-		QPLDLL void add_thick_line(qsf::vector2f position, qsf::rgb color);
-		QPLDLL void set_thickness(qpl::f32 thickness);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL void clear();
-		QPLDLL qpl::size size() const;
-
-		qsf::vector2f position;
-		qsf::vpoints points;
-		qpl::f32 thickness = 1.0f;
-	};
-	struct thick_lines {
-		thick_lines() {
-			this->vertices.set_primitive_type(qsf::primitive_type::quads);
-		}
-
-		QPLDLL void resize(qpl::size new_size);
-		QPLDLL void reserve(qpl::size new_size);
-
-		QPLDLL qsf::vertex& operator[](qpl::size index);
-		QPLDLL const qsf::vertex& operator[](qpl::size index) const;
-
-		QPLDLL qsf::vertex& front();
-		QPLDLL const qsf::vertex& front() const;
-
-		QPLDLL qsf::vertex& back();
-		QPLDLL const qsf::vertex& back() const;
-
-
-		QPLDLL void add_thick_line(qsf::vpoint point, qpl::f32 thickness);
-		QPLDLL void add_thick_line(qsf::vector2f position, qsf::rgb color, qpl::f32 thickness);
-
-		QPLDLL void complete();
-
-		QPLDLL qsf::thick_lines& operator=(const qsf::vthick_lines& lines);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL void clear();
-		QPLDLL qpl::size size() const;
-		QPLDLL bool empty() const;
-
-		qsf::vertex_array vertices;
-	};
-
-	struct pixel_image {
-		pixel_image() {
-			this->vertices.set_primitive_type(qsf::primitive_type::quads);
-		}
-
-		QPLDLL void set_array_dimension(qsf::vector2u dimension);
-		QPLDLL void set_pixel_dimension(qsf::vector2f dimension);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void create_positions();
-
-		QPLDLL void set(qpl::size x, qpl::size y, qsf::rgb color);
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-
-		qsf::vector2u array_dimension;
-		qsf::vector2f pixel_dimension;
-		qsf::vector2f position;
-		qsf::vertex_array vertices;
-		bool positions_set = false;
-	};
 
 	struct tile_map {
 
-		QPLDLL void set_texture_ptr(const sf::Texture& texture, qsf::vector2u texture_tile_dimension);
+		QPLDLL void set_texture_ptr(const sf::Texture& texture, qpl::vector2u texture_tile_dimension);
 		QPLDLL void set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width);
 
 		//pair.first = index - pair.second = rotation (0-7)
@@ -1387,13 +1472,13 @@ namespace qsf {
 		QPLDLL void set_chunk_dimension(qpl::u32 x, qpl::u32 y);
 		QPLDLL void clear();
 
-		qsf::vector2u max_chunk_size = { qpl::u32_max, qpl::u32_max };
+		qpl::vector2u max_chunk_size = { qpl::u32_max, qpl::u32_max };
 		qpl::u32 chunk_width_count = 0u;
 		std::vector<sf::VertexArray> chunks;
 		const sf::Texture* texture_ptr;
 		bool texture_ptr_set = false;
-		qsf::vector2u texture_tile_dimension;
-		qsf::vector2u position_tile_dimension;
+		qpl::vector2u texture_tile_dimension;
+		qpl::vector2u position_tile_dimension;
 
 		qsf::rgb color;
 	};
@@ -1551,17 +1636,17 @@ namespace qsf {
 
 		std::string font;
 		qpl::f64 zoom_factor = 1.3;
-		qsf::vector2f position;
-		qsf::vector2f dimension = { 500, 300 };
+		qpl::vector2f position;
+		qpl::vector2f dimension = { 500, 300 };
 
-		mutable qsf::vector2f low_high_graph;
+		mutable qpl::vector2f low_high_graph;
 		std::string closest_graph_at_cursor = "";
 		qpl::f64 closest_graph_at_cursor_value = qpl::f64_max;
 		qpl::u32 closest_graph_at_cursor_index = qpl::u32_max;
 		qsf::rgb closest_graph_at_cursor_color;
 		qpl::f32 closest_graph_at_cursor_distance = 40.0f;
 		qpl::f32 closest_graph_at_cursor_multiply_thickness = 2.0f;
-		qsf::vector2f mouse_position;
+		qpl::vector2f mouse_position;
 		bool display_closest_graph_at_cursor = true;
 
 		qsf::vtext closest_graph_at_cursor_text;
@@ -1735,7 +1820,7 @@ namespace qsf {
 		};
 
 		bool drag = false;
-		qsf::vector2f click_position;
+		qpl::vector2f click_position;
 
 		QPLDLL void clear_data();
 		QPLDLL bool empty() const;
@@ -1750,12 +1835,12 @@ namespace qsf {
 
 		QPLDLL void set_font(std::string name);
 		QPLDLL std::string get_font() const;
-		QPLDLL void set_dimension(qsf::vector2f dimension);
-		QPLDLL void set_position(qsf::vector2f position);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
 
 		QPLDLL qpl::f64 true_graph_width() const;
 		QPLDLL qpl::f64 true_graph_height() const;
-		QPLDLL qsf::vector2f true_graph_dimension() const;
+		QPLDLL qpl::vector2f true_graph_dimension() const;
 
 		QPLDLL std::pair<qpl::f64, qpl::f64> get_low_high() const;
 		QPLDLL qpl::size total_graph_size() const;
@@ -1826,12 +1911,12 @@ namespace qsf {
 		vbutton() {
 			this->background.set_color(qsf::rgb::black);
 		}
-		QPLDLL qsf::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qsf::rgb get_final_text_color() const;
 		QPLDLL qsf::rgb get_final_background_color() const;
-		QPLDLL void set_dimension(qsf::vector2f dimension);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void set_center(qsf::vector2f center);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f center);
 		QPLDLL void set_background_color(qsf::rgb color);
 		QPLDLL void set_hover_background_color(qsf::rgb color);
 		QPLDLL void set_text_color(qsf::rgb color);
@@ -1906,9 +1991,9 @@ namespace qsf {
 			this->background.set_color(qsf::rgb::black);
 		}
 
-		QPLDLL void set_dimension(qsf::vector2f dimension);
-		QPLDLL void set_position(qsf::vector2f position);
-		QPLDLL void set_center(qsf::vector2f center);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f center);
 		QPLDLL void set_background_color(qsf::rgb color);
 		QPLDLL void set_hover_background_color(qsf::rgb color);
 		QPLDLL void set_text_color(qsf::rgb color);
@@ -2017,49 +2102,49 @@ namespace qsf {
 			this->range_set = true;
 			this->set_pointer(ptr);
 		}
-		qsf::vector2f get_position() const {
+		qpl::vector2f get_position() const {
 			return this->position;
 		}
-		void set_position(qsf::vector2f position) {
+		void set_position(qpl::vector2f position) {
 			this->position = position;
 			this->background.set_position(position);
 
 			auto y_extra = this->background.get_dimension().y - this->knob.get_dimension().y;
-			this->knob.set_position(position + qsf::vector2f(0, y_extra / 2));
+			this->knob.set_position(position + qpl::vector2f(0, y_extra / 2));
 		}
-		qsf::vector2f get_dimension() const {
+		qpl::vector2f get_dimension() const {
 			return this->background.get_dimension();
 		}
-		qsf::hitbox get_hitbox() const {
+		qpl::hitbox get_hitbox() const {
 			return this->background.get_hitbox();
 		}
-		qsf::vector2f get_knob_dimension() const {
+		qpl::vector2f get_knob_dimension() const {
 			return this->knob.get_dimension();
 		}
-		qsf::vector2f get_knob_position() const {
+		qpl::vector2f get_knob_position() const {
 			return this->knob.get_position();
 		}
-		void set_knob_dimension(qsf::vector2f dimension) {
+		void set_knob_dimension(qpl::vector2f dimension) {
 			this->knob.set_dimension(dimension);
 			this->range_pixel_width = this->background.get_dimension().x - this->knob.get_dimension().x;
 		}
 		void set_knob_width(qpl::f32 width)  {
 			auto dim = this->knob.get_dimension();
-			this->knob.set_dimension(qsf::vector2f(width, dim.y));
+			this->knob.set_dimension(qpl::vector2f(width, dim.y));
 			this->range_pixel_width = this->background.get_dimension().x - width;
 		}
 		qpl::f32 get_knob_width() const {
 			return this->knob.get_dimension().x;
 		}
-		qsf::hitbox get_knob_hitbox() const {
+		qpl::hitbox get_knob_hitbox() const {
 			return this->knob.get_hitbox();
 		}
-		void set_dimensions(qsf::vector2f slider_dimension, qsf::vector2f knob_dimension) {
+		void set_dimensions(qpl::vector2f slider_dimension, qpl::vector2f knob_dimension) {
 			this->background.set_dimension(slider_dimension);
 			this->knob.set_dimension(knob_dimension);
 			this->range_pixel_width = this->background.get_dimension().x - this->knob.get_dimension().x;
 		}
-		void set_dimension(qsf::vector2f dimension) {
+		void set_dimension(qpl::vector2f dimension) {
 			this->set_dimensions(dimension, sf::Vector2f(dimension.y, dimension.y));
 		}
 		void set_colors(qsf::rgb background_color, qsf::rgb knob_color) {
@@ -2260,7 +2345,7 @@ namespace qsf {
 			auto pos = event.mouse_position();
 			this->hovering_over_background = false;
 			auto y_is = qpl::max(this->knob.get_dimension().y, this->background.get_dimension().y);
-			this->hovering_over_background = this->background.contains(pos, qsf::vector2f(this->hitbox_increase, this->hitbox_increase + (y_is - this->background.get_dimension().y) / 2));
+			this->hovering_over_background = this->background.contains(pos, qpl::vector2f(this->hitbox_increase, this->hitbox_increase + (y_is - this->background.get_dimension().y) / 2));
 
 			this->value_modified = false;
 			this->hovering_over_knob = this->knob.contains(pos, { this->hitbox_increase });
@@ -2365,7 +2450,7 @@ namespace qsf {
 		qsf::rectangle background;
 		qsf::rectangle knob;
 
-		qsf::vector2f position;
+		qpl::vector2f position;
 		bool knob_visible = true;
 		bool background_visible = true;
 		bool knob_hover_effect = true;

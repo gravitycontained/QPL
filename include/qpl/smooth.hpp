@@ -4,80 +4,260 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/time.hpp>
+#include <qpl/random.hpp>
+#include <qpl/vector.hpp>
 #include <vector>
 #include <array>
 #include <memory>
-#include <qpl/time.hpp>
 #include <functional>
 
 namespace qpl {
-	class cubic_generator {
+	template<typename T> requires (qpl::is_floating_point<T>())
+	class cubic_generator_t {
 	public:
-		cubic_generator(double min = 0, double max = 1) {
+		cubic_generator_t(T min = 0, T max = 1) {
 			this->set_random_range(min, max);
 			this->init();
 		}
-		QPLDLL std::array<double, 4> get_values() const;
-		QPLDLL void set_random_range(double min, double max);
-		QPLDLL void set_random_range(double max);
-		QPLDLL std::pair<double, double> get_random_range() const;
-		QPLDLL double get() const;
+		
+		std::array<T, 4> get_values() const {
+			std::array<T, 4> result;
+			result[0] = this->m_a;
+			result[1] = this->m_b;
+			result[2] = this->m_c;
+			result[3] = this->m_d;
+			return result;
+		}
+		void set_random_range(T min, T max) {
+			this->m_min = min;
+			this->m_max = max;
+			this->randomize();
+		}
+		void set_random_range(T max) {
+			this->set_random_range(0.0, max);
+		}
+		std::pair<T, T> get_random_range() const {
+			return std::make_pair(this->m_min, this->m_max);
+		}
+		T get() const {
+			T interpolated = qpl::cubic_interpolation(this->m_a, this->m_b, this->m_c, this->m_d, this->m_prog);
+			if (this->m_clamp) {
+				return qpl::clamp(this->m_min, interpolated, this->m_max);
+			}
+			return interpolated;
+		}
+		T update(double delta) {
+			this->m_prog += delta * this->m_speed;
+			while (this->m_prog > 1.0) {
+				this->m_prog -= 1;
+				this->next();
+			}
+			while (this->m_prog < 0.0) {
+				this->m_prog += 1;
+				this->back();
+			}
+			return this->get();
+		}
+		double get_progress() const {
+			return this->m_prog;
+		}
+		void reset_progress() {
+			this->m_prog = 0.0;
+		}
+		T get_approaching_value() const {
+			if (this->m_random_values_enabled) {
+				return this->m_c;
+			}
+			return this->m_specific_values[qpl::loop_index((this->m_specific_index + 1), this->m_specific_values.size())];
+		}
+		void next() {
+			this->m_a = this->m_b;
+			this->m_b = this->m_c;
+			this->m_c = this->m_d;
+			this->m_d = qpl::random(this->m_min, this->m_max);
+		}
+		void back() {
+			this->m_d = this->m_c;
+			this->m_c = this->m_b;
+			this->m_b = this->m_a;
+			this->m_d = qpl::random(this->m_min, this->m_max);
+		}
+		void randomize_and_reset() {
+			this->reset_progress();
+			this->randomize();
+		}
+		void randomize() {
+			this->m_a = qpl::random(this->m_min, this->m_max);
+			this->m_b = qpl::random(this->m_min, this->m_max);
+			this->m_c = qpl::random(this->m_min, this->m_max);
+			this->m_d = qpl::random(this->m_min, this->m_max);
+		}
+		void set_speed(qpl::f64 speed) {
+			this->m_speed = speed;
+		}
+		qpl::f64 get_speed() const {
+			return this->m_speed;
+		}
 
-		QPLDLL double update(double delta);
-		QPLDLL double get_progress() const;
-		QPLDLL void reset_progress();
-		QPLDLL double get_approaching_value() const;
-		QPLDLL void next();
-		QPLDLL void back();
-		QPLDLL void randomize_and_reset(bool enable_random_values = true);
-		QPLDLL void randomize(bool enable_random_values = true);
+		void enable_clamp() {
+			this->m_clamp = true;
+		}
+		void disable_clamp() {
+			this->m_clamp = false;
+		}
+		bool is_clamp_enabled() const {
+			return this->m_clamp;
+		}
 
-		QPLDLL void set_speed(double speed);
-		QPLDLL double get_speed() const;
-
-		QPLDLL void enable_clamp();
-		QPLDLL void disable_clamp();
-		QPLDLL bool is_clamp_enabled() const;
-
-		QPLDLL void enable_cubic_interpolation();
-		QPLDLL void enable_linear_interpolation();
-		QPLDLL bool is_cubic_interpolation_enabled() const;
-		QPLDLL bool is_linear_interpolation_enabled() const;
-
-		QPLDLL void enable_random_values();
-		QPLDLL void disable_random_values();
-		QPLDLL bool is_random_values_enabled() const;
-
-		QPLDLL void enable_specific_values();
-		QPLDLL void disable_spefific_values();
-		QPLDLL bool is_specific_values_enabled() const;
-
-		QPLDLL void set_specific_values(const std::vector<double>& values, bool enable_specific_values = true);
-		QPLDLL void fill(double initial_value, bool enable_specific_values = true);
-		QPLDLL void set_next(double value);
-		QPLDLL std::vector<double> get_specific_values() const;
-
-		QPLDLL void reset_specific_index();
-		QPLDLL void set_specific_index(int n);
-		QPLDLL int get_specific_index() const;
-
-		QPLDLL std::size_t size() const;
-		QPLDLL double& operator[](unsigned index);
-		QPLDLL const double& operator[](unsigned index) const;
 	private:
-		QPLDLL void gen();
-		QPLDLL void init();
+		void init() {
+			this->m_prog = 0.0;
+			this->disable_clamp();
+			this->randomize();
+			this->set_speed(1.0);
+		}
 
-		bool m_cubic_interpolation;
-		int m_specific_index;
-		std::vector<double> m_specific_values;
-		bool m_random_values_enabled;
+		qpl::u32 m_specific_index;
 		bool m_clamp;
-		double m_min, m_max;
-		double m_prog;
-		double m_a, m_b, m_c, m_d;
-		double m_speed;
+		qpl::f64 m_prog;
+		T m_a, m_b, m_c, m_d;
+		T m_min, m_max;
+		qpl::f64 m_speed;
 	};
+
+	using cubic_generator = cubic_generator_t<qpl::f64>;
+
+
+
+	template<typename T, qpl::size N> requires (qpl::is_floating_point<T>())
+	struct cubic_generator_vectorN {
+		using vectorT = qpl::vectorN<T, N>;
+
+
+		cubic_generator_vectorN(vectorT min = vectorT::zero(), vectorT max = vectorT::one()) {
+			this->set_random_range(min, max);
+			this->init();
+		}
+
+		std::array<vectorT, 4> get_values() const {
+			std::array<vectorT, 4> result;
+			result[0] = this->m_a;
+			result[1] = this->m_b;
+			result[2] = this->m_c;
+			result[3] = this->m_d;
+			return result;
+		}
+		void set_random_range(vectorT min, vectorT max) {
+			this->m_min = min;
+			this->m_max = max;
+			this->randomize();
+		}
+		void set_random_range(T max) {
+			this->set_random_range(0.0, max);
+		}
+		void set_speed(qpl::f64 speed) {
+			this->m_speed = speed;
+		}
+		qpl::f64 get_speed() const {
+			return this->m_speed;
+		}
+
+		double get_progress() const {
+			return this->m_prog;
+		}
+		void reset_progress() {
+			this->m_prog = 0.0;
+		}
+		vectorT get_approaching_value() const {
+			return this->m_c;
+		}
+
+		void enable_clamp() {
+			this->m_clamp = true;
+		}
+		void disable_clamp() {
+			this->m_clamp = false;
+		}
+		bool is_clamp_enabled() const {
+			return this->m_clamp;
+		}
+
+
+		void randomize_and_reset() {
+			this->reset_progress();
+			this->randomize();
+		}
+
+		void randomize() {
+			for (qpl::u32 i = 0u; i < N; ++i) {
+				this->m_a.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
+				this->m_b.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
+				this->m_c.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
+				this->m_d.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
+			}
+		}
+		vectorT get() const {
+			vectorT interpolated = qpl::cubic_interpolation(this->m_a, this->m_b, this->m_c, this->m_d, this->m_prog);
+			if (this->m_clamp) {
+				return qpl::clamp(this->m_min, interpolated, this->m_max);
+			}
+			return interpolated;
+		}
+		vectorT update(double delta) {
+			this->m_prog += delta * this->m_speed;
+			while (this->m_prog > 1.0) {
+				this->m_prog -= 1;
+				this->next();
+			}
+			while (this->m_prog < 0.0) {
+				this->m_prog += 1;
+				this->back();
+			}
+			return this->get();
+		}
+
+		void next() {
+			this->m_a = this->m_b;
+			this->m_b = this->m_c;
+			this->m_c = this->m_d;
+			for (qpl::u32 i = 0u; i < N; ++i) {
+				this->m_d.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
+			}
+		}
+		void back() {
+			this->m_d = this->m_c;
+			this->m_c = this->m_b;
+			this->m_b = this->m_a;
+			for (qpl::u32 i = 0u; i < N; ++i) {
+				this->m_d.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
+			}
+		}
+	private:
+		void init() {
+			this->m_prog = 0.0;
+			this->disable_clamp();
+			this->randomize();
+			this->set_speed(1.0);
+		}
+
+		vectorT m_a, m_b, m_c, m_d;
+		vectorT m_min, m_max;
+		qpl::f64 m_prog = 0;
+		qpl::f64 m_speed = 1;
+		bool m_clamp;
+	};
+
+	template<typename T>
+	using cubic_generator_vector2 = cubic_generator_vectorN<T, 2>;
+	using cubic_generator_vector2f = cubic_generator_vector2<qpl::f32>;
+	using cubic_generator_vector2d = cubic_generator_vector2<qpl::f64>;
+
+	template<typename T>
+	using cubic_generator_vector3 = cubic_generator_vectorN<T, 3>;
+	using cubic_generator_vector3f = cubic_generator_vector3<qpl::f32>;
+	using cubic_generator_vector3d = cubic_generator_vector3<qpl::f64>;
+	
 
 	template<typename T>
 	struct smooth_value {
@@ -113,50 +293,6 @@ namespace qpl {
 		qpl::time duration = qpl::secs(1);
 		qpl::halted_clock clock;
 
-		T start_value;
-		T end_value;
-		T* pointer;
-	};
-
-
-	template<typename C, typename T>
-	struct smooth_value_setter {
-
-		void start(T start, std::function<void(C*, T)> set_function, T end, qpl::time duration = qpl::secs(1)) {
-			if (this->is_running()) {
-				this->clock.reset();
-			}
-			else {
-				this->clock.resume();
-			}
-			this->set_function = set_function;
-			this->start_value = start;
-			this->end_value = end;
-			this->duration = duration;
-		}
-
-		void update() {
-			if (!this->is_running()) {
-				return;
-			}
-
-			if (this->clock.has_elapsed(this->duration)) {
-				this->clock.reset_pause();
-				this->set_function(this->end_value);
-			}
-			else {
-				this->set_function(this->start_value + (this->end_value - this->start_value) * qpl::smooth_slope(this->clock.elapsed().nsecs_f() / this->duration.nsecs_f()));
-			}
-
-		}
-		bool is_running() const {
-			return this->clock.is_running();
-		}
-
-		qpl::time duration = qpl::secs(1);
-		qpl::halted_clock clock;
-
-		std::function<void(C*, T)> set_function;
 		T start_value;
 		T end_value;
 		T* pointer;

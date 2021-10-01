@@ -155,20 +155,20 @@ namespace qsf {
 	void qsf::base_state::show_cursor() {
 		this->framework->show_cursor();
 	}
-	void qsf::base_state::set_cursor_position(qsf::vector2i position) {
+	void qsf::base_state::set_cursor_position(qpl::vector2i position) {
 		this->framework->set_cursor_position(position);
 	}
-	void qsf::base_state::set_window_position(qsf::vector2u position) {
+	void qsf::base_state::set_window_position(qpl::vector2u position) {
 		this->framework->set_window_position(position);
 	}
-	qsf::vector2u qsf::base_state::get_window_position() const {
+	qpl::vector2u qsf::base_state::get_window_position() const {
 		return this->framework->get_window_position();
 	}
-	qsf::vector2i qsf::base_state::dimension() const {
+	qpl::vector2i qsf::base_state::dimension() const {
 		return this->framework->m_dimension;
 	}
-	qsf::vector2f qsf::base_state::center() const {
-		return qsf::vector2f(this->framework->m_dimension) / 2;
+	qpl::vector2f qsf::base_state::center() const {
+		return qpl::vector2f(this->framework->m_dimension) / 2;
 	}
 
 	void qsf::base_state::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
@@ -245,10 +245,10 @@ namespace qsf {
 	void qsf::base_state::set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name) {
 		this->framework->set_graph_interpolation_steps(interpolation_steps, name);
 	}
-	void qsf::base_state::set_graph_dimension(qsf::vector2f dimension) {
+	void qsf::base_state::set_graph_dimension(qpl::vector2f dimension) {
 		this->framework->set_graph_dimension(dimension);
 	}
-	void qsf::base_state::set_graph_position(qsf::vector2f position) {
+	void qsf::base_state::set_graph_position(qpl::vector2f position) {
 		this->framework->set_graph_position(position);
 	}
 	void qsf::base_state::pop_this_state() {
@@ -280,6 +280,18 @@ namespace qsf {
 	}
 	bool qsf::base_state::is_display_allowed() const {
 		return this->m_allow_display;
+	}
+	bool qsf::base_state::has_focus() const {
+		return this->framework->has_focus();
+	}
+	bool qsf::base_state::has_gained_focus() const {
+		return this->framework->has_gained_focus();
+	}
+	bool qsf::base_state::has_lost_focus() const {
+		return this->framework->has_lost_focus();
+	}
+	qpl::time qsf::base_state::no_focus_time() const {
+		return this->framework->no_focus_time();
 	}
 	qpl::time qsf::base_state::frame_time() const {
 		return this->framework->frame_time();
@@ -317,7 +329,20 @@ namespace qsf {
 			this->states.back()->call_on_resize();
 		}
 		qsf::update_sounds();
-		this->states.back()->updating();
+		auto focus_before = this->m_focus;
+		auto focus = this->window.hasFocus();
+		this->m_focus = focus;
+		this->m_lost_focus = (focus_before && !focus);
+		this->m_gained_focus = (!focus_before && focus);
+		if (this->m_lost_focus) {
+			this->m_no_focus_timer.reset();
+		}
+		if (this->m_gained_focus) {
+			this->m_no_focus_time = this->m_no_focus_timer.elapsed();
+		}
+		if (this->m_update_if_no_focus || focus || (focus_before != focus)) {
+			this->states.back()->updating();
+		}
 		this->states.back()->update_close_window();
 
 		if (this->states.back()->m_pop_this_state) {
@@ -347,7 +372,20 @@ namespace qsf {
 			this->states.back()->call_on_resize();
 		}
 		qsf::update_sounds();
-		this->states.back()->updating();
+		auto focus_before = this->m_focus;
+		auto focus = this->window.hasFocus();
+		this->m_focus = focus;
+		this->m_lost_focus = (focus_before && !focus);
+		this->m_gained_focus = (!focus_before && focus);
+		if (this->m_lost_focus) {
+			this->m_no_focus_timer.reset();
+		}
+		if (this->m_gained_focus) {
+			this->m_no_focus_time = this->m_no_focus_timer.elapsed();
+		}
+		if (this->m_update_if_no_focus || focus || (focus_before != focus)) {
+			this->states.back()->updating();
+		}
 		this->states.back()->update_close_window();
 
 		if (this->states.back()->m_pop_this_state) {
@@ -422,10 +460,10 @@ namespace qsf {
 	void qsf::framework::set_graph_interpolation_steps(qpl::size interpolation_steps) {
 		qsf::drawing_graph.interpolation_steps = interpolation_steps;
 	}
-	void qsf::framework::set_graph_dimension(qsf::vector2f dimension) {
+	void qsf::framework::set_graph_dimension(qpl::vector2f dimension) {
 		qsf::drawing_graph.dimension = dimension;
 	}
-	void qsf::framework::set_graph_position(qsf::vector2f position) {
+	void qsf::framework::set_graph_position(qpl::vector2f position) {
 		qsf::drawing_graph.position = position;
 	}
 
@@ -437,6 +475,32 @@ namespace qsf {
 	}
 	void qsf::framework::disable_framerate_limit() {
 		this->m_framerate_limit = qpl::u32_max;
+	}
+	void qsf::framework::enable_update_if_no_focus() {
+		this->m_update_if_no_focus = true;
+	}
+	void qsf::framework::disable_update_if_no_focus() {
+		this->m_update_if_no_focus = false;
+	}
+	bool qsf::framework::is_update_if_no_focus_enabled() const{
+		return this->m_update_if_no_focus;
+	}
+	bool qsf::framework::has_focus() const {
+		return this->m_focus;
+	}
+	bool qsf::framework::has_gained_focus() const {
+		return this->m_gained_focus;
+	}
+	bool qsf::framework::has_lost_focus() const {
+		return this->m_lost_focus;
+	}
+	qpl::time qsf::framework::no_focus_time() const {
+		if (this->m_focus || this->m_gained_focus) {
+			return this->m_no_focus_time;
+		}
+		else {
+			return qpl::time(0);
+		}
 	}
 	qpl::time qsf::framework::run_time() const {
 		return this->m_run_time_clock.elapsed();
@@ -506,12 +570,12 @@ namespace qsf {
 			settings.antialiasingLevel = this->m_antialising;
 
 			sf::String s = this->m_title.c_str(); //??? SFML why is this needed
+
+			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, settings);
+			this->m_created = true;
 			if (this->m_framerate_limit != qpl::u32_max) {
 				this->window.setFramerateLimit(this->m_framerate_limit);
 			}
-			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, settings);
-			this->m_created = true;
-
 			if (this->states.size()) {
 				this->states.back()->call_after_window_create();
 			}
@@ -523,7 +587,7 @@ namespace qsf {
 	bool qsf::framework::is_created() const {
 		return this->m_created;
 	}
-	void qsf::framework::set_info(const std::string& title, qsf::vector2u dimension, qpl::u32 style) {
+	void qsf::framework::set_info(const std::string& title, qpl::vector2u dimension, qpl::u32 style) {
 		this->set_title(title);
 		this->set_dimension(dimension);
 		this->set_style(style);
@@ -534,7 +598,7 @@ namespace qsf {
 			this->window.setTitle(title);
 		}
 	}
-	void qsf::framework::set_dimension(qsf::vector2u dimension) {
+	void qsf::framework::set_dimension(qpl::vector2u dimension) {
 		this->m_dimension = dimension;
 	}
 	void qsf::framework::set_antialising(qpl::u32 antialising) {
@@ -550,17 +614,17 @@ namespace qsf {
 		this->window.setMouseCursorVisible(false);
 		//todo
 	}
-	void qsf::framework::set_window_position(qsf::vector2u position) {
+	void qsf::framework::set_window_position(qpl::vector2u position) {
 		this->window.setPosition(sf::Vector2i(position));
 	}
-	qsf::vector2u qsf::framework::get_window_position() const {
-		return qsf::vector2u(this->window.getPosition());
+	qpl::vector2u qsf::framework::get_window_position() const {
+		return qpl::vector2u(this->window.getPosition());
 	}
 	void qsf::framework::show_cursor() {
 		this->window.setMouseCursorVisible(true);
 		//todo
 	}
-	void qsf::framework::set_cursor_position(qsf::vector2i position) {
+	void qsf::framework::set_cursor_position(qpl::vector2i position) {
 		//todo
 	}
 }

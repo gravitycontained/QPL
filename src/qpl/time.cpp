@@ -389,8 +389,14 @@ namespace qpl {
 	void qpl::clock::add(qpl::f64 seconds) {
 		this->m_begin += qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
 	}
+	void qpl::clock::add(qpl::time time) {
+		this->m_begin += time;
+	}
 	void qpl::clock::subtract(qpl::f64 seconds) {
 		this->m_begin -= qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
+	}
+	void qpl::clock::subtract(qpl::time time) {
+		this->m_begin -= time;
 	}
 
 	bool qpl::clock::has_elapsed(qpl::f64 seconds) const {
@@ -475,8 +481,14 @@ namespace qpl {
 	void qpl::small_clock::add(qpl::f64 seconds) {
 		this->m_begin += qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
 	}
+	void qpl::small_clock::add(qpl::time time) {
+		this->m_begin += time;
+	}
 	void qpl::small_clock::subtract(qpl::f64 seconds) {
 		this->m_begin -= qpl::u64_cast(seconds * qpl::time::nsecs_in_sec);
+	}
+	void qpl::small_clock::subtract(qpl::time time) {
+		this->m_begin -= time;
 	}
 
 	bool qpl::small_clock::has_elapsed(qpl::f64 seconds) const {

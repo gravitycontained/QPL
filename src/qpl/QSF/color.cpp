@@ -90,8 +90,16 @@ namespace qsf {
 
 	const qsf::frgb qsf::frgb::unset = qsf::frgb(-1.0f, -1.0f, -1.0f, -1.0f);
 
-	qsf::rgb& qsf::rgb::operator=(const rgb& other) {
-		memcpy(this, &other, sizeof(rgb));
+	constexpr qsf::rgb& qsf::rgb::operator=(const rgb& other) {
+		if (std::is_constant_evaluated()) {
+			this->r = other.r;
+			this->g = other.g;
+			this->b = other.b;
+			this->a = other.a;
+		}
+		else {
+			memcpy(this, &other, sizeof(rgb));
+		}
 		return *this;
 	}
 	qsf::rgb& qsf::rgb::operator=(const frgb& other) {
@@ -113,19 +121,32 @@ namespace qsf {
 		this->a = color.a;
 		return *this;
 	}
-	qsf::rgb& qsf::rgb::operator=(qpl::u32 uint) {
-
+	constexpr qsf::rgb& qsf::rgb::operator=(qpl::u32 uint) {
 		if (uint <= (qpl::u32_max >> 8)) {
 			uint <<= 8;
 			uint |= 0xFFu;
 		}
-
-		qpl::u32 n = ((uint & 0xFF000000u) >> 24) | ((uint & 0x000000FFu) << 24) | ((uint & 0x00FF0000u) >> 8) | ((uint & 0x0000FF00u) << 8);
-		memcpy(this, &n, sizeof(qpl::u32));
-		return *this;
+		
+		if (std::is_constant_evaluated()) {
+			this->r = (uint & 0xFF000000u) >> 24;
+			this->g = (uint & 0x00FF0000u) >> 16;
+			this->b = (uint & 0x0000FF00u) >> 8;
+			this->a = (uint & 0x000000FFu);
+			return *this;
+		}
+		else {
+			qpl::u32 n = ((uint & 0xFF000000u) >> 24) | ((uint & 0x000000FFu) << 24) | ((uint & 0x00FF0000u) >> 8) | ((uint & 0x0000FF00u) << 8);
+			memcpy(this, &n, sizeof(qpl::u32));
+			return *this;
+		}
 	}
-	bool qsf::rgb::operator==(const rgb& other) const {
-		return this->uint() == other.uint();
+	constexpr bool qsf::rgb::operator==(const rgb& other) const {
+		if (std::is_constant_evaluated()) {
+			return this->r == other.r && this->g == other.g && this->b == other.b && this->a == other.a;
+		}
+		else {
+			return this->uint() == other.uint();
+		}
 	}
 
 	qsf::rgb::operator sf::Color() const {
@@ -161,13 +182,20 @@ namespace qsf {
 		}
 		return stream.str();
 	}
-	bool qsf::rgb::is_unset() const {
+	constexpr bool qsf::rgb::is_unset() const {
 		return (*this == qsf::rgb::unset);
 	}
-	qpl::u32 qsf::rgb::uint() const {
-		qpl::u32 n;
-		memcpy(&n, this, sizeof(qpl::u32));
-		return n;
+	constexpr qpl::u32 qsf::rgb::uint() const {
+		if (std::is_constant_evaluated()) {
+			qpl::u32 n = (qpl::u32_cast(this->r) << 24) | (qpl::u32_cast(this->g) << 16) | (qpl::u32_cast(this->b) << 8) | (qpl::u32_cast(this->a));
+
+			return n;
+		}
+		else {
+			qpl::u32 n;
+			memcpy(&n, this, sizeof(qpl::u32));
+			return n;
+		}
 	}
 
 
@@ -280,18 +308,18 @@ namespace qsf {
 		return copy;
 	}
 
-	const qsf::rgb qsf::rgb::red = 0xFF'00'00;
-	const qsf::rgb qsf::rgb::green = 0x00'FF'00;
-	const qsf::rgb qsf::rgb::blue = 0x00'00'FF;
-	const qsf::rgb qsf::rgb::yellow = 0xFF'FF'00;
-	const qsf::rgb qsf::rgb::orange = 0xFF'88'00;
-	const qsf::rgb qsf::rgb::cyan = 0x00'FF'FF;
-	const qsf::rgb qsf::rgb::magenta = 0xFF'00'FF;
-	const qsf::rgb qsf::rgb::white = 0xFF'FF'FF;
-	const qsf::rgb qsf::rgb::grey = 0x88'88'88;
-	const qsf::rgb qsf::rgb::black = 0x00'00'00;
-	const qsf::rgb qsf::rgb::transparent = 0xFF'FF'FF'00;
-	const qsf::rgb qsf::rgb::unset = 0x00'00'00'00;
+	const qsf::rgb qsf::rgb::red = qsf::rgb(255, 0, 0);
+	const qsf::rgb qsf::rgb::green = qsf::rgb(0, 255, 0);
+	const qsf::rgb qsf::rgb::blue = qsf::rgb(0, 0, 255);
+	const qsf::rgb qsf::rgb::yellow = qsf::rgb(255, 255, 0);
+	const qsf::rgb qsf::rgb::orange = qsf::rgb(255, 127, 0);
+	const qsf::rgb qsf::rgb::cyan = qsf::rgb(0, 255, 255);
+	const qsf::rgb qsf::rgb::magenta = qsf::rgb(255, 0, 255);
+	const qsf::rgb qsf::rgb::white = qsf::rgb(255, 255, 255);
+	const qsf::rgb qsf::rgb::grey = qsf::rgb(127, 127, 127);
+	const qsf::rgb qsf::rgb::black = qsf::rgb(0, 0, 0);
+	const qsf::rgb qsf::rgb::transparent = qsf::rgb(255, 255, 255, 0);
+	const qsf::rgb qsf::rgb::unset = qsf::rgb(0, 0, 0, 0);
 
 
 	qsf::rgb qsf::get_random_color() {

@@ -6,7 +6,7 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
-#include <qpl/QSF/vector.hpp>
+#include <qpl/vector.hpp>
 #include <set>
 
 namespace qsf {
@@ -54,9 +54,9 @@ namespace qsf {
 		QPLDLL bool holding_middle_mouse() const;
 		QPLDLL bool holding_key() const;
 
-		QPLDLL qsf::vector2i resized_size() const;
-		QPLDLL qsf::vector2i mouse_position() const;
-		QPLDLL qsf::vector2i mouse_position_desktop() const;
+		QPLDLL qpl::vector2i resized_size() const;
+		QPLDLL qpl::vector2i mouse_position() const;
+		QPLDLL qpl::vector2i mouse_position_desktop() const;
 
 		QPLDLL bool text_entered(char c) const;
 		QPLDLL bool text_entered(wchar_t c) const;
@@ -96,9 +96,9 @@ namespace qsf {
 		std::wstring m_text_entered;
 		std::wostringstream m_text_entered_stream;
 
-		qsf::vector2i m_resized_size;
-		qsf::vector2i m_mouse_position;
-		qsf::vector2i m_mouse_position_desktop;
+		qpl::vector2i m_resized_size;
+		qpl::vector2i m_mouse_position;
+		qpl::vector2i m_mouse_position_desktop;
 		std::set<sf::Keyboard::Key> m_keys_pressed;
 		std::set<sf::Keyboard::Key> m_keys_released;
 		std::set<sf::Keyboard::Key> m_keys_single_pressed;

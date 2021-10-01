@@ -2192,7 +2192,7 @@ namespace qpl {
 
 
 	template<typename T> requires (qpl::is_arithmetic<T>())
-	std::string big_number_string_short(T number, qpl::u32 precision = 2) {
+	std::string big_number_string_short(T number, qpl::u32 precision = 1) {
 		if (number == T{}) {
 			return qpl::to_string(number);
 		}

@@ -16,6 +16,7 @@
 #include <qpl/number.hpp>
 #include <qpl/maths.hpp>
 #include <qpl/memory.hpp>
+#include <qpl/obfuscate.hpp>
 #include <qpl/neural_net.hpp>
 #include <qpl/perlin_noise.hpp>
 #include <qpl/pictures.hpp>
@@ -27,6 +28,7 @@
 #include <qpl/time.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/vector.hpp>
 
 #if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
 #include <qpl/vulkan.hpp>
@@ -45,7 +47,6 @@
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/socket.hpp>
 #include <qpl/QSF/utility.hpp>
-#include <qpl/QSF/vector.hpp>
 #endif
 
 #ifdef _WIN32

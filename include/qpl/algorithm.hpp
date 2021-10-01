@@ -5,6 +5,7 @@
 
 #include <qpl/type_traits.hpp>
 #include <qpl/vardef.hpp>
+
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -818,17 +819,17 @@ namespace qpl {
 	}
 
 	template<typename T>
-	constexpr qpl::u8 rotate_left(T val, qpl::size rotation) {
+	constexpr T rotate_left(T val, qpl::size rotation) {
 		return (rotation >= qpl::bits_in_type<T>() ? rotate_left(val, rotation % qpl::bits_in_type<T>()) : ((val << rotation) | (val >> (qpl::bits_in_type<T>() - rotation))));
 	}
 	template<typename T>
-	constexpr qpl::u8 rotate_right(T val, qpl::size rotation) {
+	constexpr T rotate_right(T val, qpl::size rotation) {
 		return (rotation >= qpl::bits_in_type<T>()) ? rotate_right(val, rotation % qpl::bits_in_type<T>()) : ((val >> rotation) | (val << (qpl::bits_in_type<T>() - rotation)));
 	}
 
 	template<typename T, typename F>
 	constexpr auto linear_interpolation(T a, T b, F delta) {
-		return a * (F{ 1 } -delta) + (b * delta);
+		return a * (F{ 1 } - delta) + (b * delta);
 	}
 
 

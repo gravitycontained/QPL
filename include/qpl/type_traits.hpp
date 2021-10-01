@@ -37,6 +37,7 @@ namespace qpl {
 		return is_qpl_integer_impl<T>{};
 	}
 
+
 	template<typename T>
 	struct is_qpl_integer_signed_impl : std::false_type
 	{};
@@ -49,12 +50,11 @@ namespace qpl {
 	constexpr bool is_qpl_integer_signed() {
 		return is_qpl_integer_signed_impl<T>{};
 	}
-
-
+#ifndef QPL_NO_FLOATS
 	template<typename T>
 	struct is_qpl_floating_point_impl : std::false_type
 	{};
-#ifndef QPL_NO_FLOATS
+
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
 	struct is_qpl_floating_point_impl<qpl::floating_point<exponent_bits, mantissa_bits>> : std::true_type
 	{};

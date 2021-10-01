@@ -11,7 +11,7 @@
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/framework.hpp>
 #include <qpl/vardef.hpp>
-#include <qpl/QSF/vector.hpp>
+#include <qpl/vector.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
 
 
@@ -22,7 +22,7 @@ namespace qsf {
 	struct view_rectangle {
 		sf::Mouse::Button drag_mouse_button = sf::Mouse::Left;
 
-		void set_hitbox(qsf::vector2<T> position, qsf::vector2<T> dimension) {
+		void set_hitbox(qpl::vector2<T> position, qpl::vector2<T> dimension) {
 			this->hitbox.set_position(position);
 			this->hitbox.set_dimension(dimension);
 			this->dimension = (dimension - position) * this->scale;
@@ -38,19 +38,19 @@ namespace qsf {
 			this->position = { 0,0 };
 			this->scale = { 1,1 };
 		}
-		void set_position(qsf::vector2<T> position) {
+		void set_position(qpl::vector2<T> position) {
 			this->position = position;
 
 			if (this->power_of_two) {
 				if (this->scale.x >= 1) {
-					this->position = qsf::vector2i(this->position) / qsf::vector2i(this->scale) * qsf::vector2i(this->scale);
+					this->position = qpl::vector2i(this->position) / qpl::vector2i(this->scale) * qpl::vector2i(this->scale);
 				}
 				else {
-					this->position = qsf::vector2i(this->position / this->scale) * this->scale;
+					this->position = qpl::vector2i(this->position / this->scale) * this->scale;
 				}
 			}
 			else if (this->integer_step) {
-				this->position = qsf::vector2i(this->position);
+				this->position = qpl::vector2i(this->position);
 			}
 		}
 		void update(const qsf::event_info& event) {
@@ -76,7 +76,7 @@ namespace qsf {
 					this->position = this->click_position + delta * this->scale;
 
 					if (this->integer_step) {
-						this->position = qsf::vector2i(this->position);
+						this->position = qpl::vector2i(this->position);
 					}
 				}
 
@@ -86,10 +86,10 @@ namespace qsf {
 						this->dimension *= 2;
 						this->position += (mouse_relative / -2) * (this->scale);
 						if (this->scale.x >= 1) {
-							this->position = qsf::vector2i(this->position) / qsf::vector2i(this->scale) * qsf::vector2i(this->scale);
+							this->position = qpl::vector2i(this->position) / qpl::vector2i(this->scale) * qpl::vector2i(this->scale);
 						}
 						else {
-							this->position = qsf::vector2i(this->position / this->scale) * this->scale;
+							this->position = qpl::vector2i(this->position / this->scale) * this->scale;
 						}
 					}
 					else {
@@ -107,7 +107,7 @@ namespace qsf {
 						this->position += (mouse_relative * (1 / (1 + this->zoom_delta) - 1)) * (this->scale);
 
 						if (this->integer_step) {
-							this->position = qsf::vector2i(this->position);
+							this->position = qpl::vector2i(this->position);
 						}
 						if (this->dragging) {
 							this->click_position = this->position;
@@ -121,10 +121,10 @@ namespace qsf {
 						this->dimension /= 2;
 						this->position += (mouse_relative) * (this->scale);
 						if (this->scale.x >= 1) {
-							this->position = qsf::vector2i(this->position) / qsf::vector2i(this->scale) * qsf::vector2i(this->scale);
+							this->position = qpl::vector2i(this->position) / qpl::vector2i(this->scale) * qpl::vector2i(this->scale);
 						}
 						else {
-							this->position = qsf::vector2i(this->position / this->scale) * this->scale;
+							this->position = qpl::vector2i(this->position / this->scale) * this->scale;
 						}
 					}
 					else {
@@ -144,7 +144,7 @@ namespace qsf {
 						this->position += (mouse_relative * this->zoom_delta) * (this->scale);
 
 						if (this->integer_step) {
-							this->position = qsf::vector2i(this->position);
+							this->position = qpl::vector2i(this->position);
 						}
 						if (this->dragging) {
 							this->click_position = this->position;
@@ -160,7 +160,7 @@ namespace qsf {
 				this->click_mouse_position = event.mouse_position() - this->hitbox.position;
 			}
 		}
-		qsf::vector2<T> position_at_mouse() const {
+		qpl::vector2<T> position_at_mouse() const {
 			return this->mouse_position;
 		}
 
@@ -169,18 +169,18 @@ namespace qsf {
 		}
 		sf::RenderStates get_render_states() const {
 			sf::RenderStates states;
-			states.transform.scale(qsf::vector2f(qsf::vector2f(1, 1) / this->scale)).translate(-qsf::vector2f(this->position)).rotate(qpl::f32_cast(this->rotation));
+			states.transform.scale(qpl::vector2f(qpl::vector2f(1, 1) / this->scale)).translate(-qpl::vector2f(this->position)).rotate(qpl::f32_cast(this->rotation));
 			return states;
 		}
 
-		qsf::hitbox hitbox;
-		qsf::vector2<T> position = { 0,0 };
-		qsf::vector2<T> dimension;
-		qsf::vector2<T> scale = { 1, 1 };
-		qsf::vector2<T> mouse_position;
+		qpl::hitbox hitbox;
+		qpl::vector2<T> position = { 0,0 };
+		qpl::vector2<T> dimension;
+		qpl::vector2<T> scale = { 1, 1 };
+		qpl::vector2<T> mouse_position;
 
-		qsf::vector2<T> click_position;
-		qsf::vector2<T> click_mouse_position;
+		qpl::vector2<T> click_position;
+		qpl::vector2<T> click_mouse_position;
 
 		bool ignore_input = false;
 		T rotation = 0;

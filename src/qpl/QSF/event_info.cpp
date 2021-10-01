@@ -153,7 +153,7 @@ namespace qsf {
 		return this->m_holding_key;
 	}
 
-	qsf::vector2i qsf::event_info::resized_size() const {
+	qpl::vector2i qsf::event_info::resized_size() const {
 		return this->m_resized_size;
 	}
 	bool qsf::event_info::text_entered(char c) const {
@@ -191,10 +191,10 @@ namespace qsf {
 	}
 
 
-	qsf::vector2i qsf::event_info::mouse_position() const {
+	qpl::vector2i qsf::event_info::mouse_position() const {
 		return this->m_mouse_position;
 	}
-	qsf::vector2i qsf::event_info::mouse_position_desktop() const {
+	qpl::vector2i qsf::event_info::mouse_position_desktop() const {
 		return this->m_mouse_position_desktop;
 	}
 	std::wstring qsf::event_info::text_entered() const {

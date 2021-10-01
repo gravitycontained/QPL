@@ -11,9 +11,9 @@
 #include <memory>
 
 #include <qpl/QSF/event_info.hpp>
-#include <qpl/QSF/vector.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
+#include <qpl/vector.hpp>
 #include <qpl/time.hpp>
 
 namespace qsf {
@@ -75,17 +75,17 @@ namespace qsf {
 		QPLDLL void create();
 		QPLDLL bool is_created() const;
 		QPLDLL bool is_open() const;
-		QPLDLL void set_info(const std::string& title, qsf::vector2u dimension, qpl::u32 style);
+		QPLDLL void set_info(const std::string& title, qpl::vector2u dimension, qpl::u32 style);
 		QPLDLL void set_title(const std::string& title);
-		QPLDLL void set_dimension(qsf::vector2u dimension);
+		QPLDLL void set_dimension(qpl::vector2u dimension);
 		QPLDLL void set_antialising(qpl::u32 antialising);
 		QPLDLL qpl::u32 get_antialising() const;
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void hide_cursor();
-		QPLDLL void set_window_position(qsf::vector2u position);
-		QPLDLL qsf::vector2u get_window_position() const;
+		QPLDLL void set_window_position(qpl::vector2u position);
+		QPLDLL qpl::vector2u get_window_position() const;
 		QPLDLL void show_cursor();
-		QPLDLL void set_cursor_position(qsf::vector2i position);
+		QPLDLL void set_cursor_position(qpl::vector2i position);
 		QPLDLL void draw_call();
 		QPLDLL void display();
 		QPLDLL bool game_loop_update_segment();
@@ -112,13 +112,22 @@ namespace qsf {
 		QPLDLL void set_graph_color(qsf::rgb color);
 		QPLDLL void set_graph_thickness(qpl::f64 thickness);
 		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
-		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
-		QPLDLL void set_graph_position(qsf::vector2f position);
+		QPLDLL void set_graph_dimension(qpl::vector2f dimension);
+		QPLDLL void set_graph_position(qpl::vector2f position);
 
 		QPLDLL void set_framerate_limit(qpl::u32 value);
 		QPLDLL qpl::u32 get_framerate_limit() const;
 		QPLDLL void disable_framerate_limit();
 
+		QPLDLL void enable_update_if_no_focus();
+		QPLDLL void disable_update_if_no_focus();
+		QPLDLL bool is_update_if_no_focus_enabled() const;
+
+		QPLDLL bool has_focus() const;
+		QPLDLL bool has_gained_focus() const;
+		QPLDLL bool has_lost_focus() const;
+
+		QPLDLL qpl::time no_focus_time() const;
 		QPLDLL qpl::time run_time() const;
 		QPLDLL qpl::time frame_time() const;
 
@@ -126,7 +135,7 @@ namespace qsf {
 		std::vector<std::unique_ptr<qsf::base_state>> states;
 		sf::RenderWindow window;
 		std::string m_title;
-		qsf::vector2u m_dimension;
+		qpl::vector2u m_dimension;
 		qpl::u32 m_style = sf::Style::Default;
 		qpl::clock m_run_time_clock;
 		qpl::clock m_frametime_clock;
@@ -134,6 +143,13 @@ namespace qsf {
 		qpl::u32 m_antialising = 12u;
 		qpl::u32 m_framerate_limit = 144u;
 		bool m_created = false;
+		bool m_update_if_no_focus = false;
+
+		bool m_focus = true;
+		bool m_lost_focus = false;
+		bool m_gained_focus = false;
+		qpl::small_clock m_no_focus_timer;
+		qpl::time m_no_focus_time;
 	};
 	
 	/* TO OVERLOAD:
@@ -202,12 +218,12 @@ namespace qsf {
 		QPLDLL void update_close_window();
 		QPLDLL void hide_cursor();
 		QPLDLL void show_cursor();
-		QPLDLL void set_cursor_position(qsf::vector2i position);
-		QPLDLL void set_window_position(qsf::vector2u position);
-		QPLDLL qsf::vector2u get_window_position() const;
+		QPLDLL void set_cursor_position(qpl::vector2i position);
+		QPLDLL void set_window_position(qpl::vector2u position);
+		QPLDLL qpl::vector2u get_window_position() const;
 
-		QPLDLL qsf::vector2i dimension() const;
-		QPLDLL qsf::vector2f center() const;
+		QPLDLL qpl::vector2i dimension() const;
+		QPLDLL qpl::vector2f center() const;
 
 		QPLDLL void play_sound(const std::string& name, qpl::f32 volume = 100.0f, qpl::f32 speed = 1.0f);
 		QPLDLL void add_font(const std::string& name, const std::string& path);
@@ -248,8 +264,8 @@ namespace qsf {
 		QPLDLL void set_graph_color(qsf::rgb color, const std::string& name);
 		QPLDLL void set_graph_thickness(qpl::f64 thickness, const std::string& name);
 		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name);
-		QPLDLL void set_graph_dimension(qsf::vector2f dimension);
-		QPLDLL void set_graph_position(qsf::vector2f position);
+		QPLDLL void set_graph_dimension(qpl::vector2f dimension);
+		QPLDLL void set_graph_position(qpl::vector2f position);
 		QPLDLL void pop_this_state();
 		QPLDLL void allow_exit();
 		QPLDLL void disallow_exit();
@@ -260,6 +276,11 @@ namespace qsf {
 		QPLDLL void allow_display();
 		QPLDLL void disallow_display();
 		QPLDLL bool is_display_allowed() const;
+		QPLDLL bool has_focus() const;
+		QPLDLL bool has_gained_focus() const;
+		QPLDLL bool has_lost_focus() const;
+
+		QPLDLL qpl::time no_focus_time() const;
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::time run_time() const;
 
@@ -272,7 +293,6 @@ namespace qsf {
 		bool m_allow_clear = true;
 		bool m_allow_display = true;
 	};
-
 }
 
 #endif

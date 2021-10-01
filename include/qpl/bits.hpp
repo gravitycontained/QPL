@@ -8,6 +8,7 @@
 #include <qpl/string.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/memory.hpp>
+
 #include <array>
 
 namespace qpl {
@@ -692,6 +693,7 @@ namespace qpl {
 		qpl::u32 exponent : 8;
 		qpl::u32 sign : 1;
 	};
+
 }
 
 #endif
