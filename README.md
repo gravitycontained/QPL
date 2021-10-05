@@ -1,11 +1,17 @@
 # QPL 
-QPL (Quick Production Library) is a C++20 personal utility library with many purposes to help developement. Written by Daniel Rabl (danielrabl1999@gmail.com).
+QPL (Quick Production Library)  - Copyright (c) Daniel Rabl (danielrabl1999@gmail.com). 
+This is a C++20 personal utility library with many purposes to help developement.
+It uses alot of features from the great SFML library (https://www.sfml-dev.org/) and builds upon that.
 Please note that since this a one-man project there can be mistakes in the implementations.
+Features like qpl::aes, qpl::huffman_coding and qpl::floating_point<mantissa_bits, exponent_bits>
+were implemented for my personal usage. They might have mistakes and might be slow:
+I highly recommend installing the feature from a greater source, especially if deployed in a serious environment.
 
 # Setup
 
 To use this library download the zip and include the include folder. Copy the `qpl.dll` and `qpl-d.dll` into your project folder. It is build with SFML enabled, so you you have to inlcude and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. 
 these are the required linker dependencies:
+
 
 release x86/x64:
 ```
