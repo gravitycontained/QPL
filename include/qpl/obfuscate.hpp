@@ -6,7 +6,7 @@
 namespace qpl {
 
 	template<typename T, qpl::size N = 2, qpl::size S = 0x2f> requires (qpl::is_integer<T>())
-		struct simple_obfuscated_memory {
+	struct simple_obfuscated_memory {
 		struct block {
 			T a;
 			T b;
@@ -105,9 +105,10 @@ namespace qpl {
 		friend std::ostream& operator<<(std::ostream& os, const simple_obfuscated_memory<T, N, _x3341f11>& n);
 	};
 
-	template<typename T, qpl::size N, qpl::size _x3341f11> requires (qpl::is_integer<T>())
-	std::ostream& operator<<(std::ostream& os, const simple_obfuscated_memory<T, N, _x3341f11>& n) {
+	template<typename T, qpl::size N, qpl::size S> requires (qpl::is_integer<T>())
+	std::ostream& operator<<(std::ostream& os, const simple_obfuscated_memory<T, N, S>& n) {
 		return (os << n.operator T());
 	}
+
 
 }

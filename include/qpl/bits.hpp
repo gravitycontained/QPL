@@ -694,6 +694,127 @@ namespace qpl {
 		qpl::u32 sign : 1;
 	};
 
+
+	struct bit_string_ostream {
+		mutable qpl::u64 value = 0u;
+		mutable qpl::u32 bit_position = qpl::bits_in_type<qpl::u64>();
+		mutable qpl::u32 position = 0u;
+		mutable std::ostringstream stream;
+
+		bit_string_ostream() {
+
+		}
+		bit_string_ostream(const bit_string_ostream& other) {
+			*this = other;
+		}
+
+		QPLDLL void clear() const;
+		QPLDLL std::string string() const;
+		QPLDLL void finish() const;
+		QPLDLL void reset_position();
+		QPLDLL void write() const;
+		QPLDLL bit_string_ostream& operator=(const bit_string_ostream& other);
+
+
+		template<typename T, typename U>
+		void add_bits(T n, U width) {
+
+			if (width > this->bit_position) {
+
+				auto left_over = width - this->bit_position;
+				width = this->bit_position;
+
+				this->value |= (qpl::u64_cast(n) >> left_over);
+
+				this->write();
+				this->bit_position = qpl::bits_in_type<qpl::u64>() - left_over;
+				this->value = (qpl::u64_cast(n) << this->bit_position);
+			}
+			else {
+				this->bit_position -= width;
+
+				this->value |= (qpl::u64_cast(n) << this->bit_position);
+			}
+			if (this->bit_position == 0) {
+				this->write();
+				this->value = 0;
+				this->bit_position = qpl::bits_in_type<qpl::u64>();
+			}
+			this->position += width;
+		}
+
+		template<typename T> requires (!qpl::is_same<T, std::string>())
+			void add_bits(T n) {
+			this->add_bits(n, qpl::bits_in_type<T>());
+		}
+
+		template<typename T> requires (qpl::is_arithmetic<T>())
+			void add(T n) {
+			this->finish();
+			this->stream.write(reinterpret_cast<char*>(&n), qpl::bytes_in_type<T>());
+			this->position += qpl::bits_in_type<T>();
+		}
+		QPLDLL void add(const std::string& n);
+
+
+	};
+
+
+	struct bit_string_istream {
+		std::string string;
+		qpl::u32 position = 0u;
+		qpl::u32 position_u64_offset = 0u;
+
+		QPLDLL qpl::size size() const;
+		QPLDLL void set(const std::string& string);
+		QPLDLL void reset_position();
+		QPLDLL std::string get_next_string(qpl::u32 size);
+		QPLDLL bool is_done() const;
+		QPLDLL void note_u64_position_offset();
+		QPLDLL void set_position_next_u64_multiple();
+		QPLDLL void set_position(qpl::u32 position);
+
+		template<typename T, typename U>
+		T get_next_bits(U width) {
+			qpl::u64 left = 0;
+			qpl::u64 right = 0;
+
+			auto pos = (this->position - this->position_u64_offset * qpl::bits_in_byte()) / (qpl::bits_in_type<qpl::u64>()) * qpl::bits_in_byte() + this->position_u64_offset;
+			qpl::i64 min = qpl::min(qpl::i64_cast(qpl::bytes_in_type<qpl::u64>()), qpl::i64_cast(this->string.length() - pos));
+			if (min <= 0) {
+				this->position = this->string.length() * qpl::bits_in_byte();
+				return T{ 0 };
+			}
+			memcpy(&left, this->string.data() + pos, min);
+			min = qpl::min(qpl::i64_cast(qpl::bytes_in_type<qpl::u64>()), qpl::i64_cast(this->string.length() - pos - qpl::i64_cast(qpl::bytes_in_type<qpl::u64>())));
+
+			auto mod = (this->position + (qpl::bytes_in_type<qpl::u64>() - this->position_u64_offset) * qpl::bits_in_byte()) % qpl::bits_in_type<qpl::u64>();
+			auto lshift = qpl::bits_in_type<qpl::u64>() - mod;
+			
+			if (min > 0 && mod > width) {
+				memcpy(&right, this->string.data() + pos + qpl::bytes_in_type<qpl::u64>(), min);
+			}
+			qpl::u64 value = (left << mod) | (right >> lshift);
+			value >>= qpl::bits_in_type<qpl::u64>() - width;
+
+			this->position += width;
+			return static_cast<T>(value);
+		}
+
+		template<typename T>
+		T get_next(qpl::u32 size = qpl::bytes_in_type<T>()) {
+
+			T value;
+			memcpy(&value, this->string.data() + this->position / qpl::bits_in_byte(), qpl::bytes_in_type<T>());
+			auto l = qpl::bytes_in_type<T>() - size;
+			if (l) {
+				value >>= l * qpl::bits_in_byte();
+			}
+
+			this->position += size * qpl::bits_in_byte();
+			return value;
+		}
+	};
 }
 
 #endif

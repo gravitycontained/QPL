@@ -21,6 +21,38 @@ namespace qsf {
 			throw std::exception(qpl::to_string("load sound: couldn't find / load \"", path, "\"").c_str());
 		}
 	}
+	void qsf::load_shader(sf::Shader& shader, const std::string& path, sf::Shader::Type shader_type) {
+		if (!shader.loadFromFile(path, shader_type)) {
+			throw std::exception(qpl::to_string("load shader: couldn't find / load \"", path, "\"").c_str());
+		}
+	}
+	void qsf::load_shader(sf::Shader& shader, const std::string& path) {
+		auto split = qpl::split_string(path, '.');
+		if (split.size()) {
+			auto back = split.back();
+			if (qpl::string_equals_ignore_case(back, "frag")) {
+				qsf::load_shader(shader, path, sf::Shader::Type::Fragment);
+			}
+			else if (qpl::string_equals_ignore_case(back, "fragment")) {
+				qsf::load_shader(shader, path, sf::Shader::Type::Fragment);
+			}
+			else if (qpl::string_equals_ignore_case(back, "vert")) {
+				qsf::load_shader(shader, path, sf::Shader::Type::Vertex);
+			}
+			else if (qpl::string_equals_ignore_case(back, "vertex")) {
+				qsf::load_shader(shader, path, sf::Shader::Type::Vertex);
+			}
+			else if (qpl::string_equals_ignore_case(back, "geom")) {
+				qsf::load_shader(shader, path, sf::Shader::Type::Geometry);
+			}
+			else if (qpl::string_equals_ignore_case(back, "geometry")) {
+				qsf::load_shader(shader, path, sf::Shader::Type::Geometry);
+			}
+			else {
+				throw std::exception(qpl::to_string("load shader: can't identify what the shader type for \".", back, "\" is").c_str());
+			}
+		}
+	}
 
 	void qsf::resources::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
 
@@ -54,6 +86,12 @@ namespace qsf {
 	void qsf::resources::add_texture(const std::string& name, const std::string& path) {
 		qsf::load_texture(this->textures[name], path);
 	}
+	void qsf::resources::add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type) {
+		qsf::load_shader(this->shaders[name], path, shader_type);
+	}
+	void qsf::resources::add_shader(const std::string& name, const std::string& path) {
+		qsf::load_shader(this->shaders[name], path);
+	}
 	void qsf::resources::add_sprite(const std::string& name, const std::string& path) {
 		if (this->textures.find(name) == this->textures.cend()) {
 			this->add_texture(name, path);
@@ -74,6 +112,9 @@ namespace qsf {
 	}
 	bool qsf::resources::find_sprite(const std::string& name) const {
 		return this->sprites.find(name) != this->sprites.cend();
+	}
+	bool qsf::resources::find_shader(const std::string& name) const {
+		return this->shaders.find(name) != this->shaders.cend();
 	}
 
 	sf::Font& qsf::resources::get_font(const std::string& name) {
@@ -100,6 +141,12 @@ namespace qsf {
 		}
 		return this->sprites[name];
 	}
+	sf::Shader& qsf::resources::get_shader(const std::string& name) {
+		if (this->shaders.find(name) == this->shaders.cend()) {
+			throw std::runtime_error(qpl::to_string("couldn't find shader with name \"", name, "\""));
+		}
+		return this->shaders[name];
+	}
 
 	const sf::Font& qsf::resources::get_font(const std::string& name) const {
 		if (this->fonts.find(name) == this->fonts.cend()) {
@@ -125,6 +172,13 @@ namespace qsf {
 		}
 		return this->sprites.at(name);
 	}
+	const sf::Shader& qsf::resources::get_shader(const std::string& name) const {
+		if (this->shaders.find(name) == this->shaders.cend()) {
+			throw std::runtime_error(qpl::to_string("couldn't find shader with name \"", name, "\""));
+		}
+		return this->shaders.at(name);
+	}
+
 
 	qsf::resources qsf::detail::resources;
 
@@ -150,6 +204,12 @@ namespace qsf {
 	void qsf::add_sprite(const std::string& name, sf::Texture& texture) {
 		qsf::detail::resources.add_sprite(name, texture);
 	}
+	void qsf::add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type) {
+		qsf::detail::resources.add_shader(name, path, shader_type);
+	}
+	void qsf::add_shader(const std::string& name, const std::string& path) {
+		qsf::detail::resources.add_shader(name, path);
+	}
 
 	sf::Font& qsf::get_font(const std::string& name) {
 		return qsf::detail::resources.get_font(name);
@@ -163,6 +223,9 @@ namespace qsf {
 	sf::Sprite& qsf::get_sprite(const std::string& name) {
 		return qsf::detail::resources.get_sprite(name);
 	}
+	sf::Shader& qsf::get_shader(const std::string& name) {
+		return qsf::detail::resources.get_shader(name);
+	}
 
 	bool qsf::find_font(const std::string& name) {
 		return qsf::detail::resources.find_font(name);
@@ -175,6 +238,9 @@ namespace qsf {
 	}
 	bool qsf::find_sprite(const std::string& name){
 		return qsf::detail::resources.find_sprite(name);
+	}
+	bool qsf::find_shader(const std::string& name) {
+		return qsf::detail::resources.find_shader(name);
 	}
 }
 #endif

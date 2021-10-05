@@ -153,6 +153,11 @@ namespace qpl {
 			this->m_max = max;
 			this->randomize();
 		}
+		void set_random_range(T min, T max) {
+			this->m_min = vectorT::values(min);
+			this->m_max = vectorT::values(max);
+			this->randomize();
+		}
 		void set_random_range(T max) {
 			this->set_random_range(0.0, max);
 		}

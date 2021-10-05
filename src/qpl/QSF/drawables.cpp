@@ -82,7 +82,6 @@ namespace qsf {
 		qsf::graph qsf::detail::graph;
 		qsf::button qsf::detail::button;
 	}
-	qsf::vgraph qsf::drawing_graph;
 
 
 	void qsf::vertex::draw(sf::RenderTarget& window, sf::RenderStates states) const {
@@ -567,6 +566,9 @@ namespace qsf {
 		return this->get_position() + (this->get_dimension() / 2);
 	}
 
+	void qsf::rectangle::move(qpl::vector2f delta) {
+		this->m_rect.move(delta);
+	}
 	qsf::rectangle& qsf::rectangle::operator=(const qsf::vrectangle& rectangle) {
 		this->multiplied_color = qsf::rgb::white;
 		this->set_color(rectangle.color);
@@ -1694,6 +1696,9 @@ namespace qsf {
 	void qsf::sprite::move(qpl::vector2f delta) {
 		this->m_sprite.move(delta);
 	}
+	void qsf::sprite::move_scaled(qpl::vector2f delta) {
+		this->m_sprite.move(delta / this->get_scale());
+	}
 	void qsf::sprite::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		window.draw(this->m_sprite, states);
 	}
@@ -1708,6 +1713,134 @@ namespace qsf {
 		this->m_sprite = sprite;
 		this->color = this->multiplied_color = qsf::rgb::white;
 		return *this;
+	}
+
+
+	void qsf::render_texture::set_antialiasing(qpl::u32 antialiasing) {
+		this->m_settings.antialiasingLevel = antialiasing;
+	}
+	void qsf::render_texture::resize(qpl::vector2i dimension, bool resize_with_window) {
+		this->m_texture.create(dimension.x, dimension.y, this->m_settings);
+		this->m_changed = true;
+		this->m_resize_with_window = resize_with_window;
+	}
+	void qsf::render_texture::set_smooth(bool b) {
+		this->m_smooth = b;
+		this->m_texture.setSmooth(b);
+	}
+	void qsf::render_texture::enable_smooth() {
+		this->set_smooth(true);
+	}
+	void qsf::render_texture::disable_smooth() {
+		this->set_smooth(false);
+	}
+	bool qsf::render_texture::is_smooth() const {
+		return this->m_smooth;
+	}
+	void qsf::render_texture::enable_resize_with_window() {
+		this->m_resize_with_window = true;
+	}
+	void qsf::render_texture::disable_resize_with_window() {
+		this->m_resize_with_window = false;
+	}
+	bool qsf::render_texture::is_resize_with_window_enabled() const {
+		return this->m_resize_with_window;
+	}
+	void qsf::render_texture::enable_clear_with_window() {
+		this->m_clear_with_window = true;
+	}
+	void qsf::render_texture::disable_clear_with_window() {
+		this->m_clear_with_window = false;
+	}
+	bool qsf::render_texture::is_clear_with_window_enabled() const {
+		return this->m_clear_with_window;
+	}
+
+	void qsf::render_texture::set_color(qsf::rgb color) {
+		this->m_sprite.set_color(color);
+	}
+	void qsf::render_texture::set_multiplied_color(qsf::rgb color) {
+		this->m_sprite.set_multiplied_color(color);
+	}
+	void qsf::render_texture::set_position(qpl::vector2f position) {
+		this->m_sprite.set_position(position);
+	}
+	void qsf::render_texture::set_scale(qpl::vector2f scale) {
+		this->m_sprite.set_scale(scale);
+	}
+	void qsf::render_texture::set_scale(qpl::f32 scale) {
+		this->m_sprite.set_scale(scale);
+	}
+	void qsf::render_texture::set_origin(qpl::vector2f origin) {
+		this->m_sprite.set_origin(origin);
+	}
+	void qsf::render_texture::set_rotation(qpl::f32 rotation) {
+		this->m_sprite.set_rotation(rotation);
+	}
+	qsf::rgb qsf::render_texture::get_color() const {
+		return this->m_sprite.get_color();
+	}
+	qsf::rgb qsf::render_texture::get_multiplied_color() const {
+		return this->m_sprite.get_multiplied_color();
+	}
+	qpl::vector2f qsf::render_texture::get_position() const {
+		return this->m_sprite.get_position();
+	}
+	qpl::vector2f qsf::render_texture::get_scale() const {
+		return this->m_sprite.get_scale();
+	}
+	qpl::vector2f qsf::render_texture::get_origin() const {
+		return this->m_sprite.get_origin();
+	}
+	qpl::f32 qsf::render_texture::get_rotation() const {
+		return this->m_sprite.get_rotation();
+	}
+	qpl::vector2f qsf::render_texture::get_dimension() const {
+		return this->m_texture.getSize();
+	}
+	qpl::vector2f qsf::render_texture::get_center() const {
+		return this->m_sprite.get_position() + this->get_dimension() / 2;
+	}
+
+	void qsf::render_texture::move(qpl::vector2f delta) {
+		this->m_sprite.move(delta);
+	}
+	void qsf::render_texture::move_scaled(qpl::vector2f delta) {
+		this->m_sprite.move(delta / this->get_scale());
+	}
+	const qsf::sprite& qsf::render_texture::get_sprite() const {
+		if (this->m_changed) {
+			this->apply();
+		}
+		return this->m_sprite;
+	}
+	void qsf::render_texture::clear() {
+		this->m_texture.clear();
+	}
+	void qsf::render_texture::display() {
+		this->m_texture.display();
+	}
+
+	const sf::RenderStates& qsf::render_texture::get_render_states() const {
+		return this->m_states;
+	}
+	const sf::Texture& qsf::render_texture::get_texture() const {
+		return this->m_texture.getTexture();
+	}
+
+	void qsf::render_texture::set_shader(const std::string& name) {
+		this->m_states.shader = &qsf::get_shader(name);
+	}
+	void qsf::render_texture::set_shader(sf::Shader& shader) {
+		this->m_states.shader = &shader;
+	}
+	void qsf::render_texture::unbind_shader() {
+		this->m_states.shader = nullptr;
+	}
+	void qsf::render_texture::apply() const {
+		this->m_texture.display();
+		this->m_sprite.set_texture(this->m_texture.getTexture());
+		this->m_changed = false;
 	}
 
 	void qsf::pixel_image::set_array_dimension(qpl::vector2u dimension) {
@@ -2454,7 +2587,7 @@ namespace qsf {
 						j.text.draw(window, states);
 					}
 					else {
-						window.draw(this->sprites[j.sprite_index]);
+						window.draw(this->sprites[j.sprite_index], states);
 					}
 				}
 			}
@@ -2526,14 +2659,21 @@ namespace qsf {
 	void qsf::text_stream::set_position(qpl::vector2f position) {
 		auto diff = position - this->position;
 		this->position = position;
-		for (auto& i : this->objects) {
-			for (auto& j : i) {
-				j.hitbox.move(diff);
-				if (j.is_text()) {
-					j.text.move(diff);
-				}
-				else {
-					this->sprites[j.sprite_index].move(diff);
+		this->move(diff);
+	}
+	void qsf::text_stream::move(qpl::vector2f delta) {
+
+		if (delta != qpl::vector2f::zero()) {
+
+			for (auto& i : this->objects) {
+				for (auto& j : i) {
+					j.hitbox.move(delta);
+					if (j.is_text()) {
+						j.text.move(delta);
+					}
+					else {
+						this->sprites[j.sprite_index].move(delta);
+					}
 				}
 			}
 		}

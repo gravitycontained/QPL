@@ -8,6 +8,7 @@
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/string.hpp>
 #include <qpl/vector.hpp>
+#include <qpl/type_traits.hpp>
 
 #include <functional>
 #include <string>
@@ -17,8 +18,15 @@
 
 namespace qsf {
 	struct draw_object;
-
-
+	struct render_texture;
+	
+	template<typename C>
+	concept is_render_texture_c = qpl::is_same_decayed<C, qsf::render_texture>();
+	
+	template<typename C>
+	constexpr bool is_render_texture() {
+		return is_render_texture_c<C>;
+	}
 	template<typename C>
 	concept has_draw_object_c = requires (const C x, draw_object & object) {
 		x.draw(object);
@@ -37,7 +45,7 @@ namespace qsf {
 	}
 
 	template<typename C>
-	concept has_any_draw_c = has_draw_sf_c<C> || has_draw_object_c<C> || std::is_base_of_v<sf::Drawable, C>;
+	concept has_any_draw_c = is_render_texture_c<C> || has_draw_sf_c<C> || has_draw_object_c<C> || std::is_base_of_v<sf::Drawable, C>;
 
 	template<typename C>
 	constexpr bool has_any_draw() {
@@ -47,22 +55,80 @@ namespace qsf {
 	struct draw_object {
 		draw_object(sf::RenderWindow& window, sf::RenderStates states = sf::RenderStates::Default) {
 			this->window = &window;
+			this->texture = nullptr;
+			this->states = states;
+		}
+		draw_object(sf::RenderTexture& texture, sf::RenderStates states = sf::RenderStates::Default) {
+			this->texture = &texture;
+			this->window = nullptr;
 			this->states = states;
 		}
 
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>())
 		void draw(const T& object) {
-			if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->window->draw(object, this->states);
+			if constexpr (qsf::is_render_texture<T>()) {
+				if (this->window) {
+					this->window->draw(object.get_sprite(), this->states);
+				}
+				else if (this->texture) {
+					this->texture->draw(object.get_sprite(), this->states);
+				}
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				if (this->window) {
+					this->window->draw(object, this->states);
+				}
+				else if (this->texture) {
+					this->texture->draw(object, this->states);
+				}
 			}
 			else if constexpr (qsf::has_draw_object<T>()) {
 				object.draw(*this);
 			}
 			else if constexpr (qsf::has_draw_sf<T>()) {
-				object.draw(*this->window, this->states);
+				if (this->window) {
+					object.draw(*this->window, this->states);
+				}
+				else if (this->texture) {
+					object.draw(*this->texture, this->states);
+				}
+			}
+		}
+		template<typename T> requires (qsf::has_any_draw<T>())
+		void draw(const T& object, sf::RenderStates states) {
+			if constexpr (qsf::is_render_texture<T>()) {
+				if (this->window) {
+					this->window->draw(object.get_sprite(), states);
+				}
+				else if (this->texture) {
+					this->texture->draw(object.get_sprite(), states);
+				}
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				if (this->window) {
+					this->window->draw(object, states);
+				}
+				else if (this->texture) {
+					this->texture->draw(object, states);
+				}
+			}
+			else if constexpr (qsf::has_draw_object<T>()) {
+				auto copy = this->states;
+				this->states = states;
+				object.draw(*this);
+				this->states = copy;
+			}
+			else if constexpr (qsf::has_draw_sf<T>()) {
+				if (this->window) {
+					object.draw(*this->window, states);
+				}
+				else if (this->texture) {
+					object.draw(*this->texture, states);
+				}
 			}
 		}
 		sf::RenderWindow* window;
+		sf::RenderTexture* texture;
 		sf::RenderStates states;
 	};
 
@@ -375,6 +441,7 @@ namespace qsf {
 		QPLDLL qsf::vlines as_lines_completed() const;
 
 		QPLDLL qpl::vector2f center() const;
+		QPLDLL void move(qpl::vector2f delta);
 
 		QPLDLL qsf::rectangle& operator=(const qsf::vrectangle& rectangle);
 
@@ -907,12 +974,118 @@ namespace qsf {
 		QPLDLL qpl::f32 get_rotation() const;
 
 		QPLDLL void move(qpl::vector2f delta);
+		QPLDLL void move_scaled(qpl::vector2f delta);
 
 		QPLDLL operator sf::Sprite& ();
 		QPLDLL operator const sf::Sprite& () const;
 		QPLDLL qsf::sprite& operator=(const sf::Sprite& sprite);
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+	};
+
+
+	struct render_texture {
+
+		QPLDLL void set_antialiasing(qpl::u32 antialiasing);
+		QPLDLL void resize(qpl::vector2i dimension, bool resize_with_window = false);
+		QPLDLL void set_smooth(bool smooth);
+		QPLDLL void enable_smooth();
+		QPLDLL void disable_smooth();
+		QPLDLL bool is_smooth() const;
+		QPLDLL void enable_resize_with_window();
+		QPLDLL void disable_resize_with_window();
+		QPLDLL bool is_resize_with_window_enabled() const;
+
+		QPLDLL void enable_clear_with_window();
+		QPLDLL void disable_clear_with_window();
+		QPLDLL bool is_clear_with_window_enabled() const;
+
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_multiplied_color(qsf::rgb color);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_scale(qpl::vector2f scale);
+		QPLDLL void set_scale(qpl::f32 scale);
+		QPLDLL void set_origin(qpl::vector2f origin);
+		QPLDLL void set_rotation(qpl::f32 rotation);
+
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qsf::rgb get_multiplied_color() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_scale() const;
+		QPLDLL qpl::vector2f get_origin() const;
+		QPLDLL qpl::f32 get_rotation() const;
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_center() const;
+
+		QPLDLL void move(qpl::vector2f delta);
+		QPLDLL void move_scaled(qpl::vector2f delta);
+
+		QPLDLL const qsf::sprite& get_sprite() const;
+		QPLDLL void clear();
+		QPLDLL void display();
+
+		QPLDLL const sf::RenderStates& get_render_states() const;
+		QPLDLL const sf::Texture& get_texture() const;
+
+		QPLDLL void set_shader(const std::string& name);
+		QPLDLL void set_shader(sf::Shader& shader);
+		QPLDLL void unbind_shader();
+
+		template<typename T> requires (qsf::has_any_draw<T>())
+		void draw(const T& object) {
+			if constexpr (qsf::is_render_texture<T>()) {
+				this->m_texture.draw(object.get_sprite(), this->m_states);
+				this->m_changed = true;
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->m_texture.draw(object, this->m_states);
+				this->m_changed = true;
+			}
+			else if constexpr (qsf::has_draw_object<T>()) {
+				draw_object draw(this->m_texture, this->m_states);
+				object.draw(draw);
+				this->m_changed = true;
+			}
+			else if constexpr (qsf::has_draw_sf<T>()) {
+				object.draw(this->m_texture, this->m_states);
+				this->m_changed = true;
+			}
+		}
+
+		template<typename T> requires (qsf::has_any_draw<T>())
+		void draw(const T& object, sf::RenderStates states) {
+			if constexpr (qsf::is_render_texture<T>()) {
+				this->m_texture.draw(object.get_sprite(), states);
+				this->m_changed = true;
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->m_texture.draw(object, states);
+				this->m_changed = true;
+			}
+			else if constexpr (qsf::has_draw_object<T>()) {
+				draw_object draw(this->m_texture, states);
+				object.draw(draw);
+				this->m_changed = true;
+			}
+			else if constexpr (qsf::has_draw_sf<T>()) {
+				object.draw(this->m_texture, states);
+				this->m_changed = true;
+			}
+		}
+
+
+
+	private:
+		QPLDLL void apply() const;
+
+		mutable sf::RenderTexture m_texture;
+		mutable qsf::sprite m_sprite;
+		mutable bool m_changed = false;
+		bool m_smooth = false;
+		bool m_resize_with_window = true;
+		bool m_clear_with_window = true;
+		sf::RenderStates m_states;
+		sf::ContextSettings m_settings;
 	};
 
 	struct pixel_image {
@@ -1396,6 +1569,7 @@ namespace qsf {
 		QPLDLL void set_outline_color(qsf::rgb color);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
 		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void move(qpl::vector2f delta);
 		QPLDLL qpl::hitbox get_visible_hitbox() const;
 
 		QPLDLL void update_size_changes();
@@ -2442,7 +2616,6 @@ namespace qsf {
 		}
 
 		void draw(qsf::draw_object& object) const {
-
 			if (this->background_visible) object.draw(this->background);
 			if (this->knob_visible) object.draw(this->knob);
 		}

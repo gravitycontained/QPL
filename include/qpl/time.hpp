@@ -378,7 +378,7 @@ namespace qpl {
 				this->reversed = true;
 			}
 		}
-		void go_forward() {
+		void go_forwards() {
 			if (this->is_running()) {
 				if (this->is_reversed()) {
 					auto progress = this->get_progress();
@@ -413,7 +413,7 @@ namespace qpl {
 		}
 		void swap() {
 			if (this->is_reversed()) {
-				this->go_forward();
+				this->go_forwards();
 			}
 			else {
 				this->go_backwards();

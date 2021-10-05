@@ -83,29 +83,25 @@ namespace qpl {
 		qpl::detail::calculate_sbox_inv();
 	}
 
-	void qpl::AES::construct() {
+	void qpl::aes::construct() {
 		this->m_constructed = true;
-		this->set_mode(mode::AES_128);
+		this->set_mode(mode::aes_128);
 		if (!qpl::detail::aes_tables) {
 			qpl::generate_all_aes_tables();
 		}
 	}
-	void qpl::AES::error_if_not_constructed() const {
+	void qpl::aes::error_if_not_constructed() const {
 		if (!this->m_constructed) {
-			throw std::exception(qpl::to_string("qpl::AES: tries to access, but it was not constructed yet. call construct()").c_str());
+			throw std::exception(qpl::to_string("qpl::aes: tries to access, but it was not constructed yet. call construct()").c_str());
 		}
 	}
-	void qpl::AES::check_constructed() {
+	void qpl::aes::check_constructed() {
 		if (!this->m_constructed) {
 			this->construct();
 		}
 	}
-	void qpl::AES::destroy() {
-		delete[] this->m_key;
-		delete[] this->m_round_key;
-	}
 
-	std::string qpl::AES::encrypted(const qpl::u8 message[16], const std::string& key) {
+	std::string qpl::aes::encrypted(const qpl::u8 message[16], const std::string& key) {
 		this->check_constructed();
 		this->set_state(message);
 		this->set_key(key);
@@ -113,7 +109,7 @@ namespace qpl {
 		this->cipher();
 		return this->get_message();
 	}
-	std::vector<qpl::u8> qpl::AES::encrypted(const qpl::u8* message, qpl::size size, const std::string& key) {
+	std::vector<qpl::u8> qpl::aes::encrypted(const qpl::u8* message, qpl::size size, const std::string& key) {
 		this->check_constructed();
 		this->set_key(key);
 		this->expand_key();
@@ -175,32 +171,32 @@ namespace qpl {
 
 		return result;
 	}
-	std::string qpl::AES::encrypted(const std::string& message, const std::string& key) {
-		auto s = qpl::AES::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
+	std::string qpl::aes::encrypted(const std::string& message, const std::string& key) {
+		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
 		return std::string(std::move(reinterpret_cast<const char*>(s.data())), s.size());
 	}
-	std::wstring qpl::AES::encrypted(const std::wstring& message, const std::string& key) {
-		auto s = qpl::AES::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length() * (sizeof(wchar_t) / sizeof(char)), key);
+	std::wstring qpl::aes::encrypted(const std::wstring& message, const std::string& key) {
+		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length() * (sizeof(wchar_t) / sizeof(char)), key);
 		return std::wstring(std::move(reinterpret_cast<const wchar_t*>(s.data())), s.size() / (sizeof(wchar_t) / sizeof(char)));
 	}
-	std::string qpl::AES::encrypted(const std::vector<char>& message, const std::string& key) {
-		auto s = qpl::AES::encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size(), key);
+	std::string qpl::aes::encrypted(const std::vector<char>& message, const std::string& key) {
+		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size(), key);
 		return std::string(std::move(reinterpret_cast<const char*>(s.data())), s.size());
 	}
-	std::wstring qpl::AES::encrypted(const std::vector<wchar_t>& message, const std::string& key) {
-		auto s = qpl::AES::encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size() * (sizeof(wchar_t) / sizeof(char)), key);
+	std::wstring qpl::aes::encrypted(const std::vector<wchar_t>& message, const std::string& key) {
+		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size() * (sizeof(wchar_t) / sizeof(char)), key);
 		return std::wstring(std::move(reinterpret_cast<const wchar_t*>(s.data())), s.size() / (sizeof(wchar_t) / sizeof(char)));
 	}
-	void qpl::AES::encrypt(std::string& message, const std::string& key) {
-		auto s = qpl::AES::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
+	void qpl::aes::encrypt(std::string& message, const std::string& key) {
+		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
 		qpl::container_memory_to_string(s, message);
 	}
-	void qpl::AES::encrypt(std::wstring& message, const std::string& key) {
-		auto s = qpl::AES::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length()* (sizeof(wchar_t) / sizeof(char)), key);
+	void qpl::aes::encrypt(std::wstring& message, const std::string& key) {
+		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length()* (sizeof(wchar_t) / sizeof(char)), key);
 		qpl::container_memory_to_wstring(s, message);
 	}
 
-	std::string qpl::AES::decrypted(const qpl::u8 message[16], const std::string& key) {
+	std::string qpl::aes::decrypted(const qpl::u8 message[16], const std::string& key) {
 		this->check_constructed();
 		this->set_state(message);
 		this->set_key(key);
@@ -208,7 +204,7 @@ namespace qpl {
 		this->decipher();
 		return this->get_message();
 	}
-	std::vector<qpl::u8> qpl::AES::decrypted(const qpl::u8* message, qpl::size size, const std::string& key, bool remove_null_terminations) {
+	std::vector<qpl::u8> qpl::aes::decrypted(const qpl::u8* message, qpl::size size, const std::string& key, bool remove_null_terminations) {
 		this->check_constructed();
 		this->set_key(key);
 		this->expand_key();
@@ -284,76 +280,72 @@ namespace qpl {
 		return result;
 	}
 	
-	std::string qpl::AES::decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
-		auto s = qpl::AES::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key, remove_null_terminations);
+	std::string qpl::aes::decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
+		auto s = qpl::aes::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key, remove_null_terminations);
 		return std::string(std::move(reinterpret_cast<const char*>(s.data())), s.size());
 	}
-	std::wstring qpl::AES::decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		auto s = qpl::AES::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length() * (sizeof(wchar_t) / sizeof(char)), key, remove_null_terminations);
+	std::wstring qpl::aes::decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		auto s = qpl::aes::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length() * (sizeof(wchar_t) / sizeof(char)), key, remove_null_terminations);
 		return std::wstring(std::move(reinterpret_cast<const wchar_t*>(s.data())), s.size() / (sizeof(wchar_t) / sizeof(char)));
 	}
-	std::string qpl::AES::decrypted(const std::vector<char>& message, const std::string& key, bool remove_null_terminations) {
-		auto s = qpl::AES::decrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size(), key, remove_null_terminations);
+	std::string qpl::aes::decrypted(const std::vector<char>& message, const std::string& key, bool remove_null_terminations) {
+		auto s = qpl::aes::decrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size(), key, remove_null_terminations);
 		return std::string(std::move(reinterpret_cast<const char*>(s.data())), s.size());
 	}
-	std::wstring qpl::AES::decrypted(const std::vector<wchar_t>& message, const std::string& key, bool remove_null_terminations) {
-		auto s = qpl::AES::decrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size() * (sizeof(wchar_t) / sizeof(char)), key, remove_null_terminations);
+	std::wstring qpl::aes::decrypted(const std::vector<wchar_t>& message, const std::string& key, bool remove_null_terminations) {
+		auto s = qpl::aes::decrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size() * (sizeof(wchar_t) / sizeof(char)), key, remove_null_terminations);
 		return std::wstring(std::move(reinterpret_cast<const wchar_t*>(s.data())), s.size() / (sizeof(wchar_t) / sizeof(char)));
 	}
 
-	void qpl::AES::decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
-		auto s = qpl::AES::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.size(), key, remove_null_terminations);
+	void qpl::aes::decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
+		auto s = qpl::aes::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.size(), key, remove_null_terminations);
 		qpl::container_memory_to_string(s, message);
 	}
-	void qpl::AES::decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		auto s = qpl::AES::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.size()* (sizeof(wchar_t) / sizeof(char)), key, remove_null_terminations);
+	void qpl::aes::decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		auto s = qpl::aes::decrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.size()* (sizeof(wchar_t) / sizeof(char)), key, remove_null_terminations);
 		qpl::container_memory_to_wstring(s, message);
 	}
 
 
-	void qpl::AES::set_mode(mode m) {
+	void qpl::aes::set_mode(mode m) {
 		this->check_constructed();
 		this->m_mode = m;
 
-		if (m == mode::AES_128) {
+		if (m == mode::aes_128) {
 			this->m_key_size = 16u;
 			this->m_cipher_rounds = 10u;
 		}
-		else if (m == mode::AES_192) {
+		else if (m == mode::aes_192) {
 			this->m_key_size = 24u;
 			this->m_cipher_rounds = 12u;
 		}
-		else if (m == mode::AES_256) {
+		else if (m == mode::aes_256) {
 			this->m_key_size = 32u;
 			this->m_cipher_rounds = 14u;
 		}
 		this->m_round_key_size = 16 * (this->m_cipher_rounds + 1);
 
-		delete[] this->m_key;
-		delete[] this->m_round_key;
-
-		this->m_key = new qpl::u8[this->m_key_size];
-		this->m_round_key = new qpl::u8[this->m_round_key_size];
+		this->m_key.resize(this->m_key_size);
+		this->m_round_key.resize(this->m_round_key_size);
 	}
-	qpl::size qpl::AES::get_cipher_rounds() const {
+	qpl::size qpl::aes::get_cipher_rounds() const {
 		return this->m_cipher_rounds;
 	}
-	void qpl::AES::set_cipher_rounds(qpl::size count) {
+	void qpl::aes::set_cipher_rounds(qpl::size count) {
 		this->check_constructed();
 		this->m_cipher_rounds = count;
 		this->m_round_key_size = 16 * (this->m_cipher_rounds + 1);
-		delete[] this->m_round_key;
-		this->m_round_key = new qpl::u8[this->m_round_key_size];
+		this->m_round_key.resize(this->m_round_key_size);
 	}
 
-	void qpl::AES::copy_message(qpl::u8* newState) const {
+	void qpl::aes::copy_message(qpl::u8* newState) const {
 		this->error_if_not_constructed();
 		for (int i = 0; i < 16; ++i) {
 			newState[i] = this->m_state[i];
 		}
 	}
 
-	std::string qpl::AES::get_message() const {
+	std::string qpl::aes::get_message() const {
 		this->error_if_not_constructed();
 		std::string result;
 		result.reserve(16);
@@ -362,17 +354,17 @@ namespace qpl {
 		}
 		return result;
 	}
-	bool qpl::AES::is_constructed() const {
+	bool qpl::aes::is_constructed() const {
 		return this->m_constructed;
 	}
 
-	void qpl::AES::set_state(const qpl::u8 state[16]) {
+	void qpl::aes::set_state(const qpl::u8 state[16]) {
 		for (int i = 0; i < 16; ++i) {
 			this->m_state[i] = state[i];
 		}
 	}
 
-	void qpl::AES::set_state(const std::string state) {
+	void qpl::aes::set_state(const std::string state) {
 		qpl::size i = 0;
 		for (; i < qpl::min(state.length(), qpl::size(16u)); ++i) {
 			this->m_state[i] = state[i];
@@ -382,7 +374,7 @@ namespace qpl {
 		}
 	}
 
-	void qpl::AES::set_key(const std::vector<qpl::u8>& key) {
+	void qpl::aes::set_key(const std::vector<qpl::u8>& key) {
 		qpl::size i = 0;
 		for (; i < qpl::min(key.size(), this->m_key_size); ++i) {
 			this->m_key[i] = key[i];
@@ -392,7 +384,7 @@ namespace qpl {
 		}
 	}
 
-	void qpl::AES::set_key(const std::string& key) {
+	void qpl::aes::set_key(const std::string& key) {
 		qpl::size i = 0;
 		for (; i < qpl::min(key.length(), this->m_key_size); ++i) {
 			this->m_key[i] = key[i];
@@ -403,7 +395,7 @@ namespace qpl {
 	}
 
 
-	void qpl::AES::expand_key() {
+	void qpl::aes::expand_key() {
 		qpl::size bytes_generated = 0;
 		qpl::u8 helperWORD[4];
 
@@ -444,7 +436,7 @@ namespace qpl {
 		}
 	}
 
-	void qpl::AES::cipher() {
+	void qpl::aes::cipher() {
 		this->add_round_key(0);
 
 		for (qpl::size round = 1u; round < this->m_cipher_rounds; ++round) {
@@ -458,7 +450,7 @@ namespace qpl {
 		this->add_round_key(static_cast<int>(this->m_cipher_rounds));
 	}
 
-	void qpl::AES::decipher() {
+	void qpl::aes::decipher() {
 		int round = static_cast<int>(this->m_cipher_rounds);
 
 		this->add_round_key(round);
@@ -474,25 +466,25 @@ namespace qpl {
 		this->add_round_key(0);
 	}
 
-	void qpl::AES::add_round_key(qpl::size rounds) {
+	void qpl::aes::add_round_key(qpl::size rounds) {
 		for (int i = 0; i < 16; ++i) {
 			this->m_state[i] ^= this->m_round_key[rounds * 16 + i];
 		}
 	}
 
-	void qpl::AES::sub_bytes() {
+	void qpl::aes::sub_bytes() {
 		for (int i = 0; i < 16; ++i) {
 			this->m_state[i] = qpl::detail::aes_tables->sbox[this->m_state[i]];
 		}
 	}
 
-	void qpl::AES::unsub_bytes() {
+	void qpl::aes::unsub_bytes() {
 		for (int i = 0; i < 16; ++i) {
 			this->m_state[i] = qpl::detail::aes_tables->sbox_inv[this->m_state[i]];
 		}
 	}
 
-	void qpl::AES::shift_rows() {
+	void qpl::aes::shift_rows() {
 		for (int row = 1; row < 4; ++row) {
 			qpl::u8 temp[4];
 			for (int i = 0; i < 4; ++i) {
@@ -504,7 +496,7 @@ namespace qpl {
 		}
 	}
 
-	void qpl::AES::unshift_rows() {
+	void qpl::aes::unshift_rows() {
 		for (int row = 1; row < 4; ++row) {
 			qpl::u8 temp[4];
 			for (int i = 0; i < 4; ++i) {
@@ -516,7 +508,7 @@ namespace qpl {
 		}
 	}
 
-	void qpl::AES::mix_columns() {
+	void qpl::aes::mix_columns() {
 		for (int columns = 0; columns < 4; ++columns) {
 
 			int index0 = columns * 4 + 0;
@@ -536,7 +528,7 @@ namespace qpl {
 		}
 	}
 
-	void qpl::AES::unmix_columns() {
+	void qpl::aes::unmix_columns() {
 		for (int columns = 0; columns < 4; ++columns) {
 
 			int index0 = columns * 4 + 0;
@@ -557,110 +549,121 @@ namespace qpl {
 	}
 	
 
-	qpl::AES qpl::detail::aes(false);
+	qpl::aes qpl::detail::aes(false);
 
-	std::string qpl::AES_256_encrypted(const std::string& message, const std::string & key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	std::string qpl::aes_256_encrypted(const std::string& message, const std::string & key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		return qpl::detail::aes.encrypted(message, key);
 	}
-	std::string qpl::AES_192_encrypted(const std::string& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	std::string qpl::aes_192_encrypted(const std::string& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		return qpl::detail::aes.encrypted(message, key);
 	}
-	std::string qpl::AES_128_encrypted(const std::string& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	std::string qpl::aes_128_encrypted(const std::string& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		return qpl::detail::aes.encrypted(message, key);
 	}
 
-	std::string qpl::AES_256_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	std::string qpl::aes_256_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		return qpl::detail::aes.decrypted(message, key, remove_null_terminations);
 	}
-	std::string qpl::AES_192_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	std::string qpl::aes_192_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		return qpl::detail::aes.decrypted(message, key, remove_null_terminations);
 	}
-	std::string qpl::AES_128_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	std::string qpl::aes_128_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		return qpl::detail::aes.decrypted(message, key, remove_null_terminations);
 	}
 
-	void qpl::AES_256_encrypt(std::string& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	void qpl::aes_256_encrypt(std::string& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		qpl::detail::aes.encrypt(message, key);
 	}
-	void qpl::AES_192_encrypt(std::string& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	void qpl::aes_192_encrypt(std::string& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		qpl::detail::aes.encrypt(message, key);
 	}
-	void qpl::AES_128_encrypt(std::string& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	void qpl::aes_128_encrypt(std::string& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		qpl::detail::aes.encrypt(message, key);
 	}
 	
-	void qpl::AES_256_decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	void qpl::aes_256_decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		qpl::detail::aes.decrypt(message, key, remove_null_terminations);
 	}
-	void qpl::AES_192_decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	void qpl::aes_192_decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		qpl::detail::aes.decrypt(message, key, remove_null_terminations);
 	}
-	void qpl::AES_128_decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	void qpl::aes_128_decrypt(std::string& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		qpl::detail::aes.decrypt(message, key, remove_null_terminations);
 	}
 
-	std::wstring qpl::AES_256_encrypted(const std::wstring& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	std::wstring qpl::aes_256_encrypted(const std::wstring& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		return qpl::detail::aes.encrypted(message, key);
 	}
-	std::wstring qpl::AES_192_encrypted(const std::wstring& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	std::wstring qpl::aes_192_encrypted(const std::wstring& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		return qpl::detail::aes.encrypted(message, key);
 	}
-	std::wstring qpl::AES_128_encrypted(const std::wstring& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	std::wstring qpl::aes_128_encrypted(const std::wstring& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		return qpl::detail::aes.encrypted(message, key);
 	}
 
-	std::wstring qpl::AES_256_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	std::wstring qpl::aes_256_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		return qpl::detail::aes.decrypted(message, key, remove_null_terminations);
 	}
-	std::wstring qpl::AES_192_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	std::wstring qpl::aes_192_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		return qpl::detail::aes.decrypted(message, key, remove_null_terminations);
 	}
-	std::wstring qpl::AES_128_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	std::wstring qpl::aes_128_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		return qpl::detail::aes.decrypted(message, key, remove_null_terminations);
 	}
 
-	void qpl::AES_256_encrypt(std::wstring& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	void qpl::aes_256_encrypt(std::wstring& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		qpl::detail::aes.encrypt(message, key);
 	}
-	void qpl::AES_192_encrypt(std::wstring& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	void qpl::aes_192_encrypt(std::wstring& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		qpl::detail::aes.encrypt(message, key);
 	}
-	void qpl::AES_128_encrypt(std::wstring& message, const std::string& key) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	void qpl::aes_128_encrypt(std::wstring& message, const std::string& key) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		qpl::detail::aes.encrypt(message, key);
 	}
 
-	void qpl::AES_256_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_256);
+	void qpl::aes_256_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_256);
 		qpl::detail::aes.decrypt(message, key, remove_null_terminations);
 	}
-	void qpl::AES_192_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_192);
+	void qpl::aes_192_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_192);
 		qpl::detail::aes.decrypt(message, key, remove_null_terminations);
 	}
-	void qpl::AES_128_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
-		qpl::detail::aes.set_mode(qpl::AES::mode::AES_128);
+	void qpl::aes_128_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations) {
+		qpl::detail::aes.set_mode(qpl::aes::mode::aes_128);
 		qpl::detail::aes.decrypt(message, key, remove_null_terminations);
 	}
 
+	void make_string_multiple_of_16_bytes(std::string& string) {
+		auto s = string.size() % 16;
+		if (!s) return;
+		string.append(std::string(16 - s, '\0'));
+	}
+	std::string qpl::encrypt(const std::string& message, const std::string& key) {
+		return qpl::aes_256_encrypted(message, key);
+	}
+	std::string qpl::decrypt(const std::string& message, const std::string& key) {
+		return qpl::aes_256_decrypted(message, key);
+	}
 }

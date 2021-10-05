@@ -1,5 +1,5 @@
-#ifndef QPL_AES_HPP
-#define QPL_AES_HPP
+#ifndef QPL_aes_HPP
+#define QPL_aes_HPP
 #pragma once
 #include <cstdlib>
 #include <memory>
@@ -36,19 +36,16 @@ namespace qpl {
 
 		QPLDLL void generate_all_aes_tables();
 
-		class AES {
+		class aes {
 		public:
 			enum class mode {
-				AES_128, AES_192, AES_256
+				aes_128, aes_192, aes_256
 			};
 
-			AES(bool construct = true) {
+			aes(bool construct = true) {
 				if (construct) {
 					this->construct();
 				}
-			}
-			~AES() {
-				this->destroy();
 			}
 
 			QPLDLL std::string encrypted(const qpl::u8 message[16], const std::string& key);
@@ -72,8 +69,8 @@ namespace qpl {
 			QPLDLL void decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
 
 			QPLDLL void set_mode(mode m);
-			QPLDLL qpl::size get_cipher_rounds() const;
 			QPLDLL void set_cipher_rounds(qpl::size count);
+			QPLDLL qpl::size get_cipher_rounds() const;
 			QPLDLL void copy_message(qpl::u8* newState) const;
 			QPLDLL std::string get_message() const;
 
@@ -82,7 +79,6 @@ namespace qpl {
 		private:
 			QPLDLL void error_if_not_constructed() const;
 			QPLDLL void check_constructed();
-			QPLDLL void destroy();
 
 			QPLDLL void set_state(const qpl::u8 state[16]);
 			QPLDLL void set_state(const std::string state);
@@ -104,8 +100,8 @@ namespace qpl {
 			bool m_constructed = false;
 			mode m_mode;
 			qpl::u8 m_state[16];
-			qpl::u8* m_key;
-			qpl::u8* m_round_key;
+			std::vector<qpl::u8> m_key;
+			std::vector<qpl::u8> m_round_key;
 
 			qpl::size m_key_size;
 			qpl::size m_cipher_rounds;
@@ -113,43 +109,45 @@ namespace qpl {
 
 		};
 		namespace detail {
-			QPLDLL extern qpl::AES aes;
+			QPLDLL extern qpl::aes aes;
 		}
 
-		QPLDLL std::string AES_256_encrypted(const std::string& message, const std::string& key);
-		QPLDLL std::string AES_192_encrypted(const std::string& message, const std::string& key);
-		QPLDLL std::string AES_128_encrypted(const std::string& message, const std::string& key);
+		QPLDLL std::string aes_256_encrypted(const std::string& message, const std::string& key);
+		QPLDLL std::string aes_192_encrypted(const std::string& message, const std::string& key);
+		QPLDLL std::string aes_128_encrypted(const std::string& message, const std::string& key);
 
-		QPLDLL std::string AES_256_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL std::string AES_192_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL std::string AES_128_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL std::string aes_256_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL std::string aes_192_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL std::string aes_128_decrypted(const std::string& message, const std::string& key, bool remove_null_terminations = false);
 
-		QPLDLL void AES_256_encrypt(std::string& message, const std::string& key);
-		QPLDLL void AES_192_encrypt(std::string& message, const std::string& key);
-		QPLDLL void AES_128_encrypt(std::string& message, const std::string& key);
+		QPLDLL void aes_256_encrypt(std::string& message, const std::string& key);
+		QPLDLL void aes_192_encrypt(std::string& message, const std::string& key);
+		QPLDLL void aes_128_encrypt(std::string& message, const std::string& key);
 		
-		QPLDLL void AES_256_decrypt(std::string& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL void AES_192_decrypt(std::string& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL void AES_128_decrypt(std::string& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL void aes_256_decrypt(std::string& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL void aes_192_decrypt(std::string& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL void aes_128_decrypt(std::string& message, const std::string& key, bool remove_null_terminations = false);
 
-		QPLDLL std::wstring AES_256_encrypted(const std::wstring& message, const std::string& key);
-		QPLDLL std::wstring AES_192_encrypted(const std::wstring& message, const std::string& key);
-		QPLDLL std::wstring AES_128_encrypted(const std::wstring& message, const std::string& key);
+		QPLDLL std::wstring aes_256_encrypted(const std::wstring& message, const std::string& key);
+		QPLDLL std::wstring aes_192_encrypted(const std::wstring& message, const std::string& key);
+		QPLDLL std::wstring aes_128_encrypted(const std::wstring& message, const std::string& key);
 				
-		QPLDLL std::wstring AES_256_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL std::wstring AES_192_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL std::wstring AES_128_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL std::wstring aes_256_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL std::wstring aes_192_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL std::wstring aes_128_decrypted(const std::wstring& message, const std::string& key, bool remove_null_terminations = false);
 
-		QPLDLL void AES_256_encrypt(std::wstring& message, const std::string& key);
-		QPLDLL void AES_192_encrypt(std::wstring& message, const std::string& key);
-		QPLDLL void AES_128_encrypt(std::wstring& message, const std::string& key);
+		QPLDLL void aes_256_encrypt(std::wstring& message, const std::string& key);
+		QPLDLL void aes_192_encrypt(std::wstring& message, const std::string& key);
+		QPLDLL void aes_128_encrypt(std::wstring& message, const std::string& key);
 
-		QPLDLL void AES_256_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL void AES_192_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
-		QPLDLL void AES_128_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL void aes_256_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL void aes_192_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
+		QPLDLL void aes_128_decrypt(std::wstring& message, const std::string& key, bool remove_null_terminations = false);
 
+		QPLDLL void make_string_multiple_of_16_bytes(std::string& string);
 
-
+		QPLDLL std::string encrypt(const std::string& message, const std::string& key);
+		QPLDLL std::string decrypt(const std::string& message, const std::string& key);
 }
 
 #endif

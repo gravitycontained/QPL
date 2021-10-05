@@ -13,6 +13,7 @@
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
+#include <qpl/QSF/resources.hpp>
 #include <qpl/vector.hpp>
 #include <qpl/time.hpp>
 
@@ -56,18 +57,22 @@ namespace qsf {
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
+		QPLDLL void add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type);
+		QPLDLL void add_shader(const std::string& name, const std::string& path);
 		QPLDLL void add_text(const std::string& name);
 
 		QPLDLL sf::Font& get_font(const std::string& name);
 		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
+		QPLDLL sf::Shader& get_shader(const std::string& name);
 		QPLDLL qsf::text& get_text(const std::string& name);
 
 		QPLDLL const sf::Font& get_font(const std::string& name) const;
 		QPLDLL const sf::SoundBuffer& get_sound(const std::string& name) const;
 		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
+		QPLDLL const sf::Shader& get_shader(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;
 
 
@@ -88,32 +93,11 @@ namespace qsf {
 		QPLDLL void set_cursor_position(qpl::vector2i position);
 		QPLDLL void draw_call();
 		QPLDLL void display();
-		QPLDLL bool game_loop_update_segment();
+		QPLDLL void internal_update();
 		QPLDLL bool game_loop_segment();
-		QPLDLL bool game_loop_segment_no_display();
+		QPLDLL bool game_loop_event_update_draw();
 		QPLDLL void game_loop();
 
-
-		template<typename T>
-		void draw_graph(const std::vector<T>& data, const std::string name = "") {
-			qsf::drawing_graph.get_standard_graph(name).set_data(data);
-			qsf::drawing_graph.draw(this->window);
-		}
-		template<typename T>
-		void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
-			qsf::drawing_graph.get_standard_graph(name).color = color;
-			qsf::drawing_graph.get_standard_graph(name).thickness = thickness;
-			this->draw_graph(data);
-		}
-		QPLDLL void set_graph_axis_font(const std::string& font_name);
-		QPLDLL void set_graph_color(qsf::rgb color, const std::string& name);
-		QPLDLL void set_graph_thickness(qpl::f64 thickness, const std::string& name);
-		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name);
-		QPLDLL void set_graph_color(qsf::rgb color);
-		QPLDLL void set_graph_thickness(qpl::f64 thickness);
-		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
-		QPLDLL void set_graph_dimension(qpl::vector2f dimension);
-		QPLDLL void set_graph_position(qpl::vector2f position);
 
 		QPLDLL void set_framerate_limit(qpl::u32 value);
 		QPLDLL qpl::u32 get_framerate_limit() const;
@@ -131,9 +115,14 @@ namespace qsf {
 		QPLDLL qpl::time run_time() const;
 		QPLDLL qpl::time frame_time() const;
 
+		QPLDLL void add_render(const std::string& name, bool smooth = true);
+		QPLDLL qsf::render_texture& get_render(const std::string& name);
+		QPLDLL const qsf::render_texture& get_render(const std::string& name) const;
 
 		std::vector<std::unique_ptr<qsf::base_state>> states;
 		sf::RenderWindow window;
+		std::unordered_map<std::string, qsf::render_texture> m_render_textures;
+		sf::ContextSettings m_settings;
 		std::string m_title;
 		qpl::vector2u m_dimension;
 		qpl::u32 m_style = sf::Style::Default;
@@ -175,13 +164,53 @@ namespace qsf {
 
 		QPLDLL void draw_call();
 		QPLDLL void display();
-		QPLDLL bool game_loop_update_segment();
 		QPLDLL bool game_loop_segment();
-		QPLDLL bool game_loop_segment_no_display();
+		QPLDLL bool game_loop_event_update_draw();
+
+		QPLDLL void set_shader(const std::string& name);
+		QPLDLL void set_shader(sf::Shader& shader);
+		QPLDLL void unbind_shader();
 
 		template<typename T> requires qsf::has_any_draw_c<T>
-		void draw(const T& drawable, sf::RenderStates states = sf::RenderStates::Default) {
-			if constexpr (std::is_base_of<sf::Drawable, T>()) {
+		void draw(const T& drawable, sf::RenderStates states) {
+			if constexpr (qsf::is_render_texture<T>()) {
+				this->framework->window.draw(drawable.get_sprite(), states);
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->framework->window.draw(drawable, states);
+			}
+			else if constexpr (qsf::has_draw_object<T>()) {
+				draw_object draw(this->framework->window, states);
+				drawable.draw(draw);
+			}
+			else if constexpr (qsf::has_draw_sf<T>()) {
+				drawable.draw(this->framework->window, states);
+			}
+		}
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw(const T& drawable) {
+			if constexpr (qsf::is_render_texture<T>()) {
+				this->framework->window.draw(drawable.get_sprite(), this->render_states);
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+				this->framework->window.draw(drawable, this->render_states);
+			}
+			else if constexpr (qsf::has_draw_object<T>()) {
+				draw_object draw(this->framework->window, this->render_states);
+				drawable.draw(draw);
+			}
+			else if constexpr (qsf::has_draw_sf<T>()) {
+				drawable.draw(this->framework->window, this->render_states);
+			}
+		}
+
+		template<typename T, typename V> requires qsf::has_any_draw_c<T>
+		void draw(const T& drawable, qsf::view_rectangle<V> view) {
+			sf::RenderStates states = view.get_render_states();
+			if constexpr (qsf::is_render_texture<T>()) {
+				this->framework->window.draw(drawable.get_sprite(), states);
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
 				this->framework->window.draw(drawable, states);
 			}
 			else if constexpr (qsf::has_draw_object<T>()) {
@@ -193,19 +222,44 @@ namespace qsf {
 			}
 		}
 
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw_into(const std::string& name, const T& drawable) {
+			this->get_render(name).draw(drawable, this->render_states);
+		}
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw_into(const std::string& name, const T& drawable, sf::RenderStates states) {
+			this->get_render(name).draw(drawable, states);
+		}
 		template<typename T, typename V> requires qsf::has_any_draw_c<T>
-		void draw(const T& drawable, qsf::view_rectangle<V> view) {
+		void draw_into(const std::string& name, const T& drawable, qsf::view_rectangle<V> view) {
 			sf::RenderStates states = view.get_render_states();
-			if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->framework->window.draw(drawable, states);
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				draw_object draw(this->framework->window, states);
-				drawable.draw(draw);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				drawable.draw(this->framework->window, states);
-			}
+			this->get_render(name).draw(drawable, states);
+		}
+
+
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw_with_shader(const T& drawable, const std::string& name) {
+			sf::RenderStates states = this->render_states;
+			states.shader = &qsf::get_shader(name);
+			this->draw(drawable, states);
+		}
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw_with_shader(const T& drawable, sf::Shader& shader) {
+			sf::RenderStates states = this->render_states;
+			states.shader = &shader;
+			this->draw(drawable, states);
+		}
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw_with_shader_into(const std::string& render_name, const T& drawable, const std::string& shader_name) {
+			sf::RenderStates states = this->render_states;
+			states.shader = &qsf::get_shader(shader_name);
+			this->get_render(render_name).draw(drawable, states);
+		}
+		template<typename T> requires qsf::has_any_draw_c<T>
+		void draw_with_shader_into(const std::string& render_name, const T& drawable, sf::Shader& shader) {
+			sf::RenderStates states = this->render_states;
+			states.shader = &shader;
+			this->get_render(render_name).draw(drawable, states);
 		}
 
 		template<typename T> requires qsf::has_update_c<T>
@@ -231,41 +285,33 @@ namespace qsf {
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
+		QPLDLL void add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type);
+		QPLDLL void add_shader(const std::string& name, const std::string& path);
 		QPLDLL void add_text(const std::string& name);
 
 		QPLDLL sf::Font& get_font(const std::string& name);
 		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
+		QPLDLL sf::Shader& get_shader(const std::string& name);
 		QPLDLL qsf::text& get_text(const std::string& name);
 
 		QPLDLL const sf::Font& get_font(const std::string& name) const;
 		QPLDLL const sf::SoundBuffer& get_sound(const std::string& name) const;
 		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
+		QPLDLL const sf::Shader& get_shader(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;
+
+		QPLDLL void add_render(const std::string& name, bool smooth = true);
+		QPLDLL qsf::render_texture& get_render(const std::string& name);
+		QPLDLL const qsf::render_texture& get_render(const std::string& name) const;
 
 
 		template<typename C>
 		void add_state() {
 			this->framework->add_state<C>();
 		}
-		template<typename T>
-		void draw_graph(const std::vector<T>& data, const std::string& name = "") {
-			this->framework->draw_graph(data, name);
-		}
-		template<typename T>
-		void draw_graph(const std::vector<T>& data, qsf::rgb color, qpl::f64 thickness, const std::string& name = "") {
-			this->framework->draw_graph(data, color, thickness, name);
-		}
-		QPLDLL void set_graph_color(qsf::rgb color);
-		QPLDLL void set_graph_thickness(qpl::f64 thickness);
-		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps);
-		QPLDLL void set_graph_color(qsf::rgb color, const std::string& name);
-		QPLDLL void set_graph_thickness(qpl::f64 thickness, const std::string& name);
-		QPLDLL void set_graph_interpolation_steps(qpl::size interpolation_steps, const std::string& name);
-		QPLDLL void set_graph_dimension(qpl::vector2f dimension);
-		QPLDLL void set_graph_position(qpl::vector2f position);
 		QPLDLL void pop_this_state();
 		QPLDLL void allow_exit();
 		QPLDLL void disallow_exit();
@@ -288,6 +334,7 @@ namespace qsf {
 		qsf::event_info event;
 
 		sf::Color clear_color = sf::Color::Black;
+		sf::RenderStates render_states;
 		bool m_pop_this_state = false;
 		bool m_allow_exit = true;
 		bool m_allow_clear = true;

@@ -421,6 +421,17 @@ namespace qpl {
 	qpl::char_type qpl::random_visible_char() {
 		return static_cast<qpl::char_type>(qpl::random_i(32, 126));
 	}
+	std::string qpl::random_string_with_repetions(qpl::size length, qpl::size repetion_size) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length; ++i) {
+
+			auto rep = qpl::random(qpl::size{ 1 }, repetion_size);
+			rep = qpl::min(rep, length - i);
+
+			stream << std::string(rep, qpl::random_visible_char());
+		}
+		return stream.str();
+	}
 	std::string qpl::random_string(qpl::size length) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
@@ -686,6 +697,18 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	std::string qpl::random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size) {
+		std::ostringstream stream;
+		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
+		for (auto i = qpl::size{}; i < length; ) {
+			auto rep = qpl::random(qpl::size{ 1 }, repetition_size);
+			rep = qpl::min(rep, length - i);
+			
+			stream << std::string(rep, qpl::random_i());
+			i += rep;
+		}
+		return stream.str();
+	}
 	std::wstring qpl::random_wstring_full_range(qpl::size length) {
 		std::wostringstream stream;
 		qpl::set_random_range_i(qpl::type_min<wchar_t>(), qpl::type_max<wchar_t>());
@@ -694,6 +717,4 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-
-
 }

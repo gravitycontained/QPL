@@ -1740,6 +1740,7 @@ namespace qpl {
 
 	QPLDLL qpl::char_type random_visible_char();
 	QPLDLL std::string random_string(qpl::size length);
+	QPLDLL std::string random_string_with_repetions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::string random_number_string(qpl::size length);
 	QPLDLL std::string random_lowercase_uppercase_number_string(qpl::size length);
 	QPLDLL std::string random_lowercase_number_string(qpl::size length);
@@ -1748,6 +1749,7 @@ namespace qpl {
 	QPLDLL std::string random_lowercase_string(qpl::size length);
 	QPLDLL std::string random_uppercase_string(qpl::size length);
 	QPLDLL std::string random_string_full_range(qpl::size length);
+	QPLDLL std::string random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::wstring random_wstring_full_range(qpl::size length);
 
 	QPLDLL std::string to_lower(const std::string& string);
@@ -1759,7 +1761,6 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, char by_what);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, const std::wstring& expression);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
-
 
 	template<typename T>
 	T string_cast(const std::string_view& string) {

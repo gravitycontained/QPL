@@ -1,3 +1,32 @@
+/*
+QPL (Quick Production Library)  - Copyright (c) Daniel Rabl (danielrabl1999@gmail.com). 
+This is a C++20 personal utility library with many purposes to help developement.
+It uses alot of features from the great SFML library (https://www.sfml-dev.org/) and builds upon that.
+Please note that since this a one-man project there can be mistakes in the implementations.
+Features like qpl::aes, qpl::huffman_coding and qpl::floating_point<mantissa_bits, exponent_bits>
+were implemented for my personal usage. They might have mistakes and might be slow:
+I highly recommend installing the feature from a greater source, especially if deployed in a serious environment.
+
+
+This software is provided 'as-is', without any express or implied warranty.
+In no event will the authors be held liable for any damages arising from
+the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+- The origin of this software must not be misrepresented; you must not claim
+   that you wrote the original software. If you use this software in a product,
+   an acknowledgment in the product documentation would be appreciated but is
+   not required.
+
+- Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+
+- This notice may not be removed or altered from any source distribution.
+*/
+
 #ifndef QPL_HPP
 #define QPL_HPP
 #pragma once
@@ -6,6 +35,7 @@
 #include <qpl/aes.hpp>
 #include <qpl/algorithm.hpp>
 #include <qpl/bits.hpp>
+#include <qpl/compression.hpp>
 #include <qpl/config.hpp>
 #include <qpl/date.hpp>
 #include <qpl/filesys.hpp>
@@ -35,7 +65,6 @@
 #include <qpl/camera.hpp>
 #include <qpl/objects.hpp>
 #include <qpl/rgb.hpp>
-#include <qpl/socket.hpp>
 #include <qpl/window.hpp>
 #endif
 

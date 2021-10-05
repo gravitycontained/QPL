@@ -619,10 +619,10 @@ namespace qpl {
 		template<typename U>
 		constexpr operator sf::Vector2<U>() const {
 			if constexpr (N == 1) {
-				return sf::Vector2<U>(static_cast<U>(this->x), U{ 0 });
+				return sf::Vector2<U>(static_cast<U>(this->data[0]), U{ 0 });
 			}
 			else {
-				return sf::Vector2<U>(static_cast<U>(this->x), static_cast<U>(this->y));
+				return sf::Vector2<U>(static_cast<U>(this->data[0]), static_cast<U>(this->data[1]));
 			}
 		}
 		template<typename U>
@@ -1036,30 +1036,30 @@ namespace qpl {
 	template<typename T>
 	using vector6 = qpl::vectorN<T, 6>;
 
-	using vector2f = qpl::vector2<qpl::f32>;
-	using vector2d = qpl::vector2<qpl::f64>;
-	using vector2i = qpl::vector2<qpl::i32>;
-	using vector2u = qpl::vector2<qpl::u32>;
+	using vector2f = qpl::vectorN<qpl::f32, 2>;
+	using vector2d = qpl::vectorN<qpl::f64, 2>;
+	using vector2i = qpl::vectorN<qpl::i32, 2>;
+	using vector2u = qpl::vectorN<qpl::u32, 2>;
 
-	using vector3f = qpl::vector3<qpl::f32>;
-	using vector3d = qpl::vector3<qpl::f64>;
-	using vector3i = qpl::vector3<qpl::i32>;
-	using vector3u = qpl::vector3<qpl::u32>;
+	using vector3f = qpl::vectorN<qpl::f32, 3>;
+	using vector3d = qpl::vectorN<qpl::f64, 3>;
+	using vector3i = qpl::vectorN<qpl::i32, 3>;
+	using vector3u = qpl::vectorN<qpl::u32, 3>;
 
-	using vector4f = qpl::vector4<qpl::f32>;
-	using vector4d = qpl::vector4<qpl::f64>;
-	using vector4i = qpl::vector4<qpl::i32>;
-	using vector4u = qpl::vector4<qpl::u32>;
+	using vector4f = qpl::vectorN<qpl::f32, 4>;
+	using vector4d = qpl::vectorN<qpl::f64, 4>;
+	using vector4i = qpl::vectorN<qpl::i32, 4>;
+	using vector4u = qpl::vectorN<qpl::u32, 4>;
 
-	using vector5f = qpl::vector5<qpl::f32>;
-	using vector5d = qpl::vector5<qpl::f64>;
-	using vector5i = qpl::vector5<qpl::i32>;
-	using vector5u = qpl::vector5<qpl::u32>;
+	using vector5f = qpl::vectorN<qpl::f32, 5>;
+	using vector5d = qpl::vectorN<qpl::f64, 5>;
+	using vector5i = qpl::vectorN<qpl::i32, 5>;
+	using vector5u = qpl::vectorN<qpl::u32, 5>;
 
-	using vector6f = qpl::vector6<qpl::f32>;
-	using vector6d = qpl::vector6<qpl::f64>;
-	using vector6i = qpl::vector6<qpl::i32>;
-	using vector6u = qpl::vector6<qpl::u32>;
+	using vector6f = qpl::vectorN<qpl::f32, 6>;
+	using vector6d = qpl::vectorN<qpl::f64, 6>;
+	using vector6i = qpl::vectorN<qpl::i32, 6>;
+	using vector6u = qpl::vectorN<qpl::u32, 6>;
 
 
 	template <typename T, typename ...Args> requires (qpl::is_arithmetic<T>())
