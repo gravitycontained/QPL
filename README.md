@@ -1,5 +1,6 @@
 # QPL 
 QPL (Quick Production Library)  - Copyright (c) Daniel Rabl (danielrabl1999@gmail.com). 
+
 This is a C++20 personal utility library with many purposes to help developement.
 It uses alot of features from the great SFML library (https://www.sfml-dev.org/) and builds upon that.
 Please note that since this a one-man project there can be mistakes in the implementations.
