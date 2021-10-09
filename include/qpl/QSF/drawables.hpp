@@ -425,6 +425,7 @@ namespace qsf {
 
 		QPLDLL bool contains(qpl::vector2f position) const;
 		QPLDLL bool contains(qpl::vector2f position, qpl::f32 hitbox_increase) const;
+		QPLDLL bool contains(qpl::vector2f position, qpl::vector2f hitbox_increase) const;
 		QPLDLL bool collides(qpl::straight_line line) const;
 		QPLDLL bool collides(qpl::straight_line line, qpl::f32 hitbox_increase) const;
 
@@ -1081,6 +1082,7 @@ namespace qsf {
 		mutable sf::RenderTexture m_texture;
 		mutable qsf::sprite m_sprite;
 		mutable bool m_changed = false;
+		qpl::vector2i m_create_size;
 		bool m_smooth = false;
 		bool m_resize_with_window = true;
 		bool m_clear_with_window = true;
@@ -1759,8 +1761,10 @@ namespace qsf {
 			QPLDLL bool operator>(data_point_simple other) const;
 		};
 
-		qpl::f64 min_value = qpl::f64_min;
-		qpl::f64 max_value = qpl::f64_max;
+		qpl::f64 min_min_value = qpl::f64_min;
+		qpl::f64 min_max_value = qpl::f64_max;
+		qpl::f64 max_min_value = qpl::f64_min;
+		qpl::f64 max_max_value = qpl::f64_max;
 
 		qpl::f64 height_delta = 0.1;
 

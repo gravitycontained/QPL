@@ -612,6 +612,38 @@ namespace qpl {
 		return result;
 	}
 
+	std::vector<std::string> qpl::split_string_every(const std::string& string, qpl::size n) {
+		if (string.empty()) {
+			return {};
+		}
+		auto size = (string.size() - 1) / n + 1;
+		std::vector<std::string> result;
+		result.reserve(size);
+		qpl::size pos = 0;
+		for (qpl::u32 i = 0u;; ++i) {
+
+			if (string.length() <= pos) {
+				return result;
+			}
+			auto size = qpl::min(string.length() - pos, n);
+
+			std::string s;
+			s.resize(size);
+			memcpy(s.data(), string.data() + pos, size);
+			result.push_back(s);
+
+			pos += n;
+		}
+		return result;
+	}
+	std::string qpl::combine_strings(const std::vector<std::string>& strings) {
+		std::ostringstream stream;
+		for (auto& i : strings) {
+			stream.write(i.data(), i.length());
+		}
+		return stream.str();
+	}
+
 	std::string qpl::string_first_n_characters(const std::string& string, qpl::size n) {
 		return string.substr(0, n);
 	}
@@ -716,5 +748,87 @@ namespace qpl {
 			stream << static_cast<qpl::char_type>(qpl::random_i());
 		}
 		return stream.str();
+	}
+
+
+	void qpl::collection_string::set_string(const std::string& string) {
+		this->string = string;
+	}
+	bool qpl::collection_string::read_info() {
+		if (this->string.length() < qpl::bytes_in_type<qpl::u64>() + qpl::bytes_in_type<qpl::u32>()) {
+			return false;
+		}
+		qpl::size position = 0;
+		qpl::u64 check;
+		memcpy(&check, this->string.data() + position, qpl::bytes_in_type<qpl::u64>());
+
+		qpl::println("check = ", qpl::hex_string_full(check));
+		qpl::println("check_value = ", qpl::hex_string_full(check_value));
+		if (check != this->check_value) {
+			return false;
+		}
+
+		position += qpl::bytes_in_type<qpl::u64>();
+		qpl::u32 size_size;
+		memcpy(&size_size, this->string.data() + position, qpl::bytes_in_type<qpl::u32>());
+		position += qpl::bytes_in_type<qpl::u32>();
+
+		if (string.length() < (position + size_size * qpl::bytes_in_type<qpl::size>() * 2)) {
+			return false;
+		}
+		this->sizes.resize(size_size);
+		for (qpl::u32 i = 0u; i < size_size; ++i) {
+			qpl::size size;
+			memcpy(&size, this->string.data() + position, qpl::bytes_in_type<qpl::size>());
+			position += qpl::bytes_in_type<qpl::size>();
+			this->sizes[i].first = size;
+			memcpy(&size, this->string.data() + position, qpl::bytes_in_type<qpl::size>());
+			position += qpl::bytes_in_type<qpl::size>();
+			this->sizes[i].second = size;
+		}
+		return true;
+	}
+	std::string qpl::collection_string::get_string() const {
+		return this->string;
+	}
+	std::string_view qpl::collection_string::get_string_sv() const {
+		return this->string;
+	}
+	std::string qpl::collection_string::get_string(qpl::u32 index) const {
+		return std::string(this->string.begin() + this->sizes[index].first, this->string.begin() + this->sizes[index].second);
+	}
+	std::string_view qpl::collection_string::get_string_sv(qpl::u32 index) const {
+		return std::string_view(this->string.begin() + this->sizes[index].first, this->string.begin() + this->sizes[index].second);
+	}
+	void qpl::collection_string::add_string(const std::string& string) {
+		auto back = this->string.length();
+		this->string.append(string);
+		this->sizes.push_back({ qpl::size_cast(back), qpl::size_cast(back + string.length()) });
+	}
+	void qpl::collection_string::finalize() {
+		auto header_size = qpl::bytes_in_type<qpl::u64>() + qpl::bytes_in_type<qpl::u32>() + (this->sizes.size() * 2 * qpl::bytes_in_type<qpl::size>());
+		std::ostringstream stream;
+
+		qpl::u32 size_size = qpl::u32_cast(this->sizes.size());
+		stream.write(reinterpret_cast<const char*>(&this->check_value), qpl::bytes_in_type<qpl::u64>());
+		stream.write(reinterpret_cast<const char*>(&size_size), qpl::bytes_in_type<qpl::u32>());
+		for (auto& i : this->sizes) {
+			i.first += header_size;
+			i.second += header_size;
+			stream.write(reinterpret_cast<const char*>(&i.first), qpl::bytes_in_type<qpl::size>());
+			stream.write(reinterpret_cast<const char*>(&i.second), qpl::bytes_in_type<qpl::size>());
+		}
+
+		auto copy = this->string;
+		this->string.clear();
+		this->string.append(stream.str());
+		this->string.append(copy);
+	}
+	qpl::size qpl::collection_string::size() const {
+		return this->sizes.size();
+	}
+	void qpl::collection_string::clear() {
+		this->sizes.clear();
+		this->string.clear();
 	}
 }

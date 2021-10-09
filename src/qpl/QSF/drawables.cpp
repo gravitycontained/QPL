@@ -506,6 +506,12 @@ namespace qsf {
 		return (position.x > pos.x && position.x < (pos.x + dim.x) &&
 			position.y > pos.y && position.y < (pos.y + dim.y));
 	}
+	bool qsf::rectangle::contains(qpl::vector2f position, qpl::vector2f hitbox_increase) const {
+		auto pos = this->get_position() - hitbox_increase;
+		auto dim = this->get_dimension() + hitbox_increase * 2;
+		return (position.x > pos.x && position.x < (pos.x + dim.x) &&
+			position.y > pos.y && position.y < (pos.y + dim.y));
+	}
 	bool qsf::rectangle::collides(qpl::straight_line line) const {
 		return this->get_hitbox().collides(line);
 	}
@@ -1720,7 +1726,23 @@ namespace qsf {
 		this->m_settings.antialiasingLevel = antialiasing;
 	}
 	void qsf::render_texture::resize(qpl::vector2i dimension, bool resize_with_window) {
-		this->m_texture.create(dimension.x, dimension.y, this->m_settings);
+		//if (this->m_texture) {
+		//	this->m_texture.get_deleter();
+		//}
+		//this->m_texture = std::make_unique<sf::RenderTexture>();
+		//if (this->m_texture) {
+		//	this->m_texture->~RenderTexture();
+		//	delete this->m_texture;
+		//}
+		//this->m_texture = new sf::RenderTexture;
+		if (this->m_create_size.x < dimension.x || this->m_create_size.y < dimension.y) {
+			this->m_create_size = dimension;
+			this->m_texture.create(dimension.x, dimension.y, this->m_settings);
+			this->m_sprite.set_texture(this->m_texture.getTexture());
+		}
+
+		sf::IntRect rect{ 0, 0, dimension.x, dimension.y };
+		this->m_sprite.m_sprite.setTextureRect(rect);
 		this->m_changed = true;
 		this->m_resize_with_window = resize_with_window;
 	}
@@ -1839,7 +1861,6 @@ namespace qsf {
 	}
 	void qsf::render_texture::apply() const {
 		this->m_texture.display();
-		this->m_sprite.set_texture(this->m_texture.getTexture());
 		this->m_changed = false;
 	}
 
@@ -4466,12 +4487,10 @@ namespace qsf {
 			low = qpl::min(min, low);
 			high = qpl::max(max, high);
 		}
-		if (low < this->min_value) {
-			low = this->min_value;
-		}
-		if (high > this->max_value) {
-			high = this->max_value;
-		}
+
+		low = qpl::clamp(this->min_min_value, low, this->min_max_value);
+		high = qpl::clamp(this->max_min_value, high, this->max_max_value);
+
 		if (this->y_axis_start_at_0) {
 			if (low < 0 && high < 0) {
 				high = 0;

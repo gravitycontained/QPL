@@ -2,23 +2,13 @@
 
 #include <qpl/random.hpp>
 #include <qpl/algorithm.hpp>
+#include <array>
 
 namespace qpl {
 
 	template<typename T, qpl::size N = 2, qpl::size S = 0x2f> requires (qpl::is_integer<T>())
 	struct simple_obfuscated_memory {
-		struct block {
-			T a;
-			T b;
-			T c;
-			T d;
-			T e;
-			T f;
-			T g;
-			T h;
-		};
-
-		std::array<block, N> data;
+		std::array<std::array<T, 8>, N> data;
 		qpl::u32 ctr = 0u;
 
 		simple_obfuscated_memory() {
@@ -28,6 +18,9 @@ namespace qpl {
 			shuffle();
 			*this = value;
 		}
+		constexpr simple_obfuscated_memory(const std::array<T, 8 * N>& data) : data() {
+			this->set_array(data);
+		}
 
 		void shuffle() {
 			if (!qpl::detail::rng.seeded) {
@@ -35,37 +28,54 @@ namespace qpl {
 			}
 			ctr = 0;
 			for (auto& i : data) {
-				i.a = qpl::random<T>();
-				i.b = qpl::random<T>();
-				i.c = qpl::random<T>();
-				i.d = qpl::random<T>();
-				i.e = qpl::random<T>();
-				i.f = qpl::random<T>();
-				i.g = qpl::random<T>();
-				i.h = qpl::random<T>();
+				for (auto& j : i) {
+					j = qpl::random<T>();
+				}
 			}
 		}
+		constexpr void set_array(const std::array<T, 8 * N>& data) {
+			if (std::is_constant_evaluated()) {
+				for (qpl::u32 i = 0u; i < 8 * N; ++i) {
+					this->data[i / 8][i % 8] = data[i];
+				}
+			}
+			else {
+				memcpy(this->data.data()->data(), data.data(), 8 * N * sizeof(T));
+			}
+		}
+		constexpr std::array<T, 8 * N> get_array() const {
+			std::array<T, 8 * N> result;
+			if (std::is_constant_evaluated()) {
+				for (qpl::u32 i = 0u; i < 8 * N; ++i) {
+					result[i] = this->data[i / 8][i % 8];
+				}
+			}
+			else {
+				memcpy(result.data(), this->data.data()->data(), 8 * N * sizeof(T));
+			}
+			return result;
+		}
 
-		simple_obfuscated_memory& operator+=(T _xecc63aaa) {
-			return (*this = operator T() + _xecc63aaa);
+		simple_obfuscated_memory& operator+=(T value) {
+			return (*this = this->get() + value);
 		}
-		simple_obfuscated_memory& operator-=(T _xecc63aaa) {
-			return (*this = operator T() - _xecc63aaa);
+		simple_obfuscated_memory& operator-=(T value) {
+			return (*this = this->get() - value);
 		}
-		simple_obfuscated_memory& operator/=(T _xecc63aaa) {
-			return (*this = operator T() / _xecc63aaa);
+		simple_obfuscated_memory& operator/=(T value) {
+			return (*this = this->get() / value);
 		}
-		simple_obfuscated_memory& operator*=(T _xecc63aaa) {
-			return (*this = operator T() * _xecc63aaa);
+		simple_obfuscated_memory& operator*=(T value) {
+			return (*this = this->get() * value);
 		}
-		simple_obfuscated_memory& operator^=(T _xecc63aaa) {
-			return (*this = operator T() ^ _xecc63aaa);
+		simple_obfuscated_memory& operator^=(T value) {
+			return (*this = this->get() ^ value);
 		}
-		simple_obfuscated_memory& operator&=(T _xecc63aaa) {
-			return (*this = operator T() & _xecc63aaa);
+		simple_obfuscated_memory& operator&=(T value) {
+			return (*this = this->get() & value);
 		}
-		simple_obfuscated_memory& operator|=(T _xecc63aaa) {
-			return (*this = operator T() | _xecc63aaa);
+		simple_obfuscated_memory& operator|=(T value) {
+			return (*this = this->get() | value);
 		}
 		simple_obfuscated_memory& operator=(T value) {
 			++ctr;
@@ -73,42 +83,47 @@ namespace qpl {
 				shuffle();
 			}
 
-			data[0].b = value ^ (data[0].g ^ data[0].d);
+			data[0][1] = value ^ (data[0][6] ^ data[0][3]);
 
 			for (qpl::u32 i = 0u; i < N; ++i) {
 				T n = 0;
-				if (i == 0) n = data[0].h;
-				if (i == 1) n = data[0].a ^ data[1].h;
-				if (i == 2) n = data[1].f;
-				n ^= qpl::rotate_left(data[0].e, (data[N - 1 - i].c & 0x7) + 1);
-				data[0].b ^= (data[i].g ^ data[i].d ^ n);
+				if (i == 0) n = data[0][7];
+				if (i == 1) n = data[0][0] ^ data[1][7];
+				if (i == 2) n = data[1][5];
+				n ^= qpl::rotate_left(data[0][4], (data[N - 1 - i][2] & 0x7) + 1);
+				data[0][1] ^= (data[i][6] ^ data[i][3] ^ n);
 			}
 			return *this;
 		}
-		operator T() const {
-			T result = data[0].b ^ (data[0].g ^ data[0].d);
+		constexpr T get() const {
+			T result = data[0][1] ^ (data[0][6] ^ data[0][3]);
 
 			for (qpl::u32 i = 0u; i < N; ++i) {
 				T n = 0;
-				if (i == 0) n = data[0].h;
-				if (i == 1) n = data[0].a ^ data[1].h;
-				if (i == 2) n = data[1].f;
-				n ^= qpl::rotate_left(data[0].e, (data[N - 1 - i].c & 0x7) + 1);
-				result ^= (data[i].g ^ data[i].d ^ n);
+				if (i == 0) n = data[0][7];
+				if (i == 1) n = data[0][0] ^ data[1][7];
+				if (i == 2) n = data[1][5];
+				n ^= qpl::rotate_left(data[0][4], (data[N - 1 - i][2] & 0x7) + 1);
+				result ^= (data[i][6] ^ data[i][3] ^ n);
 			}
 			return result;
 		}
-		T get() const {
-			return this->operator T();
+		constexpr operator T() const {
+			return this->get();
 		}
-		template<typename T, qpl::size N, qpl::size _x3341f11> requires (qpl::is_integer<T>())
-		friend std::ostream& operator<<(std::ostream& os, const simple_obfuscated_memory<T, N, _x3341f11>& n);
+		template<typename T, qpl::size N, qpl::size S> requires (qpl::is_integer<T>())
+		friend std::ostream& operator<<(std::ostream& os, const simple_obfuscated_memory<T, N, S>& n);
 	};
 
 	template<typename T, qpl::size N, qpl::size S> requires (qpl::is_integer<T>())
 	std::ostream& operator<<(std::ostream& os, const simple_obfuscated_memory<T, N, S>& n) {
-		return (os << n.operator T());
+		return (os << n.get());
 	}
 
-
+	template<typename T, qpl::size N = 2, qpl::size S = 0x2f> requires (qpl::is_integer<T>())
+	auto get_obfuscated(T value) {
+		simple_obfuscated_memory<T, N, S> result;
+		result = value;
+		return result;
+	}
 }

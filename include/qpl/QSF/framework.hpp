@@ -61,6 +61,11 @@ namespace qsf {
 		QPLDLL void add_shader(const std::string& name, const std::string& path);
 		QPLDLL void add_text(const std::string& name);
 
+		QPLDLL void add_font_from_memory(const std::string& name, const std::string& memory);
+		QPLDLL void add_sound_from_memory(const std::string& name, const std::string& memory);
+		QPLDLL void add_texture_from_memory(const std::string& name, const std::string& memory);
+		QPLDLL void add_shader_from_memory(const std::string& name, const std::string& memory, sf::Shader::Type shader_type);
+
 		QPLDLL sf::Font& get_font(const std::string& name);
 		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
@@ -280,6 +285,7 @@ namespace qsf {
 		QPLDLL qpl::vector2f center() const;
 
 		QPLDLL void play_sound(const std::string& name, qpl::f32 volume = 100.0f, qpl::f32 speed = 1.0f);
+
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_sound(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
@@ -288,6 +294,11 @@ namespace qsf {
 		QPLDLL void add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type);
 		QPLDLL void add_shader(const std::string& name, const std::string& path);
 		QPLDLL void add_text(const std::string& name);
+
+		QPLDLL void add_font_from_memory(const std::string& name, const std::string& memory);
+		QPLDLL void add_sound_from_memory(const std::string& name, const std::string& memory);
+		QPLDLL void add_texture_from_memory(const std::string& name, const std::string& memory);
+		QPLDLL void add_shader_from_memory(const std::string& name, const std::string& memory, sf::Shader::Type shader_type);
 
 		QPLDLL sf::Font& get_font(const std::string& name);
 		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);

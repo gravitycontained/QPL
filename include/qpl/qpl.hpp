@@ -32,12 +32,12 @@ freely, subject to the following restrictions:
 #pragma once
 
 
-#include <qpl/aes.hpp>
 #include <qpl/algorithm.hpp>
 #include <qpl/bits.hpp>
 #include <qpl/compression.hpp>
 #include <qpl/config.hpp>
 #include <qpl/date.hpp>
+#include <qpl/encryption.hpp>
 #include <qpl/filesys.hpp>
 #include <qpl/fraction.hpp>
 #include <qpl/intrinsics.hpp>

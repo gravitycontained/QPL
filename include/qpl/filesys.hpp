@@ -624,9 +624,11 @@ namespace qpl {
                 file.close();
             }
         }
-        
     }
 
+    QPLDLL std::string read_file(const std::string& path);
+    QPLDLL void write_to_file(const std::string& text, const std::string& path);
+    QPLDLL void write_data_file(const std::string& data, const std::string& path);
 }
 
 #endif

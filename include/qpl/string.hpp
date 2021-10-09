@@ -1762,6 +1762,10 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, const std::wstring& expression);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
 
+
+	QPLDLL std::vector<std::string> split_string_every(const std::string& string, qpl::size n);
+	QPLDLL std::string combine_strings(const std::vector<std::string>& strings);
+
 	template<typename T>
 	T string_cast(const std::string_view& string) {
 		T value;
@@ -2291,6 +2295,22 @@ namespace qpl {
 		return qpl::to_string((number / qpl::pi) * 180);
 	}
 
+	struct collection_string {
+		std::string string;
+		std::vector<std::pair<qpl::size, qpl::size>> sizes;
+		qpl::u64 check_value = 0;
+
+		QPLDLL void set_string(const std::string& string);
+		QPLDLL bool read_info();
+		QPLDLL std::string get_string() const;
+		QPLDLL std::string_view get_string_sv() const;
+		QPLDLL std::string get_string(qpl::u32 index) const;
+		QPLDLL std::string_view get_string_sv(qpl::u32 index) const;
+		QPLDLL void add_string(const std::string& string);
+		QPLDLL void finalize();
+		QPLDLL qpl::size size() const;
+		QPLDLL void clear();
+	};
 }
 
 #endif

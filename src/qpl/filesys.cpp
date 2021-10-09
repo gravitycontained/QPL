@@ -2780,4 +2780,13 @@ namespace qpl {
         }
     }
 
+    std::string qpl::read_file(const std::string& path) {
+        return qpl::filesys::read_file(path);
+    }
+    void qpl::write_to_file(const std::string& text, const std::string& path) {
+        return qpl::filesys::write_to_file(text, path);
+    }
+    void qpl::write_data_file(const std::string& data, const std::string& path) {
+        return qpl::filesys::write_data_file(data, path);
+    }
 }

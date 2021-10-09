@@ -54,6 +54,29 @@ namespace qsf {
 		}
 	}
 
+
+	void qsf::load_font_from_memory(sf::Font& font, const std::string& memory) {
+		if (!font.loadFromMemory(memory.data(), memory.size())) {
+			throw std::exception(qpl::to_string("load font: couldn't load from memory").c_str());
+		}
+	}
+	void qsf::load_texture_from_memory(sf::Texture& texture, const std::string& memory, bool set_smooth) {
+		if (!texture.loadFromMemory(memory.data(), memory.size())) {
+			throw std::exception(qpl::to_string("load texture: couldn't load from memory").c_str());
+		}
+		texture.setSmooth(set_smooth);
+	}
+	void qsf::load_sound_from_memory(sf::SoundBuffer& sound, const std::string& memory) {
+		if (!sound.loadFromMemory(memory.data(), memory.size())) {
+			throw std::exception(qpl::to_string("load sound: couldn't load from memory").c_str());
+		}
+	}
+	void qsf::load_shader_from_memory(sf::Shader& shader, const std::string& memory, sf::Shader::Type shader_type) {
+		if (!shader.loadFromMemory(memory, shader_type)) {
+			throw std::exception(qpl::to_string("load shader: couldn't load from memory").c_str());
+		}
+	}
+
 	void qsf::resources::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
 
 		if (!this->find_sound(name)) {
@@ -77,6 +100,7 @@ namespace qsf {
 			this->active_sounds.erase(i);
 		}
 	}
+
 	void qsf::resources::add_font(const std::string& name, const std::string& path) {
 		qsf::load_font(this->fonts[name], path);
 	}
@@ -100,6 +124,20 @@ namespace qsf {
 	}
 	void qsf::resources::add_sprite(const std::string& name, sf::Texture& texture) {
 		this->sprites[name].setTexture(texture);
+	}
+
+
+	void qsf::resources::add_font_from_memory(const std::string& name, const std::string& memory) {
+		qsf::load_font_from_memory(this->fonts[name], memory);
+	}
+	void qsf::resources::add_sound_from_memory(const std::string& name, const std::string& memory) {
+		qsf::load_sound_from_memory(this->sounds[name], memory);
+	}
+	void qsf::resources::add_texture_from_memory(const std::string& name, const std::string& memory) {
+		qsf::load_texture_from_memory(this->textures[name], memory);
+	}
+	void qsf::resources::add_shader_from_memory(const std::string& name, const std::string& memory, sf::Shader::Type shader_type) {
+		qsf::load_shader_from_memory(this->shaders[name], memory, shader_type);
 	}
 	bool qsf::resources::find_font(const std::string& name) const {
 		return this->fonts.find(name) != this->fonts.cend();
@@ -209,6 +247,20 @@ namespace qsf {
 	}
 	void qsf::add_shader(const std::string& name, const std::string& path) {
 		qsf::detail::resources.add_shader(name, path);
+	}
+
+
+	void qsf::add_font_from_memory(const std::string& name, const std::string& memory) {
+		qsf::detail::resources.add_font_from_memory(name, memory);
+	}
+	void qsf::add_sound_from_memory(const std::string& name, const std::string& memory) {
+		qsf::detail::resources.add_sound_from_memory(name, memory);
+	}
+	void qsf::add_texture_from_memory(const std::string& name, const std::string& memory) {
+		qsf::detail::resources.add_texture_from_memory(name, memory);
+	}
+	void qsf::add_shader_from_memory(const std::string& name, const std::string& memory, sf::Shader::Type shader_type) {
+		qsf::detail::resources.add_shader_from_memory(name, memory, shader_type);
 	}
 
 	sf::Font& qsf::get_font(const std::string& name) {
