@@ -45,6 +45,7 @@ namespace qpl {
 			};
 
 			aes(bool construct = true) {
+				this->m_state.fill(0u);
 				if (construct) {
 					this->construct();
 				}
@@ -100,14 +101,14 @@ namespace qpl {
 			QPLDLL void unmix_columns();
 
 			bool m_constructed = false;
-			mode m_mode;
-			qpl::u8 m_state[16];
+			mode m_mode = mode::aes_128;
+			std::array<qpl::u8, 16> m_state;
 			std::vector<qpl::u8> m_key;
 			std::vector<qpl::u8> m_round_key;
 
-			qpl::size m_key_size;
-			qpl::size m_cipher_rounds;
-			qpl::size m_round_key_size;
+			qpl::size m_key_size = 0u;
+			qpl::size m_cipher_rounds = 0u;
+			qpl::size m_round_key_size = 0u;
 
 		};
 		namespace detail {
@@ -169,13 +170,13 @@ namespace qpl {
 
 		template<typename T, qpl::size N>
 		std::string encrypt(const std::string& message, const std::array<T, N>& key) {
-			auto bit_size = qpl::bits_in_type<T>() * N;
+			constexpr auto bit_size = qpl::bits_in_type<T>() * N;
 			std::string s;
 			qpl::container_memory_to_string(key, s);
-			if (bit_size <= 128) {
+			if constexpr (bit_size <= 128) {
 				return qpl::aes_128_encrypted(message, s);
 			}
-			else if (bit_size <= 192) {
+			else if constexpr (bit_size <= 192) {
 				return qpl::aes_192_encrypted(message, s);
 			}
 			else {

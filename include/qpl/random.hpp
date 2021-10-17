@@ -416,7 +416,7 @@ namespace qpl {
 		auto size = (max - min + 1);
 		std::vector<T> result(size, T{ 0 });
 
-		qpl::f64 div = size;
+		qpl::f64 div = qpl::f64_cast(size);
 		qpl::f64 sum = 0.0;
 
 		auto probability = probabilities[0u];

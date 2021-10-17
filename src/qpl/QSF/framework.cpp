@@ -42,6 +42,7 @@ namespace qsf {
 			this->states.back()->call_on_resize();
 		}
 		qsf::update_sounds();
+		qpl::update_tasks();
 		auto focus_before = this->m_focus;
 		auto focus = this->window.hasFocus();
 		this->m_focus = focus;

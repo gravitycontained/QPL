@@ -118,52 +118,52 @@ namespace qpl {
 		bool first_block = true;
 
 		std::vector<qpl::u8> result;
-		result.reserve((((size ? size - 1 : 0) / 16) + 1) * 16);
+		result.reserve((((size ? size - 1 : 0) / this->m_state.size()) + 1) * this->m_state.size());
 
 		qpl::size length = size;
-		for (qpl::size i = 0u; i < length / 16u; ++i) {
+		for (qpl::size i = 0u; i < length / this->m_state.size(); ++i) {
 			if (first_block) {
-				for (int c = 0; c < 16; ++c) {
-					input_block[c] = message[i * 16u + c];
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
+					input_block[c] = message[i * this->m_state.size() + c];
 				}
 				first_block = false;
 			}
 			else {
-				for (int c = 0; c < 16; ++c) {
-					input_block[c] = last_block[c] ^ message[i * 16u + c];
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
+					input_block[c] = last_block[c] ^ message[i * this->m_state.size() + c];
 				}
 			}
 			this->set_state(input_block);
 			this->cipher();
-			for (int i = 0; i < 16; ++i) {
+			for (qpl::size i = 0u; i < this->m_state.size(); ++i) {
 				result.push_back(this->m_state[i]);
 			}
-			std::memcpy(last_block.data(), this->m_state, 16);
+			std::memcpy(last_block.data(), this->m_state.data(), this->m_state.size());
 		}
-		if (size % 16) {
+		if (size % this->m_state.size()) {
 			if (first_block) {
-				for (qpl::size c = 0u; c < 16u; ++c) {
-					if (c >= size % 16u) {
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
+					if (c >= size % this->m_state.size()) {
 						input_block[c] = qpl::u8{};
 					}
 					else {
-						input_block[c] = message[(size / 16u) * 16u + c];
+						input_block[c] = message[(size / this->m_state.size()) * this->m_state.size() + c];
 					}
 				}
 			}
 			else {
-				for (qpl::size c = 0u; c < 16u; ++c) {
-					if (c >= size % 16u) {
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
+					if (c >= size % this->m_state.size()) {
 						input_block[c] = last_block[c] ^ qpl::u8{};
 					}
 					else {
-						input_block[c] = last_block[c] ^ message[(size / 16u) * 16u + c];
+						input_block[c] = last_block[c] ^ message[(size / this->m_state.size()) * this->m_state.size() + c];
 					}
 				}
 			}
 			this->set_state(input_block);
 			this->cipher();
-			for (int i = 0; i < 16; ++i) {
+			for (qpl::size i = 0u; i < this->m_state.size(); ++i) {
 				result.push_back(this->m_state[i]);
 			}
 		}
@@ -218,37 +218,37 @@ namespace qpl {
 		result.reserve(size);
 
 		qpl::size length = size;
-		for (qpl::size i = 0; i < length / 16u; ++i) {
-			for (int c = 0; c < 16; ++c) {
-				input_block[c] = message[i * 16 + c];
+		for (qpl::size i = 0u; i < length / this->m_state.size(); ++i) {
+			for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
+				input_block[c] = message[i * this->m_state.size() + c];
 			}
 			this->set_state(input_block);
 			this->decipher();
 			if (first_block) {
-				for (int c = 0; c < 16; ++c) {
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
 					output_block[c] = this->m_state[c];
 				}
 				first_block = false;
 			}
 			else {
-				for (int c = 0; c < 16; ++c) {
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
 					output_block[c] = last_block[c] ^ this->m_state[c];
 				}
 			}
-			for (int i = 0; i < 16; ++i) {
+			for (qpl::size i = 0u; i < this->m_state.size(); ++i) {
 				result.push_back(output_block[i]);
 			}
-			std::memcpy(last_block.data(), input_block.data(), 16u);
+			std::memcpy(last_block.data(), input_block.data(), last_block.size());
 		}
-		if (size % 16u) {
-			for (qpl::size c = 0; c < 16u; ++c) {
-				input_block[c] = c >= size ? 0 : message[(size / 16u) * 16u + c];
+		if (size % this->m_state.size()) {
+			for (qpl::size c = 0; c < this->m_state.size(); ++c) {
+				input_block[c] = c >= size ? 0 : message[(size / this->m_state.size()) * this->m_state.size() + c];
 			}
 
 			this->set_state(input_block);
 			this->decipher();
 			if (first_block) {
-				for (qpl::size c = 0u; c < 16u; ++c) {
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
 					if (c >= size) {
 						output_block[c] = qpl::u8{};
 					}
@@ -258,7 +258,7 @@ namespace qpl {
 				}
 			}
 			else {
-				for (qpl::size c = 0u; c < 16u; ++c) {
+				for (qpl::size c = 0u; c < this->m_state.size(); ++c) {
 					if (c >= size) {
 						output_block[c] = last_block[c] ^ qpl::u8{};
 					}
@@ -267,7 +267,7 @@ namespace qpl {
 					}
 				}
 			}
-			for (qpl::size i = 0u; i < 16u; ++i) {
+			for (qpl::size i = 0u; i < this->m_state.size(); ++i) {
 				result.push_back(output_block[i]);
 			}
 		}
@@ -322,7 +322,7 @@ namespace qpl {
 			this->m_key_size = 32u;
 			this->m_cipher_rounds = 14u;
 		}
-		this->m_round_key_size = 16 * (this->m_cipher_rounds + 1);
+		this->m_round_key_size = this->m_state.size() * (this->m_cipher_rounds + 1);
 
 		this->m_key.resize(this->m_key_size);
 		this->m_round_key.resize(this->m_round_key_size);
@@ -333,13 +333,13 @@ namespace qpl {
 	void qpl::aes::set_cipher_rounds(qpl::size count) {
 		this->check_constructed();
 		this->m_cipher_rounds = count;
-		this->m_round_key_size = 16 * (this->m_cipher_rounds + 1);
+		this->m_round_key_size = this->m_state.size() * (this->m_cipher_rounds + 1);
 		this->m_round_key.resize(this->m_round_key_size);
 	}
 
 	void qpl::aes::copy_message(qpl::u8* newState) const {
 		this->error_if_not_constructed();
-		for (int i = 0; i < 16; ++i) {
+		for (qpl::u32 i = 0u; i < this->m_state.size(); ++i) {
 			newState[i] = this->m_state[i];
 		}
 	}
@@ -347,8 +347,8 @@ namespace qpl {
 	std::string qpl::aes::get_message() const {
 		this->error_if_not_constructed();
 		std::string result;
-		result.reserve(16);
-		for (int i = 0; i < 16; ++i) {
+		result.reserve(this->m_state.size());
+		for (qpl::size i = 0u; i < this->m_state.size(); ++i) {
 			result += this->m_state[i];
 		}
 		return result;
@@ -358,17 +358,15 @@ namespace qpl {
 	}
 
 	void qpl::aes::set_state(const std::array<qpl::u8, 16>& state) {
-		for (qpl::size i = 0u; i < state.size(); ++i) {
-			this->m_state[i] = state[i];
-		}
+		this->m_state = state;
 	}
 
 	void qpl::aes::set_state(const std::string state) {
 		qpl::size i = 0;
-		for (; i < qpl::min(state.length(), qpl::size(16u)); ++i) {
+		for (; i < qpl::min(state.length(), this->m_state.size()); ++i) {
 			this->m_state[i] = state[i];
 		}
-		for (; i < 16; ++i) {
+		for (; i < this->m_state.size(); ++i) {
 			this->m_state[i] = 0u;
 		}
 	}
@@ -466,19 +464,19 @@ namespace qpl {
 	}
 
 	void qpl::aes::add_round_key(qpl::size rounds) {
-		for (qpl::u32 i = 0u; i < 16u; ++i) {
-			this->m_state[i] ^= this->m_round_key[rounds * 16 + i];
+		for (qpl::u32 i = 0u; i < this->m_state.size(); ++i) {
+			this->m_state[i] ^= this->m_round_key[rounds * this->m_state.size() + i];
 		}
 	}
 
 	void qpl::aes::sub_bytes() {
-		for (qpl::u32 i = 0u; i < 16u; ++i) {
+		for (qpl::u32 i = 0u; i < this->m_state.size(); ++i) {
 			this->m_state[i] = qpl::detail::aes_tables->sbox[this->m_state[i]];
 		}
 	}
 
 	void qpl::aes::unsub_bytes() {
-		for (qpl::u32 i = 0u; i < 16u; ++i) {
+		for (qpl::u32 i = 0u; i < this->m_state.size(); ++i) {
 			this->m_state[i] = qpl::detail::aes_tables->sbox_inv[this->m_state[i]];
 		}
 	}

@@ -341,7 +341,7 @@ namespace qsf {
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::time run_time() const;
 
-		qsf::framework* framework;
+		qsf::framework* framework = nullptr;
 		qsf::event_info event;
 
 		sf::Color clear_color = sf::Color::Black;

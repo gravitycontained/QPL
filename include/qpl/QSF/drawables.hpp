@@ -2255,7 +2255,7 @@ namespace qsf {
 			}
 		}
 		void set_knob_position() {
-			auto progress = this->get_progress();
+			auto progress = qpl::f32_cast(this->get_progress());
 			auto pos = this->knob.get_position();
 			pos.x = this->position.x + this->range_pixel_width * progress;
 			this->knob.set_position(pos);

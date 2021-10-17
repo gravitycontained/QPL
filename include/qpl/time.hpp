@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <iostream>
 #include <chrono>
+#include <set>
+#include <functional>
 
 
 namespace qpl {
@@ -600,6 +602,63 @@ namespace qpl {
 			return this->get_normalized_progress();
 		}
 	};
+
+	struct timed_task {
+		qpl::small_clock clock;
+		qpl::time wait_duration;
+		std::function<void(void)> function;
+		std::string name = "";
+		bool done_before = false;
+		bool just_finish = false;
+
+		timed_task() {
+
+		}
+		timed_task(qpl::time wait_duration, std::function<void(void)> function, const std::string& name = "") {
+			this->wait_duration = wait_duration;
+			this->function = function;
+			this->name = name;
+		}
+		timed_task(qpl::f64 wait_duration, std::function<void(void)> function, const std::string& name = "") {
+			this->wait_duration = qpl::secs(wait_duration);
+			this->function = function;
+			this->name = name;
+		}
+
+		QPLDLL void update();
+		QPLDLL bool is_done() const;
+		QPLDLL bool is_running() const;
+		QPLDLL bool just_finished() const;
+		QPLDLL void set_wait_duration(qpl::time time);
+		QPLDLL void set_wait_duration(qpl::f64 seconds);
+		QPLDLL qpl::f64 get_wait_progress() const;
+	};
+
+	struct timed_task_manager {
+		std::vector<timed_task> tasks;
+		std::set<std::string> finished_tasks;
+
+		QPLDLL void clear();
+		QPLDLL void cleanup();
+		QPLDLL bool is_task_finished(const std::string& name);
+		QPLDLL bool is_task_running(const std::string& name);
+		QPLDLL void add_timed_task(qpl::time time, std::function<void(void)> function, const std::string& name = "");
+		QPLDLL void add_timed_task(qpl::f64 time, std::function<void(void)> function, const std::string& name = "");
+		QPLDLL void update();
+	};
+
+	namespace detail {
+		QPLDLL extern timed_task_manager tasks;
+	}
+
+	QPLDLL void start_timed_task(qpl::time time, const std::string& name, std::function<void(void)> function);
+	QPLDLL void start_timed_task(qpl::time time, std::function<void(void)> function);
+	QPLDLL void start_timed_task(qpl::f64 time, const std::string& name, std::function<void(void)> function);
+	QPLDLL void start_timed_task(qpl::f64 time, std::function<void(void)> function);
+	QPLDLL bool timed_task_finished(const std::string& name = "");
+	QPLDLL bool timed_task_running(const std::string& name = "");
+	QPLDLL void clear_timed_tasks();
+	QPLDLL void update_tasks();
 }
 
 #endif

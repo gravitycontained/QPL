@@ -796,4 +796,107 @@ namespace qpl {
 		}
 		return false;
 	}
+
+
+	void qpl::timed_task::update() {
+		auto done = this->is_done();
+		this->just_finish = !this->done_before && done;
+		if (this->just_finish) {
+			this->function();
+		}
+		this->done_before = done;
+	}
+	bool qpl::timed_task::is_done() const {
+		return this->clock.elapsed() > this->wait_duration;
+	}
+	bool qpl::timed_task::is_running() const {
+		return !this->is_done();
+	}
+	bool qpl::timed_task::just_finished() const {
+		return this->just_finish;
+	}
+	void qpl::timed_task::set_wait_duration(qpl::time time) {
+		this->wait_duration = time;
+	}
+	void qpl::timed_task::set_wait_duration(qpl::f64 seconds) {
+		this->wait_duration = qpl::secs(seconds);
+	}
+	qpl::f64 qpl::timed_task::get_wait_progress() const {
+		auto p = this->clock.elapsed_f();
+		return p / this->wait_duration.secs_f();
+	}
+
+	timed_task_manager qpl::detail::tasks;
+
+	void qpl::timed_task_manager::clear() {
+		this->tasks.clear();
+	}
+	void qpl::timed_task_manager::cleanup() {
+		std::vector<timed_task> temp;
+		temp.reserve(this->tasks.size());
+		for (auto& i : this->tasks) {
+			if (i.is_done()) {
+				this->finished_tasks.insert(i.name);
+			}
+			else {
+				temp.push_back(i);
+			}
+		}
+		this->tasks = temp;
+	}
+	bool qpl::timed_task_manager::is_task_finished(const std::string& name) {
+		return this->finished_tasks.find(name) != this->finished_tasks.cend();
+	}
+	bool qpl::timed_task_manager::is_task_running(const std::string& name) {
+		for (auto& i : this->tasks) {
+			if (i.name == name) {
+				return i.is_running();
+			}
+		}
+		return false;
+	}
+	void qpl::timed_task_manager::add_timed_task(qpl::time time, std::function<void(void)> function, const std::string& name) {
+		this->tasks.push_back(qpl::timed_task(time, function, name));
+	}
+	void qpl::timed_task_manager::add_timed_task(qpl::f64 time, std::function<void(void)> function, const std::string& name) {
+		this->tasks.push_back(qpl::timed_task(time, function, name));
+	}
+	void qpl::timed_task_manager::update() {
+		bool any_done = false;
+		for (auto& i : this->tasks) {
+			i.update();
+			if (i.is_done()) {
+				any_done = true;
+			}
+		}
+		this->finished_tasks.clear();
+		if (any_done) {
+			this->cleanup();
+		}
+	}
+
+	void qpl::start_timed_task(qpl::time time, std::function<void(void)> function) {
+		qpl::detail::tasks.add_timed_task(time, function);
+	}
+	void qpl::start_timed_task(qpl::time time, const std::string& name, std::function<void(void)> function) {
+		qpl::detail::tasks.add_timed_task(time, function, name);
+	}
+	void qpl::start_timed_task(qpl::f64 time, std::function<void(void)> function) {
+		qpl::detail::tasks.add_timed_task(time, function);
+	}
+	void qpl::start_timed_task(qpl::f64 time, const std::string& name, std::function<void(void)> function) {
+		qpl::detail::tasks.add_timed_task(time, function, name);
+	}
+	bool qpl::timed_task_finished(const std::string& name) {
+		return qpl::detail::tasks.is_task_finished(name);
+	}	
+	bool qpl::timed_task_running(const std::string& name) {
+		return qpl::detail::tasks.is_task_running(name);
+	}
+	void qpl::clear_timed_tasks() {
+		qpl::detail::tasks.clear();
+	}
+	void qpl::update_tasks() {
+		qpl::detail::tasks.update();
+	}
 }

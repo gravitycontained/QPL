@@ -856,7 +856,7 @@ namespace qpl {
 
 	template<typename T, typename F>
 	constexpr auto linear_interpolation(T a, T b, F delta) {
-		return a * (F{ 1 } - delta) + (b * delta);
+		return static_cast<T>(a * (F{ 1 } - delta) + (b * delta));
 	}
 
 
