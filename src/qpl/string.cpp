@@ -229,7 +229,7 @@ namespace qpl {
 								auto div = diff / this->m_lines[i - qpl::size{ 1 }].str.length();
 								auto mod = diff % this->m_lines[i - qpl::size{ 1 }].str.length();
 								auto str = this->m_lines[i - qpl::size{ 1 }].str;
-								for (int j = 0; j < div; ++j) {
+								for (qpl::u32 j = 0u; j < div; ++j) {
 									stream << str;
 								}
 								if (mod) {
@@ -252,7 +252,7 @@ namespace qpl {
 								if (mod) {
 									stream << std::string(str.cbegin() + mod, str.cend());
 								}
-								for (int j = 0; j < div; ++j) {
+								for (qpl::u32 j = 0u; j < div; ++j) {
 									stream << str;
 								}
 							}
@@ -342,7 +342,7 @@ namespace qpl {
 							auto div = diff / this->m_lines[i - qpl::size{ 1 }].str.length();
 							auto mod = diff % this->m_lines[i - qpl::size{ 1 }].str.length();
 							auto str = this->m_lines[i - qpl::size{ 1 }].str;
-							for (int j = 0; j < div; ++j) {
+							for (qpl::u32 j = 0u; j < div; ++j) {
 								stream << str;
 							}
 							if (mod) {
@@ -365,7 +365,7 @@ namespace qpl {
 							if (mod) {
 								stream << std::wstring(str.cbegin() + mod, str.cend());
 							}
-							for (int j = 0; j < div; ++j) {
+							for (qpl::u32 j = 0u; j < div; ++j) {
 								stream << str;
 							}
 						}
@@ -522,8 +522,8 @@ namespace qpl {
 	std::vector<std::string> qpl::split_string(const std::string& string, char by_what) {
 		std::vector<std::string> result;
 
-		int before = 0;
-		for (int i = 0; i < string.length(); ) {
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
 			if (string[i] == by_what) {
 				if (i - before) {
 					result.push_back(string.substr(before, i - before));
@@ -557,8 +557,8 @@ namespace qpl {
 	std::vector<std::string> qpl::split_string(const std::string& string) {
 		std::vector<std::string> result;
 
-		int before = 0;
-		for (int i = 0; i < string.length(); ) {
+		qpl::size before = 0u;
+		for (qpl::size i = 0u; i < string.length(); ) {
 			if (std::isspace(string[i])) {
 				if (i - before) {
 					result.push_back(string.substr(before, i - before));
@@ -725,7 +725,7 @@ namespace qpl {
 		std::ostringstream stream;
 		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
 		for (auto i = qpl::size{}; i < length; ++i) {
-			stream << static_cast<qpl::char_type>(qpl::random_i());
+			stream << qpl::char_cast(qpl::random_i());
 		}
 		return stream.str();
 	}
@@ -736,7 +736,7 @@ namespace qpl {
 			auto rep = qpl::random(qpl::size{ 1 }, repetition_size);
 			rep = qpl::min(rep, length - i);
 			
-			stream << std::string(rep, qpl::random_i());
+			stream << std::string(rep, qpl::char_cast(qpl::random_i()));
 			i += rep;
 		}
 		return stream.str();
@@ -745,7 +745,7 @@ namespace qpl {
 		std::wostringstream stream;
 		qpl::set_random_range_i(qpl::type_min<wchar_t>(), qpl::type_max<wchar_t>());
 		for (auto i = qpl::size{}; i < length; ++i) {
-			stream << static_cast<qpl::char_type>(qpl::random_i());
+			stream << qpl::char_cast(qpl::random_i());
 		}
 		return stream.str();
 	}
@@ -762,8 +762,6 @@ namespace qpl {
 		qpl::u64 check;
 		memcpy(&check, this->string.data() + position, qpl::bytes_in_type<qpl::u64>());
 
-		qpl::println("check = ", qpl::hex_string_full(check));
-		qpl::println("check_value = ", qpl::hex_string_full(check_value));
 		if (check != this->check_value) {
 			return false;
 		}

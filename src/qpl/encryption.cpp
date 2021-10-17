@@ -15,19 +15,19 @@ namespace qpl {
 			((y >> 4 & 1) * qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[qpl::detail::aes_tables->mul2[x]]]]));
 	}
 	void qpl::detail::calculate_mul1() {
-		for (int i = 0; i < qpl::detail::aes_tables->mul1.size(); ++i) {
+		for (qpl::size i = 0u; i < qpl::detail::aes_tables->mul1.size(); ++i) {
 			qpl::detail::aes_tables->mul1[i] = static_cast<qpl::u8>(i);
 		}
 	}
 
 	void qpl::detail::calculate_mul2() {
-		for (int i = 0; i < qpl::detail::aes_tables->mul2.size(); ++i) {
+		for (qpl::size i = 0u; i < qpl::detail::aes_tables->mul2.size(); ++i) {
 			qpl::detail::aes_tables->mul2[i] = static_cast<qpl::u8>((i << 1) ^ ((i & 0x80) ? 0x1B : 0x00));
 		}
 	}
 
 	void qpl::detail::calculate_mul3() {
-		for (int i = 0; i < qpl::detail::aes_tables->mul3.size(); ++i) {
+		for (qpl::size i = 0u; i < qpl::detail::aes_tables->mul3.size(); ++i) {
 			qpl::detail::aes_tables->mul3[i] = static_cast<qpl::u8>(qpl::detail::aes_tables->mul2[i] ^ i);
 		}
 	}
@@ -35,7 +35,7 @@ namespace qpl {
 	void qpl::detail::calculate_rcon() {
 		qpl::detail::aes_tables->rcon[0] = 0x8d;
 		qpl::u8 x = 1;
-		for (int i = 1; i < 255; ++i) {
+		for (qpl::size i = 1u; i < 255u; ++i) {
 			qpl::detail::aes_tables->rcon[i] = static_cast<qpl::u8>(x);
 			x = qpl::detail::aes_tables->mul2[x];
 		}
@@ -65,7 +65,7 @@ namespace qpl {
 	}
 
 	void qpl::detail::calculate_sbox_inv() {
-		for (int i = 0; i < qpl::detail::aes_tables->sbox_inv.size(); ++i) {
+		for (qpl::size i = 0u; i < qpl::detail::aes_tables->sbox_inv.size(); ++i) {
 			qpl::detail::aes_tables->sbox_inv[qpl::detail::aes_tables->sbox[i]] = static_cast<qpl::u8>(i);
 		}
 	}
@@ -142,22 +142,22 @@ namespace qpl {
 		}
 		if (size % 16) {
 			if (first_block) {
-				for (int c = 0; c < 16; ++c) {
-					if (c >= size % 16) {
+				for (qpl::size c = 0u; c < 16u; ++c) {
+					if (c >= size % 16u) {
 						input_block[c] = qpl::u8{};
 					}
 					else {
-						input_block[c] = message[(size / 16) * 16 + c];
+						input_block[c] = message[(size / 16u) * 16u + c];
 					}
 				}
 			}
 			else {
-				for (int c = 0; c < 16; ++c) {
-					if (c >= size % 16) {
+				for (qpl::size c = 0u; c < 16u; ++c) {
+					if (c >= size % 16u) {
 						input_block[c] = last_block[c] ^ qpl::u8{};
 					}
 					else {
-						input_block[c] = last_block[c] ^ message[(size / 16) * 16 + c];
+						input_block[c] = last_block[c] ^ message[(size / 16u) * 16u + c];
 					}
 				}
 			}
@@ -248,7 +248,7 @@ namespace qpl {
 			this->set_state(input_block);
 			this->decipher();
 			if (first_block) {
-				for (int c = 0; c < 16; ++c) {
+				for (qpl::size c = 0u; c < 16u; ++c) {
 					if (c >= size) {
 						output_block[c] = qpl::u8{};
 					}
@@ -258,7 +258,7 @@ namespace qpl {
 				}
 			}
 			else {
-				for (int c = 0; c < 16; ++c) {
+				for (qpl::size c = 0u; c < 16u; ++c) {
 					if (c >= size) {
 						output_block[c] = last_block[c] ^ qpl::u8{};
 					}
@@ -267,7 +267,7 @@ namespace qpl {
 					}
 				}
 			}
-			for (int i = 0; i < 16; ++i) {
+			for (qpl::size i = 0u; i < 16u; ++i) {
 				result.push_back(output_block[i]);
 			}
 		}
@@ -358,7 +358,7 @@ namespace qpl {
 	}
 
 	void qpl::aes::set_state(const std::array<qpl::u8, 16>& state) {
-		for (int i = 0; i < state.size(); ++i) {
+		for (qpl::size i = 0u; i < state.size(); ++i) {
 			this->m_state[i] = state[i];
 		}
 	}
@@ -404,7 +404,7 @@ namespace qpl {
 
 		for (; bytes_generated < this->m_round_key_size; bytes_generated += 4) {
 
-			for (int i = 0; i < 4; ++i) {
+			for (qpl::u32 i = 0u; i < 4u; ++i) {
 				helperWORD[i] = this->m_round_key[(bytes_generated - 4) + i];
 			}
 
@@ -416,7 +416,7 @@ namespace qpl {
 				helperWORD[2] = helperWORD[3];
 				helperWORD[3] = temp;
 
-				for (int i = 0; i < 4; ++i) {
+				for (qpl::size i = 0u; i < 4u; ++i) {
 					helperWORD[i] = qpl::detail::aes_tables->sbox[helperWORD[i]];
 				}
 
@@ -424,12 +424,12 @@ namespace qpl {
 			}
 
 			if (this->m_key_size == 32u && bytes_generated % this->m_key_size == 16) {
-				for (int i = 0; i < 4; ++i) {
+				for (qpl::u32 i = 0u; i < 4u; ++i) {
 					helperWORD[i] = qpl::detail::aes_tables->sbox[helperWORD[i]];
 				}
 			}
 
-			for (int i = 0; i < 4; ++i) {
+			for (qpl::u32 i = 0u; i < 4u; ++i) {
 				this->m_round_key[bytes_generated + i] = this->m_round_key[(bytes_generated - this->m_key_size) + i] ^ helperWORD[i];
 			}
 		}
@@ -466,19 +466,19 @@ namespace qpl {
 	}
 
 	void qpl::aes::add_round_key(qpl::size rounds) {
-		for (int i = 0; i < 16; ++i) {
+		for (qpl::u32 i = 0u; i < 16u; ++i) {
 			this->m_state[i] ^= this->m_round_key[rounds * 16 + i];
 		}
 	}
 
 	void qpl::aes::sub_bytes() {
-		for (int i = 0; i < 16; ++i) {
+		for (qpl::u32 i = 0u; i < 16u; ++i) {
 			this->m_state[i] = qpl::detail::aes_tables->sbox[this->m_state[i]];
 		}
 	}
 
 	void qpl::aes::unsub_bytes() {
-		for (int i = 0; i < 16; ++i) {
+		for (qpl::u32 i = 0u; i < 16u; ++i) {
 			this->m_state[i] = qpl::detail::aes_tables->sbox_inv[this->m_state[i]];
 		}
 	}
@@ -486,10 +486,10 @@ namespace qpl {
 	void qpl::aes::shift_rows() {
 		for (int row = 1; row < 4; ++row) {
 			qpl::u8 temp[4];
-			for (int i = 0; i < 4; ++i) {
+			for (qpl::u32 i = 0u; i < 4u; ++i) {
 				temp[i] = this->m_state[((i + row) % 4) * 4 + row];
 			}
-			for (int i = 0; i < 4; ++i) {
+			for (qpl::u32 i = 0u; i < 4u; ++i) {
 				this->m_state[i * 4 + row] = temp[i];
 			}
 		}

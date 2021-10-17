@@ -93,12 +93,12 @@ namespace qpl {
 	}
 	template<>
 	constexpr qpl::size significant_bit(qpl::u8 n) {
-		qpl::u16 y = 0;
+		qpl::u8 y = 0;
 
 		qpl::size result = 0u;
-		if ((y = (n & qpl::u8{ 0xf0u }))) { result |= qpl::u8{ 0b100u }; n = y; }
-		if ((y = (n & qpl::u8{ 0xccu }))) { result |= qpl::u8{ 0b10u }; n = y; }
-		if (((n & qpl::u8{ 0xaau }))) { result |= qpl::u8{ 0b1u }; }
+		if ((y =(n & qpl::u8{ 0xf0u }))) { result |= qpl::size{ 0b100u }; n = y; }
+		if ((y =(n & qpl::u8{ 0xccu }))) { result |= qpl::size{ 0b10u }; n = y; }
+		if (((n & qpl::u8{ 0xaau }))) { result |= qpl::size{ 0b1u }; }
 		if (n) {
 			++result;
 		}
@@ -648,7 +648,7 @@ namespace qpl {
 	constexpr std::array<T, sizeof...(Args)> tuple_to_array(std::tuple<Args...> tuple) {
 		std::array<T, sizeof...(Args)> result{};
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
-			((result[Ints] = std::get<Ints>(tuple)), ...);
+			((result[Ints] = static_cast<T>(std::get<Ints>(tuple))), ...);
 		};
 		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
 		return result;
@@ -680,14 +680,14 @@ namespace qpl {
 		return { *(v.first), *(v.second) };
 	}
 
-	template<typename T>
-	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const std::span<T>& data, qpl::u32 skip_size) {
+	template<typename T, typename T2>
+	std::pair<std::decay_t<T>, std::decay_t<T>> min_max_vector(const std::span<T>& data, T2 skip_size) {
 		if (data.empty()) {
 			return std::make_pair(std::decay_t<T>{}, std::decay_t<T>{});
 		}
 		std::decay_t<T> min = data.front();
 		std::decay_t<T> max = data.front();
-		for (int i = 0; i < data.size(); i += skip_size) {
+		for (T2 i = 0; i < data.size(); i += skip_size) {
 			min = qpl::min(min, data[i]);
 			max = qpl::min(max, data[i]);
 		}

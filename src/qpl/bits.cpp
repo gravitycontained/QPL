@@ -51,7 +51,7 @@ namespace qpl {
 	void qpl::bit_string_istream::reset_position() {
 		this->position = 0u;
 	}
-	std::string qpl::bit_string_istream::get_next_string(qpl::u32 size) {
+	std::string qpl::bit_string_istream::get_next_string(qpl::size size) {
 		std::string str = this->string.substr(this->position / qpl::bits_in_byte(), size);
 		this->position += size * qpl::bits_in_byte();
 		return str;
@@ -70,7 +70,7 @@ namespace qpl {
 		this->position = (((this->position - 1) / qpl::bits_in_type<qpl::u64>()) + 1) * qpl::bits_in_type<qpl::u64>();
 		this->position_u64_offset = 0u;
 	}
-	void qpl::bit_string_istream::set_position(qpl::u32 position) {
+	void qpl::bit_string_istream::set_position(qpl::size position) {
 		this->position = position;
 	}
 }

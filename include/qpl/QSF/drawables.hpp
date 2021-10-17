@@ -251,7 +251,7 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
 		std::vector<qsf::vertex> vertices;
-		qsf::primitive_type primitive_type;
+		qsf::primitive_type primitive_type = qsf::primitive_type::points;
 	};
 
 	struct vtext {
@@ -276,7 +276,7 @@ namespace qsf {
 		std::string font_name;
 		qpl::u32 style = sf::Text::Style::Regular;
 		qpl::u32 character_size = 15u;
-		qpl::f32 outline_thickness;
+		qpl::f32 outline_thickness = 0.0f;
 		qsf::rgb color = qsf::rgb::black;
 		qsf::rgb outline_color;
 		qsf::rgb multiplied_color = qsf::rgb::white;
@@ -1581,7 +1581,7 @@ namespace qsf {
 			qsf::rgb color = qsf::rgb::white;
 			qpl::u32 style = sf::Text::Style::Regular;
 			qpl::u32 character_size = 20u;
-			qpl::f32 outline_thickness;
+			qpl::f32 outline_thickness = 0.0f;
 			qsf::rgb outline_color;
 			qpl::f32 letter_spacing = 1.0f;
 			qpl::vector2f scaling = qpl::vector2f(qpl::f32_max, qpl::f32_max);
@@ -1649,7 +1649,7 @@ namespace qsf {
 		QPLDLL void clear();
 
 		qpl::vector2u max_chunk_size = { qpl::u32_max, qpl::u32_max };
-		qpl::u32 chunk_width_count = 0u;
+		qpl::size chunk_width_count = 0u;
 		std::vector<sf::VertexArray> chunks;
 		const sf::Texture* texture_ptr;
 		bool texture_ptr_set = false;
@@ -1677,8 +1677,8 @@ namespace qsf {
 
 		struct highlighted_line {
 			qsf::rgb color;
-			qpl::f64 thickness;
-			bool foreground;
+			qpl::f64 thickness = 0.0;
+			bool foreground = true;
 		};
 
 		struct data_point_info {
@@ -1800,7 +1800,7 @@ namespace qsf {
 		qpl::size index_start = 0u;
 		qpl::size index_end = qpl::size_max;
 		mutable qpl::size index_skip_size = 1u;
-		mutable std::pair<qpl::u32, qpl::u32> visible_index_range_before = { qpl::u32_max, qpl::u32_max };
+		mutable std::pair<qpl::size, qpl::size> visible_index_range_before = { qpl::size_max, qpl::size_max };
 
 		bool use_x_axis = true;
 		std::function<std::string(qpl::size)> x_axis_string_function;
@@ -2024,9 +2024,9 @@ namespace qsf {
 		QPLDLL qpl::size total_graph_size() const;
 		QPLDLL qpl::size graph_element_size() const;
 		QPLDLL qpl::size visible_element_size() const;
-		QPLDLL qpl::u32 visible_index_start() const;
-		QPLDLL qpl::u32 visible_index_end() const;
-		QPLDLL std::pair<qpl::u32, qpl::u32> visible_index_range() const;
+		QPLDLL qpl::size visible_index_start() const;
+		QPLDLL qpl::size visible_index_end() const;
+		QPLDLL std::pair<qpl::size, qpl::size> visible_index_range() const;
 		QPLDLL bool is_range_enabled() const;
 
 		QPLDLL void add_info_graph(std::string name);

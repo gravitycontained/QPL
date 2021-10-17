@@ -110,7 +110,7 @@ namespace qpl {
 
 	template<typename T>
 	std::vector<std::vector<T>> list_all_arrangements(const std::vector<T>& array, qpl::size size) {
-		std::vector<qpl::u32> indices = qpl::vector_0_to_n<qpl::u32>(size);
+		std::vector<qpl::u32> indices = qpl::vector_0_to_n<qpl::u32>(qpl::u32_cast(size));
 
 		std::vector<std::vector<T>> result;
 		while (true) {

@@ -626,7 +626,7 @@ namespace qpl {
 
             qpl::size depth_before = this->branch_size() + 1;
 
-            for (int i = 0; i < depth_before - 1; ++i) {
+            for (qpl::size i = 0u; i < depth_before - 1; ++i) {
                 for (qpl::u32 i = 0u; i < widths.size(); ++i) {
                     qpl::print_repeat(' ', widths[i] + 1);
                     if (i == widths.size() - 1) {
@@ -1553,7 +1553,7 @@ namespace qpl {
                 if (depth_ctr != branch_size) {
                     tree_destination = destination;
                     depth_ctr = qpl::u32_cast(levels);
-                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                    for (qpl::size l = levels; l < i.branch_size(); ++l) {
                         tree_destination.go_into(i.branch_at(l).get_name());
                         ++depth_ctr;
                     }
@@ -1577,7 +1577,7 @@ namespace qpl {
 
             qpl::filesys::path tree_destination = destination;
             auto levels = this->m_paths.front().branch_size() - 1;
-            qpl::u32 depth_ctr = levels;
+            auto depth_ctr = levels;
 
             for (auto& i : this->m_paths) {
 
@@ -1586,7 +1586,7 @@ namespace qpl {
                 if (depth_ctr != branch_size) {
                     tree_destination = destination;
                     depth_ctr = levels;
-                    for (qpl::u32 l = levels; l < i.branch_size(); ++l) {
+                    for (qpl::size l = levels; l < i.branch_size(); ++l) {
                         tree_destination.go_into(i.branch_at(l).get_name());
                         ++depth_ctr;
                     }
@@ -1666,8 +1666,8 @@ namespace qpl {
             std::vector<std::string> branch_names = this->m_paths.front().get_branch_names();
             std::vector<std::string> current_branch_names;
 
-            auto print_branch_space = [&](qpl::u32 stop) {
-                for (qpl::u32 i = 0u; i < stop; ++i) {
+            auto print_branch_space = [&](qpl::size stop) {
+                for (qpl::size i = 0u; i < stop; ++i) {
                     auto width = branch_names[i].length();
                     qpl::print_repeat(' ', width + 1);
                     if (i == branch_names.size() - 1) {
@@ -2419,8 +2419,8 @@ namespace qpl {
             auto content = qpl::filesys::read_file(path);
             auto splits = (content.size() - 1) / bytes + 1;
 
-            for (int i = 0; i < splits; ++i) {
-                auto file_name = qpl::to_string(path.string(), ".PART", qpl::prepended_to_string_to_fit(i, '0', std::log(splits) / std::log(10) + 1));
+            for (qpl::u32 i = 0u; i < splits; ++i) {
+                auto file_name = qpl::to_string(path.string(), ".PART", qpl::prepended_to_string_to_fit(i, '0', qpl::size_cast(std::log(splits) / std::log(10) + 1)));
                 std::ofstream file(file_name.c_str(), std::ios::binary);
                 if (!file.good()) {
                     qpl::println("there was a problem creating \"", file_name, "\"");

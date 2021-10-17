@@ -644,7 +644,7 @@ namespace qpl {
 		template<qpl::size N, typename U>
 		constexpr vectorN& operator=(const vectorN<U, N>& other) {
 			for (qpl::u32 i = 0u; i < qpl::min(this->data.size(), other.data.size()); ++i) {
-				this->data[i] = other.data[i];
+				this->data[i] = static_cast<T>(other.data[i]);
 			}
 			return *this;
 		}
@@ -1089,7 +1089,7 @@ namespace qpl {
 		}
 		maths_float_type angle() const {
 			auto atan = std::atan2(this->a.y - this->b.y, this->b.x - this->a.x);
-			if (atan < 0) atan = 2 * qpl::pi + atan;
+			if (atan < 0) atan = static_cast<decltype(atan)>(2 * qpl::pi + atan);
 			return static_cast<maths_float_type>(atan);
 		}
 
@@ -1266,11 +1266,11 @@ namespace qpl {
 				auto angle2 = line2.angle();
 
 				if (angle2 < angle1) {
-					if (line_angle < qpl::pi) {
-						angle1 -= qpl::pi * 2;
+					if (line_angle < qpl::pi_32) {
+						angle1 -= qpl::pi_32 * 2;
 					}
 					else {
-						angle2 += qpl::pi * 2;
+						angle2 += qpl::pi_32 * 2;
 					}
 				}
 

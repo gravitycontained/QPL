@@ -58,7 +58,7 @@ namespace qpl {
 	private:
 		qpl::f64 m_gradient = 0.0;
 		qpl::f64 m_output = 0.0;
-		qpl::u32 m_index = 0.0;
+		qpl::u32 m_index = 0u;
 		std::vector<neural_connection> m_connections;
 	};
 
@@ -166,9 +166,9 @@ namespace qpl {
 			QPLDLL void teach_previous_layer(std::vector<neuron>& previous_layer, qpl::f64 eta, qpl::f64 alpha);
 		private:
 
-			double m_gradient;
-			double m_output;
-			unsigned m_index;
+			double m_gradient = 0.0;
+			double m_output = 0.0;
+			unsigned m_index = 0u;
 			std::vector<neural_connection> m_connections;
 		};
 
@@ -557,8 +557,8 @@ namespace qpl {
 		static qpl::f64 eta;
 		static qpl::f64 alpha;
 
-		qpl::f64 gradient;
-		qpl::f64 output;
+		qpl::f64 gradient = 0.0;
+		qpl::f64 output = 0.0;
 	};
 
 	namespace detail {

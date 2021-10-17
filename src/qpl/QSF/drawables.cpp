@@ -1531,7 +1531,7 @@ namespace qsf {
 		}
 		qpl::vector2f first_point;
 		qsf::rgb first_color;
-		qpl::f32 first_thickness;
+		qpl::f32 first_thickness = 0.0f;
 
 		if (this->vertices.size()) {
 			first_point = (this->vertices[0].position + this->vertices[1].position) / 2.0f;
@@ -1904,17 +1904,17 @@ namespace qsf {
 		auto index = (y * this->array_dimension.y + x);
 
 		auto above_index = ((qpl::signed_cast(y) - 1) * (qpl::signed_cast(this->array_dimension.x) - 1) + qpl::signed_cast(x)) * 4;
-		if (above_index - 2 >= 0 && above_index - 2 < this->vertices.size()) {
+		if (above_index - 2 >= 0 && above_index - 2 < qpl::signed_cast(this->vertices.size())) {
 			this->vertices[above_index - 2].color = color;
 		}
-		if (above_index + 1 >= 0 && above_index + 1 < this->vertices.size()) {
+		if (above_index + 1 >= 0 && above_index + 1 < qpl::signed_cast(this->vertices.size())) {
 			this->vertices[above_index + 1].color = color;
 		}
 		auto below_index = ((qpl::signed_cast(y)) * (qpl::signed_cast(this->array_dimension.x) - 1) + qpl::signed_cast(x)) * 4;
-		if (below_index >= 0 && below_index < this->vertices.size()) {
+		if (below_index >= 0 && below_index < qpl::signed_cast(this->vertices.size())) {
 			this->vertices[below_index].color = color;
 		}
-		if (below_index - 1 >= 0 && below_index - 1 < this->vertices.size()) {
+		if (below_index - 1 >= 0 && below_index - 1 < qpl::signed_cast(this->vertices.size())) {
 			this->vertices[below_index - 1].color = color;
 		}
 	}
@@ -1972,7 +1972,7 @@ namespace qsf {
 
 		this->objects.back().back().shift = this->states.back().shift;
 		this->objects.back().back().shift_before = this->states.back().shift;
-		this->objects.back().back().sprite_index = this->sprites.size();
+		this->objects.back().back().sprite_index = qpl::u32_cast(this->sprites.size());
 
 		this->sprites.push_back(qsf::sprite{});
 		this->sprites.back().set_texture(texture);
@@ -2018,7 +2018,7 @@ namespace qsf {
 
 		this->objects.back().back().shift = this->states.back().shift;
 		this->objects.back().back().shift_before = this->states.back().shift;
-		this->objects.back().back().sprite_index = this->sprites.size();
+		this->objects.back().back().sprite_index = qpl::u32_cast(this->sprites.size());
 
 		this->sprites.push_back(sprite);
 		this->sprites.back().set_position(pos);
@@ -3682,14 +3682,13 @@ namespace qsf {
 			auto x = i % this->chunk_width_count;
 			auto y = i / this->chunk_width_count;
 
-			auto rx = x * this->max_chunk_size.x * this->texture_tile_dimension.x;
-			auto ry = y * this->max_chunk_size.y * this->texture_tile_dimension.y;
-			auto rw = this->max_chunk_size.x * this->texture_tile_dimension.x;
-			auto rh = this->max_chunk_size.y * this->texture_tile_dimension.y;
+			auto rx = qpl::f32_cast(x * this->max_chunk_size.x * this->texture_tile_dimension.x);
+			auto ry = qpl::f32_cast(y * this->max_chunk_size.y * this->texture_tile_dimension.y);
+			auto rw = qpl::f32_cast(this->max_chunk_size.x * this->texture_tile_dimension.x);
+			auto rh = qpl::f32_cast(this->max_chunk_size.y * this->texture_tile_dimension.y);
 
 			auto rect = states.transform.transformRect(sf::FloatRect(rx, ry, rw, rh));
-			auto fov = sf::FloatRect(0, 0, window.getSize().x, window.getSize().y);
-
+			auto fov = sf::FloatRect(0.f, 0.f, qpl::f32_cast(window.getSize().x), qpl::f32_cast(window.getSize().y));
 
 			if (rect.intersects(fov)) {
 				window.draw(this->chunks[i], states);
@@ -4113,7 +4112,7 @@ namespace qsf {
 		}
 		if (event_info.left_mouse_clicked()) {
 			qsf::vrectangle rect(this->position, this->true_graph_dimension());
-			rect.position.x += this->y_axis_text_space;
+			rect.position.x += qpl::f32_cast(this->y_axis_text_space);
 
 			if (rect.contains(event_info.mouse_position())) {
 				this->drag = true;
@@ -4134,7 +4133,7 @@ namespace qsf {
 
 				if (index_delta) {
 					this->click_position = event_info.mouse_position();
-					this->click_position.x += ((index_f - index_delta) / size) * this->true_graph_width();
+					this->click_position.x += qpl::f32_cast(((index_f - index_delta) / size) * this->true_graph_width());
 
 					this->index_start = qpl::max(qpl::i32_cast(0), qpl::i32_cast(this->visible_index_start()) + index_delta);
 					this->index_end = this->index_start + size;
@@ -4161,7 +4160,7 @@ namespace qsf {
 			auto offset = this->position.x + this->y_axis_text_space;
 			auto progress = (event_info.mouse_position().x - offset) / this->true_graph_width();
 			auto index = visible_size * progress;
-			auto int_index = qpl::int_cast(index);
+			auto int_index = qpl::size_cast(index);
 			auto left_over = index - int_index;
 			auto [low, high] = this->get_low_high();
 
@@ -4204,7 +4203,7 @@ namespace qsf {
 						this->closest_graph_at_cursor = g.first;
 						this->closest_graph_at_cursor_value = value;
 						this->closest_graph_at_cursor_color = g.second.color;
-						this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+						this->closest_graph_at_cursor_index = qpl::u32_cast(this->visible_index_start() + index + 0.5);
 						if (this->closest_graph_at_cursor_color.is_unset()) {
 							this->closest_graph_at_cursor_color = this->color;
 						}
@@ -4238,7 +4237,7 @@ namespace qsf {
 						this->closest_graph_at_cursor = g.first;
 						this->closest_graph_at_cursor_value = value;
 						this->closest_graph_at_cursor_color = g.second.color;
-						this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+						this->closest_graph_at_cursor_index = qpl::u32_cast(this->visible_index_start() + index + 0.5);
 						if (this->closest_graph_at_cursor_color.is_unset()) {
 							this->closest_graph_at_cursor_color = this->color;
 						}
@@ -4272,7 +4271,7 @@ namespace qsf {
 						this->closest_graph_at_cursor = g.first;
 						this->closest_graph_at_cursor_value = value;
 						this->closest_graph_at_cursor_color = g.second.color;
-						this->closest_graph_at_cursor_index = qpl::int_cast(this->visible_index_start() + index + 0.5);
+						this->closest_graph_at_cursor_index = qpl::u32_cast(this->visible_index_start() + index + 0.5);
 						if (this->closest_graph_at_cursor_color.is_unset()) {
 							this->closest_graph_at_cursor_color = this->color;
 						}
@@ -4287,13 +4286,13 @@ namespace qsf {
 		}
 		if (event_info.scrolled_up()) {
 			qsf::vrectangle rect(this->position, this->true_graph_dimension());
-			rect.position.x += this->y_axis_text_space;
+			rect.position.x += qpl::f32_cast(this->y_axis_text_space);
 
 			if (rect.contains(event_info.mouse_position())) {
 				auto progress = (event_info.mouse_position().x - rect.position.x) / rect.dimension.x;
 				auto change = this->visible_element_size();
-				auto start = qpl::i32_cast(this->visible_index_start());
-				auto end = qpl::i32_cast(this->visible_index_end());
+				auto start = qpl::i64_cast(this->visible_index_start());
+				auto end = qpl::i64_cast(this->visible_index_end());
 
 				change = qpl::size_cast(qpl::f64_cast(change) * (this->zoom_factor - 1));
 
@@ -4301,11 +4300,11 @@ namespace qsf {
 					change = 0;
 				}
 
-				start += qpl::i32_cast(change * progress);
-				end -= qpl::i32_cast(change * (1 - progress));
+				start += qpl::i64_cast(change * progress);
+				end -= qpl::i64_cast(change * (1 - progress));
 
-				if (start >= this->graph_element_size()) {
-					start = this->graph_element_size() - 1;
+				if (start >= qpl::signed_cast(this->graph_element_size())) {
+					start = qpl::i64_cast(this->graph_element_size()) - 1;
 				}
 				if (end < 0) {
 					end = 0;
@@ -4318,30 +4317,30 @@ namespace qsf {
 		}
 		if (event_info.scrolled_down()) {
 			qsf::vrectangle rect(this->position, this->true_graph_dimension());
-			rect.position.x += this->y_axis_text_space;
+			rect.position.x += qpl::f32_cast(this->y_axis_text_space);
 
 			if (rect.contains(event_info.mouse_position())) {
 				auto progress = (event_info.mouse_position().x - rect.position.x) / rect.dimension.x;
 				auto change = this->visible_element_size();
-				auto start = qpl::i32_cast(this->visible_index_start());
-				auto end = qpl::i32_cast(this->visible_index_end());
+				auto start = qpl::i64_cast(this->visible_index_start());
+				auto end = qpl::i64_cast(this->visible_index_end());
 
 				change = qpl::size_cast(qpl::f64_cast(change) * (this->zoom_factor - 1));
 				if (change == 0) {
 					change = 1;
 				}
 
-				start -= qpl::i32_cast(change * progress);
-				end += qpl::i32_cast(change * (1 - progress));
+				start -= qpl::i64_cast(change * progress);
+				end += qpl::i64_cast(change * (1 - progress));
 
-				if (end >= this->graph_element_size()) {
-					end = this->graph_element_size();
+				if (end >= qpl::signed_cast(this->graph_element_size())) {
+					end = qpl::i64_cast(this->graph_element_size());
 				}
 				if (start < 0) {
 					start = 0;
 				}
-				this->index_start = qpl::u32_cast(start);
-				this->index_end = qpl::u32_cast(end);
+				this->index_start = qpl::size_cast(start);
+				this->index_end = qpl::size_cast(end);
 
 				this->check_x_axis();
 			}
@@ -4558,7 +4557,7 @@ namespace qsf {
 			return this->graph_element_size();
 		}
 	}
-	qpl::u32 qsf::vgraph::visible_index_start() const {
+	qpl::size qsf::vgraph::visible_index_start() const {
 		if (this->is_range_enabled()) {
 			return this->index_start;
 		}
@@ -4570,7 +4569,7 @@ namespace qsf {
 		}
 		return 0u;
 	}
-	qpl::u32 qsf::vgraph::visible_index_end() const {
+	qpl::size qsf::vgraph::visible_index_end() const {
 		if (this->is_range_enabled()) {
 			return this->index_end;
 		}
@@ -4580,7 +4579,7 @@ namespace qsf {
 		}
 		return this->visible_element_size();
 	}
-	std::pair<qpl::u32, qpl::u32> qsf::vgraph::visible_index_range() const {
+	std::pair<qpl::size, qpl::size> qsf::vgraph::visible_index_range() const {
 		return std::make_pair(this->visible_index_start(), this->visible_index_end());
 	}
 	bool qsf::vgraph::is_range_enabled() const {
@@ -4775,15 +4774,15 @@ namespace qsf {
 			for (qpl::u32 i = 0u; i < interpolated_data.size(); ++i) {
 
 				qpl::vector2f position;
-				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space;
+				position.x = qpl::f32_cast(graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space);
 
 
 				auto y_progress = (interpolated_data[i].data - low_padded) / (high_padded - low_padded);
 				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
-				position.y = graph.position.y + graph.dimension.y * y_progress;
+				position.y = qpl::f32_cast(graph.position.y + graph.dimension.y * y_progress);
 
 				auto color = use_interpolated_color ? interpolated_data[i].color : using_color;
-				auto thickness = use_interpolated_thickness ? interpolated_data[i].thickness : using_thickness;
+				auto thickness = qpl::f32_cast(use_interpolated_thickness ? interpolated_data[i].thickness : using_thickness);
 				this->lines[u].add_thick_line(position, color, thickness);
 
 
@@ -4863,15 +4862,15 @@ namespace qsf {
 			for (qpl::u32 i = 0u; i < interpolated_data.size(); ++i) {
 
 				qpl::vector2f position;
-				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space;
+				position.x = qpl::f32_cast(graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space);
 
 
 				auto y_progress = (interpolated_data[i].data - low_padded) / (high_padded - low_padded);
 				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
-				position.y = graph.position.y + graph.dimension.y * y_progress;
+				position.y = qpl::f32_cast(graph.position.y + graph.dimension.y * y_progress);
 
 				auto color = use_interpolated_color ? interpolated_data[i].color : using_color;
-				auto thickness = use_interpolated_thickness ? interpolated_data[i].thickness : using_thickness;
+				auto thickness = qpl::f32_cast(use_interpolated_thickness ? interpolated_data[i].thickness : using_thickness);
 				this->lines[u].add_thick_line(position, color, thickness);
 			}
 
@@ -4911,15 +4910,15 @@ namespace qsf {
 			for (qpl::u32 i = 0u; i < interpolated_data.size(); ++i) {
 
 				qpl::vector2f position;
-				position.x = graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space;
+				position.x = qpl::f32_cast(graph.position.x + (graph.dimension.x - graph.y_axis_text_space) * (i / static_cast<double>(interpolated_data.size() - 1)) + graph.y_axis_text_space);
 
 
 				auto y_progress = (interpolated_data[i].data - low_padded) / (high_padded - low_padded);
 				y_progress = qpl::clamp_0_1((1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2);
-				position.y = graph.position.y + graph.dimension.y * y_progress;
+				position.y = qpl::f32_cast(graph.position.y + graph.dimension.y * y_progress);
 
 				auto color = using_color;
-				auto thickness = using_thickness;
+				auto thickness = qpl::f32_cast(using_thickness);
 				this->lines[u].add_thick_line(position, color, thickness);
 			}
 
@@ -4947,7 +4946,7 @@ namespace qsf {
 
 					y_start = qpl::i64_cast(low_padded / y_delta + 1) * y_delta;
 					y_end = qpl::i64_cast(high_padded / y_delta) * y_delta;
-					y_steps = qpl::i64_cast((y_end - y_start) / y_delta) + 1;
+					y_steps = qpl::u32_cast(qpl::i64_cast((y_end - y_start) / y_delta) + 1);
 				}
 
 				this->y_lines.resize(y_steps);
@@ -4963,7 +4962,7 @@ namespace qsf {
 
 						qpl::vector2f position;
 						position.x = graph.position.x;
-						position.y = graph.position.y + graph.true_graph_height() * y_progress + graph.x_axis_text_space;
+						position.y = qpl::f32_cast(graph.position.y + graph.true_graph_height() * y_progress + graph.x_axis_text_space);
 
 						auto a = position;
 						auto b = a;
@@ -4972,14 +4971,14 @@ namespace qsf {
 						if (y.second.foreground) {
 							this->y_lines_foreground.resize(this->y_lines_foreground.size() + 1);
 							this->y_lines_foreground.back().clear();
-							this->y_lines_foreground.back().add_thick_line(a, y.second.color, y.second.thickness);
-							this->y_lines_foreground.back().add_thick_line(b, y.second.color, y.second.thickness);
+							this->y_lines_foreground.back().add_thick_line(a, y.second.color, qpl::f32_cast(y.second.thickness));
+							this->y_lines_foreground.back().add_thick_line(b, y.second.color, qpl::f32_cast(y.second.thickness));
 						}
 						else {
 							this->y_lines.resize(this->y_lines.size() + 1);
 							this->y_lines.back().clear();
-							this->y_lines.back().add_thick_line(a, y.second.color, y.second.thickness);
-							this->y_lines.back().add_thick_line(b, y.second.color, y.second.thickness);
+							this->y_lines.back().add_thick_line(a, y.second.color,  qpl::f32_cast(y.second.thickness));
+							this->y_lines.back().add_thick_line(b, y.second.color,  qpl::f32_cast(y.second.thickness));
 						}
 					}
 				}
@@ -4989,7 +4988,7 @@ namespace qsf {
 					y_progress = (1.0 - y_progress) * (1.0 - graph.height_delta) + (graph.height_delta) / 2;
 					qpl::vector2f position;
 					position.x = graph.position.x;
-					position.y = graph.position.y + graph.true_graph_height() * y_progress + graph.x_axis_text_space;
+					position.y = qpl::f32_cast(graph.position.y + graph.true_graph_height() * y_progress + graph.x_axis_text_space);
 
 
 
@@ -5042,8 +5041,8 @@ namespace qsf {
 					b.x += graph.dimension.x;
 
 					this->y_lines[i].clear();
-					this->y_lines[i].add_thick_line(a, graph.axis_line_color, graph.axis_thickness);
-					this->y_lines[i].add_thick_line(b, graph.axis_line_color, graph.axis_thickness);
+					this->y_lines[i].add_thick_line(a, graph.axis_line_color,  qpl::f32_cast(graph.axis_thickness));
+					this->y_lines[i].add_thick_line(b, graph.axis_line_color,  qpl::f32_cast(graph.axis_thickness));
 				}
 
 			}
@@ -5060,7 +5059,7 @@ namespace qsf {
 
 				for (qpl::u32 i = 0u; i < x_size; ++i) {
 					auto progress = (((i * graph.x_axis_line_frequency) + index_mod)) / static_cast<double>(graph.visible_element_size() - 1);
-					auto multiple = qpl::approximate_multiple_up(graph.visible_index_start(), qpl::u32_cast(graph.x_axis_line_frequency));
+					auto multiple = qpl::approximate_multiple_up(graph.visible_index_start(), graph.x_axis_line_frequency);
 					if (graph.visible_index_start() == 0u) {
 						multiple = qpl::u32_cast(graph.x_axis_line_frequency);
 					}
@@ -5069,7 +5068,7 @@ namespace qsf {
 
 
 					qpl::vector2f position;
-					position.x = graph.position.x + (graph.true_graph_width()) * progress + graph.y_axis_text_space;
+					position.x = qpl::f32_cast(graph.position.x + (graph.true_graph_width()) * progress + graph.y_axis_text_space);
 					position.y = graph.position.y + graph.dimension.y;
 
 					this->x_texts[i] = graph.x_axis_text;
@@ -5091,13 +5090,13 @@ namespace qsf {
 					this->x_texts[i].centerize_x();
 
 					auto a = position;
-					a.y -= graph.x_axis_text_space;
+					a.y -= qpl::f32_cast(graph.x_axis_text_space);
 					auto b = a;
 					b.y = graph.position.y;
 
 					this->x_lines[i].clear();
-					this->x_lines[i].add_thick_line(a, graph.axis_line_color, graph.axis_thickness);
-					this->x_lines[i].add_thick_line(b, graph.axis_line_color, graph.axis_thickness);
+					this->x_lines[i].add_thick_line(a, graph.axis_line_color, qpl::f32_cast(graph.axis_thickness));
+					this->x_lines[i].add_thick_line(b, graph.axis_line_color, qpl::f32_cast(graph.axis_thickness));
 				}
 			}
 			else {

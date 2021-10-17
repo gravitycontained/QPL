@@ -101,8 +101,8 @@ namespace qpl {
 		std::getline(stream, line);
 
 		std::array<qpl::u8, 4> result;
-		unsigned ctr = 0u;
-		for (int i = 0; i < line.size(); ++i) {
+		qpl::u32 ctr = 0u;
+		for (qpl::u32 i = 0u; i < line.size(); ++i) {
 			if (line[i] == ' ') {
 				result[ctr++] = i;
 			}
@@ -119,7 +119,7 @@ namespace qpl {
 		for (auto& i : this->m_connections) {
 			std::getline(stream, line);
 			qpl::u8 result = 0u;		
-			for (int i = 0; i < line.size(); ++i) {
+			for (qpl::u8 i = 0u; i < line.size(); ++i) {
 				if (line[i] == ' ') {
 					result = i;
 					break;

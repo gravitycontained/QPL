@@ -61,10 +61,10 @@ namespace qsf {
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		qsf::frgb& operator*=(T value) {
 
-			this->r *= value;
-			this->g *= value;
-			this->b *= value;
-			this->a *= value;
+			this->r *= qpl::f32_cast(value);
+			this->g *= qpl::f32_cast(value);
+			this->b *= qpl::f32_cast(value);
+			this->a *= qpl::f32_cast(value);
 			//this->r = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->r) * value, static_cast<qpl::f32>(1.0f));
 			//this->g = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->g) * value, static_cast<qpl::f32>(1.0f));
 			//this->b = qpl::clamp(qpl::f32{}, static_cast<qpl::f32>(this->b) * value, static_cast<qpl::f32>(1.0f));

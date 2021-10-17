@@ -18,7 +18,7 @@ namespace qsf {
 
 	void qsf::socket::connect() {
 		if (!this->address_set) {
-			throw std::exception("qsf::socket::connect: ip_adress nor port set!");
+			throw std::exception("qsf::socket::connect: neither ip_adress nor port set!");
 		}
 		auto status = this->socket.connect(this->ip_address, this->port);
 		this->connected = (status == sf::Socket::Done);

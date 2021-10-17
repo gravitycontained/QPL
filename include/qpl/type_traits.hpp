@@ -190,17 +190,17 @@ namespace qpl {
 	}
 
 
-	constexpr qpl::u64 bits_in_byte() {
+	constexpr qpl::size bits_in_byte() {
 		return CHAR_BIT;
 	}
 
 	template<typename T>
-	constexpr qpl::u64 bits_in_type() {
+	constexpr qpl::size bits_in_type() {
 		return sizeof(T) * bits_in_byte();
 	}
 
 	template<typename T>
-	constexpr qpl::u64 bytes_in_type() {
+	constexpr qpl::size bytes_in_type() {
 		return sizeof(T);
 	}
 
@@ -447,6 +447,14 @@ namespace qpl {
 	template<typename T>
 	constexpr inline qpl::size size_cast(T&& data) {
 		return static_cast<qpl::size>(data);
+	}
+	template<typename T>
+	constexpr inline qpl::size signed_size_cast(T&& data) {
+		return static_cast<qpl::signed_cast_type<qpl::size>>(data);
+	}
+	template<typename T>
+	constexpr inline qpl::char_type char_cast(T&& data) {
+		return static_cast<qpl::char_type>(data);
 	}
 	template<typename T>
 	constexpr inline qpl::f32 f32_cast(T&& data) {

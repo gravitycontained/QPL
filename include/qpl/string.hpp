@@ -172,7 +172,7 @@ namespace qpl {
 
 
 	constexpr bool string_contains(std::string_view string, char c) {
-		for (qpl::i32 i = 0; i < string.length(); ++i) {
+		for (qpl::u32 i = 0; i < string.length(); ++i) {
 			if (string[i] == c) {
 				return true;
 			}
@@ -180,7 +180,7 @@ namespace qpl {
 		return false;
 	}
 	constexpr bool string_contains(const std::string_view& string, const std::string_view& sequence) {
-		for (qpl::i32 i = 0; i < qpl::i32_cast(string.length()) - sequence.length(); ++i) {
+		for (qpl::i32 i = 0; i < qpl::i32_cast(string.length() - sequence.length()); ++i) {
 			if (string.substr(i, sequence.length()) == sequence) {
 				return true;
 			}
@@ -1360,11 +1360,11 @@ namespace qpl {
 			if (prepend_zeroes) {
 				switch (base_format) {
 				case base_format::base36l:
-					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]), qpl::base_max_log(base));
+					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]), qpl::size_cast(qpl::base_max_log(base)));
 				case base_format::base36u:
-					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]), qpl::base_max_log(base));
+					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]), qpl::size_cast(qpl::base_max_log(base)));
 				case base_format::base64:
-					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_64[0]), qpl::base_max_log(base));
+					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_64[0]), qpl::size_cast(qpl::base_max_log(base)));
 				}
 			}
 			else {
@@ -1398,21 +1398,21 @@ namespace qpl {
 		case base_format::base36l:
 			while (logapprox) {
 				mod = value % logapprox;
-				digits << static_cast<qpl::char_type>(qpl::detail::base_36_lower[value / logapprox]);
+				digits << static_cast<qpl::char_type>(qpl::detail::base_36_lower[qpl::size_cast(value / logapprox)]);
 				value = mod;
 				logapprox /= base;
 			} break;
 		case base_format::base36u:
 			while (logapprox) {
 				mod = value % logapprox;
-				digits << static_cast<qpl::char_type>(qpl::detail::base_36_upper[value / logapprox]);
+				digits << static_cast<qpl::char_type>(qpl::detail::base_36_upper[qpl::size_cast(value / logapprox)]);
 				value = mod;
 				logapprox /= base;
 			} break;
 		case base_format::base64:
 			while (logapprox) {
 				mod = value % logapprox;
-				digits << static_cast<qpl::char_type>(qpl::detail::base_64[value / logapprox]);
+				digits << static_cast<qpl::char_type>(qpl::detail::base_64[qpl::size_cast(value / logapprox)]);
 				value = mod;
 				logapprox /= base;
 			} break;
@@ -1425,13 +1425,13 @@ namespace qpl {
 			if (left > qpl::i64{}) {
 				switch (base_format) {
 				case base_format::base36l:
-					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]), left);
+					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]), qpl::size_cast(left));
 					break;
 				case base_format::base36u:
-					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]), left);
+					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]), qpl::size_cast(left));
 					break;
 				case base_format::base64:
-					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_64[0]), left);
+					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_64[0]), qpl::size_cast(left));
 					break;
 				}
 			}

@@ -140,7 +140,7 @@ namespace qpl {
 	constexpr inline void clear_array_offset(C& destination, qpl::size offset = 0u) {
 		memset(reinterpret_cast<std::byte*>(&destination) + offset * qpl::bytes_in_type<qpl::container_subtype<C>>(), 0, sizeof(C) - offset * qpl::bytes_in_type<qpl::container_subtype<C>>());
 	}
-	template<typename T, typename U = T> requires(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())
+	template<typename U, typename T> requires(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())
 	constexpr inline U convert_memory(const T& source) {
 		U destination;
 		memcpy(&destination, &source, qpl::bytes_in_type<T>());

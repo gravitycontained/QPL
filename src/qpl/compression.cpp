@@ -9,7 +9,7 @@ namespace qpl {
 	void qpl::huffman_compression::fast_decompression_map::add_bit(bool b) {
 		++this->length;
 		this->bits <<= 1;
-		this->bits |= b;
+		this->bits |= qpl::u32_cast(b);
 	}
 	bool qpl::huffman_compression::fast_decompression_map::is_found() const {
 		return this->values[this->length].find(this->bits) != this->values[this->length].cend();
@@ -56,8 +56,8 @@ namespace qpl {
 		this->data8.push_back(character_info8{ bits, width, c });
 	}
 	void qpl::huffman_compression::character_table::set_info(qpl::size max_depth) {
-		this->max_width_length = qpl::significant_bit(max_depth);
-		this->max_bits_length = max_depth;
+		this->max_width_length = qpl::u8_cast(qpl::significant_bit(max_depth));
+		this->max_bits_length = qpl::u8_cast(max_depth);
 
 		if (this->max_bits_length <= 8) this->bits_mode = mode::b8;
 		else if (this->max_bits_length <= 16) this->bits_mode = mode::b16;
@@ -338,7 +338,7 @@ namespace qpl {
 		trees.reserve(sorted_count.size());
 		if (sorted_count.size() == 1) {
 			trees.push_back({});
-			trees.back().character = sorted_count.cbegin()->special;
+			trees.back().character = qpl::u8_cast(sorted_count.cbegin()->special);
 		}
 		else {
 
@@ -363,14 +363,14 @@ namespace qpl {
 					trees.back().nodes[a_i] = trees[a.special - 0x100];
 				}
 				else {
-					trees.back().nodes[a_i] = tree(a.special);
+					trees.back().nodes[a_i] = tree(qpl::u8_cast(a.special));
 				}
 
 				if (b.special & 0xFF00) {
 					trees.back().nodes[b_i] = trees[b.special - 0x100];
 				}
 				else {
-					trees.back().nodes[b_i] = tree(b.special);
+					trees.back().nodes[b_i] = tree(qpl::u8_cast(b.special));
 				}
 
 				auto value = sorted_t{ a.frequency + b.frequency, qpl::u16_cast((trees.size() - 1) + 0x100) };
