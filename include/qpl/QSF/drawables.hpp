@@ -979,6 +979,7 @@ namespace qsf {
 		}
 
 		QPLDLL void set_texture(const sf::Texture& texture);
+		QPLDLL void set_texture_rect(const sf::IntRect& rect);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_multiplied_color(qsf::rgb color);
 		QPLDLL void set_position(qpl::vector2f position);

@@ -1691,6 +1691,9 @@ namespace qsf {
 	void qsf::sprite::set_texture(const sf::Texture& texture) {
 		this->m_sprite.setTexture(texture);
 	}
+	void qsf::sprite::set_texture_rect(const sf::IntRect& rect) {
+		this->m_sprite.setTextureRect(rect);
+	}
 	void qsf::sprite::set_color(qsf::rgb color) {
 		this->color = color;
 		this->m_sprite.setColor(this->color.multiplied_color(this->multiplied_color));
