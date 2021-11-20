@@ -8,6 +8,9 @@ Features like `qpl::aes`, `qpl::huffman_coding` and `qpl::floating_point<mantiss
 were implemented for my personal usage. They might have mistakes and might be slow:
 I highly recommend installing the feature from a greater source, especially if deployed in a serious environment.
 
+# License
+This is free for any use (commercial or personal, proprietary or open-source). The source code is distributed under the [zlib/png license](https://opensource.org/licenses/Zlib)
+
 # Setup
 
 To use this library download the zip and include the include folder. Copy the `qpl.dll` and `qpl-d.dll` into your project folder. It is build with SFML enabled, so you you have to inlcude and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. 
