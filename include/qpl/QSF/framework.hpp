@@ -19,8 +19,6 @@
 
 namespace qsf {
 	struct base_state;
-
-	
 	/*
 	qsf::framework framework;
 	framework.set_dimension({ 1800, 720 });
@@ -38,16 +36,18 @@ namespace qsf {
 		}
 		
 
-		template<typename C>
+		template<typename C> requires (std::is_base_of_v<base_state, C>)
 		void add_state() {
 			this->states.push_back(std::make_unique<C>());
 			this->states.back()->framework = this;
+			this->states.back()->event = &this->event;
 			this->states.back()->init();
 		}
-		template<typename C>
+		
+
+		template<typename C> requires (std::is_base_of_v<base_state, C>)
 		void add_state(C& state) {
 			this->states.push_back(std::make_unique<C>(state));
-			this->states.back()->framework = this;
 			this->states.back()->init();
 		}
 
@@ -125,6 +125,7 @@ namespace qsf {
 		QPLDLL const qsf::render_texture& get_render(const std::string& name) const;
 
 		std::vector<std::unique_ptr<qsf::base_state>> states;
+		qsf::event_info event;
 		sf::RenderWindow window;
 		std::unordered_map<std::string, qsf::render_texture> m_render_textures;
 		sf::ContextSettings m_settings;
@@ -158,6 +159,7 @@ namespace qsf {
 		}
 	*/
 	struct base_state {
+
 		virtual void init() = 0;
 		virtual void updating() = 0;
 		virtual void drawing() = 0;
@@ -269,11 +271,10 @@ namespace qsf {
 
 		template<typename T> requires qsf::has_update_c<T>
 		void update(T& updatable) {
-			updatable.update(this->event);
+			updatable.update(*this->event);
 		}
 		QPLDLL void create();
 		QPLDLL bool is_open() const;
-		QPLDLL void event_update();
 		QPLDLL void update_close_window();
 		QPLDLL void hide_cursor();
 		QPLDLL void show_cursor();
@@ -319,7 +320,7 @@ namespace qsf {
 		QPLDLL const qsf::render_texture& get_render(const std::string& name) const;
 
 
-		template<typename C>
+		template<typename C> requires (std::is_base_of_v<qsf::base_state, C>)
 		void add_state() {
 			this->framework->add_state<C>();
 		}
@@ -341,8 +342,8 @@ namespace qsf {
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::time run_time() const;
 
-		qsf::framework* framework = nullptr;
-		qsf::event_info event;
+		qsf::framework* framework;
+		qsf::event_info* event;
 
 		sf::Color clear_color = sf::Color::Black;
 		sf::RenderStates render_states;

@@ -1360,21 +1360,21 @@ namespace qpl {
 			if (prepend_zeroes) {
 				switch (base_format) {
 				case base_format::base36l:
-					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]), qpl::size_cast(qpl::base_max_log(base)));
+					return prefix + qpl::to_string_repeat(qpl::char_cast(qpl::detail::base_36_lower[0]), qpl::size_cast(qpl::base_max_log(base)));
 				case base_format::base36u:
-					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]), qpl::size_cast(qpl::base_max_log(base)));
+					return prefix + qpl::to_string_repeat(qpl::char_cast(qpl::detail::base_36_upper[0]), qpl::size_cast(qpl::base_max_log(base)));
 				case base_format::base64:
-					return prefix + qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_64[0]), qpl::size_cast(qpl::base_max_log(base)));
+					return prefix + qpl::to_string_repeat(qpl::char_cast(qpl::detail::base_64[0]), qpl::size_cast(qpl::base_max_log(base)));
 				}
 			}
 			else {
 				switch (base_format) {
 				case base_format::base36l:
-					return prefix + qpl::to_string(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]));
+					return prefix + qpl::to_string(qpl::char_cast(qpl::detail::base_36_lower[0]));
 				case base_format::base36u:
-					return prefix + qpl::to_string(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]));
+					return prefix + qpl::to_string(qpl::char_cast(qpl::detail::base_36_upper[0]));
 				case base_format::base64:
-					return prefix + qpl::to_string(static_cast<qpl::char_type>(qpl::detail::base_64[0]));
+					return prefix + qpl::to_string(qpl::char_cast(qpl::detail::base_64[0]));
 				}
 			}
 		}
@@ -1398,21 +1398,21 @@ namespace qpl {
 		case base_format::base36l:
 			while (logapprox) {
 				mod = value % logapprox;
-				digits << static_cast<qpl::char_type>(qpl::detail::base_36_lower[qpl::size_cast(value / logapprox)]);
+				digits << qpl::char_cast(qpl::detail::base_36_lower[qpl::size_cast(value / logapprox)]);
 				value = mod;
 				logapprox /= base;
 			} break;
 		case base_format::base36u:
 			while (logapprox) {
 				mod = value % logapprox;
-				digits << static_cast<qpl::char_type>(qpl::detail::base_36_upper[qpl::size_cast(value / logapprox)]);
+				digits << qpl::char_cast(qpl::detail::base_36_upper[qpl::size_cast(value / logapprox)]);
 				value = mod;
 				logapprox /= base;
 			} break;
 		case base_format::base64:
 			while (logapprox) {
 				mod = value % logapprox;
-				digits << static_cast<qpl::char_type>(qpl::detail::base_64[qpl::size_cast(value / logapprox)]);
+				digits << qpl::char_cast(qpl::detail::base_64[qpl::size_cast(value / logapprox)]);
 				value = mod;
 				logapprox /= base;
 			} break;
@@ -1425,13 +1425,13 @@ namespace qpl {
 			if (left > qpl::i64{}) {
 				switch (base_format) {
 				case base_format::base36l:
-					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_lower[0]), qpl::size_cast(left));
+					stream << qpl::to_string_repeat(qpl::char_cast(qpl::detail::base_36_lower[0]), qpl::size_cast(left));
 					break;
 				case base_format::base36u:
-					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_36_upper[0]), qpl::size_cast(left));
+					stream << qpl::to_string_repeat(qpl::char_cast(qpl::detail::base_36_upper[0]), qpl::size_cast(left));
 					break;
 				case base_format::base64:
-					stream << qpl::to_string_repeat(static_cast<qpl::char_type>(qpl::detail::base_64[0]), qpl::size_cast(left));
+					stream << qpl::to_string_repeat(qpl::char_cast(qpl::detail::base_64[0]), qpl::size_cast(left));
 					break;
 				}
 			}
@@ -1528,6 +1528,8 @@ namespace qpl {
 	std::string hex_string(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, prepend_zeroes);
 	}
+	QPLDLL std::string hex_string(const std::string& string);
+
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string hex_string_full(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, true);
@@ -1536,6 +1538,8 @@ namespace qpl {
 	std::string binary_string(T value, base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		return qpl::base_string(value, T{ 2 }, "", base_format, prepend_zeroes);
 	}
+	QPLDLL std::string binary_string(const std::string& string);
+
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string binary_string_full(T value, base_format base_format = base_format::base36l) {
 		return qpl::base_string(value, T{ 2 }, "", base_format, true);
@@ -2295,6 +2299,7 @@ namespace qpl {
 		return qpl::to_string((number / qpl::pi) * 180);
 	}
 
+
 	struct collection_string {
 		std::string string;
 		std::vector<std::pair<qpl::size, qpl::size>> sizes;
@@ -2310,6 +2315,16 @@ namespace qpl {
 		QPLDLL void finalize();
 		QPLDLL qpl::size size() const;
 		QPLDLL void clear();
+
+		template<typename T> requires(!qpl::is_same<T, std::string>())
+		collection_string& operator<<(T value) {
+			this->add_string(qpl::to_string(value));
+			return *this;
+		}
+		collection_string& operator<<(std::string value) {
+			this->add_string(value);
+			return *this;
+		}
 	};
 }
 

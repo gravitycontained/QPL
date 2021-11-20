@@ -77,7 +77,7 @@ namespace qpl {
 		simple_obfuscated_memory& operator|=(T value) {
 			return (*this = this->get() | value);
 		}
-		simple_obfuscated_memory& operator=(T value) {
+		void set(T value) {
 			++ctr;
 			if (ctr >= S) {
 				shuffle();
@@ -93,6 +93,9 @@ namespace qpl {
 				n ^= qpl::rotate_left(data[0][4], (data[N - 1 - i][2] & 0x7) + 1);
 				data[0][1] ^= (data[i][6] ^ data[i][3] ^ n);
 			}
+		}
+		simple_obfuscated_memory& operator=(T value) {
+			this->set(value);
 			return *this;
 		}
 		constexpr T get() const {

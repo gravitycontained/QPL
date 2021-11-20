@@ -233,6 +233,9 @@ namespace qsf {
 	std::string qsf::text::get_string() const {
 		return this->m_string;
 	}
+	void qsf::text::set_font(const sf::Font& font) {
+		this->m_text.setFont(font);
+	}
 	void qsf::text::set_font(const std::string& font_name) {
 		this->m_font = font_name;
 		if (this->m_font.empty()) return;
@@ -259,6 +262,9 @@ namespace qsf {
 	void qsf::text::set_outline_color(qsf::rgb color) {
 		this->outline_color = color;
 		this->m_text.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
+	}
+	void qsf::text::set_rotation(qpl::f32 angle) {
+		this->m_text.setRotation(angle);
 	}
 	void qsf::text::set_letter_spacing(qpl::f32 spacing) {
 		this->m_text.setLetterSpacing(spacing);
@@ -394,6 +400,10 @@ namespace qsf {
 	void qsf::vrectangle::set_center(qpl::vector2f position) {
 		this->position = position - this->dimension / 2;
 	}
+	void qsf::vrectangle::set_hitbox(const qpl::hitbox& hitbox) {
+		this->set_position(hitbox.position);
+		this->set_dimension(hitbox.dimension);
+	}
 	void qsf::vrectangle::set_color(qsf::rgb color) {
 		this->color = color;
 	}
@@ -472,6 +482,10 @@ namespace qsf {
 	}
 	void qsf::rectangle::set_center(qpl::vector2f position) {
 		this->m_rect.setPosition(position - this->get_dimension() / 2);
+	}
+	void qsf::rectangle::set_hitbox(const qpl::hitbox& hitbox) {
+		this->set_position(hitbox.position);
+		this->set_dimension(hitbox.dimension);
 	}
 	void qsf::rectangle::set_outline_thickness(qpl::f32 outline_thickness) {
 		this->m_rect.setOutlineThickness(outline_thickness);
@@ -919,6 +933,12 @@ namespace qsf {
 	void qsf::vcircle::set_center(qpl::vector2f center) {
 		this->point.position = center - qpl::vector2f{ this->radius, this->radius };
 	}
+	void qsf::vcircle::set_outline_thickness(qpl::f32 outline_thickness) {
+		this->outline_thickness = outline_thickness;
+	}
+	void qsf::vcircle::set_outline_color(qsf::rgb outline_color) {
+		this->outline_color = outline_color;
+	}
 	qpl::vector2f qsf::vcircle::get_center() const {
 		return this->point.position + qpl::vector2f{ this->radius, this->radius };
 	}
@@ -936,6 +956,8 @@ namespace qsf {
 		this->circle_shape.setPosition(circle.point.position);
 		this->circle_shape.setRadius(circle.radius);
 		this->circle_shape.setFillColor(circle.point.color);
+		this->circle_shape.setOutlineThickness(circle.outline_thickness);
+		this->circle_shape.setOutlineColor(circle.outline_color);
 		return *this;
 	}
 	qsf::circle& qsf::circle::operator=(const qsf::circle& circle) {
@@ -970,6 +992,18 @@ namespace qsf {
 		return this->circle_shape.getFillColor();
 	}
 
+	void qsf::circle::set_outline_thickness(qpl::f32 outline_thickness) {
+		this->circle_shape.setOutlineThickness(outline_thickness);
+	}
+	qpl::f32 qsf::circle::get_outline_thickness() const {
+		return this->circle_shape.getOutlineThickness();
+	}
+	void qsf::circle::set_outline_color(qsf::rgb outline_color) {
+		this->circle_shape.setOutlineColor(outline_color);
+	}
+	qsf::rgb qsf::circle::get_outline_color() const {
+		return this->circle_shape.getOutlineColor();
+	}
 
 	void qsf::vcircles::resize(qpl::size new_size) {
 		this->circles.resize(new_size);
@@ -1667,6 +1701,10 @@ namespace qsf {
 	}
 	void qsf::sprite::set_position(qpl::vector2f position) {
 		this->m_sprite.setPosition(position);
+	}
+	void qsf::sprite::set_center(qpl::vector2f position) {
+		this->m_sprite.setPosition(position);
+		qsf::centerize_sprite(this->m_sprite);
 	}
 	void qsf::sprite::set_scale(qpl::vector2f scale) {
 		this->m_sprite.setScale(scale);
@@ -4050,6 +4088,7 @@ namespace qsf {
 		return this->data.cend();
 	}
 
+
 	void qsf::vgraph::clear_data() {
 		this->simple_graphs.clear();
 		this->standard_graphs.clear();
@@ -4128,20 +4167,20 @@ namespace qsf {
 
 				auto size = this->visible_element_size();
 				auto index_f = (diff.x / this->true_graph_width()) * size;
-				auto index_delta = qpl::i32_cast(index_f);
+				auto index_delta = qpl::i64_cast(index_f);
 
 
 				if (index_delta) {
 					this->click_position = event_info.mouse_position();
 					this->click_position.x += qpl::f32_cast(((index_f - index_delta) / size) * this->true_graph_width());
 
-					this->index_start = qpl::max(qpl::i32_cast(0), qpl::i32_cast(this->visible_index_start()) + index_delta);
+					this->index_start = qpl::size_cast(qpl::max(qpl::i64_cast(0), qpl::i64_cast(this->visible_index_start()) + index_delta));
 					this->index_end = this->index_start + size;
-					auto over = qpl::i32_cast(this->index_end) - qpl::i32_cast(this->graph_element_size());
+					auto over = qpl::i64_cast(this->index_end) - qpl::i64_cast(this->graph_element_size());
 
 					if (this->index_end >= this->graph_element_size()) {
 						this->index_end = this->graph_element_size();
-						this->index_start -= over;
+						this->index_start = qpl::size_cast(this->index_start - over);
 
 						this->enable_last_n_when_dragging_right_lock = true;
 					}
@@ -4353,6 +4392,13 @@ namespace qsf {
 		this->index_end = other.index_end;
 		this->index_skip_size = other.index_skip_size;
 		this->display_last_n_entries = other.display_last_n_entries;
+	}
+	void qsf::vgraph::set_visible_range(qpl::size begin, qpl::size end) {
+		this->visible_index_range_before = this->visible_index_range();
+		this->index_start = begin;
+		this->index_end = end;
+		this->check_x_axis();
+		this->display_last_n_entries = 0u;
 	}
 	void qsf::vgraph::set_font(std::string name) {
 		this->font = name;
@@ -4926,7 +4972,6 @@ namespace qsf {
 			++u;
 		}
 
-
 		if (u) {
 			qsf::rgb use_color = graph.axis_color;
 
@@ -4946,7 +4991,7 @@ namespace qsf {
 
 					y_start = qpl::i64_cast(low_padded / y_delta + 1) * y_delta;
 					y_end = qpl::i64_cast(high_padded / y_delta) * y_delta;
-					y_steps = qpl::u32_cast(qpl::i64_cast((y_end - y_start) / y_delta) + 1);
+					y_steps = qpl::u32_cast(qpl::i64_cast((y_end - y_start) / y_delta) + 2);
 				}
 
 				this->y_lines.resize(y_steps);
@@ -5053,7 +5098,7 @@ namespace qsf {
 
 			if (graph.use_x_axis) {
 				auto index_mod = graph.x_axis_line_frequency - (graph.visible_index_start() % graph.x_axis_line_frequency) - 1;
-				auto x_size = graph.visible_element_size() / graph.x_axis_line_frequency;
+				auto x_size = graph.visible_element_size() / graph.x_axis_line_frequency + 1;
 				this->x_lines.resize(x_size);
 				this->x_texts.resize(x_size);
 

@@ -3,6 +3,9 @@
 
 namespace qpl {
 
+	void qpl::write_string_to_stream(std::ostream& os, const std::string& value) {
+		os.write(value.data(), value.length());
+	}
 	void qpl::print_character_bool_table(std::string_view characters) {
 		std::array<bool, 256> table;
 		table.fill(false);

@@ -171,27 +171,27 @@ namespace qpl {
 		return result;
 	}
 	std::string qpl::aes::encrypted(const std::string& message, const std::string& key) {
-		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
+		auto s = this->encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
 		return std::string(std::move(reinterpret_cast<const char*>(s.data())), s.size());
 	}
 	std::wstring qpl::aes::encrypted(const std::wstring& message, const std::string& key) {
-		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length() * (sizeof(wchar_t) / sizeof(char)), key);
+		auto s = this->encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length() * (sizeof(wchar_t) / sizeof(char)), key);
 		return std::wstring(std::move(reinterpret_cast<const wchar_t*>(s.data())), s.size() / (sizeof(wchar_t) / sizeof(char)));
 	}
 	std::string qpl::aes::encrypted(const std::vector<char>& message, const std::string& key) {
-		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size(), key);
+		auto s = this->encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size(), key);
 		return std::string(std::move(reinterpret_cast<const char*>(s.data())), s.size());
 	}
 	std::wstring qpl::aes::encrypted(const std::vector<wchar_t>& message, const std::string& key) {
-		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size() * (sizeof(wchar_t) / sizeof(char)), key);
+		auto s = this->encrypted(reinterpret_cast<const qpl::u8*>(message.data()), message.size() * (sizeof(wchar_t) / sizeof(char)), key);
 		return std::wstring(std::move(reinterpret_cast<const wchar_t*>(s.data())), s.size() / (sizeof(wchar_t) / sizeof(char)));
 	}
 	void qpl::aes::encrypt(std::string& message, const std::string& key) {
-		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
+		auto s = this->encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length(), key);
 		qpl::container_memory_to_string(s, message);
 	}
 	void qpl::aes::encrypt(std::wstring& message, const std::string& key) {
-		auto s = qpl::aes::encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length()* (sizeof(wchar_t) / sizeof(char)), key);
+		auto s = this->encrypted(reinterpret_cast<const qpl::u8*>(message.c_str()), message.length()* (sizeof(wchar_t) / sizeof(char)), key);
 		qpl::container_memory_to_wstring(s, message);
 	}
 

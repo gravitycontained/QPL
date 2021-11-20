@@ -7,6 +7,7 @@
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
 #include <qpl/vector.hpp>
+#include <qpl/time.hpp>
 #include <set>
 
 namespace qsf {
@@ -54,6 +55,13 @@ namespace qsf {
 		QPLDLL bool holding_middle_mouse() const;
 		QPLDLL bool holding_key() const;
 
+		QPLDLL bool left_mouse_double_clicked() const;
+		QPLDLL bool right_mouse_double_clicked() const;
+		QPLDLL bool middle_mouse_double_clicked() const;
+
+		QPLDLL void reset(const sf::RenderWindow& window);
+		QPLDLL void update(const sf::Event& event);
+
 		QPLDLL qpl::vector2i resized_size() const;
 		QPLDLL qpl::vector2i mouse_position() const;
 		QPLDLL qpl::vector2i mouse_position_desktop() const;
@@ -92,6 +100,9 @@ namespace qsf {
 		bool m_holding_right_mouse = false;
 		bool m_holding_middle_mouse = false;
 		bool m_holding_key = false;
+		bool m_left_mouse_double_click = false;
+		bool m_right_mouse_double_click = false;
+		bool m_middle_mouse_double_click = false;
 
 		std::wstring m_text_entered;
 		std::wostringstream m_text_entered_stream;
@@ -104,6 +115,10 @@ namespace qsf {
 		std::set<sf::Keyboard::Key> m_keys_single_pressed;
 		std::set<sf::Keyboard::Key> m_keys_single_released;
 		std::set<sf::Keyboard::Key> m_keys_holding;
+
+		qpl::halted_clock m_left_mouse_clock;
+		qpl::halted_clock m_right_mouse_clock;
+		qpl::halted_clock m_middle_mouse_clock;
 	};
 
 

@@ -64,33 +64,40 @@ namespace qsf {
 			this->states = states;
 		}
 
-		template<typename T> requires (qsf::has_any_draw<T>())
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_subtype<T>>()))
 		void draw(const T& object) {
-			if constexpr (qsf::is_render_texture<T>()) {
-				if (this->window) {
-					this->window->draw(object.get_sprite(), this->states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				if constexpr (qsf::is_render_texture<T>()) {
+					if (this->window) {
+						this->window->draw(object.get_sprite(), this->states);
+					}
+					else if (this->texture) {
+						this->texture->draw(object.get_sprite(), this->states);
+					}
 				}
-				else if (this->texture) {
-					this->texture->draw(object.get_sprite(), this->states);
+				else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+					if (this->window) {
+						this->window->draw(object, this->states);
+					}
+					else if (this->texture) {
+						this->texture->draw(object, this->states);
+					}
+				}
+				else if constexpr (qsf::has_draw_object<T>()) {
+					object.draw(*this);
+				}
+				else if constexpr (qsf::has_draw_sf<T>()) {
+					if (this->window) {
+						object.draw(*this->window, this->states);
+					}
+					else if (this->texture) {
+						object.draw(*this->texture, this->states);
+					}
 				}
 			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				if (this->window) {
-					this->window->draw(object, this->states);
-				}
-				else if (this->texture) {
-					this->texture->draw(object, this->states);
-				}
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				object.draw(*this);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				if (this->window) {
-					object.draw(*this->window, this->states);
-				}
-				else if (this->texture) {
-					object.draw(*this->texture, this->states);
+			else {
+				for (auto& i : object) {
+					this->draw(i);
 				}
 			}
 		}
@@ -296,12 +303,14 @@ namespace qsf {
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL std::string get_string() const;
+		QPLDLL void set_font(const sf::Font& font);
 		QPLDLL void set_font(const std::string& font_name);
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void set_character_size(qpl::u32 character_size);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qsf::rgb color);
+		QPLDLL void set_rotation(qpl::f32 angle);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_center(qpl::vector2f position);
@@ -377,6 +386,7 @@ namespace qsf {
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_hitbox(const qpl::hitbox& hitbox);
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_outline_color(qsf::rgb outline_color);
@@ -416,6 +426,7 @@ namespace qsf {
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_hitbox(const qpl::hitbox& hitbox);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qsf::rgb outline_color);
@@ -639,12 +650,17 @@ namespace qsf {
 		QPLDLL void set_radius(qpl::f32 radius);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_center(qpl::vector2f center);
+		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
+		QPLDLL void set_outline_color(qsf::rgb outline_color);
+
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL void centerize();
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
 		qsf::vpoint point;
 		qpl::f32 radius;
+		qpl::f32 outline_thickness = 0.0f;
+		qsf::rgb outline_color = qsf::rgb::unset;
 	};
 	struct circle {
 		circle() {
@@ -669,6 +685,10 @@ namespace qsf {
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL qsf::rgb get_color() const;
+		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
+		QPLDLL qpl::f32 get_outline_thickness() const;
+		QPLDLL void set_outline_color(qsf::rgb outline_color);
+		QPLDLL qsf::rgb get_outline_color() const;
 
 		sf::CircleShape circle_shape;
 	};
@@ -962,6 +982,7 @@ namespace qsf {
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_multiplied_color(qsf::rgb color);
 		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_scale(qpl::vector2f scale);
 		QPLDLL void set_scale(qpl::f32 scale);
 		QPLDLL void set_origin(qpl::vector2f origin);
@@ -2010,6 +2031,7 @@ namespace qsf {
 		QPLDLL void enable_axis_info();
 		QPLDLL void update(const event_info& event_info);
 		QPLDLL void copy_visible_range(const vgraph& other);
+		QPLDLL void set_visible_range(qpl::size begin, qpl::size end);
 
 		QPLDLL void set_font(std::string name);
 		QPLDLL std::string get_font() const;

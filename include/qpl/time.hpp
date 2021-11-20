@@ -269,8 +269,7 @@ namespace qpl {
 	template <typename T>
 	constexpr std::time_t to_time_t(T t) {
 		using namespace std::chrono;
-		auto sctp = time_point_cast<system_clock::duration>(t - T::clock::now()
-			+ system_clock::now());
+		auto sctp = time_point_cast<system_clock::duration>(t - T::clock::now() + system_clock::now());
 		return system_clock::to_time_t(sctp);
 	}
 	template<typename T>
@@ -292,6 +291,7 @@ namespace qpl {
 	QPLDLL std::string get_current_time_string_ymd_hms();
 	QPLDLL std::string get_current_time_string_ymd_hmsms();
 	QPLDLL std::string get_current_time_string_ymd_hmsms_compact();
+	QPLDLL std::string get_current_time_string_ymdhmsms_compact();
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
 
 	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed);
@@ -353,254 +353,42 @@ namespace qpl {
 		animation(qpl::f64 duration = 1.0) {
 			this->duration = duration;
 		}
-		void set_duration(qpl::f64 duration) {
-			this->duration = duration;
-		}
-		void stop() {
-			this->started = false;
-		}
-		void reverse(bool running = true) {
-			if (running) {
-				if (this->reversed) {
-					this->reset(running);
-					this->reverse_progress_state = 0.0;
-					this->reversed = false;
-				}
-				else {
-					this->reset(running);
-					this->reverse_progress_state = 1.0;
-					this->progress_value = 1.0;
-					this->reversed = true;
-				}
-				this->running = true;
-			}
-			else {
-				this->reset();
-				this->reverse_progress_state = 0.0;
-				this->reversed = true;
-			}
-		}
-		void go_forwards() {
-			if (this->is_running()) {
-				if (this->is_reversed()) {
-					auto progress = this->get_progress();
-					this->reverse_progress_state = 0.0;
-					this->timer.reset();
-					this->timer.subtract(progress * this->duration);
-					this->reversed = !this->reversed;
-				}
-			}
-			else if (this->get_progress() == 0) {
-				this->reset(true);
-				this->reverse_progress_state = 0.0;
-				this->progress_value = 0.0;
-				this->reversed = false;
-			}
-			this->running = true;
-		}
-		void go_backwards() {
-			if (this->is_running()) {
-				if (!this->is_reversed()) {
-					this->reverse_progress_state = this->get_progress() * 2;
-					this->reversed = !this->reversed;
-				}
-			}
-			else if (this->get_progress() == 1) {
-				this->reset(true);
-				this->reverse_progress_state = 1.0;
-				this->progress_value = 1.0;
-				this->reversed = true;
-			}
-			this->running = true;
-		}
-		void swap() {
-			if (this->is_reversed()) {
-				this->go_forwards();
-			}
-			else {
-				this->go_backwards();
-			}
-			//if (this->is_running()) {
-			//	if (this->is_reversed()) {
-			//		auto progress = this->get_progress();
-			//		this->reverse_progress_state = 0.0;
-			//		this->timer.reset();
-			//		this->timer.subtract(progress * this->duration);
-			//	}
-			//	else {
-			//		this->reverse_progress_state = this->get_progress() * 2;
-			//	}
-			//	this->reversed = !this->reversed;
-			//}
-			//else {
-			//	if (this->get_progress() == 0) {
-			//		this->reset(true);
-			//		this->reverse_progress_state = 0.0;
-			//		this->progress_value = 0.0;
-			//		this->reversed = false;
-			//	}
-			//	else if (this->get_progress() == 1) {
-			//		this->reset(true);
-			//		this->reverse_progress_state = 1.0;
-			//		this->progress_value = 1.0;
-			//		this->reversed = true;
-			//	}
-			//	else {
-			//		qpl::println("qsf::animation::swap : bad state : ", this->get_progress(), " ", this->progress_value, " ", this->reverse_progress_state, " ", this->is_reversed());
-			//	}
-			//}
-			//this->running = true;
-		}
+		QPLDLL void set_duration(qpl::f64 duration);
+		QPLDLL void stop();
+		QPLDLL void reverse(bool running = true);
+		QPLDLL void go_forwards();
+		QPLDLL void go_backwards();
+		QPLDLL void swap();
 
-		void reset(bool running = false) {
-			this->timer.reset();
-			this->running_result = running;
-			this->running = running;
-			this->started = true;
-			this->just_finish = false;
-			this->reversed = false;
-			this->progress_value = 0.0;
-			this->wait_duration = 0.0;
-		}
-		void add_time(qpl::f64 seconds) {
-			this->timer.add(seconds);
-		}
-		void add_time(qpl::time time) {
-			this->timer.add(time);
-		}
-		void start() {
-			this->reset(true);
-		}
-		void start_and_reverse() {
-			this->reverse();
-		}
-		void reset_and_reverse() {
-			this->reset();
-			this->reverse();
-		}
-		void reset_and_start() {
-			this->start();
-		}
-		void start_in(qpl::f64 time) {
-			if (!time) {
-				this->start();
-				return;
-			}
-			this->started = true;
-			this->wait_duration = time;
-			this->wait_timer.reset();
-		}
-		void update() {
-			if (this->wait_duration) {
-				if (this->wait_timer.has_elapsed(this->wait_duration)) {
-					this->start();
-					this->wait_duration = 0.0;
-				}
-				return;
-			}			
-			this->just_finish = false;
-			if (!this->running) {
-				this->running_result = false;
-				return;
-			}
-			if (!this->started) {
-				this->running_result = false;
-				this->running = false;
-				this->progress_value = 0.0;
-				return;
-			}
-			auto before = this->running;
-			this->progress_value = (this->timer.elapsed_f()) / this->duration;
-			if (this->reversed) {
-				this->progress_value = this->reverse_progress_state - this->progress_value;
-			}
-			this->running = (this->progress_value >= 0.0 && this->progress_value <= 1.0);
-			if (before && !this->running) {
-				this->just_finish = true;
-				this->running = false;
-			}
-			this->running_result = this->running || this->just_finish;
-		}
+		QPLDLL void reset(bool running = false);
+		QPLDLL void add_time(qpl::f64 seconds);
+		QPLDLL void add_time(qpl::time time);
+		QPLDLL void start();
+		QPLDLL void start_and_reverse();
+		QPLDLL void reset_and_reverse();
+		QPLDLL void reset_and_start();
+		QPLDLL void start_in(qpl::f64 time);
+		QPLDLL void update();
 
-		bool is_reversed() const {
-			return this->reversed;
-		}
-		bool is_running() const {
-			return this->running_result;
-		}
-		bool is_running(bool update) {
-			if (update) {
-				this->update();
-			}
-			return this->is_running();
-		}
-		bool is_started() const {
-			return this->started;
-		}
-		bool just_finished() const {
-			return this->just_finish;
-		}
-		bool just_finished(bool update) {
-			if (update) {
-				this->update();
-			}
-			return this->just_finished();
-		}
-		bool is_done() const {
-			if (this->reversed) {
-				return this->started && this->get_progress() <= 0.0;
-			}
-			else {
-				return this->started && this->get_progress() >= 1.0;
-			}
-		}
-		bool is_done(bool update) {
-			if (update) {
-				this->update();
-			}
-			return this->is_done();
-		}
-		bool is_running_or_done() const {
-			return this->is_running() || this->is_done();
-		}
-		bool is_running_or_done(bool update) {
-			return this->is_running(update) || this->is_done(update);
-		}
-		bool is_done_reverse() const {
-			return this->is_done() && this->reversed;
-		}
-		bool is_done_no_reverse() const {
-			return this->is_done() && !this->reversed;
-		}
-		qpl::f64 get_progress() const {
-			return qpl::clamp_0_1(this->progress_value);
-		}
-		qpl::f64 get_curve_progress(qpl::f64 curve = 1.5) const {
-			return qpl::smooth_curve(this->get_progress(), curve);
-		}
-		qpl::f64 get_smooth_progress(qpl::u32 slope = 21) const {
-			return qpl::smooth_slope(this->get_progress(), slope);
-		}
-		qpl::f64 get_progress(bool update) {
-			if (update) {
-				this->update();
-			}
-			return this->get_progress();
-		}
-		qpl::f64 get_normalized_progress() const {
-			if (this->reversed) {
-				return 1 - this->get_progress();
-			}
-			else {
-				return this->get_progress();
-			}
-		}
-		qpl::f64 get_normalized_progress(bool update)  {
-			if (update) {
-				this->update();
-			}
-			return this->get_normalized_progress();
-		}
+		QPLDLL bool is_reversed() const;
+		QPLDLL bool is_running() const;
+		QPLDLL bool is_running(bool update);
+		QPLDLL bool is_started() const;
+		QPLDLL bool just_finished() const;
+		QPLDLL bool just_finished(bool update);
+		QPLDLL bool is_done() const;
+		QPLDLL bool is_done(bool update);
+		QPLDLL bool is_running_or_done() const;
+		QPLDLL bool is_running_or_done(bool update);
+		QPLDLL bool is_done_reverse() const;
+		QPLDLL bool is_done_no_reverse() const;
+		QPLDLL void set_progress(qpl::f64 progress);
+		QPLDLL qpl::f64 get_progress() const;
+		QPLDLL qpl::f64 get_curve_progress(qpl::f64 curve = 1.5) const;
+		QPLDLL qpl::f64 get_smooth_progress(qpl::u32 slope = 21) const;
+		QPLDLL qpl::f64 get_progress(bool update);
+		QPLDLL qpl::f64 get_normalized_progress() const;
+		QPLDLL qpl::f64 get_normalized_progress(bool update);
 	};
 
 	struct timed_task {

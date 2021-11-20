@@ -10,6 +10,7 @@
 #include <qpl/vardef.hpp>
 #include <array>
 #include <string_view>
+#include <sstream>
 
 
 
@@ -41,11 +42,15 @@ namespace qpl {
 		return result;
 	}
 	template<typename C>
-	inline std::string stack_memory_to_string(const C& data) {
+	inline std::string memory_to_string(const C& data) {
 		std::string result;
 		result.resize(sizeof(C));
 		memcpy(result.data(), &data, result.size());
 		return result;
+	}
+	template<typename C>
+	inline const char* memory_to_cstring(const C& data) {
+		return reinterpret_cast<const char*>(&data);
 	}
 	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void container_memory_to_string(const C& data, std::string& destination) {
@@ -61,12 +66,18 @@ namespace qpl {
 		memcpy(destination.data(), data.data(), data.size());
 	}
 	template<typename C>
-	inline void string_to_stack_memory(const std::string& data, C& destination) {
+	inline void string_to_memory(const std::string& data, C& destination) {
+		memcpy(&destination, data.data(), qpl::min(sizeof(C), data.size()));
+	}
+	template<typename C>
+	inline C string_to_memory(const std::string& data) {
+		C destination;
 		if (data.size() != sizeof(C)) {
-			qpl::println("string_to_stack_memory: sizes not equal: string: ", data.size(), " stack object: ", sizeof(C));
-			return;
+			qpl::println("string_to_memory: sizes not equal: string: ", data.size(), " stack object: ", sizeof(C));
+			return C{};
 		}
 		memcpy(&destination, data.data(), data.size());
+		return destination;
 	}
 	template<typename C> requires (qpl::is_container<C>())
 	constexpr inline void string_to_vector_memory(const std::string_view& data, C& destination) {
@@ -161,6 +172,12 @@ namespace qpl {
 		return result;
 	}
 
+	template<typename T> requires (!qpl::is_same_decayed<T, std::string>())
+		void write_memory_to_stream(std::ostream& os, T value) {
+		os.write(qpl::memory_to_cstring(value), sizeof(T));
+	}
+	QPLDLL void write_string_to_stream(std::ostream& os, const std::string& value);
+
 
 	QPLDLL void print_character_bool_table(std::string_view characters);
 
@@ -174,7 +191,6 @@ namespace qpl {
 		std::array<qpl::u32, mantissa_bytes> mantissa;
 		bool sign;
 	};
-
 
 
 	template<typename T, qpl::size N = 0>
@@ -509,7 +525,7 @@ namespace qpl {
 		}
 		template<typename First, typename... Args>
 		constexpr array(First first, Args&&... args) : memory() {
-			this->memory = qpl::type_cast<T>(first, args...);
+			this->memory = qpl::tuple_to_array<T>(std::make_tuple(first, args...));
 		}
 
 		constexpr array& operator=(const array& other) {
@@ -599,10 +615,10 @@ namespace qpl {
 		constexpr auto rbegin() const {
 			return this->memory.rbegin();
 		}
-		constexpr auto cbegin() {
+		constexpr auto cbegin() const {
 			return this->memory.cbegin();
 		}
-		constexpr auto crbegin() {
+		constexpr auto crbegin() const {
 			return this->memory.crbegin();
 		}		
 
@@ -618,10 +634,10 @@ namespace qpl {
 		constexpr auto rend() const {
 			return this->memory.rend();
 		}
-		constexpr auto cend() {
+		constexpr auto cend() const {
 			return this->memory.cend();
 		}
-		constexpr auto crend() {
+		constexpr auto crend() const {
 			return this->memory.crend();
 		}
 
@@ -645,7 +661,7 @@ namespace qpl {
 			if (index >= this->size()) {
 				std::ostringstream stream;
 				stream << qpl::to_string("qpl::vector<", qpl::type_name<T>(), ">", at ? ".at()" : "::operator[]", " : index is ", index);
-				qpl::i32 convert = qpl::i32_cast(index);
+				auto convert = qpl::signed_cast(index);
 				if (convert < 0) {
 					stream << qpl::to_string(" (= ", convert, ") ");
 				}
@@ -725,6 +741,9 @@ namespace qpl {
 		}
 		constexpr void resize(qpl::size resize) {
 			this->memory.resize(resize);
+		}
+		constexpr void clear() {
+			this->memory.clear();
 		}
 		
 
@@ -806,10 +825,10 @@ namespace qpl {
 		constexpr auto rbegin() const {
 			return this->memory.rbegin();
 		}
-		constexpr auto cbegin() {
+		constexpr auto cbegin() const {
 			return this->memory.cbegin();
 		}
-		constexpr auto crbegin() {
+		constexpr auto crbegin() const {
 			return this->memory.crbegin();
 		}
 
@@ -825,10 +844,10 @@ namespace qpl {
 		constexpr auto rend() const {
 			return this->memory.rend();
 		}
-		constexpr auto cend() {
+		constexpr auto cend()const {
 			return this->memory.cend();
 		}
-		constexpr auto crend() {
+		constexpr auto crend() const {
 			return this->memory.crend();
 		}
 

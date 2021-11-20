@@ -193,6 +193,20 @@ namespace qpl {
 		qpl::cc qpl::detail::println_default_color = qpl::cc::def();
 	}
 
+	std::string qpl::hex_string(const std::string& string) {
+		std::ostringstream stream;
+		for (auto& i : string) {
+			stream << qpl::prepended_to_string_to_fit(qpl::hex_string(qpl::u8_cast(i), ""), "0", 2);
+		}
+		return stream.str();
+	}
+	std::string qpl::binary_string(const std::string& string) {
+		std::ostringstream stream;
+		for (auto& i : string) {
+			stream << qpl::prepended_to_string_to_fit(qpl::binary_string(i), "0", 8);
+		}
+		return stream.str();
+	}
 	strform_content qpl::strform_endl() {
 		strform_content result;
 		result.type = strform_type::newline;
@@ -793,9 +807,15 @@ namespace qpl {
 		return this->string;
 	}
 	std::string qpl::collection_string::get_string(qpl::u32 index) const {
+		if (index >= this->sizes.size()) {
+			throw std::exception(qpl::to_string("qpl::string_collection::get_string(", index, "): size is only ", this->sizes.size()).c_str());
+		}
 		return std::string(this->string.begin() + this->sizes[index].first, this->string.begin() + this->sizes[index].second);
 	}
 	std::string_view qpl::collection_string::get_string_sv(qpl::u32 index) const {
+		if (index >= this->sizes.size()) {
+			throw std::exception(qpl::to_string("qpl::string_collection::get_string_sv(", index, "): size is only ", this->sizes.size()).c_str());
+		}
 		return std::string_view(this->string.begin() + this->sizes[index].first, this->string.begin() + this->sizes[index].second);
 	}
 	void qpl::collection_string::add_string(const std::string& string) {

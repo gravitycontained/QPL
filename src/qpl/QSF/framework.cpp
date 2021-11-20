@@ -25,10 +25,14 @@ namespace qsf {
 
 		this->m_frametime = this->m_frametime_clock.elapsed_reset();
 
-		this->states.back()->event_update();
+		this->event.reset(this->window);
+		sf::Event event;
+		while (this->window.pollEvent(event)) {
+			this->event.update(event);
+		}
 
-		if (this->states.back()->event.resized()) {
-			auto new_dimension = this->states.back()->event.resized_size();
+		if (this->states.back()->event->resized()) {
+			auto new_dimension = this->states.back()->event->resized_size();
 			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
 			this->window.setView(sf::View(view));
 			this->m_dimension = new_dimension;
@@ -252,14 +256,14 @@ namespace qsf {
 
 			sf::String s = this->m_title.c_str(); //??? SFML why is this needed
 
-			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, this->m_settings);
-			this->m_created = true;
-			if (this->m_framerate_limit != qpl::u32_max) {
-				this->window.setFramerateLimit(this->m_framerate_limit);
-			}
-			if (this->states.size()) {
-				this->states.back()->call_after_window_create();
-			}
+this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, this->m_settings);
+this->m_created = true;
+if (this->m_framerate_limit != qpl::u32_max) {
+	this->window.setFramerateLimit(this->m_framerate_limit);
+}
+if (this->states.size()) {
+	this->states.back()->call_after_window_create();
+}
 		}
 	}
 	bool qsf::framework::is_open() const {
@@ -348,113 +352,8 @@ namespace qsf {
 	bool qsf::base_state::is_open() const {
 		return this->framework->is_open();
 	}
-	void qsf::base_state::event_update() {
-		sf::Event event;
-
-
-		this->event.m_mouse_clicked = false;
-		this->event.m_mouse_released = false;
-		this->event.m_left_mouse_clicked = false;
-		this->event.m_left_mouse_released = false;
-		this->event.m_right_mouse_clicked = false;
-		this->event.m_right_mouse_released = false;
-		this->event.m_middle_mouse_clicked = false;
-		this->event.m_middle_mouse_released = false;
-		this->event.m_scrolled_up = false;
-		this->event.m_scrolled_down = false;
-		this->event.m_key_pressed = false;
-		this->event.m_key_single_pressed = false;
-		this->event.m_key_released = false;
-		this->event.m_mouse_moved = false;
-		this->event.m_key_holding = false;
-		this->event.m_window_closed = false;
-		this->event.m_resized = false;
-
-		this->event.m_keys_pressed.clear();
-		this->event.m_keys_released.clear();
-		this->event.m_keys_single_pressed.clear();
-
-		this->event.m_text_entered.clear();
-
-		while (this->framework->window.pollEvent(event)) {
-			if (event.type == sf::Event::TextEntered) {
-				this->event.m_text_entered.push_back(event.text.unicode);
-				this->event.m_text_entered_stream << (wchar_t)event.text.unicode;
-
-			}
-			if (event.type == sf::Event::MouseButtonPressed) {
-				this->event.m_mouse_clicked = true;
-				this->event.m_mouse_holding = true;
-				if (event.mouseButton.button == sf::Mouse::Left) {
-					this->event.m_left_mouse_clicked = true;
-					this->event.m_holding_left_mouse = true;
-				}
-				else if (event.mouseButton.button == sf::Mouse::Right) {
-					this->event.m_right_mouse_clicked = true;
-					this->event.m_holding_right_mouse = true;
-				}
-				else if (event.mouseButton.button == sf::Mouse::Middle) {
-					this->event.m_middle_mouse_clicked = true;
-					this->event.m_holding_middle_mouse = true;
-				}
-			}
-			else if (event.type == sf::Event::MouseButtonReleased) {
-				this->event.m_mouse_released = true;
-				this->event.m_mouse_holding = false;
-				if (event.mouseButton.button == sf::Mouse::Left) {
-					this->event.m_left_mouse_released = true;
-					this->event.m_holding_left_mouse = false;
-				}
-				else if (event.mouseButton.button == sf::Mouse::Right) {
-					this->event.m_right_mouse_released = true;
-					this->event.m_holding_right_mouse = false;
-				}
-				else if (event.mouseButton.button == sf::Mouse::Middle) {
-					this->event.m_middle_mouse_released = true;
-					this->event.m_holding_middle_mouse = false;
-				}
-			}
-			else if (event.type == sf::Event::KeyPressed) {
-				this->event.m_key_pressed = true;
-				this->event.m_key_holding = true;
-				this->event.m_keys_pressed.insert(event.key.code);
-				if (!this->event.key_holding(event.key.code)) {
-					this->event.m_keys_single_pressed.insert(event.key.code);
-					this->event.m_key_single_pressed = true;
-				}
-				this->event.m_keys_holding.insert(event.key.code);
-
-			}
-			else if (event.type == sf::Event::KeyReleased) {
-				this->event.m_key_released = true;
-				this->event.m_key_holding = false;
-				this->event.m_keys_released.insert(event.key.code);
-				this->event.m_keys_holding.erase(event.key.code);
-			}
-			else if (event.type == sf::Event::MouseWheelMoved) {
-				if (event.mouseWheel.delta < 0) {
-					this->event.m_scrolled_down = true;
-				}
-				if (event.mouseWheel.delta > 0) {
-					this->event.m_scrolled_up = true;
-				}
-			}
-			else if (event.type == sf::Event::Closed) {
-				this->event.m_window_closed = true;
-			}
-			else if (event.type == sf::Event::MouseMoved) {
-				this->event.m_mouse_moved = true;
-			}
-			else if (event.type == sf::Event::Resized) {
-				this->event.m_resized = true;
-				this->event.m_resized_size = {event.size.width, event.size.height};
-			}
-		}
-		this->event.m_mouse_position = sf::Mouse::getPosition(this->framework->window);
-		this->event.m_mouse_position_desktop = sf::Mouse::getPosition();
-	}
 	void qsf::base_state::update_close_window() {
-		if (this->event.window_closed() && this->m_allow_exit) {
+		if (this->event->window_closed() && this->m_allow_exit) {
 			this->framework->window.close();
 			this->call_on_close();
 		}

@@ -889,11 +889,11 @@ namespace qpl {
 		for (qpl::u32 i = 0u; i < result.size(); ++i) {
 			auto f = i / static_cast<qpl::f64>(result.size() - 1);
 
-			auto index = static_cast<qpl::u32>(f * (data.size() / index_skip_size - 1)) * index_skip_size;
+			auto index = static_cast<qpl::u32>(f * (data.size() / index_skip_size - 1));
 
 			a = b = data[index * index_skip_size];
 
-			if (index < data.size() / index_skip_size - 1) {
+			if ((index * index_skip_size) + 1 < data.size()) {
 				b = data[(index * index_skip_size) + 1];
 			}
 

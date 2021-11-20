@@ -644,7 +644,32 @@ namespace qpl {
 
 
 
-		std::strftime(buffer, 80, "%Y%m%d %H%M%S", timeinfo);
+		std::strftime(buffer, 80, "%Y%m%d% H%M%S", timeinfo);
+
+		auto current_time = std::chrono::system_clock::now();
+
+		auto transformed = current_time.time_since_epoch().count() / 10000;
+
+		auto millis = transformed % 1000;
+
+		return qpl::to_string(buffer, qpl::prepended_to_string_to_fit(millis, '0', 3));
+	}
+	std::string qpl::get_current_time_string_ymdhmsms_compact() {
+		std::time_t rawtime;
+		std::tm* timeinfo;
+		char buffer[80];
+
+		std::time(&rawtime);
+
+
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		timeinfo = std::localtime(&rawtime);
+#pragma warning( pop ) 
+
+
+
+		std::strftime(buffer, 80, "%Y%m%d%H%M%S", timeinfo);
 
 		auto current_time = std::chrono::system_clock::now();
 
@@ -797,6 +822,258 @@ namespace qpl {
 		return false;
 	}
 
+	void qpl::animation::set_duration(qpl::f64 duration) {
+		this->duration = duration;
+	}
+	void qpl::animation::stop() {
+		this->started = false;
+	}
+	void qpl::animation::reverse(bool running) {
+		if (running) {
+			if (this->reversed) {
+				this->reset(running);
+				this->reverse_progress_state = 0.0;
+				this->reversed = false;
+			}
+			else {
+				this->reset(running);
+				this->reverse_progress_state = 1.0;
+				this->progress_value = 1.0;
+				this->reversed = true;
+			}
+			this->running = true;
+		}
+		else {
+			this->reset();
+			this->reverse_progress_state = 0.0;
+			this->reversed = true;
+		}
+	}
+	void qpl::animation::go_forwards() {
+		if (this->is_running()) {
+			if (this->is_reversed()) {
+				auto progress = this->get_progress();
+				this->reverse_progress_state = 0.0;
+				this->timer.reset();
+				this->timer.subtract(progress * this->duration);
+				this->reversed = !this->reversed;
+			}
+		}
+		else if (this->get_progress() == 0) {
+			this->reset(true);
+			this->reverse_progress_state = 0.0;
+			this->progress_value = 0.0;
+			this->reversed = false;
+		}
+		this->running = true;
+	}
+	void qpl::animation::go_backwards() {
+		if (this->is_running()) {
+			if (!this->is_reversed()) {
+				this->reverse_progress_state = this->get_progress() * 2;
+				this->reversed = !this->reversed;
+			}
+		}
+		else if (this->get_progress() == 1) {
+			this->reset(true);
+			this->reverse_progress_state = 1.0;
+			this->progress_value = 1.0;
+			this->reversed = true;
+		}
+		this->running = true;
+	}
+	void qpl::animation::swap() {
+		if (this->is_reversed()) {
+			this->go_forwards();
+		}
+		else {
+			this->go_backwards();
+		}
+		//if (this->is_running()) {
+		//	if (this->is_reversed()) {
+		//		auto progress = this->get_progress();
+		//		this->reverse_progress_state = 0.0;
+		//		this->timer.reset();
+		//		this->timer.subtract(progress * this->duration);
+		//	}
+		//	else {
+		//		this->reverse_progress_state = this->get_progress() * 2;
+		//	}
+		//	this->reversed = !this->reversed;
+		//}
+		//else {
+		//	if (this->get_progress() == 0) {
+		//		this->reset(true);
+		//		this->reverse_progress_state = 0.0;
+		//		this->progress_value = 0.0;
+		//		this->reversed = false;
+		//	}
+		//	else if (this->get_progress() == 1) {
+		//		this->reset(true);
+		//		this->reverse_progress_state = 1.0;
+		//		this->progress_value = 1.0;
+		//		this->reversed = true;
+		//	}
+		//	else {
+		//		qpl::println("qsf::animation::swap : bad state : ", this->get_progress(), " ", this->progress_value, " ", this->reverse_progress_state, " ", this->is_reversed());
+		//	}
+		//}
+		//this->running = true;
+	}
+
+	void qpl::animation::reset(bool running) {
+		this->timer.reset();
+		this->running_result = running;
+		this->running = running;
+		this->started = true;
+		this->just_finish = false;
+		this->reversed = false;
+		this->progress_value = 0.0;
+		this->wait_duration = 0.0;
+	}
+	void qpl::animation::add_time(qpl::f64 seconds) {
+		this->timer.add(seconds);
+	}
+	void qpl::animation::add_time(qpl::time time) {
+		this->timer.add(time);
+	}
+	void qpl::animation::start() {
+		this->reset(true);
+	}
+	void qpl::animation::start_and_reverse() {
+		this->reverse();
+	}
+	void qpl::animation::reset_and_reverse() {
+		this->reset();
+		this->reverse();
+	}
+	void qpl::animation::reset_and_start() {
+		this->start();
+	}
+	void qpl::animation::start_in(qpl::f64 time) {
+		if (!time) {
+			this->start();
+			return;
+		}
+		this->started = true;
+		this->wait_duration = time;
+		this->wait_timer.reset();
+	}
+	void qpl::animation::update() {
+		if (this->wait_duration) {
+			if (this->wait_timer.has_elapsed(this->wait_duration)) {
+				this->start();
+				this->wait_duration = 0.0;
+			}
+			return;
+		}
+		this->just_finish = false;
+		if (!this->running) {
+			this->running_result = false;
+			return;
+		}
+		if (!this->started) {
+			this->running_result = false;
+			this->running = false;
+			this->progress_value = 0.0;
+			return;
+		}
+		auto before = this->running;
+		this->progress_value = (this->timer.elapsed_f()) / this->duration;
+		if (this->reversed) {
+			this->progress_value = this->reverse_progress_state - this->progress_value;
+		}
+		this->running = (this->progress_value >= 0.0 && this->progress_value <= 1.0);
+		if (before && !this->running) {
+			this->just_finish = true;
+			this->running = false;
+		}
+		this->running_result = this->running || this->just_finish;
+	}
+
+	bool qpl::animation::is_reversed() const {
+		return this->reversed;
+	}
+	bool qpl::animation::is_running() const {
+		return this->running_result;
+	}
+	bool qpl::animation::is_running(bool update) {
+		if (update) {
+			this->update();
+		}
+		return this->is_running();
+	}
+	bool qpl::animation::is_started() const {
+		return this->started;
+	}
+	bool qpl::animation::just_finished() const {
+		return this->just_finish;
+	}
+	bool qpl::animation::just_finished(bool update) {
+		if (update) {
+			this->update();
+		}
+		return this->just_finished();
+	}
+	bool qpl::animation::is_done() const {
+		if (this->reversed) {
+			return this->started && this->get_progress() <= 0.0;
+		}
+		else {
+			return this->started && this->get_progress() >= 1.0;
+		}
+	}
+	bool qpl::animation::is_done(bool update) {
+		if (update) {
+			this->update();
+		}
+		return this->is_done();
+	}
+	bool qpl::animation::is_running_or_done() const {
+		return this->is_running() || this->is_done();
+	}
+	bool qpl::animation::is_running_or_done(bool update) {
+		return this->is_running(update) || this->is_done(update);
+	}
+	bool qpl::animation::is_done_reverse() const {
+		return this->is_done() && this->reversed;
+	}
+	bool qpl::animation::is_done_no_reverse() const {
+		return this->is_done() && !this->reversed;
+	}
+	void qpl::animation::set_progress(qpl::f64 progress) {
+		this->timer.reset();
+		this->timer.subtract(progress * this->duration);
+	}
+	qpl::f64 qpl::animation::get_progress() const {
+		return qpl::clamp_0_1(this->progress_value);
+	}
+	qpl::f64 qpl::animation::get_curve_progress(qpl::f64 curve) const {
+		return qpl::smooth_curve(this->get_progress(), curve);
+	}
+	qpl::f64 qpl::animation::get_smooth_progress(qpl::u32 slope) const {
+		return qpl::smooth_slope(this->get_progress(), slope);
+	}
+	qpl::f64 qpl::animation::get_progress(bool update) {
+		if (update) {
+			this->update();
+		}
+		return this->get_progress();
+	}
+	qpl::f64 qpl::animation::get_normalized_progress() const {
+		if (this->reversed) {
+			return 1 - this->get_progress();
+		}
+		else {
+			return this->get_progress();
+		}
+	}
+	qpl::f64 qpl::animation::get_normalized_progress(bool update) {
+		if (update) {
+			this->update();
+		}
+		return this->get_normalized_progress();
+	}
 
 	void qpl::timed_task::update() {
 		auto done = this->is_done();

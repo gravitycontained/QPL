@@ -188,6 +188,10 @@ namespace qpl {
 	std::string type_name(T value) {
 		return std::string(typeid(T).name());
 	}
+	template<typename T>
+	std::string type_name() {
+		return std::string(typeid(T).name());
+	}
 
 
 	constexpr qpl::size bits_in_byte() {
