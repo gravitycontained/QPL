@@ -13,7 +13,7 @@ This is free for any use (commercial or personal, proprietary or open-source). T
 
 # Setup
 
-To use this library download the zip and include the include folder. Copy the `qpl.dll` and `qpl-d.dll` into your project folder. It is build with SFML enabled, so you you have to inlcude and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. 
+To use this library download the zip and include the include folder. Copy the `qpl.dll` and `qpl-d.dll` into your project folder. It is build with SFML enabled, so you you have to include and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. 
 these are the required linker dependencies:
 
 
