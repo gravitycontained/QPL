@@ -124,15 +124,15 @@ namespace qpl {
             QPLDLL std::vector<std::string> get_branch_names() const;
 
             QPLDLL bool is_root() const;
-            QPLDLL void go_root();
+            QPLDLL path& go_root();
 
             //returns false if empty path or afterwards at root, otherwise true
             QPLDLL bool go_directories_back(qpl::u32 steps);
             //returns false if empty path or afterwards at root, otherwise true
             QPLDLL bool go_directory_back();
-            QPLDLL void go_into_directory(const std::string& directory_name);
-            QPLDLL void go_into(const std::string& entry);
-            QPLDLL void cd(const std::string& directory_name);
+            QPLDLL path& go_into_directory(const std::string& directory_name);
+            QPLDLL path& go_into(const std::string& entry);
+            QPLDLL path& cd(const std::string& directory_name);
 
             QPLDLL qpl::filesys::paths list_current_directory() const;
             QPLDLL qpl::filesys::paths list_current_directory_tree() const;

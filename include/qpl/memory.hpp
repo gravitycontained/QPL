@@ -434,13 +434,7 @@ namespace qpl {
 				return this->data[this->index];
 			}
 			else {
-				auto i = this->index;
-				if (i == 0u) {
-					return this->data[0u];
-				}
-				else {
-					return this->data[0u];
-				}
+				return this->data[0u];
 			}
 		}
 		const T& last() const {
@@ -448,13 +442,7 @@ namespace qpl {
 				return this->data[this->index];
 			}
 			else {
-				auto i = this->index;
-				if (i == 0u) {
-					return T{};
-				}
-				else {
-					return this->data[0u];
-				}
+				return this->data[0u];
 			}
 		}
 

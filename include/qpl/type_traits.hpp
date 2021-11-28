@@ -505,6 +505,7 @@ namespace qpl {
 		b.cbegin();
 		b.cend();
 	};
+
 	template<typename T>
 	constexpr bool is_container() {
 		return is_container_c<T>;

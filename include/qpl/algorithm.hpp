@@ -602,6 +602,17 @@ namespace qpl {
 		memcpy(result.data(), source.data(), source.size() * sizeof(T));
 		return result;
 	}
+	template<typename T>
+	void remove_vector_element(std::vector<T>& source, qpl::u32 index) {
+		std::vector<T> result;
+		result.reserve(source.size() - 1);
+		for (qpl::u32 i = 0u; i < source.size(); ++i) {
+			if (i != index) {
+				result.push_back(source[i]);
+			}
+		}
+		source = result;
+	}
 	template< qpl::size N, typename T>
 	std::array<T, N> vector_to_array(const std::vector<T>& source) {
 		std::array<T, N> result;

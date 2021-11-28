@@ -413,6 +413,14 @@ namespace qpl {
 				i = T{};
 			}
 		}
+		constexpr bool empty() const {
+			for (auto& i : this->data) {
+				if (i != T{}) {
+					return false;
+				}
+			}
+			return true;
+		}
 
 		constexpr bool operator<(const vectorN& other) const {
 			for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
@@ -800,6 +808,52 @@ namespace qpl {
 			return static_cast<maths_float_type>(atan);
 		}
 
+		constexpr bool collides(straight_line_t other) const {
+			constexpr auto mode = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {
+				auto ba = b - a;
+				auto cb = c - b;
+				auto x = ba.y * cb.x - ba.x * cb.y;
+
+				if (x < T{ 0 }) {
+					return 2u;
+				}
+				else if (x > T{ 0 }) {
+					return 1u;
+				}
+				else {
+					return 0u;
+				}
+			}; 
+			constexpr auto collide = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {
+				auto check_x = b.x <= qpl::max(a.x, c.x) && b.x >= qpl::min(a.x, c.x);
+				auto check_y = b.y <= qpl::max(a.y, c.y) && b.y >= qpl::min(a.y, c.y);
+				return check_x && check_y;
+			};
+			auto m1 = mode(this->a, this->b, other.a);
+			auto m2 = mode(this->a, this->b, other.b);
+			auto m3 = mode(other.a, other.b, this->a);
+			auto m4 = mode(other.a, other.b, this->b);
+
+			if (m1 != m2 && m3 != m4) {
+				return true;
+			}
+
+			if (m1 == T{ 0 } && collide(this->a, other.a, this->b)) {
+				return true;
+			}
+			if (m2 == T{ 0 } && collide(this->a, other.b, this->b)) {
+				return true;
+			}
+			if (m3 == T{ 0 } && collide(other.a, this->a, other.b)) {
+				return true;
+			}
+			if (m4 == T{ 0 } && collide(other.a, this->b, other.b)) {
+				return true;
+			}
+
+			return false;
+		}
+
 		qpl::vector2<T> a;
 		qpl::vector2<T> b;
 	};
@@ -988,7 +1042,6 @@ namespace qpl {
 	};
 
 	using hitbox = hitbox_t<qpl::f32>;
-
 }
 
 

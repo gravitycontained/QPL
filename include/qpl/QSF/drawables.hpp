@@ -147,6 +147,8 @@ namespace qsf {
 	struct rectangle;
 	struct vrectangles;
 	struct rectangles;
+	struct vsmooth_rectangle;
+	struct smooth_rectangle;
 	struct vpoint;
 	struct point;
 	struct vpoints;
@@ -186,6 +188,7 @@ namespace qsf {
 		QPLDLL extern qsf::text text;
 		QPLDLL extern qsf::rectangle rectangle;
 		QPLDLL extern qsf::rectangles rectangles;
+		QPLDLL extern qsf::smooth_rectangle smooth_rectangle;
 		QPLDLL extern qsf::point point;
 		QPLDLL extern qsf::points points;
 		QPLDLL extern qsf::circle circle;
@@ -530,6 +533,84 @@ namespace qsf {
 		std::vector<qsf::rectangle> rectangles_;
 	};
 
+	struct polygon {
+		struct polygon_proxy {
+			sf::ConvexShape* ptr;
+			qpl::size index;
+
+			QPLDLL sf::Vector2f operator=(qpl::vector2f position);
+			QPLDLL operator qpl::vector2f() const;
+		};
+		struct const_polygon_proxy {
+			const sf::ConvexShape* ptr;
+			qpl::size index;
+
+			QPLDLL operator qpl::vector2f() const;
+		};
+
+		sf::ConvexShape shape;
+
+
+
+		QPLDLL polygon_proxy operator[](qpl::size index);
+		QPLDLL const_polygon_proxy operator[](qpl::size index) const;
+		QPLDLL polygon_proxy front();
+		QPLDLL const_polygon_proxy front() const;
+		QPLDLL polygon_proxy back();
+		QPLDLL const_polygon_proxy back() const;
+		QPLDLL qpl::size size() const;
+		
+		QPLDLL void set_point(qpl::size index, qpl::vector2f position);
+		QPLDLL qpl::vector2f get_point(qpl::size index) const;
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void resize(qpl::size size);
+		QPLDLL void add(qpl::vector2f point);
+
+		QPLDLL bool contains(qpl::vector2f point, qpl::size increment = 1u) const;
+
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+	};
+
+	struct vsmooth_rectangle {
+
+		QPLDLL void move(qpl::vector2f delta);
+
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_slope(qpl::f64 slope);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
+		QPLDLL void set_slope_point_count(qpl::size point_count);
+
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::f64 get_slope() const;
+		QPLDLL qsf::rgb get_color() const;
+		QPLDLL qpl::vector2f get_slope_dimension() const;
+		QPLDLL qpl::size get_slope_point_count() const;
+		QPLDLL bool contains(qpl::vector2f point) const;
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+		
+		friend smooth_rectangle;
+	private:
+		qpl::vector2f dimension;
+		qpl::vector2f position;
+
+		qpl::f64 slope = 2.0;
+		qpl::vector2f slope_dim = { 10, 10 };
+		qsf::rgb color;
+		qpl::size slope_point_count = 20u;
+		mutable bool geometry_changed = true;
+		mutable bool color_changed = false;
+	};
+	struct smooth_rectangle {
+		qsf::polygon polygon;
+
+		QPLDLL bool contains(qpl::vector2f point) const;
+		QPLDLL qsf::smooth_rectangle& operator=(const qsf::vsmooth_rectangle& smooth_rectangle);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+	};
+
 	struct vpoint {
 		qpl::vector2f position;
 		qsf::rgb color;
@@ -793,6 +874,7 @@ namespace qsf {
 		QPLDLL qpl::f32 length() const;
 
 		QPLDLL operator qpl::straight_line() const;
+		
 
 		QPLDLL qsf::line& operator=(const qsf::vline& line);
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
@@ -980,6 +1062,7 @@ namespace qsf {
 
 		QPLDLL void set_texture(const sf::Texture& texture);
 		QPLDLL void set_texture_rect(const sf::IntRect& rect);
+		QPLDLL void set_texture_rect(qpl::hitbox hitbox);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_multiplied_color(qsf::rgb color);
 		QPLDLL void set_position(qpl::vector2f position);
@@ -2269,7 +2352,6 @@ namespace qsf {
 		}
 		void set_value(T value) {
 			*this->ptr = value;
-			this->value_before = *this->ptr;
 		}
 		void set_pointer(T* value) {
 			this->ptr = value;
@@ -2702,7 +2784,31 @@ namespace qsf {
 		bool hovering_over_knob = false;
 	};
 
+	struct border_graphic {
+		const sf::Texture* texture;
+		qpl::vector2f texture_dimension;
+		qpl::vector2f dimension;
+		qpl::vector2f position;
+		qpl::vector2f scale = { 1, 1 };
+		qsf::rgb color;
+		std::vector<qsf::sprite> sprites;
 
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f dimension);
+		QPLDLL void increase(qpl::vector2f increase);
+		QPLDLL void set_color(qsf::rgb color);
+		QPLDLL void set_scale(qpl::vector2f scale);
+		QPLDLL void set_texture(const sf::Texture& texture);
+		QPLDLL void check_texture();
+		QPLDLL void update_dimensions(qpl::vector2f position, qpl::vector2f dimension);
+		QPLDLL void move(qpl::vector2f delta);
+		QPLDLL void add_top();
+		QPLDLL void add_bottom();
+		QPLDLL void add_left();
+		QPLDLL void add_right();
+		QPLDLL void make_all_sides();
+		QPLDLL void draw(qsf::draw_object& object) const;
+	};
 
 	namespace detail {
 		QPLDLL extern std::unordered_map<std::string, qsf::text> texts;

@@ -71,6 +71,7 @@ namespace qsf {
 		qsf::text qsf::detail::text;
 		qsf::rectangle qsf::detail::rectangle;
 		qsf::rectangles qsf::detail::rectangles;
+		qsf::smooth_rectangle qsf::detail::smooth_rectangle;
 		qsf::point qsf::detail::point;
 		qsf::points qsf::detail::points;
 		qsf::circle qsf::detail::circle;
@@ -750,7 +751,211 @@ namespace qsf {
 		}
 	}
 
+	sf::Vector2f qsf::polygon::polygon_proxy::operator=(qpl::vector2f position) {
+		this->ptr->setPoint(this->index, position);
+		return this->ptr->getPoint(this->index);
+	}
+	qsf::polygon::polygon_proxy::operator qpl::vector2f() const {
+		return this->ptr->getPoint(this->index);
+	}
+	qsf::polygon::const_polygon_proxy::operator qpl::vector2f() const {
+		return this->ptr->getPoint(this->index);
+	}
 
+	qsf::polygon::polygon_proxy qsf::polygon::operator[](qpl::size index) {
+		qsf::polygon::polygon_proxy result;
+		result.ptr = &this->shape;
+		result.index = index;
+		return result;
+	}
+	qsf::polygon::const_polygon_proxy qsf::polygon::operator[](qpl::size index) const {
+		qsf::polygon::const_polygon_proxy result;
+		result.ptr = &this->shape;
+		result.index = index;
+		return result;
+	}
+	qsf::polygon::polygon_proxy qsf::polygon::front() {
+		qsf::polygon::polygon_proxy result;
+		result.ptr = &this->shape;
+		result.index = 0u;
+		return result;
+	}
+	qsf::polygon::const_polygon_proxy qsf::polygon::front() const {
+		qsf::polygon::const_polygon_proxy result;
+		result.ptr = &this->shape;
+		result.index = 0u;
+		return result;
+	}
+	qsf::polygon::polygon_proxy qsf::polygon::back() {
+		qsf::polygon::polygon_proxy result;
+		result.ptr = &this->shape;
+		result.index = this->size() - 1;
+		return result;
+	}
+	qsf::polygon::const_polygon_proxy qsf::polygon::back() const {
+		qsf::polygon::const_polygon_proxy result;
+		result.ptr = &this->shape;
+		result.index = 0u;
+		return result;
+	}
+	void qsf::polygon::set_point(qpl::size index, qpl::vector2f position) {
+		this->shape.setPoint(index, position);
+	}
+	qpl::vector2f qsf::polygon::get_point(qpl::size index) const {
+		return this->shape.getPoint(index);
+	}
+	qpl::size qsf::polygon::size() const {
+		return this->shape.getPointCount();
+	}
+	void qsf::polygon::set_color(qsf::rgb color) {
+		this->shape.setFillColor(color);
+	}
+	void qsf::polygon::resize(qpl::size size) {
+		this->shape.setPointCount(size);
+	}
+	void qsf::polygon::add(qpl::vector2f point) {
+		this->shape.setPointCount(this->size() + 1);
+	}
+	bool qsf::polygon::contains(qpl::vector2f point, qpl::size increment) const {
+
+		bool flag = false;
+
+		qpl::straight_line compare;
+		compare.a = { 0, 0 };
+		compare.b = point;
+
+		auto j = this->size() - 1;
+		for (qpl::size i = 0u; i < this->size(); i += increment) {
+			qpl::straight_line edge_line;
+			edge_line.a = this->get_point(i);
+			edge_line.b = this->get_point(j);
+			if (compare.collides(edge_line)) {
+				flag = !flag;
+			}
+			j = i;
+		}
+		return flag;
+	}
+	void qsf::polygon::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		window.draw(this->shape, states);
+	}
+
+
+	void qsf::vsmooth_rectangle::move(qpl::vector2f delta) {
+		this->position.move(delta);
+		this->geometry_changed = true;
+	}
+	void qsf::vsmooth_rectangle::set_dimension(qpl::vector2f dimension) {
+		this->dimension = dimension;
+		this->geometry_changed = true;
+	}
+
+	void qsf::vsmooth_rectangle::set_position(qpl::vector2f position) {
+		this->position = position;
+		this->geometry_changed = true;
+	}
+	void qsf::vsmooth_rectangle::set_slope(qpl::f64 slope) {
+		this->slope = slope;
+		this->geometry_changed = true;
+	}
+	void qsf::vsmooth_rectangle::set_color(qsf::rgb color) {
+		this->color = color;
+		this->color_changed = true;
+	}
+	void qsf::vsmooth_rectangle::set_slope_dimension(qpl::vector2f dimension) {
+		this->slope_dim = dimension;
+		this->geometry_changed = true;
+	}
+	void qsf::vsmooth_rectangle::set_slope_point_count(qpl::size point_count) {
+		this->slope_point_count = point_count;
+		this->geometry_changed = true;
+	}
+	qpl::vector2f qsf::vsmooth_rectangle::get_dimension() const {
+		return this->dimension;
+	}
+	qpl::vector2f qsf::vsmooth_rectangle::get_position() const {
+		return this->position;
+	}
+	qpl::f64 qsf::vsmooth_rectangle::get_slope() const {
+		return this->slope;
+	}
+	qsf::rgb qsf::vsmooth_rectangle::get_color() const {
+		return this->color;
+	}
+	qpl::vector2f qsf::vsmooth_rectangle::get_slope_dimension() const {
+		return this->slope_dim;
+	}
+	qpl::size qsf::vsmooth_rectangle::get_slope_point_count() const {
+		return this->slope_point_count;
+	}
+	bool qsf::vsmooth_rectangle::contains(qpl::vector2f point) const {
+		qsf::detail::smooth_rectangle = *this;
+		return qsf::detail::smooth_rectangle.contains(point);
+	}
+	void qsf::vsmooth_rectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		qsf::detail::smooth_rectangle = *this;
+		qsf::detail::smooth_rectangle.draw(window, states);
+	}
+
+
+	bool qsf::smooth_rectangle::contains(qpl::vector2f point) const {
+		return this->polygon.contains(point);
+	}
+	qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) {
+		if (smooth_rectangle.color_changed) {
+			this->polygon.set_color(smooth_rectangle.color);
+			smooth_rectangle.color_changed = false;
+		}
+		if (!smooth_rectangle.geometry_changed) {
+			return *this;
+		}
+		smooth_rectangle.geometry_changed = false;
+		this->polygon.set_color(smooth_rectangle.color);
+
+		auto size = smooth_rectangle.slope_point_count;
+		this->polygon.resize(size * 4);
+
+		auto offset = smooth_rectangle.position;
+		auto dimension = smooth_rectangle.slope_dim;
+		auto rect_dimension = smooth_rectangle.dimension;
+		qpl::u32 ctr = 0u;
+		for (qpl::u32 i = 0u; i < size; ++i) {
+			auto progress = std::pow(qpl::f64_cast(i) / (size - 1), 2);
+			auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+			auto curve_pos = qpl::vec(progress, -value) * dimension;
+			auto pos = offset + qpl::vec(0, dimension.y) + curve_pos;
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		for (qpl::u32 i = 0u; i < size; ++i) {
+			auto progress = std::pow(1 - qpl::f64_cast(i) / (size - 1), 2);
+			auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+			auto curve_pos = qpl::vec(progress, value) * dimension;
+			auto pos = offset + qpl::vec(rect_dimension.x, dimension.y) - curve_pos;
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		for (qpl::u32 i = 0u; i < size; ++i) {
+			auto progress = std::pow(qpl::f64_cast(i) / (size - 1), 2);
+			auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+			auto curve_pos = qpl::vec(-progress, value) * dimension;
+			auto pos = offset + qpl::vec(rect_dimension.x, rect_dimension.y - dimension.y) + curve_pos;
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		for (qpl::u32 i = 0u; i < size; ++i) {
+			auto progress = std::pow(1 - qpl::f64_cast(i) / (size - 1), 2);
+			auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+			auto curve_pos = qpl::vec(progress, value) * dimension;
+			auto pos = offset + qpl::vec(0, rect_dimension.y - dimension.y) + curve_pos;
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		return *this;
+	}
+	void qsf::smooth_rectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		this->polygon.draw(window, states);
+	}
 
 	vpoint& qsf::vpoint::operator=(qpl::vector2f position) {
 		this->position = position;
@@ -1692,6 +1897,14 @@ namespace qsf {
 		this->m_sprite.setTexture(texture);
 	}
 	void qsf::sprite::set_texture_rect(const sf::IntRect& rect) {
+		this->m_sprite.setTextureRect(rect);
+	}
+	void qsf::sprite::set_texture_rect(qpl::hitbox hitbox) {
+		sf::IntRect rect;
+		rect.left = qpl::i32_cast(hitbox.position.x);
+		rect.top = qpl::i32_cast(hitbox.position.y);
+		rect.width = qpl::i32_cast(hitbox.dimension.x);
+		rect.height = qpl::i32_cast(hitbox.dimension.y);
 		this->m_sprite.setTextureRect(rect);
 	}
 	void qsf::sprite::set_color(qsf::rgb color) {
@@ -5434,6 +5647,168 @@ namespace qsf {
 	void qsf::button::update(const event_info& event_info, bool& hovering) {
 		this->update(event_info);
 		hovering = hovering || this->hovering;
+	}
+
+
+	void qsf::border_graphic::set_dimension(qpl::vector2f dimension) {
+		this->dimension = dimension;
+	}
+	void qsf::border_graphic::set_position(qpl::vector2f position) {
+		this->position = position;
+	}
+	void qsf::border_graphic::increase(qpl::vector2f delta) {
+		this->position -= delta;
+		this->dimension += delta * 2;
+	}
+	void qsf::border_graphic::set_color(qsf::rgb color) {
+		this->color = color;
+	}
+	void qsf::border_graphic::set_scale(qpl::vector2f scale) {
+		this->scale = scale;
+	}
+	void qsf::border_graphic::set_texture(const sf::Texture& texture) {
+		this->texture = &texture;
+		this->texture_dimension = texture.getSize();
+	}
+	void qsf::border_graphic::check_texture() {
+		if (!this->texture) {
+			qpl::println("qsf::border_graphic : texture was not set.");
+			qpl::system_pause();
+		}
+	}
+	void qsf::border_graphic::update_dimensions(qpl::vector2f position, qpl::vector2f dimension) {
+		this->dimension = dimension;
+		this->position = position;
+		this->sprites.clear();
+	}
+	void qsf::border_graphic::move(qpl::vector2f delta) {
+		this->position += delta;
+		for (auto& i : this->sprites) {
+			i.move(delta);
+		}
+	}
+	void qsf::border_graphic::add_top() {
+		this->check_texture();
+
+		auto x_size = qpl::u32_cast(this->dimension.x / ((this->texture_dimension.x - 1) * this->scale.x) + 1);
+
+		auto ctr = this->sprites.size();
+		this->sprites.resize(ctr + x_size);
+
+
+
+		auto pos = this->position;
+		for (qpl::u32 i = 0u; i < x_size; ++i) {
+			this->sprites[ctr].set_texture(*this->texture);
+			this->sprites[ctr].set_rotation(270.f);
+			this->sprites[ctr].set_position(pos + qpl::vector2f(0, this->texture_dimension.x * (this->scale.x)));
+			this->sprites[ctr].set_scale(this->scale);
+			this->sprites[ctr].set_color(this->color);
+
+			if (i == x_size - 1) {
+				auto leftover = std::fmod(this->dimension.x, this->texture_dimension.x * this->scale.y) / this->scale.y;
+				qpl::hitbox hitbox;
+				hitbox.dimension = { this->texture_dimension.x, leftover };
+				this->sprites[ctr].set_texture_rect(hitbox);
+			}
+
+			pos.x += this->texture_dimension.x * this->scale.y;
+			++ctr;
+		}
+	}
+	void qsf::border_graphic::add_bottom() {
+		this->check_texture();
+
+		auto x_size = qpl::u32_cast(this->dimension.x / ((this->texture_dimension.x - 1) * this->scale.x) + 1);
+
+		auto ctr = this->sprites.size();
+		this->sprites.resize(ctr + x_size);
+
+		auto pos = this->position + qpl::vector2f(0, this->dimension.y - this->texture_dimension.x);
+		for (qpl::u32 i = 0u; i < x_size; ++i) {
+			this->sprites[ctr].set_texture(*this->texture);
+			this->sprites[ctr].set_rotation(90.f);
+			this->sprites[ctr].set_position(pos + qpl::vector2f(this->texture_dimension.x * this->scale.y, this->texture_dimension.x * (1 - this->scale.x)));
+			this->sprites[ctr].set_scale(this->scale);
+			this->sprites[ctr].set_color(this->color);
+
+			if (i == x_size - 1) {
+				auto leftover = std::fmod(this->dimension.x, this->texture_dimension.x * this->scale.y);
+				qpl::hitbox hitbox;
+				hitbox.dimension = { this->texture_dimension.x, leftover / this->scale.y };
+			
+				this->sprites[ctr].move(qpl::vec(-(this->texture_dimension.x * this->scale.y - leftover), 0));
+				this->sprites[ctr].set_texture_rect(hitbox);
+			}
+
+			pos.x += this->texture_dimension.x * this->scale.y;
+			++ctr;
+		}
+	}
+	void qsf::border_graphic::add_left() {
+		this->check_texture();
+
+		auto y_size = qpl::u32_cast(this->dimension.y / ((this->texture_dimension.x - 1) * this->scale.y) + 1);
+
+		auto ctr = this->sprites.size();
+		this->sprites.resize(ctr + y_size);
+
+		auto pos = this->position;
+		for (qpl::u32 i = 0u; i < y_size; ++i) {
+			this->sprites[ctr].set_texture(*this->texture);
+			this->sprites[ctr].set_rotation(180.f);
+			this->sprites[ctr].set_position(pos + qpl::vector2f(this->texture_dimension.x * this->scale.x, this->texture_dimension.x * this->scale.y));
+			this->sprites[ctr].set_scale(this->scale);
+			this->sprites[ctr].set_color(this->color);
+
+			if (i == y_size - 1) {
+				auto leftover = std::fmod(this->dimension.y, this->texture_dimension.y * this->scale.x);
+				qpl::hitbox hitbox;
+				hitbox.dimension = { this->texture_dimension.x, leftover / this->scale.x };
+				this->sprites[ctr].move(qpl::vec(0, -(this->texture_dimension.y * this->scale.x - leftover)));
+				this->sprites[ctr].set_texture_rect(hitbox);
+			}
+
+			pos.y += this->texture_dimension.x * this->scale.x;
+			++ctr;
+		}
+	}
+	void qsf::border_graphic::add_right() {
+		this->check_texture();
+
+		auto y_size = qpl::u32_cast(this->dimension.y / ((this->texture_dimension.x - 1) * this->scale.y) + 1);
+
+		auto ctr = this->sprites.size();
+		this->sprites.resize(ctr + y_size);
+
+		auto pos = this->position + qpl::vector2f(this->dimension.x - this->texture_dimension.x, 0);
+		for (qpl::u32 i = 0u; i < y_size; ++i) {
+			this->sprites[ctr].set_texture(*this->texture);
+			this->sprites[ctr].set_position(pos + qpl::vector2f(this->texture_dimension.x * (1 - this->scale.y), 0));
+			this->sprites[ctr].set_rotation(0.f);
+			this->sprites[ctr].set_scale(this->scale);
+			this->sprites[ctr].set_color(this->color);
+
+
+			if (i == y_size - 1) {
+				auto leftover = std::fmod(this->dimension.y, this->texture_dimension.y * this->scale.x);
+				qpl::hitbox hitbox;
+				hitbox.dimension = { this->texture_dimension.x, leftover / this->scale.x };
+				this->sprites[ctr].set_texture_rect(hitbox);
+			}
+
+			pos.y += this->texture_dimension.x * this->scale.x;
+			++ctr;
+		}
+	}
+	void qsf::border_graphic::make_all_sides() {
+		this->add_top();
+		this->add_left();
+		this->add_right();
+		this->add_bottom();
+	}
+	void qsf::border_graphic::draw(qsf::draw_object& object) const {
+		object.draw(this->sprites);
 	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;

@@ -550,8 +550,8 @@ namespace qpl {
         bool qpl::filesys::path::is_root() const {
             return this->branch_size() == qpl::size{ 1 };
         }
-        void qpl::filesys::path::go_root() {
-            *this = this->branch_at(qpl::u32{ 0 });
+        path& qpl::filesys::path::go_root() {
+            return  *this = this->branch_at(qpl::u32{ 0 });
         }
         bool qpl::filesys::path::go_directories_back(qpl::u32 steps) {
             if (this->empty()) {
@@ -569,7 +569,7 @@ namespace qpl {
         bool qpl::filesys::path::go_directory_back() {
             return this->go_directories_back(qpl::size{ 1 });
         }
-        void qpl::filesys::path::go_into_directory(const std::string& directory_name) {
+        path& qpl::filesys::path::go_into_directory(const std::string& directory_name) {
             if (this->m_string.back() != '/' && directory_name.front() != '/') {
                 this->m_string.append("/");
             }
@@ -585,12 +585,15 @@ namespace qpl {
             this->m_exists = false;
 
             this->check_update();
+            return *this;
         }
-        void qpl::filesys::path::go_into(const std::string& entry) {
+        path& qpl::filesys::path::go_into(const std::string& entry) {
             this->go_into_directory(entry);
+            return *this;
         }
-        void qpl::filesys::path::cd(const std::string& directory_name) {
+        path& qpl::filesys::path::cd(const std::string& directory_name) {
             this->go_into_directory(directory_name);
+            return *this;
         }
 
         qpl::filesys::paths qpl::filesys::path::list_current_directory() const {

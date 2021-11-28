@@ -6,6 +6,7 @@
 #include <qpl/algorithm.hpp>
 #include <qpl/time.hpp>
 #include <qpl/type_traits.hpp>
+#include <qpl/vector.hpp>
 
 #include <array>
 #include <iterator>
@@ -300,6 +301,24 @@ namespace qpl {
 		qpl::distribution<T> dist(T{}, max);
 		return qpl::detail::rng.rng.generate(dist);
 	}
+	template<qpl::size N, typename T>
+	qpl::vectorN<T, N> random(qpl::vectorN<T, N> max) {
+		qpl::vectorN<T, N> result;
+		for (qpl::u32 i = 0u; i < N; ++i) {
+			qpl::distribution<T> dist(T{}, max.data[i]);
+			result.data[i] = qpl::detail::rng.rng.generate(dist);
+		}
+		return result;
+	}
+	template<qpl::size N, typename T>
+	qpl::vectorN<T, N> random(qpl::vectorN<T, N> min, qpl::vectorN<T, N> max) {
+		qpl::vectorN<T, N> result;
+		for (qpl::u32 i = 0u; i < N; ++i) {
+			qpl::distribution<T> dist(min.data[i], max.data[i]);
+			result.data[i] = qpl::detail::rng.rng.generate(dist);
+		}
+		return result;
+	}
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random() {
 		qpl::distribution<T> dist(qpl::type_min<T>(), qpl::type_max<T>());
@@ -310,7 +329,7 @@ namespace qpl {
 		return qpl::detail::rng.rng.generate(dist);
 	}
 	template<typename T> requires (qpl::is_integer<T>())
-		T random(std::binomial_distribution<T> dist) {
+	T random(std::binomial_distribution<T> dist) {
 		return qpl::detail::rng.rng.generate(dist);
 	}
 	template<typename T> requires (qpl::is_integer<T>())
