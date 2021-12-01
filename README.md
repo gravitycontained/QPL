@@ -51,286 +51,100 @@ If you want to use this library in a static way, include all files (as well as `
 
 # Utilities
 
-simple fast **random number generator**.
-it uses a global instance's constructor to randomize all bits of `std::mt19937` types via `std::random_device` and seed_sequences.
-
+**qpl::println**:
 ```cpp
-auto a = qpl::random(-5, 10);
-auto b = qpl::random(0.1, 0.7);
-auto c = qpl::random(qpl::f32_min, 0.7f);
-
-static_assert(qpl::is_same<decltype(a), int>());
-static_assert(qpl::is_same<decltype(b), double>());
-static_assert(qpl::is_same<decltype(c), float>());
-  ```
-  
-----------
-
-**any precision integer arithmetic**.
-
-fixed precision signed / unsigned integer classes `qpl::integer<BITS, SIGN>`:
-
-```cpp
-qpl::i512 a = 0; //using qpl::i512 = qpl::integer<512, 1>;
-qpl::i512 b = 0; //using qpl::i512 = qpl::integer<512, 1>;
-
-a.randomize_bits_logarithmic();
-b.randomize_bits_logarithmic();
-
-qpl_vprintln(a);
-qpl_vprintln(b);
-
-auto add = a + b; 
-auto sub = a - b; 
-auto mul = a * b; 
-auto div = a / b; 
-auto mod = a % b; 
-
-qpl_vprintln(add);
-qpl_vprintln(sub);
-qpl_vprintln(mul);
-qpl_vprintln(div);
-qpl_vprintln(mod);
+qpl::println("Hello World");
+qpl::println("a", 5.5, 'x');
+qpl::println(std::vector{ 1, 2, 3 });
+qpl::println(std::array{ 4, 5, 6 });
 ```
 
-possible output:
-![possible output](https://i.imgur.com/XnJuSly.png)
-
-(the multiplication overflowed here correctly, sign bit was overwritten)
-
-----------
-
-**any precision floating point arithmetic**.
-
-fixed precision floating_point class `qpl::floating_point<EXPONENT_BITS, MANTISSA_BITS>`:
-
-```cpp
-auto a = qpl::f512::random(0, 100); //using qpl::f512 = qpl::floating_point<32, 512>;
-auto b = qpl::f512::random(0, 100); //using qpl::f512 = qpl::floating_point<32, 512>;
-
-qpl_vprintln(a);
-qpl_vprintln(b);
-
-auto add = a + b;
-auto sub = a - b;
-auto mul = a * b;
-auto div = a / b;
-auto pow = a ^ b;
-auto sqta = qpl::f512::sqrt(a);
-auto sqtb = qpl::f512::sqrt(b);
-auto inva = qpl::f512::invert(a);
-auto invb = qpl::f512::invert(b);
-
-qpl_vprintln(add);
-qpl_vprintln(sub);
-qpl_vprintln(mul);
-qpl_vprintln(div);
-qpl_vprintln(pow);
-qpl_vprintln(sina);
-qpl_vprintln(cosb);
-qpl_vprintln(sqta);
-qpl_vprintln(sqtb);
-qpl_vprintln(inva);
-qpl_vprintln(invb);
+output:
+```
+Hello World
+a5.5x
+{1, 2, 3}
+{4, 5, 6}
 ```
 
-possible output:
-![possible output](https://i.imgur.com/Ax0aVfd.png)
-
-----------
-
-**neural nets**:
-
+**random**:
 ```cpp
-qpl::neural_net net;
-net.set_topology({ 2, 2, 1 });
+auto n = qpl::random(1, 100);
+auto f = qpl::random(0.5, 2.0);
 
-std::vector<qpl::f64> input(2);
-std::vector<qpl::f64> output(1);
-std::vector<qpl::f64> net_output(1);
+auto v = std::vector{ 1, 2, 3 };
+qpl::shuffle(v);
 
-while (true) {
-
-    input[0] = qpl::random(0.0, 0.5);
-    input[1] = qpl::random(0.0, 0.5);
-    output[0] = input[0] + input[1];
-
-    net.feed(input);
-    net.get_output(net_output);
-    net.teach(output);
-
-    if (qpl::get_time_signal(0.001)) {
-        qpl::print(qpl::to_string_precision(5, input[0]), " + ");
-        qpl::print(qpl::to_string_precision(5, input[1]), " = ");
-        qpl::print(qpl::to_string_precision(5, net_output[0]));
-        qpl::print(" ", qpl::str_spaced(net.get_error() * 100, 10), "% wrong - ");
-        qpl::println(qpl::foreground::light_green, qpl::to_string_precision(5, net.get_average_accuracy() * 100), "% average accuracy");
-    }
-}
-```
-
-possible output:
-
-![possible output](https://i.imgur.com/sUflTEL.png)
-
-----------
-    
-**benchmarking**:
-
-```cpp
-template<typename T>
-bool is_prime(T value) {
-	qpl::begin_benchmark("is_prime", "< 5 check");
-	if (value < 5u) {
-		qpl::end_benchmark();
-		return value == 2u || value == 3u;
-	}
-	qpl::end_benchmark();
-
-	qpl::begin_benchmark("is_prime", "setup");
-	qpl::u32 add = 2u;
-	auto sqrt = std::sqrt(value);
-	qpl::end_benchmark();
-
-
-	for (qpl::u32 i = 5u; i < sqrt; i += add) {
-		qpl::begin_benchmark("is_prime", "divisibility check");
-		if (value % i == 0) {
-			qpl::end_benchmark();
-			return false;
-		}
-		qpl::end_benchmark();
-
-		qpl::begin_benchmark("is_prime", "subtract");
-		add = 6u - add;
-		qpl::end_benchmark();
-	}
-	return true;
-}
-
-
-int main() {
-	while (true) {
-		auto n = qpl::random(1, 100'000);
-		auto b = is_prime(n);
-
-		if (qpl::get_time_signal(0.2)) {
-			qpl::clear_console();
-			qpl::print_benchmark();
-		}
-	}
-}
-```
-possible output:
-
-![possible output](https://i.imgur.com/r4Qen97.png)
-
-Benchmarks shouldn't be used inside of eachother at critical code pieces, as they have their own execution cost.
-They also could lead to branch prediction misses and therefore falsify the actual results.
-
-----------
-    
-**filesys**:
-
-```cpp
-#include <qpl/qpl.hpp>
-
-int main() try {
-
-	auto path = qpl::filesys::path("c:/test/");
-	path.print_tree();
+auto e = qpl::random_element(v);
 	
-	qpl::println("\n copying c:/test/a/a1/ to c:/test/c/ ...\n");
-
-	path.go_into("a/a1/");
-	path.copy("c:/test/c/");
-
-	path.go_directories_back(2);
-	path.print_tree();
-
-	qpl::println("\nselecting where file_name contains \"a1\" and excluding folders not named /\"c\"/ ...\n");
-
-	auto list = path.search_recursively_where_file_name_contains("a1");
-	list.list_keep_where_lambda([](qpl::filesys::path p) {
-		return p.get_parent_branch().get_name() == "c";
-		});
-	list.print_tree();
-
-
-	qpl::println("\nfrom selection, renaming \"a1\" instances to \"c\" ...\n");
-
-	qpl::filesys::partially_rename_all(list, "a1", "c");
-	list.print_tree();
-
-	qpl::println("\nc:/test/\n");
-
-	path.print_tree();
-
-	qpl::println("\ndeleting content of c:/test/c/ ...\n");
-
-
-	qpl::filesys::remove_all(qpl::filesys::path("c:/test/c/").make_directory_range_tree());
-	path.print_tree();
-	qpl::system_pause();
-
-} 
-catch (std::exception& any) {
-	qpl::println(any.what());
-}
+qpl::println("n = ", n);
+qpl::println("f = ", f);
+qpl::println("v = ", v);
+qpl::println("e = ", e);
 ```
 
-possible output:
-
-![possible output](https://i.imgur.com/cq0BtXG.png)
-
-----------
-
-**2D - SFML example**: 
-
+**string**:
 ```cpp
-#include <qpl/qpl.hpp>
-
-struct game_state : qsf::base_state {
-
-	void init() override {
-		this->lines.thickness = 10;
-	}
-	void updating() override {
-		if (this->event.left_mouse_clicked()) {
-			auto pos = this->event.mouse_position();
-			auto radius = qpl::random(20, 30);
-			auto color = qsf::get_random_color();
-
-
-			this->lines.add_thick_line(pos, color);
-			this->circles.add_circle(pos, radius, color);
-		}
-	}
-	void drawing() override {
-		this->draw(this->lines);
-		this->draw(this->circles);
-	}
-
-	qsf::vcircles circles;
-	qsf::vthick_lines lines;
-};
-
-
-int main() {
-
-
-	qsf::framework framework;
-	framework.set_title("SFML lines & circles!");
-	framework.set_dimension({ 1280u, 720u });
-
-	framework.add_state<game_state>();
-	framework.game_loop();
+qpl::println(qpl::to_string("Hello World"));
+qpl::println(qpl::to_string("a", 5.5, 'x'));
+qpl::println(qpl::to_string(std::vector{ 1, 2, 3 }));
+qpl::println(qpl::to_string(std::array{ 4, 5, 6 }));
+qpl::println(qpl::hex_string(5910));
+qpl::println(qpl::binary_string(5910));
+qpl::println(qpl::base_string(5910, 7));
+qpl::println(qpl::string_cast<qpl::u32>("5012"));
+qpl::println(qpl::string_cast<qpl::u32>(std::vector{"123", "700", "1337"}));
+qpl::println(qpl::split_string("a b c d e f g", ' '));
+qpl::println(qpl::split_string("I.\nListen.\n.To.\nYou.\n", ".\n"));
+qpl::println(qpl::to_upper("uppercase"));
+qpl::println(qpl::to_lower("LOWERCASE"));
+qpl::println(qpl::random_lowercase_number_string(50));
+for (qpl::u32 i = 0u; i < 5; ++i) {
+	auto s = qpl::random_lowercase_uppercase_string(qpl::random(10, 15));
+	qpl::println(qpl::str_rspaced(s, 20, ' '));
+}
+for (qpl::u32 i = 0u; i < 5; ++i) {
+	auto n = std::pow(10, qpl::random(2.0, 30.0));
+	qpl::println(qpl::str_rspaced(qpl::big_number_string(n), 20, '_'));
 }
 ```
+output:
+```
+Hello World
+a5.5x
+{1, 2, 3}
+{4, 5, 6}
+0x1716
+1011100010110
+23142
+5012
+{123, 700, 1337}
+{a, b, c, d, e, f, g}
+{I, Listen, To, You}
+UPPERCASE
+lowercase
+w0v39gk7zy1qu21fdgq24x5e5n3j97z18264248241nl8a3l0c
+     VKGtlKdifaUWbjj
+     JxNoqBkjZXNeRkx
+      hkCVtrAMlBmQbt
+        yUMsJlUmAttc
+       oOzfflfuqLKrs
+___________252.06trn
+_____________353.09k
+___________39.42sext
+__________10.14quint
+____________1.09quad
+```
 
-clicking on screen addds connected cirlcles:
+output:
+```
+n = 64
+f = 1.65601
+v = {2, 1, 3}
+e = 3
+```
 
-![possible output](https://i.imgur.com/Yek7ojA.png)
+<more examples will appear here soon>
 
 ----------
 
