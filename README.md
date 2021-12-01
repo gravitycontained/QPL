@@ -136,14 +136,6 @@ __________10.14quint
 ____________1.09quad
 ```
 
-output:
-```
-n = 64
-f = 1.65601
-v = {2, 1, 3}
-e = 3
-```
-
 **more examples will appear here soon**
 
 ----------
