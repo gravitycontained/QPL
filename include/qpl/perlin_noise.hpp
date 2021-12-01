@@ -33,20 +33,20 @@ namespace qpl {
 			return this->m_seed;
 		}
 
-		qpl::ibit<bits> noise2(qpl::ibit<bits> x, qpl::ibit<bits> y) {
+		qpl::ibit<bits> noise2(qpl::ibit<bits> x, qpl::ibit<bits> y) const {
 			qpl::ibit<bits> tmp = this->m_hash[y % N];
 			return this->m_hash[(tmp + x) % N];
 		}
 
-		qpl::fbit<bits> lin_inter(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> s) {
+		qpl::fbit<bits> lin_inter(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> s) const {
 			return x + s * (y - x);
 		}
 
-		qpl::fbit<bits> smooth_inter(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> s) {
+		qpl::fbit<bits> smooth_inter(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> s) const {
 			return lin_inter(x, y, s * s * (3 - 2 * s));
 		}
 
-		qpl::fbit<bits> noise2d(qpl::fbit<bits> x, qpl::fbit<bits> y) {
+		qpl::fbit<bits> noise2d(qpl::fbit<bits> x, qpl::fbit<bits> y) const {
 			auto x_int = static_cast<qpl::ibit<bits>>(x);
 			auto y_int = static_cast<qpl::ibit<bits>>(y);
 			auto x_frac = x - x_int;
@@ -61,7 +61,7 @@ namespace qpl {
 			return smooth_inter(low, high, y_frac);
 		}
 
-		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::u32 depth) {
+		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::u32 depth) const {
 			qpl::fbit<bits> xa = x * freq;
 			qpl::fbit<bits> ya = y * freq;
 			qpl::fbit<bits> amp = 1.0;
@@ -78,13 +78,13 @@ namespace qpl {
 
 			return fin / div;
 		}
-		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y) {
+		qpl::fbit<bits> get(qpl::fbit<bits> x, qpl::fbit<bits> y) const {
 			return this->get(x, y, this->frequency, this->depth);
 		}
-		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::u32 depth) {
+		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y, qpl::fbit<bits> freq, qpl::u32 depth) const {
 			return this->get(x, y, freq, depth);
 		}
-		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y) {
+		qpl::fbit<bits> operator()(qpl::fbit<bits> x, qpl::fbit<bits> y) const {
 			return this->get(x, y, this->frequency, this->depth);
 		}
 

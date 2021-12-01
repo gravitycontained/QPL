@@ -1044,5 +1044,13 @@ namespace qpl {
 	using hitbox = hitbox_t<qpl::f32>;
 }
 
+namespace std {
+	template <typename T>
+	struct hash<qpl::vector2<T>> {
+		qpl::u64 operator()(const qpl::vector2<T>& k) const {
+			return ((std::hash<qpl::u64>()(k.x) ^ (std::hash<qpl::u64>()(k.y) << 32)));
+		}
+	};
+}
 
 #endif

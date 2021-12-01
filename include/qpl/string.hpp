@@ -64,10 +64,10 @@ namespace qpl {
 
 
 	template<typename T>
-	concept is_printable_c = is_cout_printable_c<T> || is_wcout_printable_c<T>;
+	concept is_printable_c = is_cout_printable_c<T> || is_wcout_printable_c<T> || (qpl::is_container_c<T> && (is_cout_printable_c<qpl::container_subtype<T>> || is_wcout_printable_c<qpl::container_subtype<T>>));
 
 	template<typename T>
-	concept is_readable_c = is_cin_readable_c<T> || is_wcin_readable_c<T>;
+	concept is_readable_c = is_cin_readable_c<T> || is_wcin_readable_c<T> || (qpl::is_container_c<T> && (is_cin_readable_c<qpl::container_subtype<T>> || is_wcin_readable_c<qpl::container_subtype<T>>));
 
 	template<typename... Args>
 	constexpr bool is_printable() {
@@ -90,9 +90,21 @@ namespace qpl {
 	std::string to_string(Args&&... args) {
 
 		std::ostringstream stream;
-
+		
 		constexpr auto add_to_stream = [&]<typename T>(T value) {
-			if constexpr (qpl::is_wstring_type<T>()) {
+			if constexpr (qpl::is_container_c<std::decay_t<T>> && !qpl::is_same<std::string, std::decay_t<T>>() && !qpl::is_same<std::wstring, std::decay_t<T>>()) {
+				stream << '{';
+				bool first = true;
+				for (auto& i : value) {
+					if (!first) {
+						stream << ", ";
+					}
+					stream << i;
+					first = false;
+				}
+				stream << '}';
+			}
+			else if constexpr (qpl::is_wstring_type<T>()) {
 				stream << qpl::wstring_to_string(value);
 			}
 			else {
@@ -101,7 +113,9 @@ namespace qpl {
 		};
 
 		(add_to_stream(args), ...);
-		
+
+
+
 		return stream.str();
 	}
 	template<typename T> requires qpl::is_wcout_printable_c<T>
@@ -754,7 +768,19 @@ namespace qpl {
 
 	template<typename T> requires (qpl::is_printable<T>())
 	inline void single_print(T&& value) {
-		if constexpr (!qpl::is_derived<std::decay_t<T>, qpl::print_effect>() && !qpl::is_same<std::decay_t<T>, qpl::color>() && !qpl::is_same<std::decay_t<T>, qpl::background>() && !qpl::is_same<std::decay_t<T>, qpl::foreground>() && !qpl::is_same<std::decay_t<T>, qpl::cc>()) {
+		if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_same<std::string, std::decay_t<T>>() && !qpl::is_same<std::wstring, std::decay_t<T>>()) {
+			bool first = true;
+			std::cout << "{";
+			for (auto& i : value) {
+				if (!first) {
+					std::cout << ", ";
+				}
+				first = false;
+				std::cout << i;
+			}
+			std::cout << "}";
+		}
+		else if constexpr (!qpl::is_derived<std::decay_t<T>, qpl::print_effect>() && !qpl::is_same<std::decay_t<T>, qpl::color>() && !qpl::is_same<std::decay_t<T>, qpl::background>() && !qpl::is_same<std::decay_t<T>, qpl::foreground>() && !qpl::is_same<std::decay_t<T>, qpl::cc>()) {
 			bool backslashn = false;
 			bool newln = false;
 			if constexpr (qpl::is_same<std::decay_t<T>, char>()) {
@@ -809,8 +835,7 @@ namespace qpl {
 				qpl::detail::next_println_space = false;
 			}
 		}
-
-		if constexpr (qpl::is_derived<std::decay_t<T>, qpl::print_effect>()) {
+		else if constexpr (qpl::is_derived<std::decay_t<T>, qpl::print_effect>()) {
 			if constexpr (qpl::is_same<std::decay_t<T>, cspace>()) {
 				qpl::detail::next_print_space = value.value;
 			}
@@ -1809,6 +1834,15 @@ namespace qpl {
 		else if constexpr (std::is_same_v<T, qpl::u64>) {
 			return std::stoull(string);
 		}
+	}
+
+	template<typename T, typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+	std::vector<T> string_cast(const C& container) {
+		std::vector<T> result(container.size());
+		for (qpl::u32 i = 0u; i < container.size(); ++i) {
+			result[i] = qpl::string_cast<T>(container[i]);
+		}
+		return result;
 	}
 
 	template<typename T>

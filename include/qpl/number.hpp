@@ -9519,7 +9519,7 @@ namespace qpl {
 		}
 
 		template<typename T> requires (qpl::is_arithmetic<T>())
-			constexpr void set(T value) {
+		constexpr void set(T value) {
 			this->mantissa = qpl::f64_cast(value);
 			this->exponent = 0;
 			this->check();
@@ -9631,6 +9631,45 @@ namespace qpl {
 			this->check();
 		}
 
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr bool greater(T value) {
+			return this->greater(big_float(value));
+		}
+		constexpr bool greater(big_float value) {
+			if (this->exponent > value.exponent) {
+				return true;
+			}
+			if (this->exponent < value.exponent) {
+				return false;
+			}
+			return this->mantissa > value.mantissa;
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr bool less(T value) {
+			return this->less(big_float(value));
+		}
+		constexpr bool less(big_float value) {
+			if (this->exponent > value.exponent) {
+				return false;
+			}
+			if (this->exponent < value.exponent) {
+				return true;
+			}
+			return this->mantissa < value.mantissa;
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr bool equal(T value) {
+			return this->equal(big_float(value));
+		}
+		constexpr bool equal(big_float value) {
+			if (this->exponent != value.exponent) {
+				return false;
+			}
+			return this->mantissa == value.mantissa;
+		}
+
+
+
 		template<typename T>
 		constexpr qpl::big_float& operator=(T value) {
 			this->set(value);
@@ -9679,6 +9718,32 @@ namespace qpl {
 		constexpr qpl::big_float& operator/=(T value) {
 			this->div(value);
 			return *this;
+		}
+
+
+		template<typename T>
+		constexpr bool operator>(T value) {
+			return this->greater(value);
+		}
+		template<typename T>
+		constexpr bool operator<(T value) {
+			return this->less(value);
+		}
+		template<typename T>
+		constexpr bool operator>=(T value) {
+			return !this->less(value);
+		}
+		template<typename T>
+		constexpr bool operator<=(T value) {
+			return !this->greater(value);
+		}
+		template<typename T>
+		constexpr bool operator==(T value) {
+			return this->equal(value);
+		}
+		template<typename T>
+		constexpr bool operator!=(T value) {
+			return !this->equal(value);
 		}
 	};
 

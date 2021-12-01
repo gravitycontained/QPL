@@ -854,13 +854,18 @@ namespace qsf {
 		this->position = position;
 		this->geometry_changed = true;
 	}
+	void qsf::vsmooth_rectangle::set_center(qpl::vector2f position) {
+		this->position = position - this->dimension / 2;
+	}
 	void qsf::vsmooth_rectangle::set_slope(qpl::f64 slope) {
 		this->slope = slope;
 		this->geometry_changed = true;
 	}
 	void qsf::vsmooth_rectangle::set_color(qsf::rgb color) {
+		if (this->color != color) {
+			this->color_changed = true;
+		}
 		this->color = color;
-		this->color_changed = true;
 	}
 	void qsf::vsmooth_rectangle::set_slope_dimension(qpl::vector2f dimension) {
 		this->slope_dim = dimension;
@@ -875,6 +880,9 @@ namespace qsf {
 	}
 	qpl::vector2f qsf::vsmooth_rectangle::get_position() const {
 		return this->position;
+	}
+	qpl::vector2f qsf::vsmooth_rectangle::get_center() const {
+		return this->position + this->dimension / 2;
 	}
 	qpl::f64 qsf::vsmooth_rectangle::get_slope() const {
 		return this->slope;
@@ -903,8 +911,9 @@ namespace qsf {
 	}
 	qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) {
 		if (smooth_rectangle.color_changed) {
+			smooth_rectangle.color_changed = false; 
+			smooth_rectangle.geometry_changed = true;
 			this->polygon.set_color(smooth_rectangle.color);
-			smooth_rectangle.color_changed = false;
 		}
 		if (!smooth_rectangle.geometry_changed) {
 			return *this;
@@ -3085,6 +3094,9 @@ namespace qsf {
 	void qsf::tile_map::set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width) {
 		this->set_texture_ptr(texture, qpl::vector2u(texture_tile_width, texture_tile_width));
 	}
+	void qsf::tile_map::set_position(qpl::vector2f position) {
+		this->position = position;
+	}
 
 	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width, qsf::rgb color) {
 		if (!this->texture_ptr_set) {
@@ -3122,10 +3134,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				auto tex_0 = qpl::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
 				auto tex_1 = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
@@ -3196,10 +3208,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[chunk_index * 4 + 0].color = color;
 				chunk[chunk_index * 4 + 1].color = color;
@@ -3308,10 +3320,10 @@ namespace qsf {
 
 				auto diagonal = std::sqrt(std::pow(this->position_tile_dimension.x, 2) + std::pow(this->position_tile_dimension.y, 2));
 				auto angle = tile.second + (qpl::pi * 1.25);
-				auto pos_1 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
-				auto pos_2 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
-				auto pos_3 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
-				auto pos_4 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+				auto pos_1 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
 
 				chunk[chunk_index * 4 + 0].position = pos_1;
 				chunk[chunk_index * 4 + 1].position = pos_2;
@@ -3347,10 +3359,10 @@ namespace qsf {
 
 				auto diagonal = std::sqrt(std::pow(this->position_tile_dimension.x, 2) + std::pow(this->position_tile_dimension.y, 2));
 				auto angle = tile.second + (qpl::pi * 1.25);
-				auto pos_1 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
-				auto pos_2 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
-				auto pos_3 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
-				auto pos_4 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+				auto pos_1 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
 
 				chunk[chunk_index * 4 + 0].position = pos_1;
 				chunk[chunk_index * 4 + 1].position = pos_2;
@@ -3458,10 +3470,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[chunk_index * 4 + 0].texCoords = qpl::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
 				chunk[chunk_index * 4 + 1].texCoords = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
@@ -3483,10 +3495,10 @@ namespace qsf {
 
 				auto chunk_index = ((i % width) % this->max_chunk_size.x) + ((i / width) % this->max_chunk_size.y) * this->max_chunk_size.x;
 
-				chunk[chunk_index * 4 + 0].position = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 1].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 2].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				chunk[chunk_index * 4 + 3].position = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[chunk_index * 4 + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[chunk_index * 4 + 0].color = color;
 				chunk[chunk_index * 4 + 1].color = color;
@@ -3547,10 +3559,10 @@ namespace qsf {
 				auto tile_y = (tile.first / texture_row_tile_count);
 
 
-				auto pos_0 = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				auto pos_1 = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				auto pos_2 = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				auto pos_3 = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				auto pos_0 = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_1 = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_2 = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				auto pos_3 = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].position = pos_0;
 				chunk[ctr + 1].position = pos_1;
@@ -3631,10 +3643,10 @@ namespace qsf {
 				auto tile_x = (tile.first % texture_row_tile_count);
 				auto tile_y = (tile.first / texture_row_tile_count);
 
-				auto pos_0 = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				auto pos_1 = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				auto pos_2 = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				auto pos_3 = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				auto pos_0 = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_1 = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				auto pos_2 = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				auto pos_3 = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].position = pos_0;
 				chunk[ctr + 1].position = pos_1;
@@ -3752,10 +3764,10 @@ namespace qsf {
 				auto middle = qpl::vector2f(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y) + this->position_tile_dimension / 2;
 
 				auto angle = ((tile.second / 180) * qpl::pi) + (qpl::pi * 1.25);
-				auto pos_1 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
-				auto pos_2 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
-				auto pos_3 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
-				auto pos_4 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+				auto pos_1 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
 
 				chunk[ctr + 0].position = pos_1;
 				chunk[ctr + 1].position = pos_2;
@@ -3795,10 +3807,10 @@ namespace qsf {
 				auto middle = qpl::vector2f(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y) + this->position_tile_dimension / 2;
 
 				auto angle = tile.second + (qpl::pi * 1.25);
-				auto pos_1 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
-				auto pos_2 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
-				auto pos_3 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
-				auto pos_4 = middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
+				auto pos_1 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.0)), std::sin(angle + (qpl::pi * 0.0))) * diagonal / 2;
+				auto pos_2 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 0.5)), std::sin(angle + (qpl::pi * 0.5))) * diagonal / 2;
+				auto pos_3 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.0)), std::sin(angle + (qpl::pi * 1.0))) * diagonal / 2;
+				auto pos_4 = this->position + middle + qpl::vector2f(std::cos(angle + (qpl::pi * 1.5)), std::sin(angle + (qpl::pi * 1.5))) * diagonal / 2;
 
 				chunk[ctr + 0].position = pos_1;
 				chunk[ctr + 1].position = pos_2;
@@ -3868,10 +3880,10 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				chunk[ctr + 0].position = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[ctr + 1].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[ctr + 2].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				chunk[ctr + 3].position = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[ctr + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[ctr + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].texCoords = qpl::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
 				chunk[ctr + 1].texCoords = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
@@ -3898,10 +3910,10 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				chunk[ctr + 0].position = qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[ctr + 1].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
-				chunk[ctr + 2].position = qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
-				chunk[ctr + 3].position = qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[ctr + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+				chunk[ctr + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+				chunk[ctr + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
 
 				chunk[ctr + 0].color = color;
 				chunk[ctr + 1].color = color;
@@ -3965,6 +3977,23 @@ namespace qsf {
 	}
 	void qsf::tile_map::clear() {
 		this->chunks.clear();
+	}
+
+	void qsf::small_tile_map::set_texture(const sf::Texture& texture, qpl::u32 texture_tile_width) {
+		this->texture_ptr = &texture;
+		this->texture_tile_dimension = qpl::vec(texture_tile_width, texture_tile_width);
+	}
+	void qsf::small_tile_map::set_position(qpl::vector2f position) {
+		this->position = position;
+	}
+	void qsf::small_tile_map::set_scale(qpl::vector2f scale) {
+		this->scale = scale;
+	}
+	void qsf::small_tile_map::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		if (this->vertices.getVertexCount()) {
+			states.texture = this->texture_ptr;
+			window.draw(this->vertices, states);
+		}
 	}
 
 	void qsf::vgraph::draw(sf::RenderTarget& window, sf::RenderStates states) const {

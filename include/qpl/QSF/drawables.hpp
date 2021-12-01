@@ -577,6 +577,7 @@ namespace qsf {
 
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_slope(qpl::f64 slope);
 		QPLDLL void set_color(qsf::rgb color);
 		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
@@ -584,6 +585,7 @@ namespace qsf {
 
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL qpl::f64 get_slope() const;
 		QPLDLL qsf::rgb get_color() const;
 		QPLDLL qpl::vector2f get_slope_dimension() const;
@@ -1715,6 +1717,7 @@ namespace qsf {
 
 		QPLDLL void set_texture_ptr(const sf::Texture& texture, qpl::vector2u texture_tile_dimension);
 		QPLDLL void set_texture_ptr(const sf::Texture& texture, qpl::u32 texture_tile_width);
+		QPLDLL void set_position(qpl::vector2f position);
 
 		//pair.first = index - pair.second = rotation (0-7)
 		QPLDLL void create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices_and_rotations, qpl::size index_width, qsf::rgb color);
@@ -1745,6 +1748,97 @@ namespace qsf {
 		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size index_width, qsf::rgb color, qpl::u32 skip_index = 0u);
 		QPLDLL void create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size index_width, qpl::u32 skip_index = 0u);
 
+		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+		void create_skip_empty(const C& indices, qpl::size index_width, qpl::u32 skip_index = 0u, qsf::rgb color = qsf::rgb::white) {
+			if (!this->texture_ptr_set) {
+				qpl::println("tile_map::create: texture_ptr not set");
+				return;
+			}
+
+			this->chunks.clear();
+			this->color = color;
+
+			auto chunk_width = (index_width - 1) / this->max_chunk_size.x + 1;
+			auto chunk_height = (indices.size() / index_width - 1) / this->max_chunk_size.y + 1;
+			auto chunk_dim = chunk_width * chunk_height;
+
+			this->chunk_width_count = chunk_width;
+			this->chunks.resize(chunk_dim);
+			for (auto& chunk : this->chunks) {
+				chunk.setPrimitiveType(sf::Quads);
+			}
+
+			auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
+
+			qpl::u32 ctr = 0;
+			if (color == qsf::rgb::white) {
+				for (qpl::u32 i = 0; i < indices.size(); ++i) {
+					auto index = indices[i];
+					if (index == skip_index) {
+						continue;
+					}
+					auto chunk_x = (i % index_width) / this->max_chunk_size.x;
+					auto chunk_y = (i / index_width) / this->max_chunk_size.y;
+					auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+					auto& chunk = this->chunks[chunk_index];
+					auto ctr = chunk.getVertexCount();
+					chunk.resize(ctr + 4);
+
+					auto [y, x] = qpl::div_mod(i, index_width);
+
+					auto tile_x = (index % texture_row_tile_count);
+					auto tile_y = (index / texture_row_tile_count);
+
+					chunk[ctr + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+					chunk[ctr + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+					chunk[ctr + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+					chunk[ctr + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+
+					chunk[ctr + 0].texCoords = qpl::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+					chunk[ctr + 1].texCoords = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+					chunk[ctr + 2].texCoords = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+					chunk[ctr + 3].texCoords = qpl::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				}
+			}
+			else {
+				for (qpl::u32 i = 0; i < indices.size(); ++i) {
+					auto index = indices[i];
+					if (index == skip_index) {
+						continue;
+					}
+
+					auto chunk_x = (i % index_width) / this->max_chunk_size.x;
+					auto chunk_y = (i / index_width) / this->max_chunk_size.y;
+					auto chunk_index = chunk_x + chunk_y * chunk_width;
+
+					auto& chunk = this->chunks[chunk_index];
+					auto ctr = chunk.getVertexCount();
+					chunk.resize(ctr + 4);
+
+					auto [y, x] = qpl::div_mod(i, index_width);
+					auto tile_x = (index % texture_row_tile_count);
+					auto tile_y = (index / texture_row_tile_count);
+
+					chunk[ctr + 0].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+					chunk[ctr + 1].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, y * this->position_tile_dimension.y);
+					chunk[ctr + 2].position = this->position + qpl::vector2u((x + 1) * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+					chunk[ctr + 3].position = this->position + qpl::vector2u(x * this->position_tile_dimension.x, (y + 1) * this->position_tile_dimension.y);
+
+					chunk[ctr + 0].color = color;
+					chunk[ctr + 1].color = color;
+					chunk[ctr + 2].color = color;
+					chunk[ctr + 3].color = color;
+
+					chunk[ctr + 0].texCoords = qpl::vector2u(tile_x * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+					chunk[ctr + 1].texCoords = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, tile_y * this->texture_tile_dimension.y);
+					chunk[ctr + 2].texCoords = qpl::vector2u((tile_x + 1) * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+					chunk[ctr + 3].texCoords = qpl::vector2u(tile_x * this->texture_tile_dimension.x, (tile_y + 1) * this->texture_tile_dimension.y);
+				}
+			}
+
+		}
+
 		QPLDLL void set_color(qsf::rgb color);
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
@@ -1760,11 +1854,158 @@ namespace qsf {
 		bool texture_ptr_set = false;
 		qpl::vector2u texture_tile_dimension;
 		qpl::vector2u position_tile_dimension;
+		qpl::vector2f position;
 
 		qsf::rgb color;
 	};
 
+	namespace detail {
+		template<typename T>
+		concept has_light_c = requires(const T x) {
+			{x.light() } -> std::convertible_to<qpl::f64>;
+		};
 
+		template<typename T>
+		constexpr bool has_light() {
+			return has_light_c<T>;
+		}
+	}
+
+	struct small_tile_map {
+
+
+		sf::VertexArray vertices;
+		qpl::vector2f position;
+		const sf::Texture* texture_ptr;
+		qpl::vector2f scale = { 1, 1 };
+		qpl::vector2u texture_tile_dimension;
+
+		QPLDLL void set_texture(const sf::Texture& texture, qpl::u32 texture_tile_width);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_scale(qpl::vector2f scale);
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+		void create(const C& indices, qpl::size index_width) {
+			if (!this->texture_ptr) {
+				qpl::println("small_tile_map::create: texture_ptr not set");
+				return;
+			}
+
+			this->vertices.clear();
+			this->vertices.setPrimitiveType(sf::Quads);
+			this->vertices.resize(indices.size() * 4);
+
+			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+
+			qpl::u32 ctr = 0;
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto index = indices[i];
+				//if (index == skip_index) {
+				//	continue;
+				//}
+
+				auto [y, x] = qpl::div_mod(i, index_width);
+
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				this->vertices[ctr + 0].position = this->position + qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 1].position = this->position + qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 2].position = this->position + qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 3].position = this->position + qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
+
+				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 2].texCoords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].texCoords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
+				ctr += 4;
+			}
+		}
+
+		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>() && qsf::detail::has_light<qpl::container_subtype<C>>())
+		void create_light(const C& indices, qpl::size index_width, qsf::rgb no_light = qsf::rgb::black, qsf::rgb full_light = qsf::rgb::white) {
+			if (!this->texture_ptr) {
+				qpl::println("small_tile_map::create: texture_ptr not set");
+				return;
+			}
+
+			this->vertices.clear();
+			this->vertices.setPrimitiveType(sf::Quads);
+			this->vertices.resize(indices.size() * 4);
+
+			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+
+			qpl::u32 ctr = 0;
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto index = indices[i];
+				//if (index == skip_index) {
+				//	continue;
+				//}
+
+				auto [y, x] = qpl::div_mod(i, index_width);
+
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				this->vertices[ctr + 0].position = this->position + qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 1].position = this->position + qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 2].position = this->position + qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 3].position = this->position + qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
+
+				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 2].texCoords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].texCoords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
+
+				this->vertices[ctr + 0].color = no_light.interpolated(full_light, indices[i].light());
+				this->vertices[ctr + 1].color = no_light.interpolated(full_light, indices[i].light());
+				this->vertices[ctr + 2].color = no_light.interpolated(full_light, indices[i].light());
+				this->vertices[ctr + 3].color = no_light.interpolated(full_light, indices[i].light());
+				ctr += 4;
+			}
+		}
+
+		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+		void create_skip_empty(const C& indices, qpl::size index_width, qpl::u32 skip_index) {
+			if (!this->texture_ptr) {
+				qpl::println("small_tile_map::create: texture_ptr not set");
+				return;
+			}
+
+			this->vertices.clear();
+			this->vertices.setPrimitiveType(sf::Quads);
+			this->vertices.resize(indices.size() * 4);
+
+			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+
+			qpl::u32 ctr = 0;
+			for (qpl::u32 i = 0; i < indices.size(); ++i) {
+				auto index = indices[i];
+				if (index == skip_index) {
+					continue;
+				}
+
+				auto [y, x] = qpl::div_mod(i, index_width);
+
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+				this->vertices[ctr + 0].position = this->position + qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 1].position = this->position + qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 2].position = this->position + qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 3].position = this->position + qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
+
+				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 2].texCoords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].texCoords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
+				ctr += 4;
+			}
+		}
+
+
+	};
 
 	struct vgraph {
 		

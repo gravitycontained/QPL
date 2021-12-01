@@ -822,6 +822,11 @@ namespace qpl {
 	constexpr T clamp_0_1(T value) {
 		return qpl::min(T{ 1 }, qpl::max({ 0 }, value));
 	}
+	template<typename T>
+	constexpr T change_range(T start, T end, T value, T value_min = 0, T value_max = 1) {
+		auto progress = (value - value_min) / (value_max - value_min);
+		return (start + (progress * (end - start)));
+	}
 
 	template<typename T1, typename T2>
 	constexpr T1 loop_index(T1 n, T2 size) {

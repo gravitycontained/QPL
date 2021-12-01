@@ -874,7 +874,7 @@ namespace qpl {
 				this->reversed = !this->reversed;
 			}
 		}
-		else if (this->get_progress() == 1) {
+		else if (this->get_progress() >= 1) {
 			this->reset(true);
 			this->reverse_progress_state = 1.0;
 			this->progress_value = 1.0;
