@@ -144,7 +144,7 @@ v = {2, 1, 3}
 e = 3
 ```
 
-<more examples will appear here soon>
+**more examples will appear here soon**
 
 ----------
 
