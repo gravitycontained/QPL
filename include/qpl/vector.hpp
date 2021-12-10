@@ -407,6 +407,20 @@ namespace qpl {
 		constexpr static vectorN one() {
 			return vectorN::values(1);
 		}
+		constexpr vectorN floor() const {
+			vectorN result = *this;
+			for (auto& i : result.data) {
+				i = std::floor(i);
+			}
+			return result;
+		}
+		constexpr vectorN ceil() const {
+			vectorN result = *this;
+			for (auto& i : result.data) {
+				i = std::ceil(i);
+			}
+			return result;
+		}
 
 		constexpr void clear() {
 			for (auto& i : this->data) {
@@ -703,7 +717,12 @@ namespace qpl {
 		template<typename U> requires (qpl::is_arithmetic<U>())
 		constexpr vectorN<T, N>& operator%=(U u) {
 			for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
-				this->data[i] %= static_cast<T>(u);
+				if constexpr (qpl::is_floating_point<T>()) {
+					this->data[i] = std::fmod(this->data[i], static_cast<T>(u));
+				}
+				else {
+					this->data[i] %= static_cast<T>(u);
+				}
 			}
 			return *this;
 		}

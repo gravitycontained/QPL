@@ -5490,7 +5490,6 @@ namespace qpl {
 			return this->decimal_string(seperation);
 		}
 
-
 		constexpr bit_proxy operator[](qpl::size index) {
 			return bit_proxy(this->memory, index);
 		}

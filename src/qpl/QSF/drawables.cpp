@@ -3991,6 +3991,7 @@ namespace qsf {
 	}
 	void qsf::small_tile_map::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		if (this->vertices.getVertexCount()) {
+			states.transform.translate(this->position);
 			states.texture = this->texture_ptr;
 			window.draw(this->vertices, states);
 		}

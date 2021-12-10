@@ -1948,10 +1948,10 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				this->vertices[ctr + 0].position = this->position + qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 1].position = this->position + qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 2].position = this->position + qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 3].position = this->position + qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 0].position = (qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension);
+				this->vertices[ctr + 1].position = (qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension);
+				this->vertices[ctr + 2].position = (qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension);
+				this->vertices[ctr + 3].position = (qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension);
 
 				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
 				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;

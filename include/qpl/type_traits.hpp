@@ -6,11 +6,15 @@
 #include <limits>
 #include <tuple>
 #include <string>
+#include <span>
 #include <limits>
 #include <utility>
 #include <typeinfo>
+#include <charconv>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
+#include <set>
+#include <map>
 
 namespace qpl {
 	template<qpl::u32 base, bool sign>
@@ -52,12 +56,10 @@ namespace qpl {
 	}
 #ifndef QPL_NO_FLOATS
 	template<typename T>
-	struct is_qpl_floating_point_impl : std::false_type
-	{};
+	struct is_qpl_floating_point_impl : std::false_type {};
 
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
-	struct is_qpl_floating_point_impl<qpl::floating_point<exponent_bits, mantissa_bits>> : std::true_type
-	{};
+	struct is_qpl_floating_point_impl<qpl::floating_point<exponent_bits, mantissa_bits>> : std::true_type {};
 
 	template<typename T>
 	constexpr bool is_qpl_floating_point() {
@@ -72,12 +74,10 @@ namespace qpl {
 #endif
 
 	template<typename T>
-	struct is_qpl_dynamic_integer_impl : std::false_type
-	{};
+	struct is_qpl_dynamic_integer_impl : std::false_type {};
 
 	template<qpl::u32 base, bool sign>
-	struct is_qpl_dynamic_integer_impl<qpl::dynamic_integer<base, sign>> : std::true_type
-	{};
+	struct is_qpl_dynamic_integer_impl<qpl::dynamic_integer<base, sign>> : std::true_type {};
 
 	template<typename T>
 	constexpr bool is_qpl_dynamic_integer() {
@@ -260,6 +260,18 @@ namespace qpl {
 	}
 
 	template<typename T>
+	constexpr bool is_long_string_type() {
+		return qpl::is_equal_to_any_decayed<T, const char*, char*, const char[], std::string, std::string_view, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
+	}
+	template<typename T>
+	constexpr bool is_long_standard_string_type() {
+		return qpl::is_equal_to_any_decayed<T, const char*, char*, const char[], std::string, std::string_view>();
+	}
+	template<typename T>
+	constexpr bool is_long_wstring_type() {
+		return qpl::is_equal_to_any_decayed<T, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
+	}
+	template<typename T>
 	constexpr bool is_string_type(T value) {
 		return is_string_type<T>();
 	}
@@ -406,111 +418,40 @@ namespace qpl {
 		qpl::default_error>;
 
 
-	template<typename T>
-	constexpr inline auto type_cast(T&& data) {
-		return static_cast<T>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::u8 u8_cast(T&& data) {
-		return static_cast<qpl::u8>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::i8 i8_cast(T&& data) {
-		return static_cast<qpl::i8>(data);
-	}
-
-	template<typename T>
-	constexpr inline qpl::u16 u16_cast(T&& data) {
-		return static_cast<qpl::u16>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::i16 i16_cast(T&& data) {
-		return static_cast<qpl::i16>(data);
-	}
-
-	template<typename T>
-	constexpr inline qpl::u32 u32_cast(T&& data) {
-		return static_cast<qpl::u32>(data);
-	}
-
-	template<typename T>
-	constexpr inline qpl::i32 i32_cast(T&& data) {
-		return static_cast<qpl::i32>(data);
-	}
-
-	template<typename T>
-	constexpr inline qpl::u64 u64_cast(T&& data) {
-		return static_cast<qpl::u64>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::i64 i64_cast(T&& data) {
-		return static_cast<qpl::i64>(data);
-	}
-
-
-	template<typename T>
-	constexpr inline qpl::size size_cast(T&& data) {
-		return static_cast<qpl::size>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::size signed_size_cast(T&& data) {
-		return static_cast<qpl::signed_cast_type<qpl::size>>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::char_type char_cast(T&& data) {
-		return static_cast<qpl::char_type>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::f32 f32_cast(T&& data) {
-		return static_cast<qpl::f32>(data);
-	}
-	template<typename T>
-	constexpr inline qpl::f64 f64_cast(T&& data) {
-		return static_cast<qpl::f64>(data);
-	}
-	template<typename T>
-	constexpr inline bool bool_cast(T&& data) {
-		return static_cast<bool>(data);
-	}
-
-
-
-
-	template<typename T>
-	auto signed_cast(T&& value) {
-		return static_cast<signed_cast_type<T>>(value);
-	}
-	template<typename T>
-	auto unsigned_cast(T&& value) {
-		return static_cast<unsigned_cast_type<T>>(value);
-	}
-	template<typename T>
-	auto int_cast(T&& value) {
-		return static_cast<int_cast_type<T>>(value);
-	}
-	template<typename T>
-	auto float_cast(T&& value) {
-		return static_cast<float_cast_type<T>>(value);
-	}
 
 	template<typename T, typename U>
 	constexpr bool equals_type(U&& value = U{}) {
 		return std::is_same_v<std::decay_t<U>, std::decay_t<T>>;
 	}
 
+
 	template<typename T>
-	concept is_container_c = requires(T a, const T b) {
+	concept is_read_container_c = requires(const T a) {
+		a.cbegin();
+		a.cend();
+	};
+	template<typename T>
+	constexpr bool is_read_container() {
+		return is_read_container_c<T>;
+	}
+	template<typename T>
+	concept is_write_container_c = requires(T a) {
 		a.begin();
 		a.end();
-		b.cbegin();
-		b.cend();
 	};
+	template<typename T>
+	constexpr bool is_write_container() {
+		return is_write_container_c<T>;
+	}
+	template<typename T>
+	concept is_container_c = is_read_container_c<T> || is_write_container_c<T>;
 
 	template<typename T>
 	constexpr bool is_container() {
 		return is_container_c<T>;
 	}
 
+	
 	template<typename T>
 	concept is_vector_like_c = requires(T a, const T b) {
 		requires is_container<T>();
@@ -523,6 +464,43 @@ namespace qpl {
 		return is_vector_like_c<T>;
 	}
 
+	template<typename C> requires (qpl::is_container<C>())
+	using container_subtype = std::decay_t<decltype(*(std::declval<C>().begin()))>;
+
+	template<typename C> requires (qpl::is_container<C>())
+	using container_subtype_with_const = std::remove_reference_t<decltype(*(std::declval<C>().begin()))>;
+
+	template<typename C> requires (qpl::is_container<C>())
+	using container_subtype_with_reference = std::remove_const_t<decltype(*(std::declval<C>().begin()))>;
+
+	namespace impl {
+		template<typename T, qpl::size N>
+		struct span_size_type {
+			constexpr static qpl::size value = N;
+		};
+		template<typename T, qpl::size N>
+		constexpr auto span_size(const std::span<T, N>& span) {
+			return span_size_type<T, N>{};
+		}
+	}
+	template<typename T>
+	constexpr auto span_size() {
+		return decltype(impl::span_size(std::declval<T>()))::value;
+	}
+	template<typename T>
+	struct span_size_type {
+		using type = typename decltype(impl::span_size(std::declval<T>()));
+	};
+
+	template<typename T>
+	constexpr bool is_span() {
+		//return (qpl::is_same<T, std::span<qpl::container_subtype_with_const<T>, qpl::span_size<T>()>>());
+		using span_t = std::span<qpl::container_subtype_with_const<T>, qpl::span_size<T>()>;
+		return qpl::is_same<T, span_t>();
+	}
+	template<typename T>
+	concept is_span_c = is_span<T>();
+
 
 	template<typename T>
 	concept has_size_c = requires(const T x) {
@@ -533,9 +511,372 @@ namespace qpl {
 		return has_size_c<T>;
 	}
 
+	template<typename T>
+	concept has_data_c = requires(T x) {
+		{ x.data() } -> std::same_as<qpl::container_subtype<T>*>;
+	};
+	template<typename T>
+	constexpr bool has_data() {
+		return has_data_c<T>;
+	}
+
+	template<typename T>
+	concept has_resize_c = requires(T & x) {
+		x.resize(qpl::size{});
+		x.size();
+	};
+	template<typename T>
+	constexpr bool has_resize() {
+		return has_resize_c<T>;
+	};
+
+	template<typename T>
+	concept has_reserve_c = requires(T & x) {
+		x.reserve(qpl::size{});
+	};
+	template<typename T>
+	constexpr bool has_reserve() {
+		return has_reserve_c<T>;
+	};
+	template<typename T>
+	concept has_square_brackets_c = requires(T & x, const T & y) {
+		x[qpl::size{}] = qpl::container_subtype<T>{};
+		y[qpl::size{}];
+	};
+	template<typename T>
+	constexpr bool has_square_brackets() {
+		return has_square_brackets_c<T>;
+	}
+
+	template<typename T>
+	concept has_at_c = requires(T & x, const T & y) {
+		x.at(qpl::size{}) = qpl::container_subtype<T>{};
+		y.at(qpl::size{});
+	};
+	template<typename T>
+	constexpr bool has_at() {
+		return has_at_c<T>;
+	}
+
+	template<typename T>
+	concept has_resize_and_access_c = has_resize_c<T> && (has_square_brackets_c<T> || has_at_c<T>);
+
+	template<typename T>
+	constexpr bool has_resize_and_access() {
+		return has_resize_and_access_c<T>;
+	}
+
+
+	template<typename T>
+	concept has_pushback_c = requires(T & x) {
+		x.push_back(qpl::container_subtype<T>{});
+	};
+	template<typename T>
+	constexpr bool has_pushback() {
+		return has_pushback_c<T>;
+	}
+
+	template<typename T>
+	concept has_insert_c = requires(T & x) {
+		x.insert(qpl::container_subtype<T>{});
+	};
+	template<typename T>
+	constexpr bool has_insert() {
+		return has_insert_c<T>;
+	}
+
+
+	template<typename T>
+	concept can_grow_c = has_pushback_c<T> || has_insert_c<T>;
+
+	template<typename T>
+	constexpr bool can_grow() {
+		return can_grow_c<T>;
+	}
+
+	template<typename T>
+	concept has_erase_c = requires(T & x) {
+		x.erase(qpl::container_subtype<T>{});
+	};
+	template<typename T>
+	constexpr bool has_erase() {
+		return has_erase_c<T>;
+	}
+
+	template<typename T>
+	concept has_less_c = requires(const T x) {
+		{ x < T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool has_less() {
+		return has_less_c<T>;
+	};
+
+	template<typename T>
+	concept has_greater_c = requires(const T x) {
+		{ x > T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool has_greater() {
+		return has_greater_c<T>;
+	};
+	template<typename T>
+	concept has_equal_c = requires(const T x) {
+		{ x == T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool has_equal() {
+		return has_equal_c<T>;
+	};
+	template<typename T>
+	concept has_not_equal_c = requires(const T x) {
+		{ x != T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool has_not_equal() {
+		return has_not_equal_c<T>;
+	};
+	template<typename T>
+	concept has_less_equal_c = requires(const T x) {
+		{ x <= T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool has_less_equal() {
+		return has_less_equal_c<T>;
+	};
+	template<typename T>
+	concept has_grater_equal_c = requires(const T x) {
+		{ x >= T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool has_grater_equal() {
+		return has_grater_equal_c<T>;
+	};
+
+	template<typename T, typename U>
+	concept is_equal_comparable_c = requires(const T x, const U y) {
+		{ x == y } -> std::same_as<bool>;
+	};
+	template<typename T, typename U>
+	constexpr bool is_equal_comparable() {
+		return is_equal_comparable_c<T, U>;
+	};
+	template<typename T, typename U>
+	concept is_not_equal_comparable_c = requires(const T x, const U y) {
+		{ x != y } -> std::same_as<bool>;
+	};
+	template<typename T, typename U>
+	constexpr bool is_not_equal_comparable() {
+		return is_not_equal_comparable_c<T, U>;
+	};
+
+	template<typename T, typename U>
+	concept is_greater_comparable_c = requires(const T x, const U y) {
+		{ x > y } -> std::same_as<bool>;
+	};
+	template<typename T, typename U>
+	constexpr bool is_greater_comparable() {
+		return is_greater_comparable_c<T, U>;
+	};
+	template<typename T, typename U>
+	concept is_less_comparable_c = requires(const T x, const U y) {
+		{ x < y } -> std::same_as<bool>;
+	};
+	template<typename T, typename U>
+	constexpr bool is_less_comparable() {
+		return is_less_comparable_c<T, U>;
+	};
+	template<typename T, typename U>
+	concept is_less_equal_comparable_c = requires(const T x, const U y) {
+		{ x <= y } -> std::same_as<bool>;
+	};
+	template<typename T, typename U>
+	constexpr bool is_less_equal_comparable() {
+		return is_less_equal_comparable_c<T, U>;
+	};
+	template<typename T, typename U>
+	concept is_greater_equal_comparable_c = requires(const T x, const U y) {
+		{ x >= y } -> std::same_as<bool>;
+	};
+	template<typename T, typename U>
+	constexpr bool is_greater_equal_comparable() {
+		return is_greater_equal_comparable_c<T, U>;
+	};
+
 
 
 	namespace impl {
+		template<typename T, typename F = void>
+		struct has_iterator_concept_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_iterator_concept_type<T, std::void_t<typename T::iterator::iterator_concept>> {
+			constexpr static bool value = true;
+			using type = typename T::iterator::iterator_concept;
+		};
+	}
+	template<typename T>
+	constexpr bool has_iterator_concept_type() {
+		return impl::has_iterator_concept_type<T>::value;
+	}
+
+
+	template<typename T>
+	constexpr bool is_contiguous_container() {
+		return qpl::is_same_decayed<impl::has_iterator_concept_type<T>::type, std::contiguous_iterator_tag>() && qpl::has_data<T>();
+	}
+	template<typename T>
+	concept is_contiguous_container_c = (is_contiguous_container<T>());
+
+
+
+	namespace impl {
+		template<typename T, typename F = void>
+		struct has_key_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_key_type<T, std::void_t<typename T::key_type>> {
+			constexpr static bool value = true;
+			using type = typename T::key_type;
+		};
+
+		template<typename T, typename F = void>
+		struct has_value_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_value_type<T, std::void_t<typename T::value_type>> {
+			constexpr static bool value = true;
+			using type = typename T::value_type;
+		};
+
+		template<typename T, typename F = void>
+		struct has_mapped_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_mapped_type<T, std::void_t<typename T::mapped_type>> {
+			constexpr static bool value = true;
+			using type = typename T::mapped_type;
+		};
+
+		template<typename T, typename F = void>
+		struct has_key_compare_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_key_compare_type<T, std::void_t<typename T::key_compare>> {
+			constexpr static bool value = true;
+			using type = typename T::key_compare;
+		};
+
+		template<typename T, typename F = void>
+		struct has_allocator_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_allocator_type<T, std::void_t<typename T::allocator_type>> {
+			constexpr static bool value = true;
+			using type = typename T::allocator_type;
+		};
+
+	}
+
+	template<typename T>
+	constexpr bool has_key_type() {
+		return impl::has_key_type<T>::value;
+	}
+
+	template<typename T>
+	constexpr bool has_value_type() {
+		return impl::has_value_type<T>::value;
+	}
+
+	template<typename T>
+	constexpr bool has_mapped_type() {
+		return impl::has_mapped_type<T>::value;
+	}
+
+	template<typename T>
+	constexpr bool has_key_compare_type() {
+		return impl::has_key_compare_type<T>::value;
+	}
+
+	template<typename T>
+	constexpr bool has_allocator_type() {
+		return impl::has_allocator_type<T>::value;
+	}
+
+	template<typename C> requires (qpl::is_container<C>())
+		using container_key_type = impl::has_key_type<C>::type;
+
+	template<typename C> requires (qpl::is_container<C>())
+		using container_value_type = impl::has_value_type<C>::type;
+
+	template<typename C> requires (qpl::is_container<C>())
+		using container_mapped_type = impl::has_mapped_type<C>::type;
+
+	template<typename C> requires (qpl::is_container<C>())
+		using container_allocator_type = impl::has_allocator_type<C>::type;
+
+	template<typename C> requires (qpl::is_container<C>())
+		using container_key_compare_type = impl::has_key_compare_type<C>::type;
+
+
+
+	template<typename T>
+	concept is_sortable_c = std::sortable<T>;
+
+	template<typename T>
+	constexpr bool is_sortable() {
+		return true || is_sortable_c<T>;
+	}
+	 
+	template<typename T>
+	concept is_iterator_c = requires(T a, const T& b) {
+		a.operator*();
+		++a;
+		{ b == T{} } -> std::same_as<bool>;
+		{ b != T{} } -> std::same_as<bool>;
+	};
+	template<typename T>
+	constexpr bool is_iterator() {
+		return is_iterator_c<T>;
+	}
+
+
+	template<typename C>
+	concept has_map_signature_c = (qpl::is_container<C>() && qpl::has_value_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>());
+
+	template<typename C>
+	constexpr bool has_map_signature() {
+		return has_map_signature_c<C>;
+	}
+	
+	namespace impl {
+		template <typename U, template <typename, typename...> class container, typename T, typename... rest>
+		auto container_subtype_cast(const container<T, rest...>& c) {
+			if constexpr (qpl::is_container<T>()) {
+				return container<decltype(container_subtype_cast<U>(T{}))>{};
+			}
+			else {
+				return container<U>{};
+			}
+		}
 
 		template<typename R, typename... A>
 		constexpr R return_type(R(*)(A...)) {
@@ -614,6 +955,177 @@ namespace qpl {
 	}
 
 
+
+	template<typename C, typename T>
+	struct container_subtype_cast_t {
+		using type = decltype(impl::container_subtype_cast<T>(std::declval<C>()));
+	}; 
+
+	template<typename C, typename T>
+	using container_subtype_cast = typename container_subtype_cast_t<C, T>::type;
+
+
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr bool is_sorted_container() {
+		if constexpr (qpl::has_key_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+			if constexpr (qpl::is_same_decayed<C, std::set<qpl::container_key_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+				return true;
+			}
+		}
+		if constexpr (qpl::has_key_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+			if constexpr (qpl::is_same_decayed<C, std::multiset<qpl::container_key_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+				return true;
+			}
+		}
+		if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+			if constexpr (qpl::is_same_decayed<C, std::map<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+				return true;
+			}
+		}
+		if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+			if constexpr (qpl::is_same_decayed<C, std::multimap<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr bool is_unsorted_container() {
+		return !qpl::is_sorted_container<C>();
+	}
+
+
+	template<typename T, typename U>
+	constexpr inline auto type_cast(U&& data) {
+		if constexpr (qpl::is_container<U>()) {
+			typename qpl::container_subtype_cast_t<U, T>::type result;
+			if constexpr (qpl::has_resize_and_access<qpl::container_subtype_cast_t<U, T>::type>()) {
+				result.resize(data.size());
+				for (qpl::size i = 0u; i < data.size(); ++i) {
+					if constexpr (qpl::has_square_brackets<qpl::container_subtype_cast_t<U, T>::type>()) {
+						result[i] = qpl::type_cast<T>(data[i]);
+					}
+					else if constexpr (qpl::has_at<qpl::container_subtype_cast_t<U, T>::type>()) {
+						result.at(i) = qpl::type_cast<T>(data.at(i));
+					}
+					else {
+						static_assert("type_cast: T has no [] nor .at()");
+					}
+				}
+			}
+			else {
+				for (const auto& i : data) {
+					if constexpr (qpl::has_pushback<qpl::container_subtype_cast_t<U, T>::type>()) {
+						result.push_back(qpl::type_cast<T>(i));
+					}
+					else if constexpr (qpl::has_insert<qpl::container_subtype_cast_t<U, T>::type>()) {
+						result.insert(qpl::type_cast<T>(i));
+					}
+					else {
+						static_assert("type_cast: T has no pushback nor insert");
+					}
+				}
+			}
+
+			return result;
+		}
+		else if constexpr (qpl::is_long_standard_string_type<U>()) {
+			std::string_view sv{ data };
+			T value;
+			std::from_chars(sv.data(), sv.data() + sv.size(), value);
+			return value;
+		}
+		else if constexpr (qpl::is_long_wstring_type<U>()) {
+			std::wstring_view sv{ data };
+			T value;
+			std::from_chars(sv.data(), sv.data() + sv.size(), value);
+			return value;
+		}
+		else {
+			return static_cast<T>(data);
+		}
+	}
+	template<typename T>
+	constexpr inline auto u8_cast(T&& data) {
+		return qpl::type_cast<qpl::u8>(data);
+	}
+	template<typename T>
+	constexpr inline auto i8_cast(T&& data) {
+		return qpl::type_cast<qpl::i8>(data);
+	}
+
+	template<typename T>
+	constexpr inline auto u16_cast(T&& data) {
+		return qpl::type_cast<qpl::u16>(data);
+	}
+	template<typename T>
+	constexpr inline auto i16_cast(T&& data) {
+		return qpl::type_cast<qpl::i16>(data);
+	}
+
+	template<typename T>
+	constexpr inline auto u32_cast(T&& data) {
+		return qpl::type_cast<qpl::u32>(data);
+	}
+
+	template<typename T>
+	constexpr inline auto i32_cast(T&& data) {
+		return qpl::type_cast<qpl::i32>(data);
+	}
+
+	template<typename T>
+	constexpr inline auto u64_cast(T&& data) {
+		return qpl::type_cast<qpl::u64>(data);
+	}
+	template<typename T>
+	constexpr inline auto i64_cast(T&& data) {
+		return qpl::type_cast<qpl::i64>(data);
+	}
+
+
+	template<typename T>
+	constexpr inline auto size_cast(T&& data) {
+		return qpl::type_cast<qpl::size>(data);
+	}
+	template<typename T>
+	constexpr inline auto signed_size_cast(T&& data) {
+		return static_cast<qpl::signed_cast_type<qpl::size>>(data);
+	}
+	template<typename T>
+	constexpr inline auto char_cast(T&& data) {
+		return qpl::type_cast<qpl::char_type>(data);
+	}
+	template<typename T>
+	constexpr inline auto f32_cast(T&& data) {
+		return qpl::type_cast<qpl::f32>(data);
+	}
+	template<typename T>
+	constexpr inline auto f64_cast(T&& data) {
+		return qpl::type_cast<qpl::f64>(data);
+	}
+	template<typename T>
+	constexpr inline auto bool_cast(T&& data) {
+		return qpl::type_cast<bool>(data);
+	}
+
+	template<typename T>
+	constexpr inline auto signed_cast(T&& value) {
+		return qpl::type_cast<signed_cast_type<T>>(value);
+	}
+	template<typename T>
+	constexpr inline auto unsigned_cast(T&& value) {
+		return qpl::type_cast<unsigned_cast_type<T>>(value);
+	}
+	template<typename T>
+	constexpr inline auto int_cast(T&& value) {
+		return qpl::type_cast<int_cast_type<T>>(value);
+	}
+	template<typename T>
+	constexpr inline auto float_cast(T&& value) {
+		return qpl::type_cast<float_cast_type<T>>(value);
+	}
+
 	template<typename F>
 	constexpr bool is_function(F&& function) {
 		return std::is_function_v<F>;
@@ -655,12 +1167,6 @@ namespace qpl {
 	template<typename F>
 	using function_type = decltype(impl::function_type(std::declval<F>()));
 
-
-	template<typename C>
-	using container_subtype = qpl::conditional<
-		qpl::if_true<qpl::is_container<C>()>, 
-		std::decay_t<decltype(*(std::declval<C>().begin()))>, 
-		qpl::default_error>;
 
 	template<class F>
 	constexpr qpl::size mantissa_bit_size() {

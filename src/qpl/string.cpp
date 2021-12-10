@@ -557,6 +557,30 @@ namespace qpl {
 		}
 		return result;
 	}
+	std::vector<std::string> qpl::split_string_whitespace(const std::string& string) {
+		std::vector<std::string> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (qpl::is_character_white_space(string[i])) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && qpl::is_character_white_space(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
+		}
+		return result;
+	}
 	std::vector<std::string> qpl::split_string(const std::string& string, const std::string& expression) {
 		std::vector<std::string> result;
 		std::smatch smatch;
@@ -733,6 +757,21 @@ namespace qpl {
 		iss >> std::noskipws >> i; // noskipws considers leading whitespace invalid
 		// Check the entire string was consumed and if either failbit or badbit is set
 		return iss.eof() && !iss.fail();
+	}
+	std::string qpl::big_number_string(std::string decimal_string) {
+
+		//const static std::array<std::string, 10> p_ones = { "", "un", "dou", "tre", "quat", "quin", "sex", "sept", "oct", "non" };
+		//const static std::array<std::string, 10> p_tens = { "dec", "vig", "trig", "quadrag", "quinquag", "sexag", "septuag", "octog", "nonag" };
+
+		auto leftover = decimal_string.length() % 3u;
+		std::ostringstream stream;
+		auto n = (decimal_string.length() - 1) / 3u;
+		stream << "(" << n << ")" << decimal_string.substr(0u, leftover) << " ";
+		for (auto i = leftover; i < decimal_string.length(); i += 3u) {
+			--n;
+			stream << "(" << n << ")" << decimal_string.substr(i, 3) << " ";
+		}
+		return stream.str();
 	}
 
 	std::string qpl::random_string_full_range(qpl::size length) {

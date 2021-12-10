@@ -47,8 +47,8 @@ namespace qpl {
 		}
 
 		qpl::fbit<bits> noise2d(qpl::fbit<bits> x, qpl::fbit<bits> y) const {
-			auto x_int = static_cast<qpl::ibit<bits>>(x);
-			auto y_int = static_cast<qpl::ibit<bits>>(y);
+			auto x_int = static_cast<qpl::ibit<bits>>(std::floor(x));
+			auto y_int = static_cast<qpl::ibit<bits>>(std::floor(y));
 			auto x_frac = x - x_int;
 			auto y_frac = y - y_int;
 

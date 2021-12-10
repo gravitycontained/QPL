@@ -6,6 +6,7 @@
 #include <qpl/string.hpp>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <filesystem>
 #include <string_view>
 
@@ -15,7 +16,15 @@ namespace qpl {
     };
     template<typename... Args>
     args_t args(Args&&... args) {
-        return args_t{ qpl::to_string_space(args...) };
+        std::ostringstream stream;
+        bool first = true;
+        for (auto& i : args) {
+            if (!first) {
+                stream << ' ';
+            }
+            stream << i;
+        }
+        return args_t{ stream.str()};
     }
 
     struct input_t {
@@ -23,7 +32,15 @@ namespace qpl {
     };
     template<typename... Args>
     input_t input(Args&&... args) {
-        return input_t{ qpl::to_string_space(args...) };
+        std::ostringstream stream;
+        bool first = true;
+        for (auto& i : args) {
+            if (!first) {
+                stream << ' ';
+            }
+            stream << i;
+        }
+        return input_t{ stream.str() };
     }
 
 #ifdef QPL_USE_BOOST

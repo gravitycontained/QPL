@@ -17,6 +17,8 @@
 #include <functional>
 #include <tuple>
 #include <span>
+#include <set>
+#include <unordered_set>
 
 
 namespace qpl {
@@ -527,6 +529,57 @@ namespace qpl {
 	}
 
 
+	template<typename C> requires(qpl::is_container<C>())
+		constexpr auto begin(C& container) {
+		if constexpr (qpl::is_read_container<C>() && qpl::is_write_container<C>()) {
+			return container.begin();
+		}
+		else if constexpr (qpl::is_read_container<C>()) {
+			return container.cbegin();
+		}
+		else if constexpr (qpl::is_write_container<C>()) {
+			return container.begin();
+		}
+	}
+	template<typename C> requires(qpl::is_container<C>())
+		constexpr auto cbegin(C& container) {
+		if constexpr (qpl::is_read_container<C>() && qpl::is_write_container<C>()) {
+			return container.cbegin();
+		}
+		else if constexpr (qpl::is_read_container<C>()) {
+			return container.cbegin();
+		}
+		else if constexpr (qpl::is_write_container<C>()) {
+			return container.begin();
+		}
+	}
+
+	template<typename C> requires(qpl::is_container<C>())
+		constexpr auto end(C& container) {
+		if constexpr (qpl::is_read_container<C>() && qpl::is_write_container<C>()) {
+			return container.end();
+		}
+		else if constexpr (qpl::is_read_container<C>()) {
+			return container.cend();
+		}
+		else if constexpr (qpl::is_write_container<C>()) {
+			return container.end();
+		}
+	}
+	template<typename C> requires(qpl::is_container<C>())
+		constexpr auto cend(C& container) {
+		if constexpr (qpl::is_read_container<C>() && qpl::is_write_container<C>()) {
+			return container.cend();
+		}
+		else if constexpr (qpl::is_read_container<C>()) {
+			return container.cend();
+		}
+		else if constexpr (qpl::is_write_container<C>()) {
+			return container.end();
+		}
+	}
+
+	
 	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
 		qpl::size container_size(const C& data) {
 		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
@@ -541,7 +594,7 @@ namespace qpl {
 		}
 	}
 	template<typename C> requires (qpl::is_container<C>())
-		constexpr qpl::size container_depth() {
+	constexpr qpl::size container_depth() {
 		return qpl::is_container<C> ?
 			(qpl::is_container<qpl::container_subtype<C>>() ? qpl::container_depth<qpl::container_subtype<C>>() + qpl::size{ 1 } : qpl::size{ 1 }) :
 			qpl::size{};
@@ -550,7 +603,7 @@ namespace qpl {
 
 
 	template<typename C> requires (qpl::is_container<C>())
-		auto container_sum(const C& data) {
+	constexpr auto container_sum(const C& data) {
 		auto sum = data[0];
 		for (qpl::u32 i = 1u; i < data.size(); ++i) {
 			sum += data[i];
@@ -674,16 +727,855 @@ namespace qpl {
 	}
 	template<typename C>
 	constexpr auto make_span(const C& container) {
-		return std::span(container.begin(), container.end());
+		return std::span(qpl::begin(container), qpl::end(container));
+	}
+	template<typename C> requires (qpl::is_span<C>())
+		constexpr void span_pop_front(C& span, qpl::size size = 1) {
+		auto begin = qpl::begin(span);
+		std::advance(begin, size);
+		span = std::span(begin, qpl::end(span));
+	}
+	template<typename C> requires (qpl::is_span<C>())
+		constexpr void span_pop_back(C& span, qpl::size size = 1) {
+		auto end = qpl::end(span);
+		std::advance(end, -qpl::signed_cast(size));
+		span = std::span(qpl::begin(span), end);
 	}
 
-
 	template<typename T, typename T1 = T>
-	std::vector<T> vector_0_to_n(T n, T1 shift = T{}) {
+	constexpr std::vector<T> vector_0_to_n(T n, T1 shift = T{}) {
 		std::vector<T> vec(n);
 		std::iota(vec.begin(), vec.end(), shift);
 		return vec;
 	}
+
+	template<typename C, typename F> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr void sort(C& container, F compare) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			return;
+		}
+		else if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+			for (auto& i : container) {
+				qpl::sort(i);
+			}
+		}
+		else {
+			std::sort(qpl::begin(container), qpl::end(container), compare);
+		}
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr void sort_less(C& container) {
+		qpl::sort(container, [](const auto& a, const auto& b) { return a < b; });
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr void sort_greater(C& container) {
+		qpl::sort(container, [](const auto& a, const auto& b) { return a > b; });
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr void sort(C& container) {
+		qpl::sort_less(container);
+	}
+
+	template<typename C> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr C sorted_less(const C& container) {
+		auto result = container;
+		qpl::sort_less(result);
+		return result;
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr C sorted_greater(const C& container) {
+		auto result = container;
+		qpl::sort_greater(result);
+		return result;
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr C sorted(const C& container) {
+		auto result = container;
+		qpl::sort(result);
+		return result;
+	}
+	template<typename C, typename F> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr C sorted(const C& container, F compare) {
+		auto result = container;
+		qpl::sort(result, compare);
+		return result;
+	}
+
+
+	template<typename C, typename F> requires (qpl::is_container<C>())
+	constexpr bool is_sorted(const C& container, F compare) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			auto begin = qpl::cbegin(container);
+			auto end = qpl::cend(container);
+			if (begin == end) { return true; }
+			--end;
+			if (begin == end) { return true; }
+			--end;
+			while (begin != end) {
+				auto c2 = begin;
+				++c2;
+				if constexpr (qpl::has_equal<qpl::container_subtype<C>>()) {
+					if (!(*c2 == *begin)) {
+						return !compare(*c2, *begin);
+					}
+				}
+				else {
+					auto equal = !compare(*c2, *begin) && !compare(*begin, *c2);
+					if (!equal) {
+						return !compare(*c2, *begin);
+					}
+				}
+				++begin;
+			}
+			return true;
+		}
+		else {
+			auto begin = qpl::cbegin(container);
+			auto end = qpl::cend(container);
+			if (begin == end) { return true; }
+			--end;
+			if (begin == end) { return true; }
+			--end;
+			while (begin != end) {
+				auto c2 = begin;
+				++c2;
+				if (compare(*c2, *begin)) {
+					return false;
+				}
+				++begin;
+			}
+			return true;
+		}
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr bool is_sorted_less(const C& container) {
+		return qpl::is_sorted(container, [](const auto& a, const auto& b) { return a < b; });
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr bool is_sorted_greater(const C& container) {
+		return qpl::is_sorted(container, [](const auto& a, const auto& b) { return a > b; });
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr bool is_sorted(const C& container) {
+		return qpl::is_sorted_less(container);
+	}
+
+
+
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr void reverse(C& container, bool recursive = false) {
+		if (recursive) {
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+				for (auto& i : container) {
+					qpl::reverse(i);
+				}
+				return;
+			}
+		}
+		std::reverse(qpl::begin(container), qpl::end(container));
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr C reversed(const C& container, bool recursive = false) {
+		auto result = container;
+		qpl::reverse(result, recursive);
+		return result;
+	}
+
+	namespace impl {
+		template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+		constexpr void combine(C& container, T&& value) {
+			if constexpr (qpl::has_resize_and_access<C>()) {
+				container.resize(container.size() + 1);
+				if constexpr (qpl::has_square_brackets<C>()) {
+					container[container.size() - 1] = qpl::type_cast<qpl::container_subtype<C>>(value);
+				}
+				else if constexpr (qpl::has_at<C>()) {
+					container.at(container.size() - 1) = qpl::type_cast<qpl::container_subtype<C>>(value);
+				}
+			}
+			else if constexpr (qpl::has_pushback<C>()) {
+				container.push_back(qpl::type_cast<qpl::container_subtype<C>>(value));
+			}
+			else if constexpr (qpl::has_insert<C>()) {
+				container.insert(qpl::type_cast<qpl::container_subtype<C>>(value));
+			}
+			else {
+				static_assert("qpl::combine: C has no way to add elements");
+			}
+		}
+		
+		template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+		constexpr void combine(C& container, const C2& value) {
+			if constexpr (qpl::has_insert<C>()) {
+				container.insert(qpl::cend(container), value.cbegin(), value.cend());
+			}
+			else if constexpr (qpl::has_resize_and_access<C>()) {
+				auto size = container.size();
+				container.resize(container.size() + value.size());
+				if constexpr (qpl::is_same_decayed<qpl::container_subtype<C>, qpl::container_subtype<C2>>() && qpl::is_contiguous_container<C>()) {
+					memcpy(container.data() + size, value.data(), value.size() * qpl::bytes_in_type<qpl::container_subtype<C2>>());
+				}
+				else if constexpr (qpl::has_square_brackets<C>()) {
+					for (qpl::size i = size; i < container.size(); ++i) {
+						container[i] = qpl::type_cast<qpl::container_subtype<C>>(value[i - size]);
+					}
+				}
+				else if constexpr (qpl::has_at<C>()) {
+					for (qpl::size i = size; i < container.size(); ++i) {
+						container.at(i) = qpl::type_cast<qpl::container_subtype<C>>(value.at(i - size));
+					}
+				}
+			}
+			else if constexpr (qpl::has_pushback<C>()) {
+				if constexpr (qpl::has_reserve<C>()) {
+					container.reserve(container.size() + value.size());
+				}
+				for (const auto& i : value) {
+					container.push_back(qpl::type_cast<qpl::container_subtype<C>>(i));
+				}
+			}
+			else {
+				static_assert("qpl::combine: C has no way to add elements");
+			}
+		}
+	
+		template<typename C, typename It> requires (qpl::is_container<C>() && qpl::is_iterator<It>())
+		constexpr void combine(C& container, It start, It end) {
+			if constexpr (qpl::has_insert<C>()) {
+				container.insert(qpl::cend(container), start, end);
+			}
+			else if constexpr (qpl::has_resize_and_access<C>()) {
+				auto size = container.size();
+				auto it = start;
+				container.resize(container.size() + std::distance(start, end));
+				if constexpr (qpl::has_square_brackets<C>()) {
+					for (qpl::size i = size; i < container.size(); ++i) {
+						container[i] = qpl::type_cast<qpl::container_subtype<C>>(*it);
+						++it;
+					}
+				}
+				else if constexpr (qpl::has_at<C>()) {
+					for (qpl::size i = size; i < container.size(); ++i) {
+						container.at(i) = qpl::type_cast<qpl::container_subtype<C>>(*it);
+						++it;
+					}
+				}
+			}
+			else if constexpr (qpl::has_pushback<C>()) {
+				if constexpr (qpl::has_reserve<C>()) {
+					container.reserve(container.size() + std::distance(start, end));
+				}
+				auto it = start;
+				while (!(it == end)) {
+					container.push_back(qpl::type_cast<qpl::container_subtype<C>>(*it));
+					++it;
+				}
+			}
+			else {
+				static_assert("qpl::combine: C has no way to add elements");
+			}
+		}
+	
+		template<typename C> requires (qpl::is_container<C>())
+		constexpr void remove_duplicates(C& container) {
+			if constexpr (qpl::has_less<qpl::container_subtype<C>>()) {
+				std::set<qpl::container_subtype<C>> seen;
+				C result;
+				for (auto& i : container) {
+					if (seen.find(i) == seen.cend()) {
+						seen.insert(i);
+						qpl::impl::combine(result, i);
+					}
+				}
+				std::swap(container, result);
+			}
+			else {
+				std::unordered_set<qpl::container_subtype<C>> seen;
+				C result;
+				for (auto& i : container) {
+					if (seen.find(i) == seen.cend()) {
+						seen.insert(i);
+						qpl::impl::combine(result, i);
+					}
+				}
+				std::swap(container, result);
+			}
+		}
+	}
+
+	template<typename C, typename... T> requires (qpl::is_container<C>())
+	constexpr void combine(C& container, const T... values) {
+		(impl::combine(container, values), ...);
+	}
+	template<typename C,typename It> requires (qpl::is_container<C>() && qpl::is_iterator<It>())
+	constexpr void combine(C& container, It begin, It end) {
+		if (begin == end) {
+			return;
+		}
+		impl::combine(container, begin, end);
+	}
+
+	template<typename C, typename... T> requires (qpl::is_container<C>())
+	constexpr C combined(const C& container, const T... values) {
+		C result;
+		impl::combine(result, container);
+		(impl::combine(result, values), ...);
+		return result;
+	}
+	template<typename C, typename It> requires (qpl::is_container<C>() && qpl::is_iterator<It>())
+	constexpr C combined(const C& container, It begin, It end) {
+		C result;
+		impl::combine(result, begin, end);
+		return result;
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr void remove_duplicates(C& container, bool recursive = false) {
+		if (recursive) {
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+				for (auto& i : container) {
+					qpl::remove_duplicates(i, recursive);
+				}
+				return;
+			}
+		}
+		qpl::impl::remove_duplicates(container);
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr C removed_duplicates(const C& container, bool recursive = false) {
+		C result;
+		qpl::remove_duplicates(result, recursive);
+		return result;
+	}
+
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr void splice(C& container, qpl::size start, qpl::size end = qpl::size_max) {
+		C result;
+		if constexpr (qpl::has_insert<C>()) {
+			auto it1 = qpl::cbegin(container);
+			std::advance(it1, start);
+			auto it2 = qpl::cbegin(container);
+			std::advance(it2, qpl::min(container.size() - 1, end));
+			result.insert(result.cend(), it1, it2);
+		}
+		else if constexpr (qpl::has_resize_and_access<C>()) {
+			result.resize((qpl::min(container.size() - 1, end) - start) + 1);
+			if constexpr (qpl::has_square_brackets<C>()) {
+				for (qpl::size i = start; i <= end && i < container.size(); ++i) {
+					result[i - start] = container[i];
+				}
+			}
+			else if constexpr (qpl::has_at<C>()) {
+				for (qpl::size i = start; i <= end && i < container.size(); ++i) {
+					result.at(i - start) = container.at(i);
+				}
+			}
+		}
+		else if constexpr (qpl::has_pushback<C>()) {
+			if constexpr (qpl::has_reserve<C>()) {
+				result.reserve((qpl::min(container.size() - 1, end) - start) + 1);
+			}
+			auto it_begin = qpl::cbegin(container);
+			auto it_end = qpl::cbegin(container);
+			std::advance(it_begin, start);
+			std::advance(it_end, end);
+			while (it_begin != qpl::cend(container) && it_begin != it_end) {
+				result.push_back(*it_begin);
+				++it_begin;
+			}
+		}
+		std::swap(container, result);
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr C spliced(const C& container, qpl::size start, qpl::size end = qpl::size_max) {
+		auto result = container;
+		qpl::splice(result, start, end);
+		return result;
+	}
+	
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+	constexpr void splice_back(C& container, qpl::size count) {
+		qpl::splice(container, container.size() - count, container.size() - 1);
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+	constexpr C spliced_back(const C& container, qpl::size count) {
+		return qpl::spliced(container, container.size() - count, container.size() - 1);
+	}
+
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+	constexpr void splice_front(C& container, qpl::size count) {
+		qpl::splice(container, 0, count - 1);
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+	constexpr C spliced_front(const C& container, qpl::size count) {
+		return qpl::spliced(container, 0, count - 1);
+	}
+
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr bool includes(const C& target, const C2& list) {
+		for (auto& i : target) {
+			bool found = false;
+			for (auto& j : list) {
+				if (i == j) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr bool find_sorted(const C& container, T&& value) {
+		return std::binary_search(qpl::cbegin(container), qpl::cend(container), value);
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr bool find(const C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			return qpl::find_sorted(container, value);
+		}
+		else {
+			for (auto& i : container) {
+				if (i == value) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	
+
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr auto lower_bound(const C& container, T&& value) {
+		return std::lower_bound(qpl::cbegin(container), qpl::cend(container), value);
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr auto upper_bound(const C& container, T&& value) {
+		return std::upper_bound(qpl::cbegin(container), qpl::cend(container), value);
+	}
+
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr qpl::size find_lower_index_sorted(const C& container, T&& value) {
+		auto it = qpl::lower_bound(container, value);
+		if (*it == value) {
+			return std::distance(qpl::cbegin(container), it);
+		}
+		else {
+			return qpl::size_max;
+		}
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr qpl::size find_lower_index(const C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			return qpl::find_lower_index_sorted(container, value);
+		}
+		else {
+			qpl::size index = 0u;
+			for (auto& i : container) {
+				if (i == value) {
+					return index;
+				}
+				++index;
+			}
+			return qpl::size_max;
+		}
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr qpl::size find_upper_index_sorted(const C& container, T&& value) {
+		auto it = qpl::upper_bound(container, value);
+		--it;
+		if (*it == value) {
+			return std::distance(qpl::cbegin(container), it);
+		}
+		else {
+			return qpl::size_max;
+		}
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr qpl::size find_upper_index(const C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			return qpl::find_upper_index_sorted(container, value);
+		}
+		else {
+			bool found = false;
+			qpl::size index = 0u;
+			for (auto& i : container) {
+				if (!found && i == value) {
+					found = true;
+				}
+				else if (found && i != value) {
+					return index;
+				}
+				++index;
+			}
+			return qpl::size_max;
+		}
+	}
+	
+
+	template<typename C, typename T> requires (qpl::is_container<C>() && qpl::is_equal_comparable<qpl::container_subtype<C>, T>())
+	constexpr qpl::size count_sorted(const C& container, T&& value) {
+		auto lower_index = qpl::find_lower_index_sorted(container, value);
+		auto upper_index = qpl::find_upper_index_sorted(container, value);
+		if (lower_index == qpl::size_max) {
+			return 0u;
+		}
+		return (upper_index - lower_index) + 1;
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && qpl::is_equal_comparable<qpl::container_subtype<C>, T>())
+	constexpr qpl::size count(const C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			return qpl::count_sorted(container, value);
+		}
+		else {
+			qpl::size sum = 0u;
+			for (auto& i : container) {
+				if (i == value) {
+					++sum;
+				}
+			}
+			return sum;
+		}
+	}
+
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr void remove(C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>() && qpl::has_erase<C>()) {
+			auto index = qpl::find_lower_index_sorted(container, value);
+			if (index != qpl::size_max) {
+				auto begin = qpl::cbegin(container);
+				std::advance(begin, index);
+				container.erase(begin);
+			}
+		}
+		else {
+			C result;
+	
+			if constexpr (qpl::has_reserve<C>()) {
+				result.reserve(container.size());
+			}
+			bool allow = true;
+			qpl::size index = 0u;
+			for (auto& i : container) {
+				if (!(i == value)) {
+					qpl::combine(result, i);
+				}
+				else {
+					break;
+				}
+				++index;
+			}
+	
+	
+			auto begin = qpl::cbegin(container);
+			std::advance(begin, index + 1);
+			qpl::combine(result, begin, qpl::cend(container));
+			std::swap(result, container);
+		}
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr void remove_sorted(C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>() && qpl::has_erase<C>()) {
+			auto index = qpl::find_lower_index_sorted(container, value);
+			if (index != qpl::size_max) {
+				auto begin = qpl::cbegin(container);
+				std::advance(begin, index);
+				container.erase(begin);
+			}
+		}
+		else {
+			C result;
+			auto index = qpl::find_lower_index_sorted(container, value);
+			if (index == qpl::size_max) {
+				return;
+			}
+			if (index) {
+				auto end = qpl::cbegin(container);
+				std::advance(end, index);
+				qpl::combine(result, qpl::cbegin(container), end);
+			}
+			auto begin = qpl::cbegin(container);
+			std::advance(begin, index + 1);
+			if (begin != qpl::cend(container)) {
+				qpl::combine(result, begin, qpl::cend(container));
+			}
+			std::swap(result, container);
+		}
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr void remove_multiples(C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>() && qpl::has_erase<C>()) {
+			container.erase(value);
+		}
+		else {
+			C result;
+	
+			if constexpr (qpl::has_reserve<C>()) {
+				result.reserve(container.size());
+			}
+			for (auto& i : container) {
+				if (!(i == value)) {
+					qpl::combine(result, i);
+				}
+			}
+	
+			std::swap(result, container);
+		}
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr void remove_sorted_multiples(C& container, T&& value) {
+		if constexpr (qpl::is_sorted_container<C>() && qpl::has_erase<C>()) {
+			container.erase(value);
+		}
+		else {
+			C result;
+			auto lower_index = qpl::find_lower_index_sorted(container, value);
+			auto upper_index = qpl::find_upper_index_sorted(container, value);
+	
+			if (lower_index == qpl::size_max) {
+				return;
+			}
+			if (lower_index) {
+				auto end = qpl::cbegin(container);
+				std::advance(end, lower_index);
+				qpl::combine(result, qpl::cbegin(container), end);
+			}
+			auto begin = qpl::cbegin(container);
+			std::advance(begin, upper_index + 1);
+			if (begin != qpl::cend(container)) {
+				qpl::combine(result, begin, qpl::cend(container));
+			}
+			std::swap(result, container);
+		}
+	}
+	
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr C removed_multiples(const C& container, T&& value) {
+		auto result = container;
+		qpl::remove_duplicates(result, value);
+		return result;
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr C removed(const C& container, T&& value) {
+		auto result = container;
+		qpl::remove(result, value);
+		return result;
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr C removed_sorted_multiples(const C& container, T&& value) {
+		auto result = container;
+		qpl::remove_sorted_multiples(result, value);
+		return result;
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
+	constexpr C removed_sorted(const C& container, T&& value) {
+		auto result = container;
+		qpl::remove_sorted(result, value);
+		return result;
+	}
+
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr C duplicates(const C& a, const C2& b) {
+		if constexpr (qpl::is_sortable<C2>()) {
+			auto sorted = qpl::sorted(b);
+			auto list = qpl::make_span(sorted);
+			C result;
+			for (auto& i : a) {
+				if (qpl::find_sorted(list, i)) {
+					qpl::combine(result, i);
+					qpl::span_pop_front(list, 1);
+				}
+			}
+			return result;
+		}
+		else {
+			auto list = b;
+			C result;
+			for (auto& i : a) {
+				if (qpl::find(list, i)) {
+					qpl::combine(result, i);
+					qpl::remove(list, i);
+				}
+			}
+			return result;
+		}
+	}
+
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr void remove_sorted(C& target, const C2& list) {
+		auto sorted = qpl::sorted(list);
+		auto l = qpl::make_span(sorted);
+
+		C result;
+		qpl::size count = 0u;
+		for (auto& i : target) {
+			if (qpl::find_sorted(l, i)) {
+				qpl::span_pop_front(l, 1);
+			}
+			else {
+				qpl::combine(result, i);
+			}
+		}
+		std::swap(target, result);
+	}
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr void remove(C& target, const C2& list) {
+		if constexpr (qpl::is_sortable<C2>() && qpl::is_sortable<C>()) {
+			auto sorted = qpl::sorted(list);
+			auto l = qpl::make_span(sorted);
+			auto t = qpl::sorted(target);
+
+			C result;
+			qpl::size count = 0u;
+			for (auto& i : t) {
+				if (qpl::find_sorted(l, i)) {
+					qpl::span_pop_front(l, 1);
+				}
+				else {
+					qpl::combine(result, i);
+				}
+			}
+			std::swap(target, result);
+		}
+		else {
+			C result = target;
+			for (auto& i : list) {
+				qpl::remove(result, i);
+			}
+			std::swap(target, result);
+		}
+	}
+
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr void remove_sorted_multiples(C& target, const C2& list) {
+		C result;
+		qpl::size count = 0u;
+		for (auto& i : target) {
+			if (!qpl::find_sorted(list, i)) {
+				qpl::combine(result, i);
+			}
+		}
+		std::swap(target, result);
+	}
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr void remove_multiples(C& target, const C2& list) {
+		C result;
+		qpl::size count = 0u;
+		for (auto& i : target) {
+			if (!qpl::find(list, i)) {
+				qpl::combine(result, i);
+			}
+		}
+		std::swap(target, result);
+	}
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr C removed(const C& a, const C2& b) {
+		auto result = a;
+		qpl::remove(result, b);
+		return result;
+	}
+
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr C removed_multiples(const C& a, const C2& b) {
+		auto result = a;
+		qpl::remove_multiples(result, b);
+		return result;
+	}
+	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
+	constexpr C removed_sorted_multiples(const C& a, const C2& b) {
+		auto result = a;
+		qpl::remove_sorted_multiples(result, b);
+		return result;
+	}
+
+	template<typename R, typename C> requires (qpl::is_container<C>())
+	constexpr R sum(const C& container) {
+		R sum = R{ 0 };
+		for (auto& i : container) {
+			sum += qpl::type_cast<R>(i);
+		}
+		return sum;
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr auto sum(const C& container) {
+		if constexpr (qpl::is_floating_point<qpl::container_subtype<C>>()) {
+			return qpl::sum<qpl::f64>(container);
+		}
+		else if constexpr (qpl::is_signed<qpl::container_subtype<C>>()) {
+			return qpl::sum<qpl::signed_cast_type<qpl::size>>(container);
+		}
+		else {
+			return qpl::sum<qpl::size>(container);
+		}
+	}
+
+	template<typename R, typename C> requires (qpl::is_container<C>())
+	constexpr R product(const C& container) {
+		R sum = R{ 1 };
+		for (auto& i : container) {
+			sum *= qpl::type_cast<R>(i);
+		}
+		return sum;
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr auto product(const C& container) {
+		if constexpr (qpl::is_floating_point<qpl::container_subtype<C>>()) {
+			return qpl::product<qpl::f64>(container);
+		}
+		else if constexpr (qpl::is_signed<qpl::container_subtype<C>>()) {
+			return qpl::product<qpl::signed_cast_type<qpl::size>>(container);
+		}
+		else {
+			return qpl::product<qpl::size>(container);
+		}
+	}
+
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr void fill_zeroes(C& container) {
+		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+			for (auto& i : container) {
+				qpl::fill_zeroes(i);
+			}
+		}
+		else {
+			if constexpr (qpl::is_contiguous_container<C>() && qpl::has_size<C>()) {
+				memset(container.data(), 0, container.size() * qpl::bytes_in_type<qpl::container_subtype<C>>());
+			}
+			else {
+				std::fill(qpl::begin(container), qpl::end(container), qpl::container_subtype<C>{0});
+			}
+		}
+	}
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr C fill_zeroes(const C& container) {
+		auto result = container;
+		qpl::fill_zeroes(result);
+		return result;
+	}
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr void fill(C& container, T&& value) {
+		if (!value) {
+			qpl::fill_zeroes(container);
+		}
+		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+			for (auto& i : container) {
+				qpl::fill(i, value);
+			}
+		}
+		else {
+			std::fill(qpl::begin(container), qpl::end(container), qpl::type_cast<qpl::container_subtype<C>>(value));
+		}
+	}
+
+	template<typename C, typename T> requires (qpl::is_container<C>())
+	constexpr C filled(const C& container, T&& value) {
+		auto result = container;
+		qpl::fill(result, value);
+		return result;
+	}
+
 
 	template<typename C>
 	std::pair<qpl::container_subtype<C>, qpl::container_subtype<C>> min_max_vector(const C& data) {
@@ -704,105 +1596,6 @@ namespace qpl {
 		}
 		return std::make_pair(min, max);
 	}
-
-
-	template<typename T>
-	std::vector<T> vector_including_values(const std::vector<T>& target, const std::vector<T>& compare) {
-		std::vector<T> result;
-		for (auto& i : compare) {
-			auto find = std::find(target.cbegin(), target.cend(), i);
-			if (find != target.cend()) {
-				result.push_back(*find);
-			}
-		}
-
-		return result;
-	}
-	template<typename T>
-	std::vector<T> vector_including_values(const std::vector<std::vector<T>>& targets, const std::vector<T>& compare) {
-		auto sum = compare;
-		for (auto& i : targets) {
-			auto v = qpl::vector_including_values(i, compare);
-			sum = qpl::vector_including_values(v, sum);
-		}
-		return sum;
-	}
-	template<typename T>
-	std::vector<T> vector_excluding_values(const std::vector<T>& target, const std::vector<T>& compare) {
-		std::vector<T> result;
-		for (auto& i : compare) {
-			auto find = std::find(target.cbegin(), target.cend(), i);
-			if (find == target.cend()) {
-				result.push_back(i);
-			}
-		}
-
-		return result;
-	}
-	template<typename T>
-	std::vector<T> vector_excluding_values(const std::vector<std::vector<T>>& targets, const std::vector<T>& compare) {
-		auto sum = compare;
-		for (auto& i : targets) {
-			auto v = qpl::vector_excluding_values(i, compare);
-			sum = qpl::vector_including_values(v, sum);
-		}
-		return sum;
-	}
-
-	template<typename T>
-	void vector_flip_x_axis(std::vector<std::vector<T>>& source) {
-		auto copy = source;
-		for (qpl::u32 y = 0u; y < copy.size(); ++y) {
-			for (qpl::u32 x = 0u; x < copy[0].size(); ++x) {
-				source[y][x] = copy[y][copy[0].size() - 1 - x];
-			}
-		}
-	}
-	template<typename T>
-	void vector_flip_y_axis(std::vector<std::vector<T>>& source) {
-		auto copy = source;
-		for (qpl::u32 y = 0u; y < copy.size(); ++y) {
-			for (qpl::u32 x = 0u; x < copy[0].size(); ++x) {
-				source[y][x] = copy[copy.size() - 1 - y][x];
-			}
-		}
-	}
-
-	template<typename T>
-	std::vector<std::vector<T>> vector_rotate_right_copy(std::vector<std::vector<T>> source) {
-		std::vector<std::vector<T>> result(source[0].size(), std::vector<T>(source.size()));
-		for (qpl::u32 y = 0u; y < result.size(); ++y) {
-			for (qpl::u32 x = 0u; x < source.size(); ++x) {
-				result[y][x] = source[source.size() - 1 - x][y];
-			}
-		}
-		return result;
-	}
-	template<typename T>
-	void vector_rotate_right(std::vector<std::vector<T>>& source) {
-		source = vector_rotate_right_copy(source);
-	}
-	template<typename T>
-	std::vector<std::vector<T>> vector_flip_x_axis_copy(std::vector<std::vector<T>> source) {
-		std::vector<std::vector<T>> result(source.size(), std::vector<T>(source[0].size()));
-		for (qpl::u32 y = 0u; y < source.size(); ++y) {
-			for (qpl::u32 x = 0u; x < source[0].size(); ++x) {
-				result[y][x] = source[y][source[0].size() - 1 - x];
-			}
-		}
-		return result;
-	}
-	template<typename T>
-	std::vector<std::vector<T>> vector_flip_y_axis_copy(std::vector<std::vector<T>> source) {
-		std::vector<std::vector<T>> result(source.size(), std::vector<T>(source[0].size()));
-		for (qpl::u32 y = 0u; y < source.size(); ++y) {
-			for (qpl::u32 x = 0u; x < source[0].size(); ++x) {
-				result[y][x] = source[source.size() - 1 - y][x];
-			}
-		}
-		return result;
-	}
-
 
 	template<typename T>
 	constexpr T abs(T n) {
