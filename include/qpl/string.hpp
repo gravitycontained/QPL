@@ -1489,6 +1489,22 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, const std::wstring& expression);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
 
+	template<typename T>
+	constexpr auto split_string(const std::string& string, char by_what) {
+		return qpl::type_cast<T>(qpl::split_string(string, by_what));
+	}
+	template<typename T>
+	constexpr auto split_string_whitespace(const std::string& string) {
+		return qpl::type_cast<T>(qpl::split_string_whitespace(string));
+	}
+	template<typename T>
+	constexpr auto split_string(const std::string& string, const std::string& expression) {
+		return qpl::type_cast<T>(qpl::split_string(string, expression));
+	}
+	template<typename T>
+	constexpr auto split_string(const std::string& string) {
+		return qpl::type_cast<T>(qpl::split_string(string));
+	}
 
 	QPLDLL std::vector<std::string> split_string_every(const std::string& string, qpl::size n);
 	QPLDLL std::string combine_strings(const std::vector<std::string>& strings);

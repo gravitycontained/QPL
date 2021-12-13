@@ -376,7 +376,7 @@ namespace qpl {
 		qpl::if_true<qpl::char_is_unsigned()>, qpl::u8>;
 
 	template<typename T>
-	using signed_cast_type = qpl::conditional<
+	using signed_type = qpl::conditional<
 		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
 			qpl::conditional<
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 8 }>, qpl::i8,
@@ -387,7 +387,7 @@ namespace qpl {
 		qpl::default_error>;
 	
 	template<typename T>
-	using unsigned_cast_type = qpl::conditional<
+	using unsigned_type = qpl::conditional<
 		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
 			qpl::conditional<
 				qpl::if_true<qpl::bits_in_type<T>() == std::size_t{ 8 }>, qpl::u8,
@@ -398,7 +398,7 @@ namespace qpl {
 		qpl::default_error>;
 	
 	template<typename T>
-	using int_cast_type = qpl::conditional<
+	using int_type = qpl::conditional<
 		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
 			qpl::conditional<
 				qpl::if_true<qpl::is_integer<T>()>, T,
@@ -408,7 +408,7 @@ namespace qpl {
 		qpl::default_error>;
 	
 	template<typename T>
-	using float_cast_type = qpl::conditional<
+	using float_type = qpl::conditional<
 		qpl::if_true<qpl::is_arithmetic<std::decay_t<T>>()>,
 			qpl::conditional<
 				qpl::if_true<qpl::is_floating_point<T>()>, T,
@@ -472,6 +472,26 @@ namespace qpl {
 
 	template<typename C> requires (qpl::is_container<C>())
 	using container_subtype_with_reference = std::remove_const_t<decltype(*(std::declval<C>().begin()))>;
+
+	namespace impl {
+
+		template<typename C>
+		auto container_deepest_subtype() {
+			if constexpr (!qpl::is_container<C>()) {
+				return std::declval<C>();
+			}
+			else if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+				return container_deepest_subtype<qpl::container_subtype<C>>();
+			}
+			else {
+				return std::declval<qpl::container_subtype<C>>();
+			}
+		}
+	}
+
+	template<typename C>
+	using container_deepest_subtype = decltype(impl::container_deepest_subtype<C>());
+
 
 	namespace impl {
 		template<typename T, qpl::size N>
@@ -866,11 +886,204 @@ namespace qpl {
 	constexpr bool has_map_signature() {
 		return has_map_signature_c<C>;
 	}
-	
+
+
+	namespace impl {
+		template<typename... Ts>
+		constexpr auto tuple_signature(std::tuple<Ts...>) {
+			return std::true_type{};
+		}
+		template<typename T>
+		constexpr auto tuple_signature(T) {
+			return std::false_type{};
+		}
+	}
+
+	template<typename T>
+	constexpr bool is_tuple() {
+		return decltype(qpl::impl::tuple_signature(std::declval<T>()))::value;
+	}
+
+	template<typename T> requires(qpl::is_tuple<T>())
+	constexpr qpl::size tuple_size() {
+		return std::tuple_size_v<T>;
+	}
+	template<typename T> requires(qpl::is_tuple<T>())
+	constexpr qpl::size tuple_size(T&& tuple) {
+		return qpl::tuple_size<T>();
+	}
+	template<typename... Ts>
+	constexpr qpl::size tuple_size() {
+		return std::tuple_size_v<std::tuple<Ts...>>;
+	}
+	template<typename... Ts>
+	constexpr qpl::size variadic_size() {
+		return std::tuple_size_v<std::tuple<Ts...>>;
+	}
+	template<typename... Ts>
+	constexpr qpl::size variadic_size(Ts&&... args) {
+		return qpl::variadic_size<Ts...>();
+	}
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
+	using tuple_type = std::tuple_element_t<N, T>;
+
+	template<qpl::size N, typename... Ts>
+	using variadic_type = std::tuple_element_t<N, std::tuple<Ts...>>;
+
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_value(T&& tuple) {
+		return std::get<N>(tuple);
+	}
+	template<qpl::size N, typename... Ts>
+	constexpr auto tuple_value(Ts&&... args) {
+		return std::get<N>(std::make_tuple(args...));
+	}
+	template<typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_value_front(T&& tuple) {
+		return qpl::tuple_value<0u>(tuple);
+	}
+	template<typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_value_back(T&& tuple) {
+		return qpl::tuple_value<qpl::tuple_size<T>() - 1>(tuple);
+	}
+	template<qpl::size N, typename... Ts>
+	constexpr auto variadic_value(Ts&&... args) {
+		return std::get<N>(std::make_tuple(args...));
+	}
+	template<typename... Ts>
+	constexpr auto variadic_value_front(Ts&&... args) {
+		return qpl::variadic_value<0u>(args...);
+	}
+	template<typename... Ts>
+	constexpr auto variadic_value_back(Ts&&... args) {
+		return qpl::variadic_value<qpl::variadic_size<Ts...>() - 1>(args...);
+	}
+
+	template<typename... Ts>
+	constexpr auto tuple_value_front(Ts&&... args) {
+		return qpl::variadic_value<0u>(args...);
+	}
+	template<typename... Ts>
+	constexpr auto tuple_value_back(Ts&&... args) {
+		return qpl::variadic_value<qpl::variadic_size<Ts...>() - 1>(args...);
+	}
+
+	template<typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_reverse(T tuple) {
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(std::index_sequence<Ints...>) {
+			constexpr auto size = qpl::tuple_size<Tuple>() - 1;
+			std::tuple<qpl::tuple_type<size - Ints, Tuple>...> result;
+			((std::get<size - Ints>(result) = std::get<Ints>(tuple)), ...);
+			return result;
+		};
+
+		constexpr auto size = qpl::tuple_size<T>();
+		constexpr auto sequence = std::make_index_sequence<size>();
+		return unpack.template operator()<T>(sequence);
+	}
+	template<typename... Ts>
+	constexpr auto variadic_reverse(Ts&&... args) {
+		return qpl::tuple_reverse(std::make_tuple(args...));
+	}
+
+	template<typename... Ts>
+	constexpr auto tuple_reverse(Ts&&... args) {
+		return qpl::tuple_reverse(std::make_tuple(args...));
+	}
+	namespace impl {
+		template<typename... Args>
+		constexpr auto variadic_type_reverse() {
+			auto unpack = [&]<typename Tuple, qpl::size... Ints>(std::index_sequence<Ints...>) {
+				constexpr auto size = qpl::tuple_size<Tuple>() - 1;
+				std::tuple<qpl::tuple_type<size - Ints, Tuple>...> result;
+				return result;
+			};
+
+			constexpr auto sequence = std::make_index_sequence<qpl::tuple_size<std::tuple<Args...>>()>();
+			decltype(unpack.template operator()< std::tuple<Args...> >(sequence)) result;
+			return result;
+		}
+	}
+
+	template<typename T> requires(qpl::is_tuple<T>())
+	using tuple_type_reverse = decltype(qpl::tuple_reverse(std::declval<T>()));
+
+	template<typename... Ts>
+	using variadic_type_reverse = decltype(impl::variadic_type_reverse<Ts...>());
+
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_splice_back(T tuple) {
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(std::index_sequence<Ints...>) {
+			std::tuple<qpl::tuple_type<Ints, Tuple>...> result;
+			((std::get<Ints>(result) = std::get<Ints>(tuple)), ...);
+			return result;
+		};
+
+		constexpr auto size = qpl::tuple_size<T>();
+		constexpr auto sequence = std::make_index_sequence<size - N>();
+		return unpack.template operator()<T> (sequence);
+	}
+
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_splice_front(T tuple) {
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(std::index_sequence<Ints...>) {
+			std::tuple<qpl::tuple_type<Ints + N, Tuple>...> result;
+			((std::get<Ints>(result) = std::get<Ints + N>(tuple)), ...);
+			return result;
+		};
+
+		constexpr auto size = qpl::tuple_size<T>();
+		constexpr auto sequence = std::make_index_sequence<size - N>();
+		return unpack.template operator()<T> (sequence);
+	}
+
+	template<qpl::size start, qpl::size end = qpl::size_max, typename T> requires(qpl::is_tuple<T>())
+	constexpr auto tuple_splice(T tuple) {
+		auto unpack = [&]<typename Tuple, qpl::size... Ints>(std::index_sequence<Ints...>) {
+			std::tuple<qpl::tuple_type<Ints + start, Tuple>...> result;
+			((std::get<Ints>(result) = std::get<Ints + start>(tuple)), ...);
+			return result;
+		};
+
+		constexpr auto real_end = (end < (qpl::tuple_size<T>() - 1) ? end : (qpl::tuple_size<T>() - 1));
+		constexpr auto new_size = real_end - start + 1;
+		constexpr auto sequence = std::make_index_sequence<new_size>();
+		return unpack.template operator()<T> (sequence);
+	}
+
+	template<qpl::size N, typename... Ts>
+	constexpr auto variadic_splice_back(Ts&&... values) {
+		return qpl::tuple_splice_back<N>(std::make_tuple(values...));
+	}
+	template<qpl::size N, typename... Ts>
+	constexpr auto variadic_splice_front(Ts&&... values) {
+		return qpl::tuple_splice_front<N>(std::make_tuple(values...));
+	}
+	template<qpl::size start, qpl::size end = qpl::size_max, typename... Ts>
+	constexpr auto variadic_splice(Ts&&... values) {
+		return qpl::tuple_splice<start, end>(std::make_tuple(values...));
+	}
+
+	template<qpl::size N, typename... Ts>
+	constexpr auto tuple_splice_back(Ts&&... values) {
+		return qpl::tuple_splice_back<N>(std::make_tuple(values...));
+	}
+	template<qpl::size N, typename... Ts>
+	constexpr auto tuple_splice_front(Ts&&... values) {
+		return qpl::tuple_splice_front<N>(std::make_tuple(values...));
+	}
+	template<qpl::size start, qpl::size end = qpl::size_max, typename... Ts>
+	constexpr auto tuple_splice(Ts&&... values) {
+		return qpl::tuple_splice<start, end>(std::make_tuple(values...));
+	}
+
 	namespace impl {
 		template <typename U, template <typename, typename...> class container, typename T, typename... rest>
-		auto container_subtype_cast(const container<T, rest...>& c) {
-			if constexpr (qpl::is_container<T>()) {
+		auto container_change_subtype(const container<T, rest...>& c) {
+			if constexpr (qpl::is_long_string_type<T>()) {
+				return container<U>{};
+			}
+			else if constexpr (qpl::is_container<T>()) {
 				return container<decltype(container_subtype_cast<U>(T{}))>{};
 			}
 			else {
@@ -943,26 +1156,22 @@ namespace qpl {
 				return make_method_help<C, std::tuple_element_t<Ints, Tuple>...>();
 			};
 			using function_type = decltype(impl::function_type(std::declval<F>()));
-			return unpack_tuple.template operator()<C, function_type>(std::make_index_sequence<std::tuple_size_v<function_type>>{});
+			return unpack_tuple.template operator()<C, function_type>(std::make_index_sequence<qpl::tuple_size<function_type>()>{});
 		}
-
 
 		template<typename C, typename F, typename = void>
 		struct has_method : std::false_type {};
 		template<typename C, typename F>
 		struct has_method<C, F, std::void_t<decltype(make_method<C, F>())>> : std::true_type {};
-
 	}
 
-
-
 	template<typename C, typename T>
-	struct container_subtype_cast_t {
-		using type = decltype(impl::container_subtype_cast<T>(std::declval<C>()));
+	struct container_change_subtype_t {
+		using type = decltype(impl::container_change_subtype<T>(std::declval<C>()));
 	}; 
 
 	template<typename C, typename T>
-	using container_subtype_cast = typename container_subtype_cast_t<C, T>::type;
+	using container_change_subtype = typename container_change_subtype_t<C, T>::type;
 
 
 	template<typename C> requires (qpl::is_container<C>())
@@ -998,15 +1207,15 @@ namespace qpl {
 
 	template<typename T, typename U>
 	constexpr inline auto type_cast(U&& data) {
-		if constexpr (qpl::is_container<U>()) {
-			typename qpl::container_subtype_cast_t<U, T>::type result;
-			if constexpr (qpl::has_resize_and_access<qpl::container_subtype_cast_t<U, T>::type>()) {
+		if constexpr (qpl::is_container<U>() && !qpl::is_long_string_type<U>()) {
+			typename qpl::container_change_subtype_t<U, T>::type result;
+			if constexpr (qpl::has_resize_and_access<qpl::container_change_subtype_t<U, T>::type>()) {
 				result.resize(data.size());
 				for (qpl::size i = 0u; i < data.size(); ++i) {
-					if constexpr (qpl::has_square_brackets<qpl::container_subtype_cast_t<U, T>::type>()) {
+					if constexpr (qpl::has_square_brackets<qpl::container_change_subtype_t<U, T>::type>()) {
 						result[i] = qpl::type_cast<T>(data[i]);
 					}
-					else if constexpr (qpl::has_at<qpl::container_subtype_cast_t<U, T>::type>()) {
+					else if constexpr (qpl::has_at<qpl::container_change_subtype_t<U, T>::type>()) {
 						result.at(i) = qpl::type_cast<T>(data.at(i));
 					}
 					else {
@@ -1016,10 +1225,10 @@ namespace qpl {
 			}
 			else {
 				for (const auto& i : data) {
-					if constexpr (qpl::has_pushback<qpl::container_subtype_cast_t<U, T>::type>()) {
+					if constexpr (qpl::has_pushback<qpl::container_change_subtype_t<U, T>::type>()) {
 						result.push_back(qpl::type_cast<T>(i));
 					}
-					else if constexpr (qpl::has_insert<qpl::container_subtype_cast_t<U, T>::type>()) {
+					else if constexpr (qpl::has_insert<qpl::container_change_subtype_t<U, T>::type>()) {
 						result.insert(qpl::type_cast<T>(i));
 					}
 					else {
@@ -1027,9 +1236,9 @@ namespace qpl {
 					}
 				}
 			}
-
 			return result;
 		}
+		
 		else if constexpr (qpl::is_long_standard_string_type<U>()) {
 			std::string_view sv{ data };
 			T value;
@@ -1090,7 +1299,7 @@ namespace qpl {
 	}
 	template<typename T>
 	constexpr inline auto signed_size_cast(T&& data) {
-		return static_cast<qpl::signed_cast_type<qpl::size>>(data);
+		return static_cast<qpl::signed_type<qpl::size>>(data);
 	}
 	template<typename T>
 	constexpr inline auto char_cast(T&& data) {
@@ -1111,19 +1320,19 @@ namespace qpl {
 
 	template<typename T>
 	constexpr inline auto signed_cast(T&& value) {
-		return qpl::type_cast<signed_cast_type<T>>(value);
+		return qpl::type_cast<signed_type<T>>(value);
 	}
 	template<typename T>
 	constexpr inline auto unsigned_cast(T&& value) {
-		return qpl::type_cast<unsigned_cast_type<T>>(value);
+		return qpl::type_cast<unsigned_type<T>>(value);
 	}
 	template<typename T>
 	constexpr inline auto int_cast(T&& value) {
-		return qpl::type_cast<int_cast_type<T>>(value);
+		return qpl::type_cast<int_type<T>>(value);
 	}
 	template<typename T>
 	constexpr inline auto float_cast(T&& value) {
-		return qpl::type_cast<float_cast_type<T>>(value);
+		return qpl::type_cast<float_type<T>>(value);
 	}
 
 	template<typename F>
@@ -1254,18 +1463,6 @@ namespace qpl {
 	constexpr R safe_multiplication(T a, U b) {
 		return static_cast<R>(a) * static_cast<R>(b);
 	}
-
-	//template<typename C>
-	//struct container_deepest_type_impl {
-	//	using type = typename qpl::conditional<
-	//		qpl::if_true<qpl::is_container<qpl::container_subtype<C>>()>, container_deepest_type_impl<qpl::container_subtype<C>>::type,
-	//		qpl::if_true<qpl::is_container<C>>, qpl::container_subtype<C>,
-	//		qpl::default_type, C>;
-	//};
-	//
-	//
-	//template<typename C>
-	//using container_deepest_type = container_deepest_type_impl<C>::type;
 }
 
 #endif

@@ -612,43 +612,6 @@ namespace qpl {
 	}
 
 
-	template<typename C1, typename C2> requires (qpl::is_container<C1>() && qpl::is_container<C2>())
-		void combine_containers(C1& destination, const C2& source) {
-		destination.reserve(destination.size() + source.size());
-		destination.insert(destination.end(), source.cbegin(), source.cend());
-	}
-
-	template<typename T, typename R>
-	std::vector<R> vector_subtype_conversion(const std::vector<T>& source) {
-		std::vector<R> result;
-		result.resize(source.size());
-		for (qpl::u32 i = 0; i < source.size(); ++i) {
-			result[i] = static_cast<R>(source[i]);
-		}
-		return result;
-	}
-	template<typename R, typename T>
-	std::vector<R> vector_subtype_reinterpret(const std::vector<T>& source) {
-		std::vector<R> result;
-		result.resize(source.size());
-		memcpy(result.data(), source.data(), source.size() * sizeof(T));
-		return result;
-	}
-
-	template<typename R, typename T, qpl::size N>
-	std::array<R, N> array_subtype_conversion(const std::array<T, N>& source) {
-		std::array<R, N> result;
-		for (qpl::u32 i = 0; i < source.size(); ++i) {
-			result[i] = static_cast<R>(source[i]);
-		}
-		return result;
-	}
-	template<typename R, typename T, qpl::size N>
-	std::array<R, N> array_subtype_reinterpret(const std::array<T, N>& source) {
-		std::array<R, N> result;
-		memcpy(result.data(), source.data(), source.size() * sizeof(T));
-		return result;
-	}
 	template<typename T, qpl::size N>
 	std::vector<T> array_to_vector(const std::array<T, N>& source) {
 		std::vector<T> result(source.size());
@@ -699,24 +662,65 @@ namespace qpl {
 		return qpl::tuple_to_vector(std::make_tuple(args...));
 	}
 
-	template<typename... Args>
-	constexpr auto tuple_to_array(std::tuple<Args...> tuple) -> std::array<std::tuple_element_t<0, decltype(tuple)>, std::tuple_size_v<decltype(tuple)>> {
-		std::array<std::tuple_element_t<0, decltype(tuple)>, std::tuple_size_v<decltype(tuple)>> result{};
+	template<typename T> requires (qpl::is_tuple<T>())
+	constexpr auto tuple_to_array(T&& tuple) {
+		std::array<qpl::tuple_type<0, T>, qpl::tuple_size<T>()> result{};
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 			((result[Ints] = std::get<Ints>(tuple)), ...);
 		};
-		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
+		unpack(tuple, std::make_index_sequence<qpl::tuple_size<T>()>());
 		return result;
 	}
-	template<typename T, typename... Args>
-	constexpr std::array<T, sizeof...(Args)> tuple_to_array(std::tuple<Args...> tuple) {
-		std::array<T, sizeof...(Args)> result{};
+	template<typename R, typename T> requires (qpl::is_tuple<T>())
+	constexpr auto tuple_to_array(T&& tuple) {
+		std::array<R, qpl::tuple_size<T>()> result{};
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
-			((result[Ints] = static_cast<T>(std::get<Ints>(tuple))), ...);
+			((result[Ints] = qpl::type_cast<R>(std::get<Ints>(tuple))), ...);
 		};
-		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
+		unpack(tuple, std::make_index_sequence<qpl::tuple_size<T>()>());
 		return result;
 	}
+
+	template<typename... Ts>
+	constexpr auto variadic_to_array(Ts&&... values) {
+		return qpl::tuple_to_array(std::make_tuple(values...));
+	}
+	template<typename R, typename... Ts>
+	constexpr auto variadic_to_array(Ts&&... values) {
+		return qpl::tuple_to_array<R>(std::make_tuple(values...));
+	}
+	template<typename... Ts>
+	constexpr auto tuple_to_array(Ts&&... values) {
+		return qpl::tuple_to_array(std::make_tuple(values...));
+	}
+	template<typename R, typename... Ts>
+	constexpr auto tuple_to_array(Ts&&... values) {
+		return qpl::tuple_to_array<R>(std::make_tuple(values...));
+	}
+	namespace impl {
+		template<typename T, qpl::size>
+		using ignore_size = T;
+	}
+
+	template<typename T, qpl::size N>
+	constexpr auto array_to_tuple(const std::array<T, N>& array) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			std::tuple<impl::ignore_size<T, Ints>...> result;
+			((std::get<Ints>(result) = array[Ints]), ...);
+			return result;
+		};
+		return unpack(std::make_index_sequence<N>());
+	}
+	template<typename R, typename T, qpl::size N>
+	constexpr auto array_to_tuple(const std::array<T, N>& array) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			std::tuple<impl::ignore_size<R, Ints>...> result;
+			((std::get<Ints>(result) = qpl::type_cast<R>(array[Ints])), ...);
+			return result;
+		};
+		return unpack(std::make_index_sequence<N>());
+	}
+
 	template<typename T, typename... Args>
 	constexpr auto to_array(Args... args) {
 		return qpl::tuple_to_array<T>(std::make_tuple(args...));
@@ -730,13 +734,13 @@ namespace qpl {
 		return std::span(qpl::begin(container), qpl::end(container));
 	}
 	template<typename C> requires (qpl::is_span<C>())
-		constexpr void span_pop_front(C& span, qpl::size size = 1) {
+	constexpr void span_pop_front(C& span, qpl::size size = 1) {
 		auto begin = qpl::begin(span);
 		std::advance(begin, size);
 		span = std::span(begin, qpl::end(span));
 	}
 	template<typename C> requires (qpl::is_span<C>())
-		constexpr void span_pop_back(C& span, qpl::size size = 1) {
+	constexpr void span_pop_back(C& span, qpl::size size = 1) {
 		auto end = qpl::end(span);
 		std::advance(end, -qpl::signed_cast(size));
 		span = std::span(qpl::begin(span), end);
@@ -755,8 +759,13 @@ namespace qpl {
 			return;
 		}
 		else if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
-			for (auto& i : container) {
-				qpl::sort(i);
+			if constexpr (qpl::is_long_string_type<qpl::container_subtype<C>>()) {
+				std::sort(qpl::begin(container), qpl::end(container));
+			}
+			else {
+				for (auto& i : container) {
+					qpl::sort(i, compare);
+				}
 			}
 		}
 		else {
@@ -1492,19 +1501,28 @@ namespace qpl {
 
 	template<typename R, typename C> requires (qpl::is_container<C>())
 	constexpr R sum(const C& container) {
-		R sum = R{ 0 };
-		for (auto& i : container) {
-			sum += qpl::type_cast<R>(i);
+		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+			R sum = R{ 0 };
+			for (auto& i : container) {
+				sum += qpl::sum<R>(i);
+			}
+			return sum;
 		}
-		return sum;
+		else {
+			R sum = R{ 0 };
+			for (auto& i : container) {
+				sum += qpl::type_cast<R>(i);
+			}
+			return sum;
+		}
 	}
 	template<typename C> requires (qpl::is_container<C>())
 	constexpr auto sum(const C& container) {
-		if constexpr (qpl::is_floating_point<qpl::container_subtype<C>>()) {
+		if constexpr (qpl::is_floating_point<qpl::container_deepest_subtype<C>>()) {
 			return qpl::sum<qpl::f64>(container);
 		}
-		else if constexpr (qpl::is_signed<qpl::container_subtype<C>>()) {
-			return qpl::sum<qpl::signed_cast_type<qpl::size>>(container);
+		else if constexpr (qpl::is_signed<qpl::container_deepest_subtype<C>>()) {
+			return qpl::sum<qpl::isize>(container);
 		}
 		else {
 			return qpl::sum<qpl::size>(container);
@@ -1513,19 +1531,28 @@ namespace qpl {
 
 	template<typename R, typename C> requires (qpl::is_container<C>())
 	constexpr R product(const C& container) {
-		R sum = R{ 1 };
-		for (auto& i : container) {
-			sum *= qpl::type_cast<R>(i);
+		if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
+			R n = R{ 1 };
+			for (auto& i : container) {
+				n *= qpl::product<R>(i);
+			}
+			return n;
 		}
-		return sum;
+		else {
+			R n = R{ 1 };
+			for (auto& i : container) {
+				n *= qpl::type_cast<R>(i);
+			}
+			return n;
+		}
 	}
 	template<typename C> requires (qpl::is_container<C>())
 	constexpr auto product(const C& container) {
-		if constexpr (qpl::is_floating_point<qpl::container_subtype<C>>()) {
+		if constexpr (qpl::is_floating_point<qpl::container_deepest_subtype<C>>()) {
 			return qpl::product<qpl::f64>(container);
 		}
-		else if constexpr (qpl::is_signed<qpl::container_subtype<C>>()) {
-			return qpl::product<qpl::signed_cast_type<qpl::size>>(container);
+		else if constexpr (qpl::is_signed<qpl::container_deepest_subtype<C>>()) {
+			return qpl::product<qpl::isize>(container);
 		}
 		else {
 			return qpl::product<qpl::size>(container);
@@ -1568,14 +1595,250 @@ namespace qpl {
 			std::fill(qpl::begin(container), qpl::end(container), qpl::type_cast<qpl::container_subtype<C>>(value));
 		}
 	}
-
 	template<typename C, typename T> requires (qpl::is_container<C>())
 	constexpr C filled(const C& container, T&& value) {
 		auto result = container;
 		qpl::fill(result, value);
 		return result;
 	}
+	
+	namespace impl {
+		template<typename C, typename T> requires(qpl::is_container<C>() && qpl::has_resize<C>() && qpl::tuple_size<T>() > 0)
+		void resize(C& container, T&& tuple) {
+			container.resize(qpl::tuple_value_front(tuple));
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && qpl::has_resize<C>() && qpl::tuple_size<T>() > 1) {
+				for (auto& i : container) {
+					qpl::impl::resize(i, qpl::tuple_splice_front<1>(tuple));
+				}
+			}
+		}
+		template<typename C, typename T> requires(qpl::is_container<C>() && qpl::has_reserve<C>() && qpl::tuple_size<T>() > 0)
+		void reserve(C& container, T&& tuple) {
+			container.reserve(qpl::tuple_value_front(tuple));
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && qpl::has_reserve<C>() && qpl::tuple_size<T>() > 1) {
+				for (auto& i : container) {
+					qpl::impl::reserve(i, qpl::tuple_splice_front<1>(tuple));
+				}
+			}
+		}
+	}
 
+	template<typename C, typename... Sizes> requires(qpl::is_container<C>() && qpl::has_resize<C>() && qpl::variadic_size<Sizes...>() > 0)
+	void resize(C& container, Sizes... sizes) {
+		qpl::impl::resize(container, std::make_tuple(sizes...));
+	}
+	template<typename C, typename... Sizes> requires(qpl::is_container<C>() && qpl::has_reserve<C>() && qpl::variadic_size<Sizes...>() > 0)
+	void reserve(C& container, Sizes... sizes) {
+		qpl::impl::reserve(container, std::make_tuple(sizes...));
+	}
+
+	namespace impl {
+		template<typename T, qpl::size N>
+		struct possibilities_iterator {
+			std::array<T, N> values;
+			std::array<T, N> max;
+
+
+			constexpr possibilities_iterator(const std::array<T, N>& max) : values(), max() {
+				this->values.fill(T{});
+				this->max = max;
+			}
+			constexpr possibilities_iterator() : values(), max() {
+				this->values.fill(T{});
+				this->max.fill(T{});
+			}
+			constexpr bool operator==(const possibilities_iterator& other) {
+				return this->values == other.values;
+			}
+			constexpr bool operator!=(const possibilities_iterator& other) {
+				return this->values != other.values;
+			}
+			constexpr void set_end() {
+				for (auto& i : this->values) {
+					i = qpl::type_max<T>();
+				}
+			}
+			constexpr possibilities_iterator& operator++(int) {
+				bool ended = false;
+				for (qpl::u32 i = 0u; i < this->values.size(); ++i) {
+					++this->values[i];
+					if (this->values[i] == this->max[i]) {
+						this->values[i] = 0u;
+					}
+					else {
+						ended = true;
+						break;
+					}
+				}
+				if (!ended) {
+					this->set_end();
+				}
+				return *this;
+			}
+			constexpr possibilities_iterator& operator++() {
+				auto copy = *this;
+				this->operator++(0);
+				return copy;
+			}
+			constexpr auto operator*() const {
+				return qpl::array_to_tuple(this->values);
+			}
+		};
+
+
+		template<typename T, qpl::size N>
+		struct possibilities_reverse_iterator {
+			std::array<T, N> values;
+			std::array<T, N> max;
+
+
+			constexpr possibilities_reverse_iterator(const std::array<T, N>& max) : values(), max() {
+				this->values = max;
+				for (auto& i : this->values) {
+					--i;
+				}
+				this->max = max;
+			}
+			constexpr possibilities_reverse_iterator() : values(), max() {
+				this->values.fill(T{});
+				this->max.fill(T{});
+			}
+			constexpr bool operator==(const possibilities_reverse_iterator& other) {
+				return this->values == other.values;
+			}
+			constexpr bool operator!=(const possibilities_reverse_iterator& other) {
+				return this->values != other.values;
+			}
+			constexpr void set_end() {
+				for (auto& i : this->values) {
+					i = qpl::type_max<T>();
+				}
+			}
+			constexpr possibilities_reverse_iterator& operator++(int) {
+				bool ended = false;
+				for (qpl::u32 i = 0u; i < this->values.size(); ++i) {
+					auto index = this->values.size() - i - 1;
+					if (this->values[index] == T{}) {
+						this->values[index] = this->max[index] - 1;
+					}
+					else {
+						--this->values[index];
+						ended = true;
+						break;
+					}
+				}
+				if (!ended) {
+					this->set_end();
+				}
+				return *this;
+			}
+			constexpr possibilities_reverse_iterator& operator++() {
+				auto copy = *this;
+				this->operator++(0);
+				return copy;
+			}
+			constexpr auto operator*() const {
+				return qpl::array_to_tuple(this->values);
+			}
+		};
+
+		template<typename T, qpl::size N>
+		struct possibilities {
+			std::array<T, N> values;
+
+			constexpr possibilities(const std::array<T, N>& values) : values() {
+				this->values = values;
+			}
+
+			constexpr possibilities_iterator<T, N> cbegin() const {
+				possibilities_iterator<T, N> it(this->values);
+				return it;
+			}
+			constexpr possibilities_iterator<T, N> begin() const {
+				return this->cbegin();
+			}
+
+			constexpr possibilities_iterator<T, N> cend() const {
+				possibilities_iterator<T, N> it;
+				it.set_end();
+				return it;
+			}
+			constexpr possibilities_iterator<T, N> end() const {
+				return this->cend();
+			}
+
+
+			constexpr possibilities_reverse_iterator<T, N> crbegin() const {
+				possibilities_reverse_iterator<T, N> it(this->values);
+				return it;
+			}
+			constexpr possibilities_reverse_iterator<T, N> rbegin() const {
+				return this->crbegin();
+			}
+
+			constexpr possibilities_reverse_iterator<T, N> crend() const {
+				possibilities_reverse_iterator<T, N> it;
+				it.set_end();
+				return it;
+			}
+			constexpr possibilities_reverse_iterator<T, N> rend() const {
+				return this->crend();
+			}
+		};
+
+		template<typename T, qpl::size N>
+		struct reverse_possibilities {
+			std::array<T, N> values;
+
+			constexpr reverse_possibilities(const std::array<T, N>& values) : values() {
+				this->values = values;
+			}
+
+			constexpr possibilities_reverse_iterator<T, N> cbegin() const {
+				possibilities_reverse_iterator<T, N> it(this->values);
+				return it;
+			}
+			constexpr possibilities_reverse_iterator<T, N> begin() const {
+				return this->cbegin();
+			}
+
+			constexpr possibilities_reverse_iterator<T, N> cend() const {
+				possibilities_reverse_iterator<T, N> it;
+				it.set_end();
+				return it;
+			}
+			constexpr possibilities_reverse_iterator<T, N> end() const {
+				return this->cend();
+			}
+
+
+			constexpr possibilities_iterator<T, N> crbegin() const {
+				possibilities_iterator<T, N> it(this->values);
+				return it;
+			}
+			constexpr possibilities_iterator<T, N> rbegin() const {
+				return this->crbegin();
+			}
+
+			constexpr possibilities_iterator<T, N> crend() const {
+				possibilities_iterator<T, N> it;
+				it.set_end();
+				return it;
+			}
+			constexpr possibilities_iterator<T, N> rend() const {
+				return this->crend();
+			}
+		};
+	}
+
+	template<typename... Ts>
+	constexpr auto list_possibilities(Ts... values) {
+		return qpl::impl::possibilities(qpl::tuple_to_array(values...));
+	}
+	template<typename... Ts>
+	constexpr auto list_reverse_possibilities(Ts... values) {
+		return qpl::impl::reverse_possibilities(qpl::tuple_to_array(values...));
+	}
 
 	template<typename C>
 	std::pair<qpl::container_subtype<C>, qpl::container_subtype<C>> min_max_vector(const C& data) {

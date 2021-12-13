@@ -13,8 +13,6 @@
 
 namespace qpl {
 
-	QPLDLL std::vector<std::vector<qpl::u32>> sudoku_sum_possibilities(qpl::size sum, qpl::size numbers);
-	
 	template<typename T>
 	bool is_prime(T value) {
 		if (value < 5u) {

@@ -25,7 +25,7 @@ namespace qsf {
 	framework.set_title("x");
 	framework.set_style(sf::Style::Default);
 	framework.add_state<state>();
-	framework.gameloop();
+	framework.game_loop();
 	*/
 	struct framework {
 		framework() {
@@ -178,100 +178,177 @@ namespace qsf {
 		QPLDLL void set_shader(sf::Shader& shader);
 		QPLDLL void unbind_shader();
 
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, sf::RenderStates states) {
-			if constexpr (qsf::is_render_texture<T>()) {
-				this->framework->window.draw(drawable.get_sprite(), states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				if constexpr (qsf::is_render_texture<T>()) {
+					this->framework->window.draw(drawable.get_sprite(), states);
+				}
+				else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+					this->framework->window.draw(drawable, states);
+				}
+				else if constexpr (qsf::has_draw_object<T>()) {
+					draw_object draw(this->framework->window, states);
+					drawable.draw(draw);
+				}
+				else if constexpr (qsf::has_draw_sf<T>()) {
+					drawable.draw(this->framework->window, states);
+				}
 			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->framework->window.draw(drawable, states);
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				draw_object draw(this->framework->window, states);
-				drawable.draw(draw);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				drawable.draw(this->framework->window, states);
+			else {
+				for (auto& i : drawable) {
+					this->draw(i);
+				}
 			}
 		}
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable) {
-			if constexpr (qsf::is_render_texture<T>()) {
-				this->framework->window.draw(drawable.get_sprite(), this->render_states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				if constexpr (qsf::is_render_texture<T>()) {
+					this->framework->window.draw(drawable.get_sprite(), this->render_states);
+				}
+				else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+					this->framework->window.draw(drawable, this->render_states);
+				}
+				else if constexpr (qsf::has_draw_object<T>()) {
+					draw_object draw(this->framework->window, this->render_states);
+					drawable.draw(draw);
+				}
+				else if constexpr (qsf::has_draw_sf<T>()) {
+					drawable.draw(this->framework->window, this->render_states);
+				}
 			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->framework->window.draw(drawable, this->render_states);
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				draw_object draw(this->framework->window, this->render_states);
-				drawable.draw(draw);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				drawable.draw(this->framework->window, this->render_states);
+			else {
+				for (auto& i : drawable) {
+					this->draw(i);
+				}
 			}
 		}
 
-		template<typename T, typename V> requires qsf::has_any_draw_c<T>
+		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, qsf::view_rectangle<V> view) {
-			sf::RenderStates states = view.get_render_states();
-			if constexpr (qsf::is_render_texture<T>()) {
-				this->framework->window.draw(drawable.get_sprite(), states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = view.get_render_states();
+				if constexpr (qsf::is_render_texture<T>()) {
+					this->framework->window.draw(drawable.get_sprite(), states);
+				}
+				else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+					this->framework->window.draw(drawable, states);
+				}
+				else if constexpr (qsf::has_draw_object<T>()) {
+					draw_object draw(this->framework->window, states);
+					drawable.draw(draw);
+				}
+				else if constexpr (qsf::has_draw_sf<T>()) {
+					drawable.draw(this->framework->window, states);
+				}
 			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->framework->window.draw(drawable, states);
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				draw_object draw(this->framework->window, states);
-				drawable.draw(draw);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				drawable.draw(this->framework->window, states);
+			else {
+				for (auto& i : drawable) {
+					this->draw(i, view);
+				}
 			}
 		}
 
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_into(const std::string& name, const T& drawable) {
+			if constexpr (qsf::has_any_draw<T>()) {
 			this->get_render(name).draw(drawable, this->render_states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw(name, i);
+				}
+			}
 		}
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_into(const std::string& name, const T& drawable, sf::RenderStates states) {
-			this->get_render(name).draw(drawable, states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				this->get_render(name).draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw_into(name, i, states);
+				}
+			}
 		}
-		template<typename T, typename V> requires qsf::has_any_draw_c<T>
+		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_into(const std::string& name, const T& drawable, qsf::view_rectangle<V> view) {
-			sf::RenderStates states = view.get_render_states();
-			this->get_render(name).draw(drawable, states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = view.get_render_states();
+				this->get_render(name).draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw_into(name, i, view);
+				}
+			}
 		}
 
 
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_with_shader(const T& drawable, const std::string& name) {
-			sf::RenderStates states = this->render_states;
-			states.shader = &qsf::get_shader(name);
-			this->draw(drawable, states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = this->render_states;
+				states.shader = &qsf::get_shader(name);
+				this->draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw_with_shader(i, name);
+				}
+			}
 		}
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_with_shader(const T& drawable, sf::Shader& shader) {
-			sf::RenderStates states = this->render_states;
-			states.shader = &shader;
-			this->draw(drawable, states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = this->render_states;
+				states.shader = &shader;
+				this->draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw_with_shader(i, shader);
+				}
+			}
 		}
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_with_shader_into(const std::string& render_name, const T& drawable, const std::string& shader_name) {
-			sf::RenderStates states = this->render_states;
-			states.shader = &qsf::get_shader(shader_name);
-			this->get_render(render_name).draw(drawable, states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = this->render_states;
+				states.shader = &qsf::get_shader(shader_name);
+				this->get_render(render_name).draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw_with_shader_into(drawable, i, shader_name);
+				}
+			}
 		}
-		template<typename T> requires qsf::has_any_draw_c<T>
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_with_shader_into(const std::string& render_name, const T& drawable, sf::Shader& shader) {
-			sf::RenderStates states = this->render_states;
-			states.shader = &shader;
-			this->get_render(render_name).draw(drawable, states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = this->render_states;
+				states.shader = &shader;
+				this->get_render(render_name).draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw_with_shader_into(drawable, i, shader);
+				}
+			}
 		}
 
-		template<typename T> requires qsf::has_update_c<T>
+		template<typename T> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
 		void update(T& updatable) {
-			updatable.update(*this->event);
+			if constexpr (qsf::has_update<T>()) {
+				updatable.update(*this->event);
+			}
+			else {
+				for (auto& i : updatable) {
+					this->update(i);
+				}
+			}
 		}
 		QPLDLL void create();
 		QPLDLL bool is_open() const;

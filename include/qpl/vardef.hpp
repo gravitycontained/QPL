@@ -18,6 +18,7 @@
 namespace qpl {
 
 	using size = std::size_t;
+	using isize = std::conditional_t<sizeof(std::size_t) == 8u, std::int64_t, std::int32_t>;
 
 	using i8 = std::int8_t;
 	using u8 = std::uint8_t;

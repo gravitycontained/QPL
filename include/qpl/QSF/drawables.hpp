@@ -64,7 +64,7 @@ namespace qsf {
 			this->states = states;
 		}
 
-		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_subtype<T>>()))
+		template<typename T> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
 		void draw(const T& object) {
 			if constexpr (qsf::has_any_draw<T>()) {
 				if constexpr (qsf::is_render_texture<T>()) {
@@ -101,36 +101,43 @@ namespace qsf {
 				}
 			}
 		}
-		template<typename T> requires (qsf::has_any_draw<T>())
+		template<typename T> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
 		void draw(const T& object, sf::RenderStates states) {
-			if constexpr (qsf::is_render_texture<T>()) {
-				if (this->window) {
-					this->window->draw(object.get_sprite(), states);
+			if constexpr (qsf::has_any_draw<T>()) {
+				if constexpr (qsf::is_render_texture<T>()) {
+					if (this->window) {
+						this->window->draw(object.get_sprite(), states);
+					}
+					else if (this->texture) {
+						this->texture->draw(object.get_sprite(), states);
+					}
 				}
-				else if (this->texture) {
-					this->texture->draw(object.get_sprite(), states);
+				else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+					if (this->window) {
+						this->window->draw(object, states);
+					}
+					else if (this->texture) {
+						this->texture->draw(object, states);
+					}
+				}
+				else if constexpr (qsf::has_draw_object<T>()) {
+					auto copy = this->states;
+					this->states = states;
+					object.draw(*this);
+					this->states = copy;
+				}
+				else if constexpr (qsf::has_draw_sf<T>()) {
+					if (this->window) {
+						object.draw(*this->window, states);
+					}
+					else if (this->texture) {
+						object.draw(*this->texture, states);
+					}
 				}
 			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				if (this->window) {
-					this->window->draw(object, states);
-				}
-				else if (this->texture) {
-					this->texture->draw(object, states);
-				}
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				auto copy = this->states;
-				this->states = states;
-				object.draw(*this);
-				this->states = copy;
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				if (this->window) {
-					object.draw(*this->window, states);
-				}
-				else if (this->texture) {
-					object.draw(*this->texture, states);
+			else {
+				for (auto& i : object) {
+					this->draw(i, states);
 				}
 			}
 		}
@@ -2620,7 +2627,8 @@ namespace qsf {
 			this->dummy = qpl::clamp(this->start, value, this->end);
 			this->range_set = true;
 		}
-		void set_range(T start, T end, T* ptr) {
+		template<typename P> requires (std::is_pointer_v<P>)
+		void set_range(T start, T end, P ptr) {
 			this->start = start;
 			this->end = end;
 			this->range_set = true;

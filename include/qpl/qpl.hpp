@@ -51,7 +51,6 @@ freely, subject to the following restrictions:
 #include <qpl/perlin_noise.hpp>
 #include <qpl/pictures.hpp>
 #include <qpl/random.hpp>
-#include <qpl/ranges.hpp>
 #include <qpl/smooth.hpp>
 #include <qpl/string.hpp>
 #include <qpl/system.hpp>
