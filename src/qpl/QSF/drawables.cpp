@@ -93,6 +93,9 @@ namespace qsf {
 	void qsf::vertex_array::set_primitive_type(qsf::primitive_type primitive_type) {
 		this->primitive_type = primitive_type;
 	}
+	void qsf::vertex_array::set_primitive_type(sf::PrimitiveType primitive_type) {
+		this->primitive_type = static_cast<qsf::primitive_type>(primitive_type);
+	}
 
 	qpl::size qsf::vertex_array::size() const {
 		return this->vertices.size();
@@ -2461,7 +2464,11 @@ namespace qsf {
 
 		if (!found_first) {
 			qpl::hitbox result;
-			result.position = this->objects[index].front().hitbox.position;
+			if (index < this->objects.size()) {
+				if (this->objects[index].size()) {
+					result.position = this->objects[index].front().hitbox.position;
+				}
+			}
 			result.dimension = { 0,0 };
 			return result;
 		}

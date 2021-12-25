@@ -2659,33 +2659,60 @@ namespace qpl {
 
 		template<typename T>
 		constexpr void set(T value) {
-			this->memory[0] = qpl::u32_cast(value);
-			if constexpr (qpl::is_integer<T>() && qpl::bits_in_type<T>() == qpl::bits_in_type<qpl::u64>() && memory_size() > 1u) {
-				this->memory[1] = qpl::u32_cast(value >> base_max_log());
+			if constexpr (qpl::is_floating_point<T>()) {
+				if constexpr (qpl::is_qpl_floating_point<T>()) {
+					auto n = value.integer_part();
+					this->set(value.integer_part());
+				}
+				else {
+					auto str = qpl::to_string_full_precision(value);
+					qpl::size ctr = 0u;
+					while (ctr < str.length()) {
+						if (str[ctr] == '.') {
+							break;
+						}
+						++ctr;
+					}
+					if (ctr != str.length()) {
+						str.resize(ctr);
+					}
+					if (str.empty()) {
+						this->clear();
+					}
+					else {
+						this->set_base_string(str);
+					}
+				}
+			}
+			else {
+				this->memory[0] = qpl::u32_cast(value);
+				if constexpr (qpl::is_integer<T>() && qpl::bits_in_type<T>() == qpl::bits_in_type<qpl::u64>() && memory_size() > 1u) {
+					this->memory[1] = qpl::u32_cast(value >> base_max_log());
 
-				if constexpr (qpl::is_signed<T>()) {
+					if constexpr (qpl::is_signed<T>()) {
+						if (value < T{}) {
+							for (qpl::u32 i = 2u; i < this->memory_size(); ++i) {
+								this->memory[i] = qpl::u32_max;
+							}
+							return;
+						}
+					}
+					for (qpl::u32 i = 2u; i < this->memory_size(); ++i) {
+						this->memory[i] = qpl::u32{};
+					}
+					return;
+				}
+				else if constexpr (qpl::is_signed<T>()) {
 					if (value < T{}) {
-						for (qpl::u32 i = 2u; i < this->memory_size(); ++i) {
+						for (qpl::u32 i = 1u; i < this->memory_size(); ++i) {
 							this->memory[i] = qpl::u32_max;
 						}
 						return;
 					}
 				}
-				for (qpl::u32 i = 2u; i < this->memory_size(); ++i) {
+				for (qpl::u32 i = 1u; i < this->memory_size(); ++i) {
 					this->memory[i] = qpl::u32{};
 				}
-				return;
-			}
-			else if constexpr (qpl::is_signed<T>()) {
-				if (value < T{}) {
-					for (qpl::u32 i = 1u; i < this->memory_size(); ++i) {
-						this->memory[i] = qpl::u32_max;
-					}
-					return;
-				}
-			}
-			for (qpl::u32 i = 1u; i < this->memory_size(); ++i) {
-				this->memory[i] = qpl::u32{};
 			}
 		}
 
@@ -7739,11 +7766,17 @@ namespace qpl {
 				}
 			}
 
+			
 			qpl::size e_position = string.length();
+			qpl::integer<exponent_bits, true> exp = 0;
 			bool scientific_notation = false;
 			for (qpl::u32 i = off; i < qpl::i32_cast(string.length() - 1); ++i) {
 				auto substr = string.substr(i, 2);
 				if (substr == "e+" || substr == "e-") {
+					if (string.length() > i + 2) {
+						exp = string.substr(i + 2);
+					}
+					//todo: implement exponent
 					scientific_notation = true;
 					e_position = qpl::size_cast(i);
 					break;
@@ -7828,27 +7861,29 @@ namespace qpl {
 					this->mantissa <<= float_msb;
 					this->exponent -= float_msb;
 				}
-
 			}
 		}
 
 		constexpr void set(qpl::f64 value) {
-			this->set(std::string_view{ qpl::to_string(value) });
-			//auto content = qpl::double_content(value);
-			//
-			//this->sign = (qpl::u64)content.sign;
-			//this->exponent.memory.front() = (qpl::u32)content.exponent;
-			//if (this->exponent.get_bit(qpl::double_content::exponent_size() - 1)) {
-			//	this->exponent.set_bit(qpl::double_content::exponent_size() - 1, false);
-			//}
-			//else {
-			//	this->exponent.memory.front() = ~(qpl::u32)content.exponent & (qpl::u32_max >> (qpl::bits_in_type<qpl::u32>() - (qpl::double_content::exponent_size() - 1)));
-			//	this->exponent.flip_bits();
-			//}
-			//++this->exponent;
-			//this->mantissa = (qpl::u64)content.mantissa;
-			//this->mantissa <<= (mantissa_bits - (qpl::double_content::mantissa_size())) - 1;
-			//this->mantissa.back() = true;
+			//this->set(std::string_view{ qpl::to_string_full_precision(value) });
+			auto content = qpl::double_content(value);
+			
+			this->sign = content.sign;
+			this->exponent.memory.front() = content.exponent;
+			if (this->exponent.get_bit(qpl::double_content::exponent_size() - 1)) {
+				this->exponent.set_bit(qpl::double_content::exponent_size() - 1, false);
+			}
+			else {
+				this->exponent.flip_bits();
+				this->exponent.memory.front() = ~(qpl::u32)content.exponent & (qpl::u32_max >> (qpl::bits_in_type<qpl::u32>() - (qpl::double_content::exponent_size() - 1)));
+			}
+			++this->exponent;
+			this->mantissa = (qpl::u64)content.mantissa;
+			this->mantissa <<= (mantissa_bits - (qpl::double_content::mantissa_size())) - 1;
+			this->mantissa.back() = true;
+		}
+		constexpr void set(qpl::f32 value) {
+			this->set(qpl::f64_cast(value));
 		}
 
 		template<typename T> requires(qpl::is_stl_integer<T>())
@@ -8461,26 +8496,16 @@ namespace qpl {
 				if (integer) {
 					auto v = *this;
 
-					qpl::begin_benchmark_end_previous("pow", "ln");
-
 					this->ln_precision(bits);
-					qpl::begin_benchmark_end_previous("pow", "mul");
 					this->mul(value);
-					qpl::begin_benchmark_end_previous("pow", "exp");
-					this->exp_precision(bits >> 1);
-					qpl::end_benchmark();
 
 					v.pow(integer);
 					this->mul(v);
 				}
 				else {
-					qpl::begin_benchmark_end_previous("pow", "ln");
 					this->ln_precision(bits);
-					qpl::begin_benchmark_end_previous("pow", "mul");
 					this->mul(value);
-					qpl::begin_benchmark_end_previous("pow", "exp");
 					this->exp_precision(bits >> 1);
-					qpl::end_benchmark();
 				}
 			}
 		}
@@ -9459,6 +9484,462 @@ namespace qpl {
 		1e301, 1e302, 1e303, 1e304, 1e305, 1e306, 1e307, 1e308, 
 	};
 
+	template<typename E>
+	struct big_float_t {
+		qpl::f64 mantissa = 1.0;
+		E exponent = 0;
+
+		template<typename T>
+		constexpr big_float_t(T value) : mantissa(), exponent() {
+			this->set(value);
+		}
+		constexpr big_float_t() : mantissa(0.0), exponent(0) {
+
+		}
+
+		constexpr big_float_t(qpl::f64 mantissa, E exponent) : mantissa(mantissa), exponent(exponent) {
+
+		}
+
+		constexpr void clear() {
+			this->mantissa = 1.0;
+			this->exponent = 0;
+		}
+
+		constexpr void check() {
+			if (!this->mantissa) {
+				this->exponent = 0;
+				return;
+			}
+			if (this->mantissa >= 1.0 && this->mantissa <= 10.0) {
+				return;
+			}
+			auto log = qpl::type_cast<E>(std::log10(qpl::abs(this->mantissa)));
+			if (log < 0) {
+				--log;
+				if (-log < qpl::signed_cast(qpl::f64_tens.size())) {
+					auto ten = qpl::f64_tens[-log];
+					this->mantissa *= ten;
+				}
+				else {
+					this->clear();
+				}
+			}
+			else {
+				if (log < qpl::signed_cast(qpl::f64_tens.size())) {
+					auto ten = qpl::f64_tens[log];
+					this->mantissa /= ten;
+				}
+				else {
+					this->clear();
+				}
+			}
+			this->exponent += log;
+		}
+
+		constexpr bool fits_f64() const {
+			return qpl::abs(this->exponent) < qpl::signed_cast(qpl::f64_tens.size() - 1);
+		}
+		std::string scientific_string() const {
+			auto str = this->exponent < 0 ? "e" : "e+";
+			return qpl::to_string(qpl::to_string_full_precision(this->mantissa), str, this->exponent);
+		}
+		std::string decimal_string() const {
+			if (!this->fits_f64()) {
+				return "inf";
+			}
+			else {
+				return qpl::to_string(this->operator qpl::f64());
+			}
+		}
+		std::string string() const {
+			if (!this->fits_f64()) {
+				return this->scientific_string();
+			}
+			else {
+				auto value = this->operator qpl::f64();
+				if (value < 1e6) {
+					return qpl::to_string_full_precision(this->operator qpl::f64());
+				}
+				else {
+					std::ostringstream stream;
+					stream << std::fixed << std::setprecision(qpl::f64_digits) << std::scientific << value;
+					return stream.str();
+				}
+			}
+		}
+
+		constexpr operator qpl::f64() const {
+			if (!this->fits_f64()) {
+				return qpl::f64_max;
+			}
+			auto ten = qpl::f64_tens[qpl::abs(this->exponent)];
+			if (this->exponent < 0) {
+				return this->mantissa / ten;
+			}
+			else {
+				return this->mantissa * ten;
+			}
+		}
+
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr void set(T value) {
+			this->mantissa = qpl::f64_cast(value);
+			this->exponent = 0;
+			this->check();
+		}
+		constexpr void set(big_float_t value) {
+			this->exponent = value.exponent;
+			this->mantissa = value.mantissa;
+		}
+		constexpr void set(std::string_view string) {
+			for (qpl::u32 i = 0u; i < string.length() - 2; ++i) {
+				if (string.substr(i, 1) == "e") {
+					if (string.length() > i + 2) {
+						if (string.substr(i, 2) == "e-") {
+							this->exponent = qpl::string_cast<E>(string.substr(i + 1));
+						}
+						else if (string.substr(i, 2) == "e+") {
+							this->exponent = qpl::string_cast<E>(string.substr(i + 2));
+						}
+						else {
+							this->exponent = qpl::string_cast<E>(string.substr(i + 1));
+						}
+					}
+					else {
+						this->exponent = 0;
+					}
+
+					if (i > 0) {
+						this->mantissa = qpl::string_cast<qpl::f64>(string.substr(0, i));
+					}
+					else {
+						this->mantissa = 0;
+					}
+					return;
+				}
+			}
+
+		}
+		constexpr void set(std::string string) {
+			this->set(std::string_view{ string });
+		}
+		constexpr void set(const char* string) {
+			this->set(std::string_view{ string });
+		}
+
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr void add(T value) {
+			auto converted = qpl::f64_cast(value);
+			if (qpl::abs(this->exponent) >= qpl::signed_cast(qpl::f64_tens.size())) {
+				return;
+			}
+			auto ten = qpl::f64_tens[qpl::abs(this->exponent)];
+			if (this->exponent < 0) {
+				converted *= ten;
+			}
+			else {
+				converted /= ten;
+			}
+			this->mantissa += converted;
+			this->check();
+		}
+		constexpr void add(big_float_t value) {
+			if (this->exponent > value.exponent) {
+				qpl::f64 add = 0.0;
+				auto index = this->exponent - value.exponent;
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
+					add = value.mantissa / qpl::f64_tens[index];
+				}
+				this->mantissa += add;
+				this->check();
+			}
+			else if (this->exponent < value.exponent) {
+				qpl::f64 add = 0.0;
+				auto index = value.exponent - this->exponent;
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
+					add = this->mantissa / qpl::f64_tens[index];
+				}
+				this->mantissa = (value.mantissa + add);
+				this->exponent = value.exponent;
+				this->check();
+			}
+			else {
+				this->mantissa += value.mantissa;
+				this->check();
+			}
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr void sub(T value) {
+			auto converted = qpl::f64_cast(value);
+			if (qpl::abs(this->exponent) >= qpl::signed_cast(qpl::f64_tens.size())) {
+				return;
+			}
+			auto ten = qpl::f64_tens[qpl::abs(this->exponent)];
+			if (this->exponent < 0) {
+				converted *= ten;
+			}
+			else {
+				converted /= ten;
+			}
+			this->mantissa -= converted;
+			this->check();
+		}
+		constexpr void sub(big_float_t value) {
+			if (this->exponent > value.exponent) {
+				qpl::f64 sub = 0.0;
+				auto index = this->exponent - value.exponent;
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
+					sub = value.mantissa / qpl::f64_tens[index];
+				}
+				this->mantissa -= sub;
+				this->check();
+			}
+			else if (this->exponent < value.exponent) {
+				qpl::f64 sub = 0.0;
+				auto index = value.exponent - this->exponent;
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
+					sub = this->mantissa / qpl::f64_tens[index];
+				}
+				this->mantissa = (value.mantissa - sub);
+				this->exponent = value.exponent;
+				this->check();
+			}
+			else {
+				this->mantissa += value.mantissa;
+				this->check();
+			}
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr void mul(T value) {
+			this->mantissa *= value;
+			this->check();
+		}
+		constexpr void mul(big_float_t value) {
+			this->mantissa *= value.mantissa;
+			this->exponent += value.exponent;
+			this->check();
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr void div(T value) {
+			this->mantissa /= value;
+			this->check();
+		}
+		constexpr void div(big_float_t value) {
+			this->mantissa /= value.mantissa;
+			this->exponent -= value.exponent;
+			this->check();
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr void lshift(T value) {
+			this->exponent += value;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr void rshift(T value) {
+			this->exponent -= value;
+		}
+		void ln() {
+			this->mantissa = std::log(this->mantissa) + qpl::ln10 * this->exponent;
+			this->exponent = 0;
+			this->check();
+		}
+		static qpl::big_float_t<E> ln(qpl::big_float_t<E> n) {
+			n.ln();
+			return n;
+		}
+		void ln10() {
+			this->mantissa = std::log10(this->mantissa) + this->exponent;
+			this->exponent = 0;
+			this->check();
+		}
+		static qpl::big_float_t<E> ln10(qpl::big_float_t<E> n) {
+			n.ln10();
+			return n;
+		}
+
+		constexpr static qpl::big_float_t<E> max() {
+			return qpl::big_float_t{ qpl::f64_lower_bound10, qpl::isize_max };
+		}
+		constexpr static qpl::big_float_t<E> min() {
+			return qpl::big_float_t{ 1.0, qpl::isize_min };
+		}
+
+
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		void pow(T value) {
+			this->mantissa = (std::log10(this->mantissa) + qpl::f64_cast(this->exponent)) * value;
+			this->exponent = qpl::type_cast<E>(this->mantissa);
+			this->mantissa = std::pow(10, this->mantissa - qpl::f64_cast(this->exponent));
+			this->check();
+		}
+		void pow(big_float_t value) {
+			if (value.fits_f64()) {
+				this->pow(value.operator qpl::f64());
+			}
+			else {
+				constexpr auto a = qpl::big_float_t::max();
+				*this = qpl::big_float_t::max();
+			}
+		}
+		template<typename T, typename U>
+		static qpl::big_float_t<E> pow(T a, U b) {
+			qpl::big_float_t n(a);
+			n.pow(b);
+			return n;
+		}
+
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr bool greater(T value) {
+			return this->greater(big_float_t(value));
+		}
+		constexpr bool greater(big_float_t value) {
+			if (this->exponent > value.exponent) {
+				return true;
+			}
+			if (this->exponent < value.exponent) {
+				return false;
+			}
+			return this->mantissa > value.mantissa;
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr bool less(T value) {
+			return this->less(big_float_t(value));
+		}
+		constexpr bool less(big_float_t value) {
+			if (this->exponent > value.exponent) {
+				return false;
+			}
+			if (this->exponent < value.exponent) {
+				return true;
+			}
+			return this->mantissa < value.mantissa;
+		}
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr bool equal(T value) {
+			return this->equal(big_float_t(value));
+		}
+		constexpr bool equal(big_float_t value) {
+			if (this->exponent != value.exponent) {
+				return false;
+			}
+			return this->mantissa == value.mantissa;
+		}
+
+
+
+		template<typename T>
+		constexpr qpl::big_float_t<E>& operator=(T value) {
+			this->set(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E> operator+(T value) const {
+			auto copy = *this;
+			copy.add(value);
+			return copy;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E>& operator+=(T value) {
+			this->add(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E> operator-(T value) const {
+			auto copy = *this;
+			copy.sub(value);
+			return copy;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E>& operator-=(T value) {
+			this->sub(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E> operator*(T value) const {
+			auto copy = *this;
+			copy.mul(value);
+			return copy;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E>& operator*=(T value) {
+			this->mul(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E> operator/(T value) const {
+			auto copy = *this;
+			copy.div(value);
+			return copy;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E>& operator/=(T value) {
+			this->div(value);
+			return *this;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E> operator^(T value) const {
+			auto copy = *this;
+			copy.pow(value);
+			return copy;
+		}
+		template<typename T>
+		constexpr qpl::big_float_t<E>& operator^=(T value) {
+			this->pow(value);
+			return *this;
+		}
+
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float_t<E>& operator<<=(T value) {
+			this->lshift(value);
+			return *this;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float_t<E> operator<<(T value) const {
+			auto copy = *this;
+			copy.lshift(value);
+			return copy;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float_t<E>& operator>>=(T value) {
+			this->rshift(value);
+			return *this;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float_t<E> operator>>(T value) const {
+			auto copy = *this;
+			copy.rshift(value);
+			return copy;
+		}
+
+
+		template<typename T>
+		constexpr bool operator>(T value) {
+			return this->greater(value);
+		}
+		template<typename T>
+		constexpr bool operator<(T value) {
+			return this->less(value);
+		}
+		template<typename T>
+		constexpr bool operator>=(T value) {
+			return !this->less(value);
+		}
+		template<typename T>
+		constexpr bool operator<=(T value) {
+			return !this->greater(value);
+		}
+		template<typename T>
+		constexpr bool operator==(T value) {
+			return this->equal(value);
+		}
+		template<typename T>
+		constexpr bool operator!=(T value) {
+			return !this->equal(value);
+		}
+	};
+
+	using big_float = big_float_t<qpl::i64>;
+	/*
 	struct big_float {
 		qpl::f64 mantissa = 0.0;
 		qpl::i64 exponent = 0;
@@ -9469,6 +9950,15 @@ namespace qpl {
 		}
 		constexpr big_float() : mantissa(0.0), exponent(0) {
 
+		}
+
+		constexpr big_float(qpl::f64 mantissa, qpl::i64 exponent) : mantissa(mantissa), exponent(exponent) {
+
+		}
+
+		constexpr void clear() {
+			this->mantissa = 0.0;
+			this->exponent = 0;
 		}
 
 		constexpr void check() {
@@ -9482,30 +9972,59 @@ namespace qpl {
 			auto log = qpl::i64_cast(std::log10(qpl::abs(this->mantissa)));
 			if (log < 0) {
 				--log;
-				auto ten = qpl::f64_tens[-log];
-				this->mantissa *= ten;
+				if (-log < qpl::signed_cast(qpl::f64_tens.size())) {
+					auto ten = qpl::f64_tens[-log];
+					this->mantissa *= ten;
+				}
+				else {
+					this->clear();
+				}
 			}
 			else {
-				auto ten = qpl::f64_tens[log];
-				this->mantissa /= ten;
+				if (log < qpl::signed_cast(qpl::f64_tens.size())) {
+					auto ten = qpl::f64_tens[log];
+					this->mantissa /= ten;
+				}
+				else {
+					this->clear();
+				}
 			}
 			this->exponent += qpl::i64_cast(log);
 		}
 
+		constexpr bool fits_f64() const {
+			return qpl::abs(this->exponent) <= qpl::signed_cast(qpl::f64_tens.size());
+		}
 		std::string scientific_string() const {
-			return qpl::to_string(this->mantissa, "e", this->exponent);
+			return qpl::to_string(qpl::to_string_full_precision(this->mantissa), "e", this->exponent);
 		}
 		std::string decimal_string() const {
-			if (qpl::abs(this->exponent) >= qpl::f64_tens.size()) {
+			if (!this->fits_f64()) {
 				return "inf";
 			}
 			else {
 				return qpl::to_string(this->operator qpl::f64());
 			}
 		}
+		std::string string() const {
+			if (!this->fits_f64()) {
+				return this->scientific_string();
+			}
+			else {
+				auto value = this->operator qpl::f64();
+				if (value < 1e6) {
+					return qpl::to_string_full_precision(this->operator qpl::f64());
+				}
+				else {
+					std::ostringstream stream;
+					stream << std::fixed << std::setprecision(qpl::f64_digits) << std::scientific << value;
+					return stream.str();
+				}
+			}
+		}
 
 		constexpr operator qpl::f64() const {
-			if (qpl::abs(this->exponent) >= qpl::f64_tens.size()) {
+			if (!this->fits_f64()) {
 				return qpl::f64_max;
 			}
 			auto ten = qpl::f64_tens[qpl::abs(this->exponent)];
@@ -9530,7 +10049,7 @@ namespace qpl {
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		constexpr void add(T value) {
 			auto converted = qpl::f64_cast(value);
-			if (qpl::abs(this->exponent) >= qpl::f64_tens.size()) {
+			if (qpl::abs(this->exponent) >= qpl::signed_cast(qpl::f64_tens.size())) {
 				return;
 			}
 			auto ten = qpl::f64_tens[qpl::abs(this->exponent)];
@@ -9546,8 +10065,8 @@ namespace qpl {
 		constexpr void add(big_float value) {
 			if (this->exponent > value.exponent) {
 				qpl::f64 add = 0.0;
-				auto index = qpl::i64_cast(this->exponent - value.exponent);
-				if (index < qpl::f64_tens.size()) {
+				auto index = this->exponent - value.exponent;
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
 					add = value.mantissa / qpl::f64_tens[index];
 				}
 				this->mantissa += add;
@@ -9556,7 +10075,7 @@ namespace qpl {
 			else if (this->exponent < value.exponent) {
 				qpl::f64 add = 0.0;
 				auto index = qpl::i64_cast(value.exponent - this->exponent);
-				if (index < qpl::f64_tens.size()) {
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
 					add = this->mantissa / qpl::f64_tens[index];
 				}
 				this->mantissa = (value.mantissa + add);
@@ -9571,7 +10090,7 @@ namespace qpl {
 		template<typename T> requires (qpl::is_arithmetic<T>())
 		constexpr void sub(T value) {
 			auto converted = qpl::f64_cast(value);
-			if (qpl::abs(this->exponent) >= qpl::f64_tens.size()) {
+			if (qpl::abs(this->exponent) >= qpl::signed_cast(qpl::f64_tens.size())) {
 				return;
 			}
 			auto ten = qpl::f64_tens[qpl::abs(this->exponent)];
@@ -9587,8 +10106,8 @@ namespace qpl {
 		constexpr void sub(big_float value) {
 			if (this->exponent > value.exponent) {
 				qpl::f64 sub = 0.0;
-				auto index = qpl::i64_cast(this->exponent - value.exponent);
-				if (index < qpl::f64_tens.size()) {
+				auto index = this->exponent - value.exponent;
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
 					sub = value.mantissa / qpl::f64_tens[index];
 				}
 				this->mantissa -= sub;
@@ -9597,7 +10116,7 @@ namespace qpl {
 			else if (this->exponent < value.exponent) {
 				qpl::f64 sub = 0.0;
 				auto index = qpl::i64_cast(value.exponent - this->exponent);
-				if (index < qpl::f64_tens.size()) {
+				if (index < qpl::signed_cast(qpl::f64_tens.size())) {
 					sub = this->mantissa / qpl::f64_tens[index];
 				}
 				this->mantissa = (value.mantissa - sub);
@@ -9628,6 +10147,63 @@ namespace qpl {
 			this->mantissa /= value.mantissa;
 			this->exponent -= value.exponent;
 			this->check();
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr void lshift(T value) {
+			this->exponent += value;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr void rshift(T value) {
+			this->exponent -= value;
+		}
+		void ln() {
+			this->mantissa = std::log(this->mantissa) + qpl::ln10 * this->exponent;
+			this->exponent = 0;
+			this->check();
+		}
+		static qpl::big_float ln(qpl::big_float n) {
+			n.ln();
+			return n;
+		}
+		void ln10() {
+			this->mantissa = std::log10(this->mantissa) + this->exponent;
+			this->exponent = 0;
+			this->check();
+		}
+		static qpl::big_float ln10(qpl::big_float n) {
+			n.ln10();
+			return n;
+		}
+
+		constexpr static qpl::big_float max() {
+			return qpl::big_float{ qpl::f64_lower_bound10, qpl::isize_max };
+		}
+		constexpr static qpl::big_float min() {
+			return qpl::big_float{ 1.0, qpl::isize_min };
+		}
+
+
+		template<typename T> requires (qpl::is_arithmetic<T>())
+		void pow(T value) {
+			this->mantissa = (std::log10(this->mantissa) + this->exponent) * value;
+			this->exponent = qpl::i64_cast(this->mantissa);
+			this->mantissa = std::pow(10, this->mantissa - this->exponent);
+			this->check();
+		}
+		void pow(big_float value) {
+			if (value.fits_f64()) {
+				this->pow(value.operator qpl::f64());
+			}
+			else {
+				constexpr auto a = qpl::big_float::max();
+				*this = qpl::big_float::max();
+			}
+		}
+		template<typename T, typename U>
+		static qpl::big_float pow(T a, U b) {
+			qpl::big_float n(a);
+			n.pow(b);
+			return n;
 		}
 
 		template<typename T> requires (qpl::is_arithmetic<T>())
@@ -9718,6 +10294,40 @@ namespace qpl {
 			this->div(value);
 			return *this;
 		}
+		template<typename T>
+		constexpr qpl::big_float operator^(T value) const {
+			auto copy = *this;
+			copy.pow(value);
+			return copy;
+		}
+		template<typename T>
+		constexpr qpl::big_float& operator^=(T value) {
+			this->pow(value);
+			return *this;
+		}
+
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float& operator<<=(T value) {
+			this->lshift(value);
+			return *this;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float operator<<(T value) const {
+			auto copy = *this;
+			copy.lshift(value);
+			return copy;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float& operator>>=(T value) {
+			this->rshift(value);
+			return *this;
+		}
+		template<typename T> requires (qpl::is_integer<T>())
+		constexpr qpl::big_float operator>>(T value) const {
+			auto copy = *this;
+			copy.rshift(value);
+			return copy;
+		}
 
 
 		template<typename T>
@@ -9745,9 +10355,13 @@ namespace qpl {
 			return !this->equal(value);
 		}
 	};
-
+	*/
 	std::ostream& operator<<(std::ostream& os, const qpl::big_float& value) {
-		return os << value.scientific_string();
+		return os << value.string();
+	}
+	template<typename E>
+	std::ostream& operator<<(std::ostream& os, const qpl::big_float_t<E>& value) {
+		return os << value.string();
 	}
 }
 

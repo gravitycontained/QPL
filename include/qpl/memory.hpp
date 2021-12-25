@@ -8,6 +8,7 @@
 #include <qpl/type_traits.hpp>
 #include <qpl/system.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/exception.hpp>
 #include <array>
 #include <string_view>
 #include <sstream>
@@ -25,16 +26,8 @@ namespace qpl {
 		memcpy(result.data(), data.data(), data.size());
 		return result;
 	}
-	template<typename C> requires (qpl::is_container<C>())
-	constexpr inline void string_to_container_memory(const std::string& source, C& dest) {
-		if (source.empty()) {
-			return;
-		}
-		dest.resize((source.size() - 1) / qpl::bytes_in_type<qpl::container_subtype<C>>() + 1);
-		memcpy(dest.data(), source.data(), source.size());
-	}
 
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr inline std::string container_memory_to_string(const C& data) {
 		std::string result;
 		result.resize(data.size() * sizeof(qpl::container_subtype<C>));
@@ -49,25 +42,53 @@ namespace qpl {
 		return result;
 	}
 	template<typename C>
+	constexpr inline std::string stack_memory_to_string(const C& data) {
+		return memory_to_string(data);
+	}
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
+	constexpr inline std::string heap_memory_to_string(const C& data) {
+		return container_memory_to_string(data);
+	}
+	template<typename C>
 	inline const char* memory_to_cstring(const C& data) {
 		return reinterpret_cast<const char*>(&data);
 	}
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr inline void container_memory_to_string(const C& data, std::string& destination) {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(destination.data(), data.data(), destination.size());
 	}
-	template<typename C> requires (qpl::is_container<C>())
-	constexpr inline void string_to_vector_memory(const std::string& data, C& destination) {
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
+		constexpr inline void string_to_container_memory(const std::string_view& data, C& destination) {
 		if (data.empty()) {
 			return;
 		}
 		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
 		memcpy(destination.data(), data.data(), data.size());
 	}
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
+		constexpr inline void string_to_heap_memory(const std::string_view& data, C& destination) {
+		string_to_container_memory(data, destination);
+	}
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_resize<C>())
+	constexpr inline void string_to_container_memory(const std::string& data, C& destination) {
+		if (data.empty()) {
+			return;
+		}
+		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
+		memcpy(destination.data(), data.data(), data.size());
+	}
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_resize<C>())
+	constexpr inline void string_to_heap_memory(const std::string& data, C& destination) {
+		string_to_container_memory(data, destination);
+	}
 	template<typename C>
 	inline void string_to_memory(const std::string& data, C& destination) {
 		memcpy(&destination, data.data(), qpl::min(sizeof(C), data.size()));
+	}
+	template<typename C>
+	inline void string_to_stack_memory(const std::string& data, C& destination) {
+		string_to_memory(data, destination);
 	}
 	template<typename C>
 	inline C string_to_memory(const std::string& data) {
@@ -79,15 +100,11 @@ namespace qpl {
 		memcpy(&destination, data.data(), data.size());
 		return destination;
 	}
-	template<typename C> requires (qpl::is_container<C>())
-	constexpr inline void string_to_vector_memory(const std::string_view& data, C& destination) {
-		if (data.empty()) {
-			return;
-		}
-		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
-		memcpy(destination.data(), data.data(), data.size());
+	template<typename C> requires (qpl::has_data<C>())
+	constexpr inline void string_to_stack_memory(const std::string_view& data, C& destination) {
+		string_to_memory(data, destination);
 	}
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr inline void add_string_to_container_memory(const std::string& data, C& destination) {
 		if (data.empty()) {
 			return;
@@ -97,7 +114,7 @@ namespace qpl {
 		memcpy(destination.data() + size, data.data(), data.size());
 	}
 
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr std::wstring container_memory_to_wstring(const C& data) {
 		std::wstring result;
 		result.resize(data.size() * sizeof(qpl::container_subtype<C>) / (sizeof(wchar_t) / sizeof(char)));
@@ -109,19 +126,19 @@ namespace qpl {
 		destination.resize(data.size() * sizeof(qpl::container_subtype<C>));
 		memcpy(destination.data(), data.data(), destination.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr C wstring_to_container_memory(const std::wstring& data) {
 		C result;
 		result.resize(((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>) + 1));
 		memcpy(result.data(), data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 		return result;
 	}
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr void wstring_to_container_memory(const std::wstring& data, C& destination) {
 		destination.resize(((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>) + 1));
 		memcpy(destination.data(), data.data(), data.size() * (sizeof(wchar_t) / sizeof(char)));
 	}
-	template<typename C> requires (qpl::is_container<C>())
+	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
 	constexpr void add_wstring_to_container_memory(const std::wstring& data, C& destination) {
 		auto size = destination.size();
 		destination.resize(size + ((data.size() * (sizeof(wchar_t) / sizeof(char)) - 1) / sizeof(qpl::container_subtype<C>)) + 1);
@@ -135,21 +152,6 @@ namespace qpl {
 	template<typename T, typename U> requires(qpl::bytes_in_type<T>() != qpl::bytes_in_type<U>())
 	constexpr inline void copy_memory(const T& source, U& destination) {
 		memcpy(&destination, &source, qpl::min(qpl::bytes_in_type<T>(), qpl::bytes_in_type<U>()));
-	}
-	template<typename C>
-	constexpr inline void clear_array(C& destination) {
-		if constexpr (qpl::is_vector_like<C>()) {
-			for (auto& i : destination) {
-				i = qpl::container_subtype<C>{ 0 };
-			}
-		}
-		else {
-			memset(&destination, 0, sizeof(C));
-		}
-	}
-	template<typename C>
-	constexpr inline void clear_array_offset(C& destination, qpl::size offset = 0u) {
-		memset(reinterpret_cast<std::byte*>(&destination) + offset * qpl::bytes_in_type<qpl::container_subtype<C>>(), 0, sizeof(C) - offset * qpl::bytes_in_type<qpl::container_subtype<C>>());
 	}
 	template<typename U, typename T> requires(qpl::bytes_in_type<T>() == qpl::bytes_in_type<U>())
 	constexpr inline U convert_memory(const T& source) {
@@ -851,6 +853,9 @@ namespace qpl {
 	std::ostream& operator<<(std::ostream& os, const vector<T>& array) {
 		return (os << array.string());
 	}
+
+
 }
+
 
 #endif

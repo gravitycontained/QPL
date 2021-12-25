@@ -525,6 +525,13 @@ namespace qpl {
 	void wait(double seconds) {
 		qpl::wait(qpl::secs(seconds));
 	}
+	void wait_while(double seconds) {
+		auto n = qpl::secs(seconds);
+		qpl::clock clock;
+		while (clock.elapsed() < n) {
+
+		}
+	}
 
 
 	std::string get_current_time_string() {

@@ -5,10 +5,10 @@
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
-#include <qpl/vardef.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/algorithm.hpp>
 #include <string>
+#include <qpl/vardef.hpp>
 
 namespace qsf {
 

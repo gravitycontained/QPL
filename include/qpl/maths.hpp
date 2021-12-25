@@ -64,24 +64,6 @@ namespace qpl {
 		return result;
 	}
 
-	template<typename T>
-	qpl::u32 collatz_conjecture(T n) {
-		qpl::u32 ctr = 0u;
-		while (n != 1) {
-			if (n % 2 == 0) {
-				n >>= 1;
-			}
-			else {
-				n *= 3;
-				++n;
-			}
-
-			qpl::println(n);
-			++ctr;
-		}
-		return ctr;
-	}
-
 
 	struct exponential_moving_average {
 		exponential_moving_average(qpl::f64 time_period = 5.0) {

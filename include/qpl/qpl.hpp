@@ -38,6 +38,7 @@ freely, subject to the following restrictions:
 #include <qpl/config.hpp>
 #include <qpl/date.hpp>
 #include <qpl/encryption.hpp>
+#include <qpl/exception.hpp>
 #include <qpl/filesys.hpp>
 #include <qpl/fraction.hpp>
 #include <qpl/intrinsics.hpp>

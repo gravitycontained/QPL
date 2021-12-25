@@ -10,10 +10,10 @@ namespace qpl {
 	}
 
 	void qpl::pixels::load(std::string_view sv) {
-		qpl::string_to_vector_memory(sv, this->data);
+		qpl::string_to_heap_memory(sv, this->data);
 	}
 	void qpl::pixels::load_bmp(std::string_view sv) {
-		qpl::string_to_vector_memory(sv.substr(64), this->data);
+		qpl::string_to_heap_memory(sv.substr(64), this->data);
 	}
 	void qpl::pixels::set_dimension(qpl::u32 width, qpl::u32 height) { 
 		this->width = width;

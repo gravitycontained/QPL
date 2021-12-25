@@ -238,6 +238,7 @@ namespace qsf {
 	struct vertex_array {
 
 		QPLDLL void set_primitive_type(qsf::primitive_type primitive_type);
+		QPLDLL void set_primitive_type(sf::PrimitiveType primitive_type);
 
 		QPLDLL qpl::size size() const;
 		QPLDLL bool empty() const;

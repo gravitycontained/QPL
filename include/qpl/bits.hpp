@@ -635,7 +635,7 @@ namespace qpl {
 	};
 
 	struct double_content {
-		double_content(double value) {
+		double_content(double value = 0.0) {
 			this->from_double(value);
 		}
 		constexpr static qpl::size mantissa_size() {
@@ -654,6 +654,11 @@ namespace qpl {
 			memcpy(&result, this, sizeof(double));
 			return result;
 		}
+		qpl::u64 to_u64() const {
+			qpl::u64 value;
+			memcpy(&value, this, sizeof(double));
+			return value;
+		}
 		void from_double(double value) {
 			memcpy(this, &value, sizeof(double));
 		}
@@ -662,7 +667,7 @@ namespace qpl {
 		}
 	};
 	struct float_content {
-		float_content(float value) {
+		float_content(float value = 0.f) {
 			this->from_float(value);
 		}
 
@@ -676,6 +681,11 @@ namespace qpl {
 			float result;
 			memcpy(&result, this, sizeof(float));
 			return result;
+		}
+		qpl::u32 to_u32() const {
+			qpl::u32 value;
+			memcpy(&value, this, sizeof(float));
+			return value;
 		}
 		void from_float(float value) {
 			memcpy(this, &value, sizeof(float));

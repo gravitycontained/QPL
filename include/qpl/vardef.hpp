@@ -1,6 +1,6 @@
+#pragma once
 #ifndef QPL_VARDEF_HPP
 #define QPL_VARDEF_HPP
-#pragma once
 
 #ifdef min
 #undef min
@@ -14,9 +14,7 @@
 #include <tuple>
 #include <limits>
 
-
 namespace qpl {
-
 	using size = std::size_t;
 	using isize = std::conditional_t<sizeof(std::size_t) == 8u, std::int64_t, std::int32_t>;
 
@@ -36,6 +34,8 @@ namespace qpl {
 	struct integer;
 	template<qpl::size bits, bool sign>
 	struct x64_integer;
+	template<typename E>
+	struct big_float_t;
 
 #ifndef QPL_NO_FLOATS
 	template<qpl::size exponent_bits, qpl::size mantissa_bits>
@@ -173,11 +173,11 @@ namespace qpl {
 
 	using itypes = std::tuple<qpl::i8, qpl::i16, qpl::i32, qpl::i64>;
 	using itype_min = std::tuple_element_t<0, itypes>;
-	using itype_max = std::tuple_element_t<std::tuple_size_v<itypes> - 1, itypes>;
+	using itype_max = std::tuple_element_t<std::tuple_size_v<itypes> -1, itypes>;
 
 	using utypes = std::tuple<qpl::u8, qpl::u16, qpl::u32, qpl::u64>;
 	using utype_min = std::tuple_element_t<0, utypes>;
-	using utype_max = std::tuple_element_t<std::tuple_size_v<utypes> - 1, utypes>;
+	using utype_max = std::tuple_element_t<std::tuple_size_v<utypes> -1, utypes>;
 
 	using f32 = float;
 	using f64 = double;
@@ -200,9 +200,15 @@ namespace qpl {
 	using f32768 = qpl::floating_point<32u, 32768u>;
 #endif
 
+	using xf32 = qpl::big_float_t<qpl::i32>;
+	using xf64 = qpl::big_float_t<qpl::i64>;
+	using xf128 = qpl::big_float_t<qpl::i128>;
+	using xf192 = qpl::big_float_t<qpl::i192>;
+	using xf256 = qpl::big_float_t<qpl::i256>;
+
 	using ftypes = std::tuple<qpl::f32, qpl::f64>;
 	using ftype_min = std::tuple_element_t<0, ftypes>;
-	using ftype_max = std::tuple_element_t<std::tuple_size_v<ftypes> - 1, ftypes>;
+	using ftype_max = std::tuple_element_t<std::tuple_size_v<ftypes> -1, ftypes>;
 
 	constexpr qpl::i8 i8_min = std::numeric_limits<qpl::i8>::min();
 	constexpr qpl::i8 i8_max = std::numeric_limits<qpl::i8>::max();
@@ -356,6 +362,9 @@ namespace qpl {
 	constexpr qpl::size size_min = std::numeric_limits<qpl::size>::min();
 	constexpr qpl::size size_max = std::numeric_limits<qpl::size>::max();
 
+	constexpr qpl::isize isize_min = std::numeric_limits<qpl::isize>::min();
+	constexpr qpl::isize isize_max = std::numeric_limits<qpl::isize>::max();
+
 	constexpr qpl::f64 f64_epsilon = std::numeric_limits<qpl::f64>::epsilon();
 	constexpr qpl::f64 f32_epsilon = std::numeric_limits<qpl::f32>::epsilon();
 
@@ -373,12 +382,14 @@ namespace qpl {
 	constexpr qpl::f64 ln10 = 2.30258509299404568402;
 	constexpr qpl::f32 log10_32 = static_cast<qpl::f32>(qpl::ln10);
 
+	constexpr qpl::f64 f64_lower_bound10 = 9.99999999999999822;
+
 	constexpr qpl::size f32_mantissa_size() {
 		return 23;
 	}
 	constexpr qpl::size f32_exponent_size() {
 		return 8;
-	}		
+	}
 	constexpr qpl::size f64_mantissa_size() {
 		return 52;
 	}
@@ -387,4 +398,4 @@ namespace qpl {
 	}
 }
 
-#endif 
+#endif

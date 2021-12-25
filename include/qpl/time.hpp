@@ -265,6 +265,7 @@ namespace qpl {
 
 	QPLDLL void wait(qpl::time duration);
 	QPLDLL void wait(double seconds);
+	QPLDLL void wait_while(double seconds);
 
 	template <typename T>
 	constexpr std::time_t to_time_t(T t) {

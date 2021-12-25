@@ -177,6 +177,8 @@ namespace qpl {
 	constexpr bool is_floating_point() {
 		return std::is_floating_point_v<T> || is_qpl_floating_point<T>();
 	}
+	template<typename T>
+	concept is_floating_point_c = (qpl::is_floating_point<T>());
 
 	template<typename T>
 	constexpr bool is_stl_integer() {
@@ -226,6 +228,9 @@ namespace qpl {
 	constexpr bool is_same_decayed() {
 		return std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
 	}
+
+	template<typename T, typename U>
+	concept is_same_decayed_c = (qpl::is_same_decayed<T, U>());
 
 
 	template<typename T, typename U, typename... Args>
@@ -903,14 +908,18 @@ namespace qpl {
 	constexpr bool is_tuple() {
 		return decltype(qpl::impl::tuple_signature(std::declval<T>()))::value;
 	}
+	template<typename T>
+	constexpr bool is_tuple(T tuple) {
+		return qpl::is_tuple<T>();
+	}
 
 	template<typename T> requires(qpl::is_tuple<T>())
 	constexpr qpl::size tuple_size() {
 		return std::tuple_size_v<T>;
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-	constexpr qpl::size tuple_size(T&& tuple) {
-		return qpl::tuple_size<T>();
+	constexpr qpl::size tuple_size(T tuple) {
+		return std::tuple_size_v<T>;
 	}
 	template<typename... Ts>
 	constexpr qpl::size tuple_size() {
@@ -931,7 +940,7 @@ namespace qpl {
 	using variadic_type = std::tuple_element_t<N, std::tuple<Ts...>>;
 
 	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
-	constexpr auto tuple_value(T&& tuple) {
+	constexpr auto tuple_value(T tuple) {
 		return std::get<N>(tuple);
 	}
 	template<qpl::size N, typename... Ts>
@@ -939,12 +948,12 @@ namespace qpl {
 		return std::get<N>(std::make_tuple(args...));
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-	constexpr auto tuple_value_front(T&& tuple) {
+	constexpr auto tuple_value_front(T tuple) {
 		return qpl::tuple_value<0u>(tuple);
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-	constexpr auto tuple_value_back(T&& tuple) {
-		return qpl::tuple_value<qpl::tuple_size<T>() - 1>(tuple);
+	constexpr auto tuple_value_back(T tuple) {
+		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(tuple);
 	}
 	template<qpl::size N, typename... Ts>
 	constexpr auto variadic_value(Ts&&... args) {

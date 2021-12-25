@@ -3,6 +3,7 @@
 #include <qpl/type_traits.hpp>
 #include <qpl/system.hpp>
 #include <qpl/time.hpp>
+#include <qpl/encryption.hpp>
 
 namespace qpl {
 
@@ -2791,5 +2792,50 @@ namespace qpl {
     }
     void qpl::write_data_file(const std::string& data, const std::string& path) {
         return qpl::filesys::write_data_file(data, path);
+    }
+
+    void qpl::save_state::clear() {
+        this->string.clear();
+        this->path.clear();
+        this->ctr = 0u;
+        this->check_value = 0x454352554f534552ull;
+    }
+    void qpl::save_state::prepare_save(std::string path) {
+        this->path = path;
+        this->ctr = 0u;
+        this->string.clear();
+        this->string.check_value = this->check_value;
+    }
+    void qpl::save_state::finalize_save() {
+        this->string.finalize();
+        auto str = this->string.get_string();
+        qpl::filesys::write_data_file(str, this->path);
+    }
+    void qpl::save_state::finalize_save(const std::array<qpl::u64, 4>& key) {
+        this->string.finalize();
+        auto str = this->string.get_string();
+        str = qpl::encrypt(str, key);
+        qpl::filesys::write_data_file(str, this->path);
+    }
+    void qpl::save_state::prepare_load(std::string path) {
+        this->path = path;
+        this->ctr = 0u;
+        auto str = qpl::filesys::read_file(this->path);
+        this->string.check_value = this->check_value;
+        this->string.set_string(str);
+        if (!this->string.read_info()) {
+            throw qpl::exception("save_state: \"", path, "\" failed to load.");
+        }
+    }
+    void qpl::save_state::prepare_load(std::string path, const std::array<qpl::u64, 4>& key) {
+        this->path = path;
+        this->ctr = 0u;
+        auto str = qpl::filesys::read_file(this->path);
+        str = qpl::decrypt(str, key);
+        this->string.check_value = this->check_value;
+        this->string.set_string(str);
+        if (!this->string.read_info()) {
+            throw qpl::exception("save_state: \"", path, "\" failed to load.");
+        }
     }
 }

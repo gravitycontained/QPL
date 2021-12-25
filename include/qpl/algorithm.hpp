@@ -663,7 +663,7 @@ namespace qpl {
 	}
 
 	template<typename T> requires (qpl::is_tuple<T>())
-	constexpr auto tuple_to_array(T&& tuple) {
+	constexpr auto tuple_to_array(T tuple) {
 		std::array<qpl::tuple_type<0, T>, qpl::tuple_size<T>()> result{};
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 			((result[Ints] = std::get<Ints>(tuple)), ...);
@@ -672,7 +672,7 @@ namespace qpl {
 		return result;
 	}
 	template<typename R, typename T> requires (qpl::is_tuple<T>())
-	constexpr auto tuple_to_array(T&& tuple) {
+	constexpr auto tuple_to_array(T tuple) {
 		std::array<R, qpl::tuple_size<T>()> result{};
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 			((result[Ints] = qpl::type_cast<R>(std::get<Ints>(tuple))), ...);
@@ -722,12 +722,17 @@ namespace qpl {
 	}
 
 	template<typename T, typename... Args>
-	constexpr auto to_array(Args... args) {
+	constexpr auto to_array(Args&&... args) {
 		return qpl::tuple_to_array<T>(std::make_tuple(args...));
 	}
 	template<typename... Args>
-	constexpr auto to_array(Args... args) {
+	constexpr auto to_array(Args&&... args) {
 		return qpl::tuple_to_array(std::make_tuple(args...));
+	}
+
+	template<typename... Args>
+	constexpr auto to_tuple(Args&&... args) {
+		return std::make_tuple(args...);
 	}
 	template<typename C>
 	constexpr auto make_span(const C& container) {
@@ -1604,7 +1609,7 @@ namespace qpl {
 	
 	namespace impl {
 		template<typename C, typename T> requires(qpl::is_container<C>() && qpl::has_resize<C>() && qpl::tuple_size<T>() > 0)
-		void resize(C& container, T&& tuple) {
+		void resize(C& container, T tuple) {
 			container.resize(qpl::tuple_value_front(tuple));
 			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && qpl::has_resize<C>() && qpl::tuple_size<T>() > 1) {
 				for (auto& i : container) {
@@ -1613,7 +1618,7 @@ namespace qpl {
 			}
 		}
 		template<typename C, typename T> requires(qpl::is_container<C>() && qpl::has_reserve<C>() && qpl::tuple_size<T>() > 0)
-		void reserve(C& container, T&& tuple) {
+		void reserve(C& container, T tuple) {
 			container.reserve(qpl::tuple_value_front(tuple));
 			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && qpl::has_reserve<C>() && qpl::tuple_size<T>() > 1) {
 				for (auto& i : container) {
@@ -1631,6 +1636,8 @@ namespace qpl {
 	void reserve(C& container, Sizes... sizes) {
 		qpl::impl::reserve(container, std::make_tuple(sizes...));
 	}
+
+
 
 	namespace impl {
 		template<typename T, qpl::size N>

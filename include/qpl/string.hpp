@@ -13,6 +13,7 @@
 #include <charconv>
 #include <iostream>
 #include <array>
+#include <tuple>
 #include <vector>
 #include <iomanip>
 #include <iostream>
@@ -66,15 +67,29 @@ namespace qpl {
 		template<typename T>
 		concept is_printable_c = is_cout_printable_c<T> || is_wcout_printable_c<T>;
 
+
 		template<typename T>
 		constexpr bool is_printable() {
 			if constexpr (qpl::is_container<T>()) {
-				return is_printable<qpl::container_subtype<T>>();
+				return qpl::impl::is_printable<qpl::container_subtype<T>>();
 			}
+			//else if constexpr (qpl::is_tuple<T>()) {
+			//	constexpr auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
+			//		constexpr auto b = (qpl::impl::is_printable<Ts>() && ...);
+			//		if constexpr (b) {
+			//			return std::true_type{};
+			//		}
+			//		else {
+			//			return std::false_type{};
+			//		}
+			//	};
+			//	return decltype(check(std::declval<T>()))::value;
+			//}
 			else {
 				return (static_cast<bool>(impl::is_printable_c<T>));
 			}
 		}
+
 		template<typename T>
 		concept is_readable_c = is_cin_readable_c<T> || is_wcin_readable_c<T>;
 
@@ -90,6 +105,7 @@ namespace qpl {
 		}
 
 	}
+
 	template<typename... Args>
 	constexpr bool is_printable() {
 		return ((qpl::impl::is_printable<Args>()) && ...);
@@ -106,21 +122,20 @@ namespace qpl {
 	QPLDLL std::wstring string_to_unicode_wstring(const std::string& str);
 	QPLDLL std::string wstring_to_string(const std::wstring& str);
 
-
 	template<typename... Args> requires (qpl::is_printable<Args...>())
 	std::string to_string(Args&&... args) {
-
+	
 		std::ostringstream stream;
 		
 		constexpr auto add_to_stream = [&]<typename T>(T value) {
-			if constexpr (qpl::is_container_c<std::decay_t<T>> && !qpl::is_same<std::string, std::decay_t<T>>() && !qpl::is_same<std::wstring, std::decay_t<T>>()) {
+			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
 				stream << '{';
 				bool first = true;
 				for (auto& i : value) {
 					if (!first) {
 						stream << ", ";
 					}
-					stream << i;
+					stream << qpl::to_string(i);
 					first = false;
 				}
 				stream << '}';
@@ -132,13 +147,25 @@ namespace qpl {
 				stream << value;
 			}
 		};
-
+	
 		(add_to_stream(args), ...);
-
-
-
+	
 		return stream.str();
 	}
+	// 
+	//template<typename T> requires(qpl::is_tuple<T>())
+	//std::string to_s(T tuple) {
+	//	std::ostringstream stream;
+	//	stream << '{';
+	//	auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+	//		((stream << qpl::to_string(std::get<Ints>(tuple)) << ", "), ...);
+	//	};
+	//	unpack(std::make_index_sequence<qpl::tuple_size<T>() - 1>());
+	//	stream << qpl::to_string(qpl::tuple_value_back(tuple)) << '}';
+	//	return stream.str();
+	//}
+
+
 	template<typename T> requires qpl::is_wcout_printable_c<T>
 	std::wstring to_wstring(const T& first) {
 		std::wostringstream stream;
@@ -150,6 +177,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+
 
 	namespace detail {
 		QPLDLL extern std::wostringstream stream_wstr;
@@ -249,13 +277,62 @@ namespace qpl {
 	template<typename... Args>
 	std::string to_string_precision(qpl::size precision, Args&&... args) {
 		std::ostringstream stream;
-		((stream << std::fixed << std::setprecision(precision) << qpl::f64_cast(args)), ...);
+		
+		constexpr auto add_to_stream = [&]<typename T>(T value) {
+			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
+				stream << '{';
+				bool first = true;
+				for (auto& i : value) {
+					if (!first) {
+						stream << ", ";
+					}
+					stream << qpl::to_string_precision(precision, i);
+					first = false;
+				}
+				stream << '}';
+			}
+			else if constexpr (qpl::is_floating_point<T>()) {
+				stream << std::fixed << std::setprecision(precision) << qpl::f64_cast(value);
+			}
+			else {
+				stream << qpl::to_string(value);
+			}
+		};
+		
+		(add_to_stream(args), ...);
+		
 		return stream.str();
 	}
 	template<typename... Args>
 	std::string to_string_full_precision(Args&&... args) {
 		std::ostringstream stream;
-		((stream << std::fixed << std::setprecision(qpl::f64_digits) << qpl::f64_cast(args)), ...);
+		
+		constexpr auto add_to_stream = [&]<typename T>(T value) {
+			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
+				stream << '{';
+				bool first = true;
+				for (auto& i : value) {
+					if (!first) {
+						stream << ", ";
+					}
+					stream << qpl::to_string_full_precision(i);
+					first = false;
+				}
+				stream << '}';
+			}
+			else if constexpr (qpl::is_floating_point_c<T> && qpl::is_same_decayed_c<T, qpl::f32>) {
+				stream << std::fixed << std::setprecision(qpl::f32_digits) << value;
+			}
+			else if constexpr (qpl::is_floating_point_c<T> && !qpl::is_same_decayed_c<T, qpl::f32>) {
+				stream << std::fixed << std::setprecision(qpl::f64_digits) << qpl::f64_cast(value);
+			}
+			else {
+				stream << qpl::to_string(value);
+			}
+		};
+
+		(add_to_stream(args), ...);
+
 		return stream.str();
 	}
 
@@ -717,6 +794,10 @@ namespace qpl {
 			return;
 		}
 	}
+	//template<typename T> requires (qpl::is_tuple<T>())
+	//inline void single_print(T&& value) {
+	//
+	//}
 
 	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print(Args&&... args) {
@@ -1511,10 +1592,15 @@ namespace qpl {
 
 	template<typename T>
 	T string_cast(const std::string_view& string) {
-		T value;
-		std::from_chars(string.data(), string.data() + string.size(), value);
+		if constexpr (qpl::is_qpl_integer<T>() || qpl::is_qpl_floating_point<T>()) {
+			return T(string);
+		}
+		else {
+			T value;
+			std::from_chars(string.data(), string.data() + string.size(), value);
 
-		return value;
+			return value;
+		}
 	}
 	template<typename T>
 	T string_cast(const char* str) {
@@ -2055,7 +2141,7 @@ namespace qpl {
 	struct collection_string {
 		std::string string;
 		std::vector<std::pair<qpl::size, qpl::size>> sizes;
-		qpl::u64 check_value = 0;
+		qpl::u64 check_value = 0x454352554f534552ull;
 
 		QPLDLL void set_string(const std::string& string);
 		QPLDLL bool read_info();

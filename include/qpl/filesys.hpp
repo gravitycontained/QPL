@@ -629,6 +629,59 @@ namespace qpl {
     QPLDLL std::string read_file(const std::string& path);
     QPLDLL void write_to_file(const std::string& text, const std::string& path);
     QPLDLL void write_data_file(const std::string& data, const std::string& path);
+
+
+    struct save_state {
+        qpl::collection_string string;
+        std::string path;
+        qpl::size ctr = 0u;
+        qpl::u64 check_value = 0x454352554f534552ull;
+
+        QPLDLL void clear();
+        QPLDLL void prepare_save(std::string path);
+        QPLDLL void finalize_save();
+        QPLDLL void finalize_save(const std::array<qpl::u64, 4>& key);
+        QPLDLL void prepare_load(std::string path);
+        QPLDLL void prepare_load(std::string path, const std::array<qpl::u64, 4>& key);
+        template<typename T>
+        void save_single(const T& data) {
+            if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
+                auto str = qpl::heap_memory_to_string(data);
+                this->string.add_string(str);
+            }
+            else {
+                auto str = qpl::stack_memory_to_string(data);
+                this->string.add_string(str);
+            }
+        }
+        template<typename... Ts>
+        void save(const Ts&... data) {
+            (this->save_single(data), ...);
+        }
+        template<typename... Ts>
+        void save_finalize(const Ts&... data) {
+            (this->save_single(data), ...);
+            this->finalize_save();
+        }
+        template<typename T>
+        void load_single(T& data) {
+            if (this->ctr >= this->string.size()) {
+                throw qpl::exception("save_state: trying to load resource #", this->ctr, " but size is only ", this->string.size());
+            }
+            if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
+                qpl::string_to_heap_memory(this->string.get_string(this->ctr), data);
+            }
+            else {
+                qpl::string_to_stack_memory(this->string.get_string(this->ctr), data);
+            }
+            ++this->ctr;
+        }
+        template<typename... Ts>
+        void load(Ts&... data) {
+            (this->load_single(data), ...);
+        }
+    };
+
 }
 
 #endif
