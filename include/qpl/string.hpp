@@ -29,39 +29,50 @@
 #endif
 
 namespace qpl {
-	template<typename T>
-	concept is_cout_printable_c = requires(const T t) {
-		std::cout << t;
-	};
+	namespace impl {
+		template<typename T>
+		concept is_cout_printable_c = requires(const T t) {
+			std::cout << t;
+		};
+		template<typename T>
+		concept is_cin_readable_c = requires(T & t) {
+			std::cin >> t;
+		};
+		template<typename T>
+		concept is_wcout_printable_c = requires(const T t) {
+			std::wcout << t;
+		};
+		template<typename T>
+		concept is_wcin_readable_c = requires(T & t) {
+			std::wcin >> t;
+		};
+	}
 	template<typename... Args>
 	constexpr bool is_cout_printable() {
-		return (is_cout_printable_c<Args> && ...);
+		return (impl::is_cout_printable_c<Args> && ...);
 	}
-	template<typename T>
-	concept is_cin_readable_c = requires(T & t) {
-		std::cin >> t;
-	};
 	template<typename... Args>
 	constexpr bool is_cin_readable() {
-		return (is_cin_readable_c<Args> && ...);
+		return (impl::is_cin_readable_c<Args> && ...);
+	}
+
+	template<typename... Args>
+	constexpr bool is_wcout_printable() {
+		return ((impl::is_wcout_printable_c<Args> || impl::is_cout_printable_c<Args>) && ...);
+	}
+	template<typename... Args>
+	constexpr bool is_wcin_readable() {
+		return ((impl::is_wcin_readable_c<Args> || impl::is_cin_readable_c<Args>) && ...);
 	}
 
 	template<typename T>
-	concept is_wcout_printable_c = requires(const T t) {
-		std::wcout << t;
-	};
-	template<typename... Args>
-	constexpr bool is_wcout_printable() {
-		return (is_wcout_printable_c<Args> && ...);
-	}
+	concept is_cin_readable_c = (qpl::is_cin_readable<T>());
 	template<typename T>
-	concept is_wcin_readable_c = requires(T & t) {
-		std::wcin >> t;
-	};
-	template<typename... Args>
-	constexpr bool is_wcin_readable() {
-		return (is_wcin_readable_c<Args> && ...);
-	}
+	concept is_wcin_readable_c = (qpl::is_wcin_readable<T>());
+	template<typename T>
+	concept is_cout_printable_c = (qpl::is_cout_printable<T>());
+	template<typename T>
+	concept is_wcout_printable_c = (qpl::is_wcout_printable<T>());
 
 	namespace impl {
 		template<typename T>
@@ -1973,8 +1984,10 @@ namespace qpl {
 
 	}
 
-	QPLDLL std::string big_numer_name(qpl::u32 exponent3);
 	QPLDLL std::string big_number_string(std::string decimal_string);
+
+	QPLDLL std::string exponent_number_name_short(qpl::u32 exponent3);
+	QPLDLL std::string exponent_number_name(qpl::u32 exponent3);
 
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string big_number_string(T number, qpl::u32 precision = 2) {

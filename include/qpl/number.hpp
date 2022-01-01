@@ -9552,21 +9552,30 @@ namespace qpl {
 				return qpl::to_string(this->operator qpl::f64());
 			}
 		}
-		std::string string() const {
+		std::string string(qpl::size precision = qpl::f64_digits) const {
 			if (!this->fits_f64()) {
 				return this->scientific_string();
 			}
 			else {
 				auto value = this->operator qpl::f64();
 				if (value < 1e6) {
-					return qpl::to_string_full_precision(this->operator qpl::f64());
+					return qpl::to_string_precision(precision, this->operator qpl::f64());
 				}
 				else {
 					std::ostringstream stream;
-					stream << std::fixed << std::setprecision(qpl::f64_digits) << std::scientific << value;
+					stream << std::fixed << std::setprecision(precision) << std::scientific << value;
 					return stream.str();
 				}
 			}
+		}
+		std::string name_short(qpl::size precision = qpl::f64_digits) {
+			if (this->exponent < 0) {
+				return this->string(precision);
+			}
+			auto n = this->exponent % 3;
+			auto e = this->exponent / 3;
+			auto str = qpl::to_string_precision(precision, this->mantissa * std::pow(10, n));
+			return qpl::to_string(str, qpl::exponent_number_name_short(e));
 		}
 
 		constexpr operator qpl::f64() const {
@@ -9706,7 +9715,7 @@ namespace qpl {
 				this->check();
 			}
 			else {
-				this->mantissa += value.mantissa;
+				this->mantissa -= value.mantissa;
 				this->check();
 			}
 		}

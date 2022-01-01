@@ -301,6 +301,12 @@ namespace qsf {
 		}
 	}
 
+	qpl::time qsf::event_info::frame_time() const {
+		return this->m_frame_time;
+	}
+	qpl::f64 qsf::event_info::frame_time_f() const {
+		return this->m_frame_time.secs_f();
+	}
 	qpl::vector2i qsf::event_info::resized_size() const {
 		return this->m_resized_size;
 	}

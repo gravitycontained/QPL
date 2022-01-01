@@ -31,7 +31,6 @@ namespace qpl {
 		return true;
 	}
 
-
 	template<typename T>
 	std::vector<T> prime_factors(T value) {
 		if (qpl::is_prime(value)) {
@@ -49,7 +48,6 @@ namespace qpl {
 		}
 		return result;
 	}
-
 
 	template<typename T>
 	std::vector<T> dividers(T value) {

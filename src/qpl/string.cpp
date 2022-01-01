@@ -773,6 +773,28 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	std::string exponent_number_name_short(qpl::u32 exponent3) {
+		constexpr auto name_small = std::array{ "K", "M", "B", "Tr", "Qa", "Qi", "Sx", "Sp", "Oc", "No" };
+		constexpr auto name_one = std::array{ "", "Un", "Do", "Tr", "Qa", "Qi", "Sx", "Sp", "Oc", "No" };
+		constexpr auto name_ten = std::array{ "", "De", "Vi", "Tr", "Qa", "Qi", "Sx", "Sp", "Oc", "No" };
+		constexpr auto name_hundred = std::array{ "", "Ce", "Duc", "Trg", "Qag", "Qig", "Sxg", "Spg", "Ocg", "Nog" };
+		if (exponent3 <= 10) {
+			if (!exponent3) {
+				return "";
+			}
+			return name_small[exponent3 - 1];
+		}
+		else {
+			--exponent3;
+			auto one = exponent3 % 10u;
+			auto ten = (exponent3 / 10u) % 10u;
+			auto hundred = (exponent3 / 100u) % 10u;
+			return qpl::to_string(name_one[one], name_ten[ten], name_hundred[hundred]);
+		}
+	}
+	std::string exponent_number_name(qpl::u32 exponent3) {
+		return "";
+	}
 
 	std::string qpl::random_string_full_range(qpl::size length) {
 		std::ostringstream stream;

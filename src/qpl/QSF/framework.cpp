@@ -30,9 +30,10 @@ namespace qsf {
 		while (this->window.pollEvent(event)) {
 			this->event.update(event);
 		}
+		this->event.m_frame_time = this->m_frametime;
 
-		if (this->states.back()->event->resized()) {
-			auto new_dimension = this->states.back()->event->resized_size();
+		if (this->event.resized()) {
+			auto new_dimension = this->event.resized_size();
 			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
 			this->window.setView(sf::View(view));
 			this->m_dimension = new_dimension;
@@ -69,24 +70,8 @@ namespace qsf {
 
 		if (this->m_update_if_no_focus || this->m_focus || (focus_before != this->m_focus)) {
 			this->states.back()->updating();
+			++this->states.back()->m_frame_ctr;
 		}
-		this->states.back()->update_close_window();
-
-		if (this->states.back()->m_pop_this_state) {
-			this->states.pop_back();
-			if (this->states.empty()) {
-				return false;
-			}
-		}
-		this->draw_call();
-		return true;
-	}
-	bool qsf::framework::game_loop_event_update_draw() {
-		if (!this->is_created()) {
-			this->create();
-		}
-
-		this->internal_update();
 		this->states.back()->update_close_window();
 
 		if (this->states.back()->m_pop_this_state) {
@@ -334,9 +319,6 @@ if (this->states.size()) {
 	bool qsf::base_state::game_loop_segment() {
 		return this->framework->game_loop_segment();
 	}
-	bool qsf::base_state::game_loop_event_update_draw() {
-		return this->framework->game_loop_event_update_draw();
-	}
 	void qsf::base_state::set_shader(const std::string& name) {
 		this->render_states.shader = &qsf::get_shader(name);
 	}
@@ -353,7 +335,7 @@ if (this->states.size()) {
 		return this->framework->is_open();
 	}
 	void qsf::base_state::update_close_window() {
-		if (this->event->window_closed() && this->m_allow_exit) {
+		if (this->event().window_closed() && this->m_allow_exit) {
 			this->framework->window.close();
 			this->call_on_close();
 		}
@@ -511,14 +493,23 @@ if (this->states.size()) {
 	bool qsf::base_state::has_lost_focus() const {
 		return this->framework->has_lost_focus();
 	}
+	qpl::size qsf::base_state::frame_ctr() const {
+		return this->m_frame_ctr;
+	}
 	qpl::time qsf::base_state::no_focus_time() const {
 		return this->framework->no_focus_time();
 	}
 	qpl::time qsf::base_state::frame_time() const {
 		return this->framework->frame_time();
 	}
+	qpl::f64 qsf::base_state::frame_time_f() const {
+		return this->framework->frame_time().secs_f();
+	}
 	qpl::time qsf::base_state::run_time() const {
 		return this->framework->run_time();
+	}
+	const qsf::event_info& qsf::base_state::event() const {
+		return this->framework->event;
 	}
 }
 

@@ -523,9 +523,11 @@ namespace qpl {
 		std::this_thread::sleep_for(std::chrono::nanoseconds(duration.nsecs()));
 	}
 	void wait(double seconds) {
+		if (seconds <= 0) return;
 		qpl::wait(qpl::secs(seconds));
 	}
 	void wait_while(double seconds) {
+		if (seconds <= 0) return;
 		auto n = qpl::secs(seconds);
 		qpl::clock clock;
 		while (clock.elapsed() < n) {

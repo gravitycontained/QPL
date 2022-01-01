@@ -237,6 +237,10 @@ namespace qsf {
 	std::string qsf::text::get_string() const {
 		return this->m_string;
 	}
+	std::wstring qsf::text::get_wstring() const {
+		auto s = this->m_text.getString();
+		return s.toWideString();
+	}
 	void qsf::text::set_font(const sf::Font& font) {
 		this->m_text.setFont(font);
 	}
@@ -283,6 +287,11 @@ namespace qsf {
 	void qsf::text::set_string(const std::string& string) {
 		this->m_string = string;
 		sf::String s = this->m_string.c_str();
+		this->m_text.setString(s);
+	}
+	void qsf::text::set_string(const std::wstring& string) {
+		this->m_string = qpl::wstring_to_string(string);
+		sf::String s = string.c_str();
 		this->m_text.setString(s);
 	}
 	void qsf::text::set_multiplied_color(qsf::rgb color) {
@@ -801,6 +810,37 @@ namespace qsf {
 		result.index = 0u;
 		return result;
 	}
+
+	void qsf::polygon::set_outline_thickness(qpl::f32 thickness) {
+		this->shape.setOutlineThickness(thickness);
+	}
+	void qsf::polygon::set_outline_color(qsf::rgb color) {
+		this->outline_color = color;
+		this->shape.setOutlineColor(color.multiplied_color(this->multiplied_color));
+	}
+	void qsf::polygon::set_color(qsf::rgb color) {
+		this->color = color;
+		this->shape.setFillColor(color.multiplied_color(this->multiplied_color));
+	}
+	void qsf::polygon::set_multiplied_color(qsf::rgb color) {
+		this->multiplied_color = color;
+		this->shape.setFillColor(this->color.multiplied_color(this->multiplied_color));
+		this->shape.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
+	}
+
+	qpl::f32 qsf::polygon::get_outline_thickness() const {
+		return this->shape.getOutlineThickness();
+	}
+	qsf::rgb qsf::polygon::get_outline_color() const {
+		return this->outline_color;
+	}
+	qsf::rgb qsf::polygon::get_color() const {
+		return this->color;
+	}
+	qsf::rgb qsf::polygon::get_multiplied_color() const {
+		return this->multiplied_color;
+	}
+
 	void qsf::polygon::set_point(qpl::size index, qpl::vector2f position) {
 		this->shape.setPoint(index, position);
 	}
@@ -809,9 +849,6 @@ namespace qsf {
 	}
 	qpl::size qsf::polygon::size() const {
 		return this->shape.getPointCount();
-	}
-	void qsf::polygon::set_color(qsf::rgb color) {
-		this->shape.setFillColor(color);
 	}
 	void qsf::polygon::resize(qpl::size size) {
 		this->shape.setPointCount(size);
@@ -846,37 +883,41 @@ namespace qsf {
 
 	void qsf::vsmooth_rectangle::move(qpl::vector2f delta) {
 		this->position.move(delta);
-		this->geometry_changed = true;
 	}
 	void qsf::vsmooth_rectangle::set_dimension(qpl::vector2f dimension) {
 		this->dimension = dimension;
-		this->geometry_changed = true;
 	}
 
 	void qsf::vsmooth_rectangle::set_position(qpl::vector2f position) {
 		this->position = position;
-		this->geometry_changed = true;
+	}
+	void qsf::vsmooth_rectangle::set_hitbox(qpl::hitbox hitbox) {
+		this->position = hitbox.position;
+		this->dimension = hitbox.dimension;
 	}
 	void qsf::vsmooth_rectangle::set_center(qpl::vector2f position) {
 		this->position = position - this->dimension / 2;
 	}
 	void qsf::vsmooth_rectangle::set_slope(qpl::f64 slope) {
 		this->slope = slope;
-		this->geometry_changed = true;
 	}
 	void qsf::vsmooth_rectangle::set_color(qsf::rgb color) {
-		if (this->color != color) {
-			this->color_changed = true;
-		}
 		this->color = color;
+	}
+	void qsf::vsmooth_rectangle::set_multiplied_color(qsf::rgb color) {
+		this->multiplied_color = color;
+	}
+	void qsf::vsmooth_rectangle::set_outline_color(qsf::rgb color) {
+		this->outline_color = color;
+	}
+	void qsf::vsmooth_rectangle::set_outline_thickness(qpl::f32 thickness) {
+		this->outline_thickness = thickness;
 	}
 	void qsf::vsmooth_rectangle::set_slope_dimension(qpl::vector2f dimension) {
 		this->slope_dim = dimension;
-		this->geometry_changed = true;
 	}
 	void qsf::vsmooth_rectangle::set_slope_point_count(qpl::size point_count) {
 		this->slope_point_count = point_count;
-		this->geometry_changed = true;
 	}
 	qpl::vector2f qsf::vsmooth_rectangle::get_dimension() const {
 		return this->dimension;
@@ -892,6 +933,15 @@ namespace qsf {
 	}
 	qsf::rgb qsf::vsmooth_rectangle::get_color() const {
 		return this->color;
+	}
+	qsf::rgb qsf::vsmooth_rectangle::get_multiplied_color() const {
+		return this->multiplied_color;
+	}
+	qsf::rgb qsf::vsmooth_rectangle::get_outline_color() const {
+		return this->outline_color;
+	}
+	qpl::f32 qsf::vsmooth_rectangle::get_outline_thickness() const {
+		return this->outline_thickness;
 	}
 	qpl::vector2f qsf::vsmooth_rectangle::get_slope_dimension() const {
 		return this->slope_dim;
@@ -913,16 +963,9 @@ namespace qsf {
 		return this->polygon.contains(point);
 	}
 	qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) {
-		if (smooth_rectangle.color_changed) {
-			smooth_rectangle.color_changed = false; 
-			smooth_rectangle.geometry_changed = true;
-			this->polygon.set_color(smooth_rectangle.color);
-		}
-		if (!smooth_rectangle.geometry_changed) {
-			return *this;
-		}
-		smooth_rectangle.geometry_changed = false;
-		this->polygon.set_color(smooth_rectangle.color);
+		this->polygon.set_color(smooth_rectangle.color.multiplied_color(smooth_rectangle.multiplied_color));
+		this->polygon.set_outline_thickness(smooth_rectangle.outline_thickness);
+		this->polygon.set_outline_color(smooth_rectangle.outline_color.multiplied_color(smooth_rectangle.multiplied_color));
 
 		auto size = smooth_rectangle.slope_point_count;
 		this->polygon.resize(size * 4);
@@ -1182,6 +1225,9 @@ namespace qsf {
 		this->circle_shape.setRadius(circle.circle_shape.getRadius());
 		this->circle_shape.setFillColor(circle.circle_shape.getFillColor());
 		return *this;
+	}
+	void qsf::circle::centerize_origin() {
+		this->circle_shape.setOrigin(qpl::vec(this->get_radius(), this->get_radius()));
 	}
 	void qsf::circle::set_radius(qpl::f32 radius) {
 		this->circle_shape.setRadius(radius);
@@ -5640,8 +5686,45 @@ namespace qsf {
 	void qsf::button::set_text_style(qpl::u32 character_style) {
 		this->text.set_style(character_style);
 	}
-	void qsf::button::set_text(std::string text) {
+	void qsf::button::set_text_string(std::string text) {
 		this->text.set_string(text);
+	}
+	void qsf::button::set_text_string(std::wstring text) {
+		this->text.set_string(text);
+	}
+
+	qpl::vector2f qsf::button::get_dimension() const {
+		return this->background.get_dimension();
+	}
+	qpl::vector2f qsf::button::get_position() const {
+		return this->background.get_position();
+	}
+	qpl::vector2f qsf::button::get_center() const {
+		return this->background.get_center();
+	}
+	qsf::rgb qsf::button::get_background_color() const {
+		return this->background_color;
+	}
+	qsf::rgb qsf::button::get_hover_background_color() const {
+		return this->hover_background_color;
+	}
+	qsf::rgb qsf::button::get_text_color() const {
+		return this->text_color;
+	}
+	std::string qsf::button::get_text_font() const {
+		return this->text.get_font();
+	}
+	qpl::u32 qsf::button::get_text_character_size() const {
+		return this->text.get_character_size();
+	}
+	qpl::u32 qsf::button::get_text_style() const {
+		return this->text.get_style();
+	}
+	std::string qsf::button::get_text_string() const {
+		return this->text.get_string();
+	}
+	std::wstring qsf::button::get_text_wstring() const {
+		return this->text.get_wstring();
 	}
 	void qsf::button::centerize_text() {
 		this->text.set_center(this->background.center());
@@ -5686,6 +5769,181 @@ namespace qsf {
 		hovering = hovering || this->hovering;
 	}
 
+	void qsf::smooth_button::set_multiplied_color(qsf::rgb color) {
+		this->smooth_layout.set_multiplied_color(color);
+		this->rectangle.polygon.set_multiplied_color(color);
+	}
+	void qsf::smooth_button::set_dimension(qpl::vector2f dimension) {
+		this->smooth_layout.set_dimension(dimension);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_position(qpl::vector2f position) {
+		this->smooth_layout.set_position(position);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_hitbox(qpl::hitbox hitbox) {
+		this->smooth_layout.set_hitbox(hitbox);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_center(qpl::vector2f center) {
+		this->smooth_layout.set_center(center);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_slope(qpl::f64 slope) {
+		this->smooth_layout.set_slope(slope);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_background_color(qsf::rgb color) {
+		this->smooth_layout.set_color(color);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_background_outline_thickness(qpl::f32 thickness) {
+		this->smooth_layout.set_outline_thickness(thickness);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_background_outline_color(qsf::rgb color) {
+		this->smooth_layout.set_outline_color(color);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_background_slope_dimension(qpl::vector2f dimension) {
+		this->smooth_layout.set_slope_dimension(dimension);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_background_slope_point_count(qpl::size point_count) {
+		this->smooth_layout.set_slope_point_count(point_count);
+		this->layout_changed = true;
+	}
+	void qsf::smooth_button::set_text_font(const sf::Font& font) {
+		this->text.set_font(font);
+	}
+	void qsf::smooth_button::set_text_font(const std::string& font_name) {
+		this->text.set_font(font_name);
+	}
+	void qsf::smooth_button::set_text_style(qpl::u32 style) {
+		this->text.set_style(style);
+	}
+	void qsf::smooth_button::set_text_character_size(qpl::u32 character_size) {
+		this->text.set_character_size(character_size);
+	}
+	void qsf::smooth_button::set_text_color(qsf::rgb color) {
+		this->text.set_color(color);
+	}
+	void qsf::smooth_button::set_text_outline_thickness(qpl::f32 outline_thickness) {
+		this->text.set_outline_thickness(outline_thickness);
+	}
+	void qsf::smooth_button::set_text_outline_color(qsf::rgb color) {
+		this->text.set_outline_color(color);
+	}
+	void qsf::smooth_button::set_text_rotation(qpl::f32 angle) {
+		this->text.set_rotation(angle);
+	}
+	void qsf::smooth_button::set_text_letter_spacing(qpl::f32 spacing) {
+		this->text.set_letter_spacing(spacing);
+	}
+	void qsf::smooth_button::set_text_position(qpl::vector2f position) {
+		this->text.set_position(position);
+	}
+	void qsf::smooth_button::set_text_center(qpl::vector2f position) {
+		this->text.set_center(position);
+	}
+	void qsf::smooth_button::set_text_string(const std::string& string) {
+		this->text.set_string(string);
+	}
+	void qsf::smooth_button::set_text_string(const std::wstring& string) {
+		this->text.set_string(string);
+	}
+	void qsf::smooth_button::set_text_multiplied_color(qsf::rgb color) {
+		this->text.set_multiplied_color(color);
+	}
+	void qsf::smooth_button::centerize_text() {
+		this->text.set_center(this->smooth_layout.get_center());
+	}
+
+	qsf::rgb qsf::smooth_button::get_multiplied_color() const {
+		return this->multiplied_color;
+	}
+	qpl::vector2f qsf::smooth_button::get_dimension() const {
+		return this->smooth_layout.get_dimension();
+	}
+	qpl::vector2f qsf::smooth_button::get_position() const {
+		return this->smooth_layout.get_position();
+	}
+	qpl::vector2f qsf::smooth_button::get_center() const {
+		return this->smooth_layout.get_center();
+	}
+	qpl::f64 qsf::smooth_button::get_slope() const {
+		return this->smooth_layout.get_slope();
+	}
+	qsf::rgb qsf::smooth_button::get_background_color() const {
+		return this->smooth_layout.get_color();
+	}
+	qpl::f32 qsf::smooth_button::get_background_outline_thickness() const {
+		return this->smooth_layout.get_outline_thickness();
+	}
+	qsf::rgb qsf::smooth_button::get_background_outline_color() const {
+		return this->smooth_layout.get_outline_color();
+	}
+	qpl::vector2f qsf::smooth_button::get_slope_dimension() const {
+		return this->smooth_layout.get_slope_dimension();
+	}
+	qpl::size qsf::smooth_button::get_slope_point_count() const {
+		return this->smooth_layout.get_slope_point_count();
+	}
+	std::string qsf::smooth_button::get_text_font() const {
+		return this->text.get_font();
+	}
+	qpl::u32 qsf::smooth_button::get_text_style() const {
+		return this->text.get_style();
+	}
+	qpl::u32 qsf::smooth_button::get_text_character_size() const {
+		return this->text.get_character_size();
+	}
+	qsf::rgb qsf::smooth_button::get_text_color() const {
+		return this->text.get_color();
+	}
+	qpl::f32 qsf::smooth_button::get_text_outline_thickness() const {
+		return this->text.get_outline_thickness();
+	}
+	qsf::rgb qsf::smooth_button::get_text_outline_color() const {
+		return this->text.get_outline_color();
+	}
+	qpl::f32 qsf::smooth_button::get_text_letter_spacing() const {
+		return this->text.get_letter_spacing();
+	}
+	qpl::vector2f qsf::smooth_button::get_text_position() const {
+		return this->text.get_visible_hitbox().position;
+	}
+	qpl::vector2f qsf::smooth_button::get_text_center() const {
+		return this->text.get_visible_hitbox().get_center();
+	}
+	std::string qsf::smooth_button::get_text_string() const {
+		return this->text.get_string();
+	}
+	std::wstring qsf::smooth_button::get_text_wstring() const {
+		return this->text.get_wstring();
+	}
+	bool qsf::smooth_button::is_hovering() const {
+		return this->hovering;
+	}
+	bool qsf::smooth_button::is_clicked() const {
+		return this->clicked;
+	}
+	void qsf::smooth_button::update(const qsf::event_info& event) {
+		this->create_check();
+		this->hovering = this->rectangle.contains(event.mouse_position());
+		this->clicked = this->hovering && event.left_mouse_clicked();
+	}
+	void qsf::smooth_button::create_check() const {
+		if (this->layout_changed) {
+			this->rectangle = this->smooth_layout;
+			this->layout_changed = false;
+		}
+	}
+	void qsf::smooth_button::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		this->create_check();
+		this->rectangle.draw(window, states);
+		this->text.draw(window, states);
+	}
 
 	void qsf::border_graphic::set_dimension(qpl::vector2f dimension) {
 		this->dimension = dimension;
@@ -5723,6 +5981,10 @@ namespace qsf {
 		for (auto& i : this->sprites) {
 			i.move(delta);
 		}
+	}
+	void qsf::border_graphic::clear() {
+		this->sprites.clear();
+		this->position = qpl::vec(0, 0);
 	}
 	void qsf::border_graphic::add_top() {
 		this->check_texture();

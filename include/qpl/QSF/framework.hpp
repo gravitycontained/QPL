@@ -40,7 +40,6 @@ namespace qsf {
 		void add_state() {
 			this->states.push_back(std::make_unique<C>());
 			this->states.back()->framework = this;
-			this->states.back()->event = &this->event;
 			this->states.back()->init();
 		}
 		
@@ -100,7 +99,6 @@ namespace qsf {
 		QPLDLL void display();
 		QPLDLL void internal_update();
 		QPLDLL bool game_loop_segment();
-		QPLDLL bool game_loop_event_update_draw();
 		QPLDLL void game_loop();
 
 
@@ -172,7 +170,6 @@ namespace qsf {
 		QPLDLL void draw_call();
 		QPLDLL void display();
 		QPLDLL bool game_loop_segment();
-		QPLDLL bool game_loop_event_update_draw();
 
 		QPLDLL void set_shader(const std::string& name);
 		QPLDLL void set_shader(sf::Shader& shader);
@@ -342,7 +339,7 @@ namespace qsf {
 		template<typename T> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
 		void update(T& updatable) {
 			if constexpr (qsf::has_update<T>()) {
-				updatable.update(*this->event);
+				updatable.update(this->event());
 			}
 			else {
 				for (auto& i : updatable) {
@@ -415,15 +412,18 @@ namespace qsf {
 		QPLDLL bool has_gained_focus() const;
 		QPLDLL bool has_lost_focus() const;
 
+		QPLDLL qpl::size frame_ctr() const;
 		QPLDLL qpl::time no_focus_time() const;
 		QPLDLL qpl::time frame_time() const;
+		QPLDLL qpl::f64 frame_time_f() const;
 		QPLDLL qpl::time run_time() const;
+		QPLDLL const qsf::event_info& event() const;
 
 		qsf::framework* framework;
-		qsf::event_info* event;
 
 		sf::Color clear_color = sf::Color::Black;
 		sf::RenderStates render_states;
+		qpl::size m_frame_ctr = 0u;
 		bool m_pop_this_state = false;
 		bool m_allow_exit = true;
 		bool m_allow_clear = true;

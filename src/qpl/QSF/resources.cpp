@@ -1,4 +1,5 @@
 #include <qpl/QSF/resources.hpp>
+#include <qpl/exception.hpp>
 
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
 #include <qpl/string.hpp>
@@ -7,23 +8,23 @@ namespace qsf {
 
 	void qsf::load_font(sf::Font& font, const std::string& path) {
 		if (!font.loadFromFile(path)) {
-			throw std::exception(qpl::to_string("load font: couldn't find / load \"", path, "\"").c_str());
+			throw qpl::exception("load font: couldn't find / load \"", path, "\"");
 		}
 	}
 	void qsf::load_texture(sf::Texture& texture, const std::string& path, bool set_smooth) {
 		if (!texture.loadFromFile(path)) {
-			throw std::exception(qpl::to_string("load texture: couldn't find / load \"", path, "\"").c_str());
+			throw qpl::exception("load texture: couldn't find / load \"", path, "\"");
 		}
 		texture.setSmooth(set_smooth);
 	}
 	void qsf::load_sound(sf::SoundBuffer& sound, const std::string& path) {
 		if (!sound.loadFromFile(path)) {
-			throw std::exception(qpl::to_string("load sound: couldn't find / load \"", path, "\"").c_str());
+			throw qpl::exception("load sound: couldn't find / load \"", path, "\"");
 		}
 	}
 	void qsf::load_shader(sf::Shader& shader, const std::string& path, sf::Shader::Type shader_type) {
 		if (!shader.loadFromFile(path, shader_type)) {
-			throw std::exception(qpl::to_string("load shader: couldn't find / load \"", path, "\"").c_str());
+			throw qpl::exception("load shader: couldn't find / load \"", path, "\"");
 		}
 	}
 	void qsf::load_shader(sf::Shader& shader, const std::string& path) {
@@ -49,7 +50,7 @@ namespace qsf {
 				qsf::load_shader(shader, path, sf::Shader::Type::Geometry);
 			}
 			else {
-				throw std::exception(qpl::to_string("load shader: can't identify what the shader type for \".", back, "\" is").c_str());
+				throw qpl::exception("load shader: can't identify what the shader type for \".", back, "\" is");
 			}
 		}
 	}
@@ -57,30 +58,30 @@ namespace qsf {
 
 	void qsf::load_font_from_memory(sf::Font& font, const std::string& memory) {
 		if (!font.loadFromMemory(memory.data(), memory.size())) {
-			throw std::exception(qpl::to_string("load font: couldn't load from memory").c_str());
+			throw qpl::exception("load font: couldn't load from memory");
 		}
 	}
 	void qsf::load_texture_from_memory(sf::Texture& texture, const std::string& memory, bool set_smooth) {
 		if (!texture.loadFromMemory(memory.data(), memory.size())) {
-			throw std::exception(qpl::to_string("load texture: couldn't load from memory").c_str());
+			throw qpl::exception("load texture: couldn't load from memory");
 		}
 		texture.setSmooth(set_smooth);
 	}
 	void qsf::load_sound_from_memory(sf::SoundBuffer& sound, const std::string& memory) {
 		if (!sound.loadFromMemory(memory.data(), memory.size())) {
-			throw std::exception(qpl::to_string("load sound: couldn't load from memory").c_str());
+			throw qpl::exception("load sound: couldn't load from memory");
 		}
 	}
 	void qsf::load_shader_from_memory(sf::Shader& shader, const std::string& memory, sf::Shader::Type shader_type) {
 		if (!shader.loadFromMemory(memory, shader_type)) {
-			throw std::exception(qpl::to_string("load shader: couldn't load from memory").c_str());
+			throw qpl::exception("load shader: couldn't load from memory");
 		}
 	}
 
 	void qsf::resources::play_sound(const std::string& name, qpl::f32 volume, qpl::f32 speed) {
 
 		if (!this->find_sound(name)) {
-			throw std::exception(qpl::to_string("play_sound: couldn't find \"", name, "\"").c_str());
+			throw qpl::exception(qpl::to_string("play_sound: couldn't find \"", name, "\"").c_str());
 		}
 		this->active_sounds.push_back(sf::Sound{});
 		this->active_sounds.back().setBuffer(this->sounds[name]);

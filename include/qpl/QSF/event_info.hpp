@@ -13,6 +13,16 @@
 namespace qsf {
 
 
+	struct event_info;
+
+	template<typename C>
+	concept has_update_c = requires (C x, const event_info & event) {
+		x.update(event);
+	};
+	template<typename C>
+	constexpr bool has_update() {
+		return has_update_c<C>;
+	}
 
 	struct event_info {
 		QPLDLL bool key_single_pressed(sf::Keyboard::Key key) const;
@@ -62,6 +72,8 @@ namespace qsf {
 		QPLDLL void reset(const sf::RenderWindow& window);
 		QPLDLL void update(const sf::Event& event);
 
+		QPLDLL qpl::time frame_time() const;
+		QPLDLL qpl::f64 frame_time_f() const;
 		QPLDLL qpl::vector2i resized_size() const;
 		QPLDLL qpl::vector2i mouse_position() const;
 		QPLDLL qpl::vector2i mouse_position_desktop() const;
@@ -75,6 +87,19 @@ namespace qsf {
 		QPLDLL std::string text_entered_str() const;
 		QPLDLL std::wstring all_text_entered() const;
 		QPLDLL std::string all_text_entered_str() const;
+
+
+		template<typename T> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
+		void update(T& updatable) const {
+			if constexpr (qsf::has_update<T>()) {
+				updatable.update(*this);
+			}
+			else {
+				for (auto& i : updatable) {
+					this->update(i);
+				}
+			}
+		}
 
 		bool m_mouse_clicked = false;
 		bool m_mouse_released = false;
@@ -116,20 +141,13 @@ namespace qsf {
 		std::set<sf::Keyboard::Key> m_keys_single_released;
 		std::set<sf::Keyboard::Key> m_keys_holding;
 
+		qpl::time m_frame_time = 0;
+
 		qpl::halted_clock m_left_mouse_clock;
 		qpl::halted_clock m_right_mouse_clock;
 		qpl::halted_clock m_middle_mouse_clock;
 	};
 
-
-	template<typename C>
-	concept has_update_c = requires (C x, const event_info& event) {
-		x.update(event);
-	};
-	template<typename C>
-	constexpr bool has_update() {
-		return has_update_c<C>;
-	}
 }
 
 #endif
