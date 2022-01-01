@@ -256,26 +256,44 @@ namespace qpl {
 		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view, wchar_t, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
 	}
 	template<typename T>
+	concept is_string_type_c = (is_string_type<T>());
+
+	template<typename T>
 	constexpr bool is_standard_string_type() {
 		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view>();
 	}
 	template<typename T>
+	concept is_standard_string_type_c = (is_standard_string_type<T>());
+
+	template<typename T>
 	constexpr bool is_wstring_type() {
 		return qpl::is_equal_to_any_decayed<T, wchar_t, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
 	}
+	template<typename T>
+	concept is_wstring_type_c = (is_wstring_type<T>());
+
 
 	template<typename T>
 	constexpr bool is_long_string_type() {
 		return qpl::is_equal_to_any_decayed<T, const char*, char*, const char[], std::string, std::string_view, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
 	}
 	template<typename T>
+	concept is_long_string_type_c = (is_long_string_type<T>());
+
+	template<typename T>
 	constexpr bool is_long_standard_string_type() {
 		return qpl::is_equal_to_any_decayed<T, const char*, char*, const char[], std::string, std::string_view>();
 	}
 	template<typename T>
+	concept is_long_standard_string_type_c = (is_long_standard_string_type<T>());
+
+	template<typename T>
 	constexpr bool is_long_wstring_type() {
 		return qpl::is_equal_to_any_decayed<T, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
 	}
+	template<typename T>
+	concept is_long_wstring_type_c = (is_long_wstring_type<T>());
+
 	template<typename T>
 	constexpr bool is_string_type(T value) {
 		return is_string_type<T>();
@@ -288,7 +306,6 @@ namespace qpl {
 	constexpr bool is_wstring_type(T value) {
 		return is_wstring_type<T>();
 	}
-
 	struct true_type {};
 	struct false_type {};
 	struct default_type {};
@@ -912,6 +929,8 @@ namespace qpl {
 	constexpr bool is_tuple(T tuple) {
 		return qpl::is_tuple<T>();
 	}
+	template<typename T>
+	concept is_tuple_c = (qpl::is_tuple<T>());
 
 	template<typename T> requires(qpl::is_tuple<T>())
 	constexpr qpl::size tuple_size() {

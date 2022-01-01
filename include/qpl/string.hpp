@@ -81,21 +81,21 @@ namespace qpl {
 
 		template<typename T>
 		constexpr bool is_printable() {
-			if constexpr (qpl::is_container<T>()) {
+			if constexpr (qpl::is_container_c<T>) {
 				return qpl::impl::is_printable<qpl::container_subtype<T>>();
 			}
-			//else if constexpr (qpl::is_tuple<T>()) {
-			//	constexpr auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
-			//		constexpr auto b = (qpl::impl::is_printable<Ts>() && ...);
-			//		if constexpr (b) {
-			//			return std::true_type{};
-			//		}
-			//		else {
-			//			return std::false_type{};
-			//		}
-			//	};
-			//	return decltype(check(std::declval<T>()))::value;
-			//}
+			else if constexpr (qpl::is_tuple_c<T>) {
+				constexpr auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
+					constexpr auto b = (qpl::impl::is_printable<Ts>() && ...);
+					if constexpr (b) {
+						return std::true_type{};
+					}
+					else {
+						return std::false_type{};
+					}
+				};
+				return decltype(check(std::declval<T>()))::value;
+			}
 			else {
 				return (static_cast<bool>(impl::is_printable_c<T>));
 			}
@@ -139,7 +139,7 @@ namespace qpl {
 		std::ostringstream stream;
 		
 		constexpr auto add_to_stream = [&]<typename T>(T value) {
-			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
+			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
 				stream << '{';
 				bool first = true;
 				for (auto& i : value) {
@@ -151,7 +151,17 @@ namespace qpl {
 				}
 				stream << '}';
 			}
-			else if constexpr (qpl::is_wstring_type<T>()) {
+			else if constexpr (qpl::is_tuple_c<T>) {
+				stream << '{';
+				if constexpr (qpl::tuple_size<T>() > 1) {
+					auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+						((stream << qpl::to_string(std::get<Ints>(value)) << ", "), ...);
+					};
+					unpack(std::make_index_sequence<qpl::tuple_size<T>() - 1>());
+				}
+				stream << qpl::to_string(qpl::tuple_value_back(value)) << '}';
+			}
+			else if constexpr (qpl::is_wstring_type_c<T>) {
 				stream << qpl::wstring_to_string(value);
 			}
 			else {
@@ -679,7 +689,7 @@ namespace qpl {
 	inline void single_print(T&& value) {
 		if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
 			bool first = true;
-			std::cout << "{";
+			std::cout << '{';
 			for (auto& i : value) {
 				if (!first) {
 					std::cout << ", ";
@@ -687,7 +697,10 @@ namespace qpl {
 				first = false;
 				qpl::single_print(i);
 			}
-			std::cout << "}";
+			std::cout << '}';
+		}
+		else if constexpr (qpl::is_tuple<T>()) {
+			std::cout << qpl::to_string(value);
 		}
 		else if constexpr (!qpl::is_derived<std::decay_t<T>, qpl::print_effect>() && !qpl::is_same<std::decay_t<T>, qpl::color>() && !qpl::is_same<std::decay_t<T>, qpl::background>() && !qpl::is_same<std::decay_t<T>, qpl::foreground>() && !qpl::is_same<std::decay_t<T>, qpl::cc>()) {
 			bool backslashn = false;
@@ -805,10 +818,6 @@ namespace qpl {
 			return;
 		}
 	}
-	//template<typename T> requires (qpl::is_tuple<T>())
-	//inline void single_print(T&& value) {
-	//
-	//}
 
 	template<typename... Args> requires (qpl::is_printable<Args...>())
 	inline void print(Args&&... args) {
