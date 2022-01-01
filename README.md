@@ -180,7 +180,7 @@ qpl::println(qpl::u32_cast(std::vector{"123", "700", "1337"}));
 ```
 
 ---
-String split:
+string split:
 ```cpp
 qpl::println(qpl::split_string("a b c d e f g", ' '));
 qpl::println(qpl::split_string("I.\nListen.\n.To.\nYou.\n", ".\n"));
