@@ -49,18 +49,18 @@ then there is also `#define QPL_BIG_LUT` (which is outside of `QPL_USE_ALL`) whi
 
 If you want to use this library in a static way, include all files (as well as `.cpp` files) and add `#define QPLDLL_EXPORTS` to the pre-processor defines. This will remove the "inconsistent dll linkage" errors.
 
-#Utilities
+# Utilities
 
 Here I show all the utilities by examples. First segment is always the code and second segment is the output.
 
-Print Hello World:
+- Print Hello World:
 ```cpp
 qpl::println("Hello World");
 ```
 ```
 Hello World
 ```
-Print variadic arguments:
+- Print variadic arguments:
 
 ```cpp
 qpl::println("a", 5.5, 'x');
@@ -69,7 +69,7 @@ qpl::println("a", 5.5, 'x');
 a5.5x
 ```
 
-Print containers:
+- Print containers:
 
 ```cpp
 qpl::println(std::vector{ 1, 2, 3 });
@@ -84,7 +84,7 @@ qpl::println(std::list  { 'a', 'b', 'c' });
 {a, b, c}
 ```
 
-Define format:
+- Define format:
 ```cpp
 qpl::println(qpl::to_string_format("[a b]", std::vector{1, 2, 3}));
 ```
@@ -108,7 +108,7 @@ qpl::println(std::make_tuple(1, 2, 5.f, "hello", std::vector{ 3, 4, 5 }));
 {1, 2, 5, hello, {3, 4, 5}}
 ```
 
-Formats for tuples:
+- Formats for tuples:
 ```cpp
 qpl::println(qpl::to_string_format("a\nb", std::make_tuple(1, 2, 5.5f, "hello", std::vector{ 3, 4, 5 })));
 ```
@@ -122,7 +122,7 @@ hello
 5
 ```
 
-Number bases:
+- Number bases:
 ```cpp
 qpl::println(qpl::hex_string(5910));
 qpl::println(qpl::binary_string(5910));
@@ -134,7 +134,7 @@ qpl::println(qpl::base_string(5910, 7));
 23142
 ```
 
-type casts on containers:
+- type casts on containers:
 ```cpp
 qpl::println(qpl::type_cast<qpl::u32>(std::vector{ 1.5, 2.0, 100.8 }));
 qpl::println(qpl::u32_cast(std::vector{ 1.5, 2.0, 100.8 }));
@@ -153,7 +153,7 @@ qpl::println(qpl::string_cast<qpl::u32>("5012"));
 5012
 ```
 
-String cast on containers:
+- String cast on containers:
 ```cpp
 qpl::println(qpl::string_cast<qpl::u32>(std::vector{"123", "700", "1337"}));
 qpl::println(qpl::u32_cast(std::vector{"123", "700", "1337"}));
@@ -163,7 +163,7 @@ qpl::println(qpl::u32_cast(std::vector{"123", "700", "1337"}));
 {123, 700, 1337}
 ```
 
-String split:
+- String split:
 ```cpp
 qpl::println(qpl::split_string("a b c d e f g", ' '));
 qpl::println(qpl::split_string("I.\nListen.\n.To.\nYou.\n", ".\n"));
@@ -173,7 +173,7 @@ qpl::println(qpl::split_string("I.\nListen.\n.To.\nYou.\n", ".\n"));
 {I, Listen, To, You}
 ```
 
-String toupper and tolower:
+- String toupper and tolower:
 ```cpp
 qpl::println(qpl::to_upper("uppercase"));
 qpl::println(qpl::to_lower("LOWERCASE"));
@@ -183,7 +183,7 @@ UPPERCASE
 lowercase
 ```
 
-Random integer:
+- Random integer:
 ```cpp
 qpl::println(qpl::random(10, 20));
 qpl::println(qpl::random(0ull, qpl::u64_max));
@@ -193,7 +193,7 @@ qpl::println(qpl::random(0ull, qpl::u64_max));
 7804404621088489734
 ```
 
-Random float:
+- Random float:
 ```cpp
 qpl::println(qpl::random(0.1, 5.0));
 qpl::println(qpl::random(0.0, qpl::f64_max));
@@ -203,7 +203,7 @@ qpl::println(qpl::random(0.0, qpl::f64_max));
 1.04464e+307
 ```
 
-Random string:
+- Random string:
 ```cpp
 qpl::println(qpl::random_lowercase_string(50));
 qpl::println(qpl::random_lowercase_uppercase_string(50));
@@ -217,7 +217,7 @@ XxwzRqxeCwiQOaYmskHOpSaYfrNBHcChxXZkJpuoSLxGMKQZXx
 +l>V/3):1hdV2_~d_R|ypX2&X"U)57J);Lkp=AFxMW^L=>#i|x
 ```
 
-String Spacing:
+String spacing:
 ```cpp
 for (qpl::u32 i = 0u; i < 10; ++i) {
 	auto s = qpl::random_number_string(qpl::random(10, 15));
@@ -236,6 +236,8 @@ for (qpl::u32 i = 0u; i < 10; ++i) {
         706499811724
           2958237165
 ```
+
+String spacing left and right:
 
 ```cpp
 for (qpl::u32 i = 0u; i < 10; ++i) {
