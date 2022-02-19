@@ -78,6 +78,8 @@ abc123x-500
 {hello, 123, x, -500}
 ```
 
+---
+
 **console input**
 
 ```cpp
@@ -108,7 +110,9 @@ number = 123
 secret = cats
 ```
 
-**fundamental typedefs:
+---
+
+**fundamental typedefs**
 ```cpp
 //char type:
 qpl::char_type c = 'a';
@@ -137,6 +141,8 @@ qpl::u64 u64 = 100'000'000'000u;
 qpl::f32 f32 = 50.0f;
 qpl::f64 f64 = 1e100;
 ```
+
+---
 
 **number type traits**
 
@@ -204,6 +210,8 @@ qpl::type_min<T>(): 2.22507e-308
 qpl::type_max<T>(): 1.79769e+308
 ```
 
+---
+
 **container type traits**
 ```cpp
 auto type_info = []<typename T>(T n) {
@@ -216,7 +224,7 @@ auto type_info = []<typename T>(T n) {
 		qpl::println("container subtype name:  ", qpl::type_name<qpl::container_subtype<T>>());
 		qpl::println("deepest subtype name:    ", qpl::type_name<qpl::container_deepest_subtype<T>>());
 		qpl::println("is contiguous in memory: ", qpl::bool_string(qpl::is_contiguous_container<T>()));
-		qpl::println("is salways sorted:       ", qpl::bool_string(qpl::is_sorted_container<T>()));
+		qpl::println("is always sorted:        ", qpl::bool_string(qpl::is_sorted_container<T>()));
 		qpl::println("is std container:        ", qpl::bool_string(qpl::is_std_container<T>()));
 
 
@@ -237,17 +245,19 @@ auto type_info = []<typename T>(T n) {
 			if constexpr (qpl::is_std_unordered_multimap_type<T>()) qpl::println("> it's an std::unordered_multimap");
 		}
 
-		if constexpr (qpl::has_size<T>())             qpl::println(" - has size");
-		if constexpr (qpl::has_data<T>())             qpl::println(" - has data");
-		if constexpr (qpl::has_at<T>())               qpl::println(" - has at");
-		if constexpr (qpl::has_square_brackets<T>())  qpl::println(" - has []");
-		if constexpr (qpl::has_resize<T>())           qpl::println(" - has resize");
-		if constexpr (qpl::has_reserve<T>())          qpl::println(" - has reserve");
-		if constexpr (qpl::has_push_back<T>())        qpl::println(" - has push_back");
-		if constexpr (qpl::has_pop_back<T>())         qpl::println(" - has pop_back");
-		if constexpr (qpl::has_push_front<T>())       qpl::println(" - has push_front");
-		if constexpr (qpl::has_pop_front<T>())        qpl::println(" - has pop_front");
-		if constexpr (qpl::has_insert<T>())           qpl::println(" - has insert");
+		if constexpr (qpl::has_size<T>())                   qpl::println(" - has size");
+		if constexpr (qpl::has_data<T>())                   qpl::println(" - has data");
+		if constexpr (qpl::has_at_read<T>())                qpl::println(" - has at& const");
+		if constexpr (qpl::has_at_write<T>())               qpl::println(" - has at&");
+		if constexpr (qpl::has_square_brackets_read<T>())   qpl::println(" - has []& const");
+		if constexpr (qpl::has_square_brackets_write<T>())  qpl::println(" - has []&");
+		if constexpr (qpl::has_resize<T>())                 qpl::println(" - has resize");
+		if constexpr (qpl::has_reserve<T>())                qpl::println(" - has reserve");
+		if constexpr (qpl::has_push_back<T>())              qpl::println(" - has push_back");
+		if constexpr (qpl::has_pop_back<T>())               qpl::println(" - has pop_back");
+		if constexpr (qpl::has_push_front<T>())             qpl::println(" - has push_front");
+		if constexpr (qpl::has_pop_front<T>())              qpl::println(" - has pop_front");
+		if constexpr (qpl::has_insert<T>())                 qpl::println(" - has insert");
 
 
 	}
@@ -260,12 +270,9 @@ using K = qpl::i32;
 
 type_info(std::vector<V>{});
 type_info(std::vector<std::vector<V>>{});
-type_info(std::array<V, 4>{});
 type_info(std::array<std::vector<V>, 4>{});
-type_info(std::deque<V>{});
-type_info(std::list<V>{});
 type_info(std::set<V>{});
-type_info(std::unordered_multimap<K, V>{});
+type_info(std::unordered_map<K, V>{});
 ```
 
 output:
@@ -280,8 +287,10 @@ is std container:        true
 > it's an std::vector
  - has size
  - has data
- - has at
- - has []
+ - has at& const
+ - has at&
+ - has []& const
+ - has []&
  - has resize
  - has reserve
  - has push_back
@@ -297,25 +306,14 @@ is std container:        true
 > it's an std::vector
  - has size
  - has data
- - has at
- - has []
+ - has at& const
+ - has at&
+ - has []& const
+ - has []&
  - has resize
  - has reserve
  - has push_back
  - has pop_back
-
-T = class std::array<double,4>
-is container:            true
-container subtype name:  double
-deepest subtype name:    double
-is contiguous in memory: true
-is always sorted:        false
-is std container:        true
-> it's an std::array
- - has size
- - has data
- - has at
- - has []
 
 T = class std::array<class std::vector<double,class std::allocator<double> >,4>
 is container:            true
@@ -327,40 +325,10 @@ is std container:        true
 > it's an std::array
  - has size
  - has data
- - has at
- - has []
-
-T = class std::deque<double,class std::allocator<double> >
-is container:            true
-container subtype name:  double
-deepest subtype name:    double
-is contiguous in memory: false
-is always sorted:        false
-is std container:        true
-> it's an std::deque
- - has size
- - has at
- - has []
- - has resize
- - has push_back
- - has pop_back
- - has push_front
- - has pop_front
-
-T = class std::list<double,class std::allocator<double> >
-is container:            true
-container subtype name:  double
-deepest subtype name:    double
-is contiguous in memory: false
-is always sorted:        false
-is std container:        true
-> it's an std::list
- - has size
- - has resize
- - has push_back
- - has pop_back
- - has push_front
- - has pop_front
+ - has at& const
+ - has at&
+ - has []& const
+ - has []&
 
 T = class std::set<double,struct std::less<double>,class std::allocator<double> >
 is container:            true
@@ -373,18 +341,23 @@ is std container:        true
  - has size
  - has insert
 
-T = class std::unordered_multimap<int,double,struct std::hash<int>,struct std::equal_to<int>,class std::allocator<struct std::pair<int const ,double> > >
+T = class std::unordered_map<int,double,struct std::hash<int>,struct std::equal_to<int>,class std::allocator<struct std::pair<int const ,double> > >
 is container:            true
 container subtype name:  struct std::pair<int const ,double>
 deepest subtype name:    struct std::pair<int const ,double>
 is contiguous in memory: false
 is always sorted:        false
 is std container:        true
-> it's an std::unordered_multimap
+> it's an std::unordered_map
  - has size
+ - has at& const
+ - has at&
+ - has []&
  - has reserve
  - has insert
 ```
+
+---
 
 **cast to string**
 
@@ -396,6 +369,16 @@ qpl::println(qpl::to_string("abc", 123, 'x', -500.0));
 qpl::println(qpl::to_string(std::vector{ 1, 2, 3, 4 }));
 qpl::println(qpl::to_string(std::make_tuple("hello", 123, 'x', -500.0)));
 ```
+
+output:
+
+```
+Hello World
+abc123x-500
+{1, 2, 3, 4}
+{hello, 123, x, -500}
+```
+---
 
 **cast from string**
 
