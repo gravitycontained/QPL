@@ -51,236 +51,353 @@ If you want to use this library in a static way, include all files (as well as `
 
 ---
 
-# Utilities
+# Main Utilities
 
-Here I show all the utilities by examples. First segment is always the code and second segment is the output.
+there are many utilities, here I show main features.
 
----
+**print to console**
 
-hello world:
+`qpl::println` offers flexible ways to print to console:
+
 ```cpp
 qpl::println("Hello World");
+
+qpl::println("abc", 123, 'x', -500.0);
+
+qpl::println(std::vector{ 1, 2, 3, 4 });
+
+qpl::println(std::make_tuple("hello", 123, 'x', -500.0));
 ```
+
+output:
+
 ```
 Hello World
+abc123x-500
+{1, 2, 3, 4}
+{hello, 123, x, -500}
 ```
 
----
-
-print variadic arguments:
-
-```cpp
-qpl::println("a", 5.5, 'x');
-```
-```
-a5.5x
-```
-
----
-print containers:
+**console input**
 
 ```cpp
-qpl::println(std::vector{ 1, 2, 3 });
-qpl::println(std::array { 4, 5, 6 });
-qpl::println(std::deque { 7, 8, 9 });
-qpl::println(std::list  { 'a', 'b', 'c' });
-```
-```
-{1, 2, 3}
-{4, 5, 6}
-{7, 8, 9}
-{a, b, c}
-```
+qpl::print("enter text > ");
+auto text = qpl::get_input();
 
----
-custom format:
-```cpp
-qpl::println(qpl::to_string_format("[a b]", std::vector{1, 2, 3}));
-```
-```
-[1 2 3]
-```
+qpl::print("enter number > ");
+auto number = qpl::get_input<int>();
 
----
-containers work recursively:
-```cpp
-qpl::println(qpl::to_string_format("[a b]", std::vector{ std::vector{1, 2, 3}, std::vector{4, 5, 6} }));
-```
-```
-[[1 2 3] [4 5 6]]
-```
+qpl::print("enter secret > ");
+auto secret = qpl::get_hidden_input();
 
----
-print tuples:
-```cpp
-qpl::println(std::make_tuple(1, 2, 5.f, "hello", std::vector{ 3, 4, 5 }));
-```
-```
-{1, 2, 5, hello, {3, 4, 5}}
-```
+qpl::println();
+qpl::println("text = ", text);
+qpl::println("number = ", number);
+qpl::println("secret = ", secret);
+````
 
----
-formats for tuples:
-```cpp
-qpl::println(qpl::to_string_format("a\nb", std::make_tuple(1, 2, 5.5f, "hello", std::vector{ 3, 4, 5 })));
-```
-```
-1
-2
-5.5
-hello
-3
-4
-5
-```
-
----
-number bases:
-```cpp
-qpl::println(qpl::hex_string(5910));
-qpl::println(qpl::binary_string(5910));
-qpl::println(qpl::base_string(5910, 7));
-```
-```
-0x1716
-1011100010110
-23142
-```
-
----
-type casts on containers:
-```cpp
-qpl::println(qpl::type_cast<qpl::u32>(std::vector{ 1.5, 2.0, 100.8 }));
-qpl::println(qpl::u32_cast(std::vector{ 1.5, 2.0, 100.8 }));
-```
-```
-{1, 2, 100}
-{1, 2, 100}
-```
-
----
-string cast:
-	
-```cpp
-qpl::println(qpl::string_cast<qpl::u32>("5012"));
-```
-```
-5012
-```
-
----
-string cast on containers:
-```cpp
-qpl::println(qpl::string_cast<qpl::u32>(std::vector{"123", "700", "1337"}));
-qpl::println(qpl::u32_cast(std::vector{"123", "700", "1337"}));
-```
-```
-{123, 700, 1337}
-{123, 700, 1337}
-```
-
----
-string split:
-```cpp
-qpl::println(qpl::split_string("a b c d e f g", ' '));
-qpl::println(qpl::split_string("I.\nListen.\n.To.\nYou.\n", ".\n"));
-```
-```
-{a, b, c, d, e, f, g}
-{I, Listen, To, You}
-```
-
----
-string toupper and tolower:
-```cpp
-qpl::println(qpl::to_upper("uppercase"));
-qpl::println(qpl::to_lower("LOWERCASE"));
-```
-```
-UPPERCASE
-lowercase
-```
-
----
-random integer:
-```cpp
-qpl::println(qpl::random(10, 20));
-qpl::println(qpl::random(0ull, qpl::u64_max));
-```
-```
-12
-7804404621088489734
-```
-
----
-random float:
-```cpp
-qpl::println(qpl::random(0.1, 5.0));
-qpl::println(qpl::random(0.0, qpl::f64_max));
-```
-```
-0.323059
-1.04464e+307
-```
-
----
-random string:
-```cpp
-qpl::println(qpl::random_lowercase_string(50));
-qpl::println(qpl::random_lowercase_uppercase_string(50));
-qpl::println(qpl::random_number_string(50));
-qpl::println(qpl::random_string(50));
-```
-```
-ggwxwtdhifpftpvrkhnqwiysvleoezquwrjugcwdfmtvacmxgi
-XxwzRqxeCwiQOaYmskHOpSaYfrNBHcChxXZkJpuoSLxGMKQZXx
-83898104729382911376136361038795815089285402690155
-+l>V/3):1hdV2_~d_R|ypX2&X"U)57J);Lkp=AFxMW^L=>#i|x
-```
-
----
-string spacing:
-```cpp
-for (qpl::u32 i = 0u; i < 10; ++i) {
-	auto s = qpl::random_number_string(qpl::random(10, 15));
-	qpl::println(qpl::str_rspaced(s, 20, ' '));
-}
-```
-```
-         52005489931
-     171690575408167
-         17520669567
-         96924072769
-     433256795206517
-          7439230226
-      21293573914966
-     256732106765153
-        706499811724
-          2958237165
-```
-
----
-string spacing left and right:
+output:
 
 ```cpp
-for (qpl::u32 i = 0u; i < 10; ++i) {
-	auto a = qpl::random_number_string(qpl::random(10, 15));
-	auto b = qpl::random_number_string(qpl::random(10, 15));
-	qpl::println(qpl::str_lspaced(a, 20, '.'), qpl::str_rspaced(b, 20, '.'));
-}
+enter text > hello world
+enter number > 123
+enter secret > ****
+
+text = hello world
+number = 123
+secret = cats
 ```
+
+**fundamental typedefs:
+```cpp
+//char type:
+qpl::char_type c = 'a';
+
+//type size
+qpl::size s = 100u;
+static_assert(qpl::is_same<qpl::size, std::size_t>());
+
+//8 bit ints:
+qpl::i8 i8 = 'a'; 
+qpl::u8 u8 = 'b'; 
+
+//16 bit ints:
+qpl::i16 i16 = -50;
+qpl::u16 u16 = 50u;
+
+//32 bit ints:
+qpl::i32 i32 = -100'000'000;
+qpl::u32 u32 = 100'000'000u;
+
+//64 bit ints:
+qpl::i64 i64 = -100'000'000'000;
+qpl::u64 u64 = 100'000'000'000u;
+
+//floats:
+qpl::f32 f32 = 50.0f;
+qpl::f64 f64 = 1e100;
 ```
-7415908139290...............210808340547
-863686141009150...........96383662002483
-7095587818930............308037209032669
-1957214397...................49662235343
-870193664190265............3551715357692
-37339415728844............58205004706036
-54611581893612.............3313790099645
-825755095809...............0983797703302
-8133387565...................56504651968
-967836889040.............741243717616496
+
+**number type traits**
+
+```cpp
+auto type_info = []<typename T>(T n) {
+
+	qpl::println("T = ", qpl::type_name<T>());
+	qpl_vprintln(qpl::bits_in_type<T>());
+	qpl_vprintln(qpl::bytes_in_type<T>());
+	qpl_vprintln(qpl::is_arithmetic<T>());
+
+	if constexpr (qpl::is_arithmetic<T>()) {
+
+		qpl_vprintln(qpl::is_integer<T>());
+		qpl_vprintln(qpl::is_floating_point<T>());
+		qpl_vprintln(qpl::type_min<T>());
+		qpl_vprintln(qpl::type_max<T>());
+
+		if constexpr (qpl::is_integer<T>()) {
+
+			qpl_vprintln(qpl::is_signed<T>());
+			qpl_vprintln(qpl::is_unsigned<T>());
+		}
+	}
+
+	qpl::println();
+};
+
+type_info(qpl::i8{ });
+type_info(qpl::u32{ });
+type_info(qpl::f64{ });
 ```
+
+output:
+```
+T = signed char
+qpl::bits_in_type<T>(): 8
+qpl::bytes_in_type<T>(): 1
+qpl::is_arithmetic<T>(): 1
+qpl::is_integer<T>(): 1
+qpl::is_floating_point<T>(): 0
+qpl::type_min<T>(): Ç
+qpl::type_max<T>(): ⌂
+qpl::is_signed<T>(): 1
+qpl::is_unsigned<T>(): 1
+
+T = unsigned int
+qpl::bits_in_type<T>(): 32
+qpl::bytes_in_type<T>(): 4
+qpl::is_arithmetic<T>(): 1
+qpl::is_integer<T>(): 1
+qpl::is_floating_point<T>(): 0
+qpl::type_min<T>(): 0
+qpl::type_max<T>(): 4294967295
+qpl::is_signed<T>(): 0
+qpl::is_unsigned<T>(): 1
+
+T = double
+qpl::bits_in_type<T>(): 64
+qpl::bytes_in_type<T>(): 8
+qpl::is_arithmetic<T>(): 1
+qpl::is_integer<T>(): 0
+qpl::is_floating_point<T>(): 1
+qpl::type_min<T>(): 2.22507e-308
+qpl::type_max<T>(): 1.79769e+308
+```
+
+**container type traits**
+```cpp
+auto type_info = []<typename T>(T n) {
+
+	qpl::println("T = ", qpl::type_name<T>());
+	qpl::println("is container:            ", qpl::bool_string(qpl::is_container<T>()));
+
+	if constexpr (qpl::is_container<T>()) {
+
+		qpl::println("container subtype name:  ", qpl::type_name<qpl::container_subtype<T>>());
+		qpl::println("deepest subtype name:    ", qpl::type_name<qpl::container_deepest_subtype<T>>());
+		qpl::println("is contiguous in memory: ", qpl::bool_string(qpl::is_contiguous_container<T>()));
+		qpl::println("is salways sorted:       ", qpl::bool_string(qpl::is_sorted_container<T>()));
+		qpl::println("is std container:        ", qpl::bool_string(qpl::is_std_container<T>()));
+
+
+		if constexpr (qpl::is_std_container<T>()) {
+
+			if constexpr (qpl::is_std_array_type<T>())              qpl::println("> it's an std::array");
+			if constexpr (qpl::is_std_vector_type<T>())             qpl::println("> it's an std::vector");
+			if constexpr (qpl::is_std_deque_type<T>())              qpl::println("> it's an std::deque");
+			if constexpr (qpl::is_std_list_type<T>())               qpl::println("> it's an std::list");
+			if constexpr (qpl::is_std_forward_list_type<T>())       qpl::println("> it's an std::forward_list");
+			if constexpr (qpl::is_std_set_type<T>())                qpl::println("> it's an std::set");
+			if constexpr (qpl::is_std_unordered_set_type<T>())      qpl::println("> it's an std::unordered_set");
+			if constexpr (qpl::is_std_multiset_type<T>())           qpl::println("> it's an std::multiset");
+			if constexpr (qpl::is_std_unordered_multiset_type<T>()) qpl::println("> it's an std::unordered_multiset");
+			if constexpr (qpl::is_std_map_type<T>())                qpl::println("> it's an std::map");
+			if constexpr (qpl::is_std_unordered_map_type<T>())      qpl::println("> it's an std::unordered_map");
+			if constexpr (qpl::is_std_multimap_type<T>())           qpl::println("> it's an std::multimap");
+			if constexpr (qpl::is_std_unordered_multimap_type<T>()) qpl::println("> it's an std::unordered_multimap");
+		}
+
+		if constexpr (qpl::has_size<T>())             qpl::println(" - has size");
+		if constexpr (qpl::has_data<T>())             qpl::println(" - has data");
+		if constexpr (qpl::has_at<T>())               qpl::println(" - has at");
+		if constexpr (qpl::has_square_brackets<T>())  qpl::println(" - has []");
+		if constexpr (qpl::has_resize<T>())           qpl::println(" - has resize");
+		if constexpr (qpl::has_reserve<T>())          qpl::println(" - has reserve");
+		if constexpr (qpl::has_push_back<T>())        qpl::println(" - has push_back");
+		if constexpr (qpl::has_pop_back<T>())         qpl::println(" - has pop_back");
+		if constexpr (qpl::has_push_front<T>())       qpl::println(" - has push_front");
+		if constexpr (qpl::has_pop_front<T>())        qpl::println(" - has pop_front");
+		if constexpr (qpl::has_insert<T>())           qpl::println(" - has insert");
+
+
+	}
+
+	qpl::println();
+};
+
+using V = qpl::f64;
+using K = qpl::i32;
+
+type_info(std::vector<V>{});
+type_info(std::vector<std::vector<V>>{});
+type_info(std::array<V, 4>{});
+type_info(std::array<std::vector<V>, 4>{});
+type_info(std::deque<V>{});
+type_info(std::list<V>{});
+type_info(std::set<V>{});
+type_info(std::unordered_multimap<K, V>{});
+```
+
+output:
+```
+T = class std::vector<double,class std::allocator<double> >
+is container:            true
+container subtype name:  double
+deepest subtype name:    double
+is contiguous in memory: true
+is always sorted:        false
+is std container:        true
+> it's an std::vector
+ - has size
+ - has data
+ - has at
+ - has []
+ - has resize
+ - has reserve
+ - has push_back
+ - has pop_back
+
+T = class std::vector<class std::vector<double,class std::allocator<double> >,class std::allocator<class std::vector<double,class std::allocator<double> > > >
+is container:            true
+container subtype name:  class std::vector<double,class std::allocator<double> >
+deepest subtype name:    double
+is contiguous in memory: true
+is always sorted:        false
+is std container:        true
+> it's an std::vector
+ - has size
+ - has data
+ - has at
+ - has []
+ - has resize
+ - has reserve
+ - has push_back
+ - has pop_back
+
+T = class std::array<double,4>
+is container:            true
+container subtype name:  double
+deepest subtype name:    double
+is contiguous in memory: true
+is always sorted:        false
+is std container:        true
+> it's an std::array
+ - has size
+ - has data
+ - has at
+ - has []
+
+T = class std::array<class std::vector<double,class std::allocator<double> >,4>
+is container:            true
+container subtype name:  class std::vector<double,class std::allocator<double> >
+deepest subtype name:    double
+is contiguous in memory: true
+is always sorted:        false
+is std container:        true
+> it's an std::array
+ - has size
+ - has data
+ - has at
+ - has []
+
+T = class std::deque<double,class std::allocator<double> >
+is container:            true
+container subtype name:  double
+deepest subtype name:    double
+is contiguous in memory: false
+is always sorted:        false
+is std container:        true
+> it's an std::deque
+ - has size
+ - has at
+ - has []
+ - has resize
+ - has push_back
+ - has pop_back
+ - has push_front
+ - has pop_front
+
+T = class std::list<double,class std::allocator<double> >
+is container:            true
+container subtype name:  double
+deepest subtype name:    double
+is contiguous in memory: false
+is always sorted:        false
+is std container:        true
+> it's an std::list
+ - has size
+ - has resize
+ - has push_back
+ - has pop_back
+ - has push_front
+ - has pop_front
+
+T = class std::set<double,struct std::less<double>,class std::allocator<double> >
+is container:            true
+container subtype name:  double
+deepest subtype name:    double
+is contiguous in memory: false
+is always sorted:        true
+is std container:        true
+> it's an std::set
+ - has size
+ - has insert
+
+T = class std::unordered_multimap<int,double,struct std::hash<int>,struct std::equal_to<int>,class std::allocator<struct std::pair<int const ,double> > >
+is container:            true
+container subtype name:  struct std::pair<int const ,double>
+deepest subtype name:    struct std::pair<int const ,double>
+is contiguous in memory: false
+is always sorted:        false
+is std container:        true
+> it's an std::unordered_multimap
+ - has size
+ - has reserve
+ - has insert
+```
+
+**cast to string**
+
+`qpl::to_string` is as flexible as `qpl::println` and returns the resulting `std::string`:
+
+```cpp
+qpl::println(qpl::to_string("Hello World"));
+qpl::println(qpl::to_string("abc", 123, 'x', -500.0));
+qpl::println(qpl::to_string(std::vector{ 1, 2, 3, 4 }));
+qpl::println(qpl::to_string(std::make_tuple("hello", 123, 'x', -500.0)));
+```
+
+**cast from string**
 
 
 
