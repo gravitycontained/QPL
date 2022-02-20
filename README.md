@@ -112,6 +112,28 @@ secret = cats
 
 ---
 
+**cast to string**
+
+`qpl::to_string` is as flexible as `qpl::println` and returns the resulting `std::string`:
+
+```cpp
+qpl::println(qpl::to_string("Hello World"));
+qpl::println(qpl::to_string("abc", 123, 'x', -500.0));
+qpl::println(qpl::to_string(std::vector{ 1, 2, 3, 4 }));
+qpl::println(qpl::to_string(std::make_tuple("hello", 123, 'x', -500.0)));
+```
+
+output:
+
+```
+Hello World
+abc123x-500
+{1, 2, 3, 4}
+{hello, 123, x, -500}
+```
+
+---
+
 **fundamental typedefs**
 ```cpp
 //char type:
@@ -359,30 +381,182 @@ is std container:        true
 
 ---
 
-**cast to string**
-
-`qpl::to_string` is as flexible as `qpl::println` and returns the resulting `std::string`:
+**basic tuple typetrais and utilities**
 
 ```cpp
-qpl::println(qpl::to_string("Hello World"));
-qpl::println(qpl::to_string("abc", 123, 'x', -500.0));
-qpl::println(qpl::to_string(std::vector{ 1, 2, 3, 4 }));
-qpl::println(qpl::to_string(std::make_tuple("hello", 123, 'x', -500.0)));
+auto type_info = []<typename T>(T tuple) {
+	if constexpr (qpl::is_tuple<T>()) {
+		qpl::println(tuple, " is a tuple. ");
+		qpl::println("size:              ", qpl::tuple_size<T>());
+		qpl::println("reversed:          ", qpl::tuple_reverse(tuple));
+		qpl::println("reversed type:     ", qpl::type_name<qpl::tuple_type_reverse<T>>());
+		qpl::println("value front:       ", qpl::tuple_value_front(tuple));
+		qpl::println("value back:        ", qpl::tuple_value_back(tuple));
+		qpl::println("splice<1, 2>:      ", qpl::tuple_splice<1, 2>(tuple));
+		qpl::println("to_array<int>:     ", qpl::tuple_to_array<int>(tuple));
+		qpl::println("to_vector<double>: ", qpl::tuple_to_vector<double>(tuple));
+	}
+};
+
+auto t = qpl::to_tuple(1, "23.4", 56.7f, 'A');
+type_info(t);
 ```
 
 output:
+```
+{1, 23.4, 56.7, A} is a tuple.
+size:              4
+reversed:          {A, 56.7, 23.4, 1}
+reversed type:     class std::tuple<char,float,char const * __ptr64,int>
+value front:       1
+value back:        A
+splice<1, 2>:      {23.4, 56.7}
+to_array<int>:     {1, 23, 56, 65}
+to_vector<double>: {1, 23.4, 56.7, 65}
+```
 
-```
-Hello World
-abc123x-500
-{1, 2, 3, 4}
-{hello, 123, x, -500}
-```
 ---
 
-**cast from string**
+**qpl::tuple_iterate functions**
 
+```cpp
+auto t = qpl::to_tuple(0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9);
 
+qpl::f64 sum = 0.0;
+
+qpl::tuple_iterate(t, [&](auto i) {
+	sum += i;
+	});
+
+qpl::println("sum = ", sum);
+```
+
+output:
+```
+sum = 45.2
+```
+
+---
+
+tuple auto& iteration:
+
+```cpp
+auto t = qpl::to_tuple(0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9);
+
+qpl::println("t = ", t);
+
+qpl::tuple_iterate(t, [&](auto& i) {
+	i *= i;
+	});
+
+qpl::println("t = ", t);
+```
+
+output:
+```
+t = {0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9}
+t = {0, 1, 4, 9, 16, 25, 36, 51.84, 64, 81}
+```
+
+---
+
+tuple index range <+Start, -End>:
+
+```cpp
+auto t = qpl::to_tuple(0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9);
+
+qpl::tuple_iterate<1, -1>(t, [&](auto i) {
+	qpl::print(i, ' ');
+	});
+```
+output:
+```
+1 2 3 4 5 6 7.2 8
+```
+
+---
+
+tuple index range <+Start, -End, Increment>:
+```cpp
+auto t = qpl::to_tuple(0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9);
+
+qpl::tuple_iterate<0, 0, 2>(t, [&](auto i) {
+	qpl::print(i, ' ');
+	});
+```
+output:
+```
+0 2 4 6 8
+```
+
+---
+
+tuple indexed iterating:
+
+```cpp
+auto t = qpl::to_tuple("hello", 123, 'x', -50.50);
+
+qpl::tuple_iterate_indexed(t, [&](auto n, qpl::size i) {
+	qpl::println("tuple[", i, "] type = ", qpl::type_name<decltype(n)>());
+	});
+```
+output:
+```
+tuple[0] type = char const * __ptr64
+tuple[1] type = int
+tuple[2] type = char
+tuple[3] type = double
+```
+
+---
+
+tuple iteration control:
+```cpp
+auto t = qpl::to_tuple(0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9);
+
+qpl::tuple_iterate_control(t, [](auto e) {
+	constexpr auto i = e.size - e.i - 1;
+	qpl::println("tuple[", i, "] = ", e.at<i>());
+});
+```
+
+output:
+```
+tuple[9] = 9
+tuple[8] = 8
+tuple[7] = 7.2
+tuple[6] = 6
+tuple[5] = 5
+tuple[4] = 4
+tuple[3] = 3
+tuple[2] = 2
+tuple[1] = 1
+tuple[0] = 0
+```
+
+tuple iteration control, more specific indexing:
+
+```cpp
+auto t = qpl::to_tuple(0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9);
+
+qpl::println("t = ", t);
+
+qpl::tuple_iterate_control(t, [](auto e) {
+	if constexpr (e.i < e.size - 1) {
+		*e += e.at<e.i + 1>();
+	}
+	else {
+		*e *= 2;
+	}
+});
+
+qpl::println("t = ", t);
+```
+output:
+```
+t = {0, 1, 2, 3, 4, 5, 6, 7.2, 8, 9}
+t = {1, 3, 5, 7, 9, 11, 13, 15.2, 17, 18}
+```
 
 ----------
 
