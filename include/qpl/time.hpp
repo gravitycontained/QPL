@@ -327,6 +327,7 @@ namespace qpl {
 	QPLDLL void end_benchmark(const std::string& name);
 
 
+	QPLDLL void clear_benchmark();
 	QPLDLL void begin_benchmark_segments();
 	QPLDLL void print_benchmark();
 	QPLDLL void print_benchmark(const std::string& name);
@@ -338,6 +339,35 @@ namespace qpl {
 	QPLDLL void reset_count_signal();
 	QPLDLL bool get_count_signal(qpl::u64 when);
 
+	struct animation2 {
+		qpl::small_clock timer;
+		qpl::f64 duration = 1.0;
+		qpl::f64 progress = 0.0;
+		bool reversed = false;
+		bool running = false;
+		bool just_finish = false;
+		bool just_finish_reverse = false;
+		bool just_finish_no_reverse = false;
+		bool internal_change_flag = false;
+
+		QPLDLL void reset();
+		QPLDLL void start();
+		QPLDLL void stop();
+		QPLDLL void reset_and_start();
+		QPLDLL void set_duration(qpl::f64 duration);
+		QPLDLL void update();
+		QPLDLL bool is_running() const;
+		QPLDLL void go_forwards();
+		QPLDLL void go_backwards();
+		QPLDLL bool just_finished() const;
+		QPLDLL bool just_finished_reverse() const;
+		QPLDLL bool just_finished_no_reverse() const;
+		QPLDLL bool has_progress() const;
+		QPLDLL void set_progress(qpl::f64 progress);
+		QPLDLL qpl::f64 get_progress() const;
+		QPLDLL qpl::f64 get_curve_progress(qpl::f64 curve = 1.5) const;
+	};
+
 	struct animation {
 		qpl::small_clock timer;
 		qpl::f64 duration = 1.0;
@@ -348,6 +378,8 @@ namespace qpl {
 		bool running_result = false;
 		bool running = false;
 		bool just_finish = false;
+		bool just_finish_no_reverse = false;
+		bool just_finish_reverse = false;
 		bool started = false;
 		bool reversed = false;
 
@@ -377,8 +409,14 @@ namespace qpl {
 		QPLDLL bool is_started() const;
 		QPLDLL bool just_finished() const;
 		QPLDLL bool just_finished(bool update);
+		QPLDLL bool just_finished_reverse() const;
+		QPLDLL bool just_finished_reverse(bool update);
+		QPLDLL bool just_finished_no_reverse() const;
+		QPLDLL bool just_finished_no_reverse(bool update);
 		QPLDLL bool is_done() const;
 		QPLDLL bool is_done(bool update);
+		QPLDLL bool has_progress() const;
+		QPLDLL bool has_progress(bool update);
 		QPLDLL bool is_running_or_done() const;
 		QPLDLL bool is_running_or_done(bool update);
 		QPLDLL bool is_done_reverse() const;

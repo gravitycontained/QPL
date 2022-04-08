@@ -6,15 +6,23 @@
 #include <limits>
 #include <tuple>
 #include <string>
+#include <vector>
+#include <list>
+#include <forward_list>
+#include <deque>
+#include <array>
+#include <set>
+#include <unordered_set>
+#include <map>
+#include <unordered_map>
 #include <span>
 #include <limits>
 #include <utility>
+#include <functional>
 #include <typeinfo>
 #include <charconv>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
-#include <set>
-#include <map>
 
 namespace qpl {
 	template<qpl::u32 base, bool sign>
@@ -377,6 +385,12 @@ namespace qpl {
 	constexpr bool char_is_unsigned() {
 		return (CHAR_MIN == 0);
 	}
+	constexpr bool wchar_is_signed() {
+		return (WCHAR_MIN != 0);
+	}
+	constexpr bool wchar_is_unsigned() {
+		return (WCHAR_MIN == 0);
+	}
 
 	namespace {
 		constexpr qpl::u32 endian_u32 = 0x01020304ui32;
@@ -396,6 +410,8 @@ namespace qpl {
 	using char_type = qpl::conditional<
 		qpl::if_true<qpl::char_is_signed()>, qpl::i8,
 		qpl::if_true<qpl::char_is_unsigned()>, qpl::u8>;
+
+	using wchar_type = wchar_t;
 
 	template<typename T>
 	using signed_type = qpl::conditional<
@@ -500,13 +516,13 @@ namespace qpl {
 		template<typename C>
 		auto container_deepest_subtype() {
 			if constexpr (!qpl::is_container<C>()) {
-				return std::declval<C>();
+				return C{};
 			}
 			else if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
 				return container_deepest_subtype<qpl::container_subtype<C>>();
 			}
 			else {
-				return std::declval<qpl::container_subtype<C>>();
+				return qpl::container_subtype<C>{};
 			}
 		}
 	}
@@ -580,44 +596,39 @@ namespace qpl {
 	constexpr bool has_reserve() {
 		return has_reserve_c<T>;
 	};
-	template<typename T>
-	concept has_square_brackets_c = requires(T & x, const T & y) {
-		x[qpl::size{}] = qpl::container_subtype<T>{};
-		y[qpl::size{}];
-	};
-	template<typename T>
-	constexpr bool has_square_brackets() {
-		return has_square_brackets_c<T>;
-	}
 
 	template<typename T>
-	concept has_at_c = requires(T & x, const T & y) {
-		x.at(qpl::size{}) = qpl::container_subtype<T>{};
-		y.at(qpl::size{});
-	};
-	template<typename T>
-	constexpr bool has_at() {
-		return has_at_c<T>;
-	}
-
-	template<typename T>
-	concept has_resize_and_access_c = has_resize_c<T> && (has_square_brackets_c<T> || has_at_c<T>);
-
-	template<typename T>
-	constexpr bool has_resize_and_access() {
-		return has_resize_and_access_c<T>;
-	}
-
-
-	template<typename T>
-	concept has_pushback_c = requires(T & x) {
+	concept has_push_back_c = requires(T& x) {
 		x.push_back(qpl::container_subtype<T>{});
 	};
 	template<typename T>
-	constexpr bool has_pushback() {
-		return has_pushback_c<T>;
+	constexpr bool has_push_back() {
+		return has_push_back_c<T>;
 	}
-
+	template<typename T>
+	concept has_pop_back_c = requires(T& x) {
+		x.pop_back();
+	};
+	template<typename T>
+	constexpr bool has_pop_back() {
+		return has_pop_back_c<T>;
+	}
+	template<typename T>
+	concept has_push_front_c = requires(T& x) {
+		x.push_front(qpl::container_subtype<T>{});
+	};
+	template<typename T>
+	constexpr bool has_push_front() {
+		return has_push_front_c<T>;
+	}
+	template<typename T>
+	concept has_pop_front_c = requires(T & x) {
+		x.pop_front();
+	};
+	template<typename T>
+	constexpr bool has_pop_front() {
+		return has_pop_front_c<T>;
+	}
 	template<typename T>
 	concept has_insert_c = requires(T & x) {
 		x.insert(qpl::container_subtype<T>{});
@@ -629,7 +640,7 @@ namespace qpl {
 
 
 	template<typename T>
-	concept can_grow_c = has_pushback_c<T> || has_insert_c<T>;
+	concept can_grow_c = has_push_back_c<T> || has_insert_c<T>;
 
 	template<typename T>
 	constexpr bool can_grow() {
@@ -825,6 +836,17 @@ namespace qpl {
 		};
 
 		template<typename T, typename F = void>
+		struct has_key_equal_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_key_equal_type<T, std::void_t<typename T::key_equal>> {
+			constexpr static bool value = true;
+			using type = typename T::key_equal;
+		};
+		template<typename T, typename F = void>
 		struct has_allocator_type {
 			constexpr static bool value = false;
 			using type = qpl::error_type;
@@ -836,6 +858,32 @@ namespace qpl {
 			using type = typename T::allocator_type;
 		};
 
+		template<typename T, typename F = void>
+		struct has_hasher_type {
+			constexpr static bool value = false;
+			using type = qpl::error_type;
+		};
+
+		template<typename T>
+		struct has_hasher_type<T, std::void_t<typename T::hasher>> {
+			constexpr static bool value = true;
+			using type = typename T::hasher;
+		};
+
+		template<qpl::size N, bool B>
+		struct std_array_size_info {
+			constexpr static qpl::size size = N;
+			constexpr static bool value = B;
+		};
+
+		template<typename T>
+		constexpr auto std_array_size(T&& f) {
+			return std_array_size_info<0u, false>{};
+		}
+		template<typename T, qpl::size N>
+		constexpr auto std_array_size(std::array<T, N>&& f) {
+			return std_array_size_info<N, true>{};
+		}
 	}
 
 	template<typename T>
@@ -857,10 +905,21 @@ namespace qpl {
 	constexpr bool has_key_compare_type() {
 		return impl::has_key_compare_type<T>::value;
 	}
-
+	template<typename T>
+	constexpr bool has_key_equal_type() {
+		return impl::has_key_equal_type<T>::value;
+	}
+	template<typename T>
+	constexpr bool has_hasher_type() {
+		return impl::has_hasher_type<T>::value;
+	}
 	template<typename T>
 	constexpr bool has_allocator_type() {
 		return impl::has_allocator_type<T>::value;
+	}
+	template<typename T>
+	constexpr bool has_std_array_size() {
+		return decltype(qpl::impl::std_array_size(T{}))::value;
 	}
 
 	template<typename C> requires (qpl::is_container<C>())
@@ -878,6 +937,16 @@ namespace qpl {
 	template<typename C> requires (qpl::is_container<C>())
 		using container_key_compare_type = impl::has_key_compare_type<C>::type;
 
+	template<typename C> requires (qpl::is_container<C>())
+		using container_key_equal_type = impl::has_key_equal_type<C>::type;
+
+	template<typename C> requires (qpl::is_container<C>())
+		using container_hasher_type = impl::has_hasher_type<C>::type;
+
+	template<typename T>
+	constexpr qpl::size std_array_size() {
+		return decltype(qpl::impl::std_array_size(T{}))::size;
+	}
 
 
 	template<typename T>
@@ -959,7 +1028,11 @@ namespace qpl {
 	using variadic_type = std::tuple_element_t<N, std::tuple<Ts...>>;
 
 	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
-	constexpr auto tuple_value(T tuple) {
+	constexpr const auto& tuple_value(const T& tuple) {
+		return std::get<N>(tuple);
+	}
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
+	constexpr auto& tuple_value(T& tuple) {
 		return std::get<N>(tuple);
 	}
 	template<qpl::size N, typename... Ts>
@@ -967,11 +1040,19 @@ namespace qpl {
 		return std::get<N>(std::make_tuple(args...));
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-	constexpr auto tuple_value_front(T tuple) {
+	constexpr const auto& tuple_value_front(const T& tuple) {
 		return qpl::tuple_value<0u>(tuple);
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-	constexpr auto tuple_value_back(T tuple) {
+	constexpr auto& tuple_value_front(T& tuple) {
+		return qpl::tuple_value<0u>(tuple);
+	}
+	template<typename T> requires(qpl::is_tuple<T>())
+	constexpr const auto& tuple_value_back(const T& tuple) {
+		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(tuple);
+	}
+	template<typename T> requires(qpl::is_tuple<T>())
+		constexpr auto& tuple_value_back(T& tuple) {
 		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(tuple);
 	}
 	template<qpl::size N, typename... Ts>
@@ -1123,6 +1204,10 @@ namespace qpl {
 		constexpr R return_type(R(*)(A...)) {
 			return R{};
 		}
+		template<typename R, typename... A>
+		constexpr R return_type(std::function<R(A...)>) {
+			return R{};
+		}
 		template<typename C, typename R, typename... A>
 		constexpr R return_type(R(C::*)(A...)) {
 			return R{};
@@ -1144,6 +1229,10 @@ namespace qpl {
 		constexpr auto parameter_type(R(*)(A...)) {
 			return std::tuple<A...>{};
 		}
+		template<typename R, typename... A>
+		constexpr auto parameter_type(std::function<R(A...)>) {
+			return std::tuple<A...>{};
+		}
 		template<typename C, typename R, typename... A>
 		constexpr auto parameter_type(R(C::*)(A...)) {
 			return std::tuple<A...>{};
@@ -1156,6 +1245,10 @@ namespace qpl {
 
 		template<typename R, typename... A>
 		constexpr auto function_type(R(*)(A...)) {
+			return std::tuple<R, A...>{};
+		}
+		template<typename R, typename... A>
+		constexpr auto function_type(std::function<R(A...)>) {
 			return std::tuple<R, A...>{};
 		}
 		template<typename C, typename R, typename... A>
@@ -1201,30 +1294,153 @@ namespace qpl {
 	template<typename C, typename T>
 	using container_change_subtype = typename container_change_subtype_t<C, T>::type;
 
-
-	template<typename C> requires (qpl::is_container<C>())
-	constexpr bool is_sorted_container() {
-		if constexpr (qpl::has_key_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
-			if constexpr (qpl::is_same_decayed<C, std::set<qpl::container_key_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
-				return true;
-			}
-		}
-		if constexpr (qpl::has_key_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
-			if constexpr (qpl::is_same_decayed<C, std::multiset<qpl::container_key_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
-				return true;
-			}
-		}
-		if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
-			if constexpr (qpl::is_same_decayed<C, std::map<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
-				return true;
-			}
-		}
-		if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
-			if constexpr (qpl::is_same_decayed<C, std::multimap<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
-				return true;
+	template<typename C> 
+	constexpr bool is_std_set_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::set<qpl::container_key_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
 			}
 		}
 		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_multiset_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::multiset<qpl::container_key_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_unordered_set_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_hasher_type<C>() && qpl::has_key_equal_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::unordered_set<qpl::container_key_type<C>, qpl::container_hasher_type<C>, qpl::container_key_equal_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_unordered_multiset_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_hasher_type<C>() && qpl::has_key_equal_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::unordered_multiset<qpl::container_key_type<C>, qpl::container_hasher_type<C>, qpl::container_key_equal_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_map_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::map<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_multimap_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_key_compare_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::multimap<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_key_compare_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_unordered_map_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_hasher_type<C>() && qpl::has_key_equal_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::unordered_map<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_hasher_type<C>, qpl::container_key_equal_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_unordered_multimap_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_key_type<C>() && qpl::has_mapped_type<C>() && qpl::has_hasher_type<C>() && qpl::has_key_equal_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::unordered_multimap<qpl::container_key_type<C>, qpl::container_mapped_type<C>, qpl::container_hasher_type<C>, qpl::container_key_equal_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_vector_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_value_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::vector<qpl::container_value_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_list_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_value_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::list<qpl::container_value_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_forward_list_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_value_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::forward_list<qpl::container_value_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_deque_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_value_type<C>() && qpl::has_allocator_type<C>()) {
+				if constexpr (qpl::is_same_decayed<C, std::deque<qpl::container_value_type<C>, qpl::container_allocator_type<C>>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	template<typename C>
+	constexpr bool is_std_array_type() {
+		if constexpr (qpl::is_container<C>()) {
+			if constexpr (qpl::has_value_type<C>() && qpl::has_std_array_size<C>()) {
+				if constexpr (qpl::is_same<C, std::array<qpl::container_value_type<C>, qpl::std_array_size<C>()>>()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	template<typename C> requires (qpl::is_container<C>())
+	constexpr bool is_sorted_container() {
+		return qpl::is_std_set_type<C>() || qpl::is_std_multiset_type<C>() || qpl::is_std_map_type<C>() || qpl::is_std_multimap_type<C>();
 	}
 
 	template<typename C> requires (qpl::is_container<C>())
@@ -1232,18 +1448,113 @@ namespace qpl {
 		return !qpl::is_sorted_container<C>();
 	}
 
+	template<typename C> requires (qpl::is_container<C>())
+		constexpr bool is_std_container() {
+		return qpl::is_std_set_type<C>() || qpl::is_std_multiset_type<C>() || 
+			qpl::is_std_unordered_set_type<C>() || qpl::is_std_unordered_multiset_type<C>() ||
+			qpl::is_std_map_type<C>() || qpl::is_std_multimap_type<C>() || 
+			qpl::is_std_unordered_map_type<C>() || qpl::is_std_unordered_multimap_type<C>() ||
+			qpl::is_std_vector_type<C>() || 
+			qpl::is_std_list_type<C>() ||
+			qpl::is_std_forward_list_type<C>() ||
+			qpl::is_std_array_type<C>() || 
+			qpl::is_std_deque_type<C>();
+	}
+
+	namespace impl {
+		template<typename T>
+		constexpr auto mapped_type() {
+			if constexpr (qpl::has_mapped_type<T>()) {
+				return qpl::container_mapped_type<T>{};
+			}
+			else {
+				return qpl::size{};
+			}
+		}
+		template<typename T>
+		constexpr auto value_type() {
+			if constexpr (qpl::has_key_type<T>()) {
+				return qpl::container_key_type<T>{};
+			}
+			else {
+				return qpl::container_subtype<T>{};
+			}
+		}
+	}
+
+
+	template<typename T>
+	concept has_square_brackets_c = requires(T & x, const T & y) {
+		x[qpl::impl::mapped_type<T>()] = qpl::impl::value_type<T>();
+		y[qpl::impl::mapped_type<T>()];
+	};
+	template<typename T>
+	constexpr bool has_square_brackets() {
+		return has_square_brackets_c<T>;
+	}
+
+	template<typename T>
+	concept has_square_brackets_read_c = requires(const T & n) {
+		n[qpl::impl::mapped_type<T>()];
+	};
+	template<typename T>
+	constexpr bool has_square_brackets_read() {
+		return has_square_brackets_read_c<T>;
+	}
+	template<typename T>
+	concept has_square_brackets_write_c = requires(T & n) {
+		n[qpl::impl::mapped_type<T>()] = qpl::impl::value_type<T>();
+	};
+	template<typename T>
+	constexpr bool has_square_brackets_write() {
+		return has_square_brackets_write_c<T>;
+	}
+	template<typename T>
+	concept has_at_c = requires(T & x, const T & y) {
+		x.at(qpl::impl::mapped_type<T>()) = qpl::impl::value_type<T>();
+		y.at(qpl::impl::mapped_type<T>());
+	};
+	template<typename T>
+	constexpr bool has_at() {
+		return has_at_c<T>;
+	}
+	template<typename T>
+	concept has_at_read_c = requires(const T & n) {
+		n.at(qpl::impl::mapped_type<T>());
+	};
+	template<typename T>
+	constexpr bool has_at_read() {
+		return has_at_read_c<T>;
+	}
+	template<typename T>
+	concept has_at_write_c = requires(T & n) {
+		n.at(qpl::impl::mapped_type<T>()) = qpl::impl::value_type<T>();
+	};
+	template<typename T>
+	constexpr bool has_at_write() {
+		return has_at_write_c<T>;
+	}
+
+	template<typename T>
+	concept has_resize_and_access_c = has_resize_c<T> && (has_square_brackets_c<T> || has_at_c<T>);
+
+	template<typename T>
+	constexpr bool has_resize_and_access() {
+		return has_resize_and_access_c<T>;
+	}
+
 
 	template<typename T, typename U>
 	constexpr inline auto type_cast(U&& data) {
 		if constexpr (qpl::is_container<U>() && !qpl::is_long_string_type<U>()) {
-			typename qpl::container_change_subtype_t<U, T>::type result;
-			if constexpr (qpl::has_resize_and_access<qpl::container_change_subtype_t<U, T>::type>()) {
+			typename qpl::container_change_subtype<U, T> result;
+			if constexpr (qpl::has_resize_and_access<qpl::container_change_subtype<U, T>>()) {
 				result.resize(data.size());
 				for (qpl::size i = 0u; i < data.size(); ++i) {
-					if constexpr (qpl::has_square_brackets<qpl::container_change_subtype_t<U, T>::type>()) {
+					if constexpr (qpl::has_square_brackets<qpl::container_change_subtype<U, T>>()) {
 						result[i] = qpl::type_cast<T>(data[i]);
 					}
-					else if constexpr (qpl::has_at<qpl::container_change_subtype_t<U, T>::type>()) {
+					else if constexpr (qpl::has_at<qpl::container_change_subtype<U, T>>()) {
 						result.at(i) = qpl::type_cast<T>(data.at(i));
 					}
 					else {
@@ -1253,10 +1564,10 @@ namespace qpl {
 			}
 			else {
 				for (const auto& i : data) {
-					if constexpr (qpl::has_pushback<qpl::container_change_subtype_t<U, T>::type>()) {
+					if constexpr (qpl::has_push_back<qpl::container_change_subtype<U, T>>()) {
 						result.push_back(qpl::type_cast<T>(i));
 					}
-					else if constexpr (qpl::has_insert<qpl::container_change_subtype_t<U, T>::type>()) {
+					else if constexpr (qpl::has_insert<qpl::container_change_subtype<U, T>>()) {
 						result.insert(qpl::type_cast<T>(i));
 					}
 					else {
@@ -1334,6 +1645,10 @@ namespace qpl {
 		return qpl::type_cast<qpl::char_type>(data);
 	}
 	template<typename T>
+	constexpr inline auto wchar_cast(T&& data) {
+		return qpl::type_cast<qpl::wchar_type>(data);
+	}
+	template<typename T>
 	constexpr inline auto f32_cast(T&& data) {
 		return qpl::type_cast<qpl::f32>(data);
 	}
@@ -1392,6 +1707,9 @@ namespace qpl {
 		return impl::has_method<C, F>::value;
 	}
 
+
+
+
 	template<typename F>
 	using return_type = decltype(impl::return_type(std::declval<F>()));
 
@@ -1403,6 +1721,31 @@ namespace qpl {
 
 	template<typename F>
 	using function_type = decltype(impl::function_type(std::declval<F>()));
+
+	template<typename F>
+	constexpr qpl::size return_size() {
+		return qpl::tuple_size<qpl::return_size<decltype(std::function(F{}))>>();
+	}
+	template<typename F>
+	constexpr qpl::size return_size(F f) {
+		return qpl::return_size<F>();
+	}
+	template<typename F>
+	constexpr qpl::size parameter_size() {
+		return qpl::tuple_size<qpl::parameter_type<decltype(std::function(F{}))>>();
+	}
+	template<typename F>
+	constexpr qpl::size parameter_size(F f) {
+		return qpl::parameter_size<F>();
+	}
+	template<typename F>
+	constexpr qpl::size function_size() {
+		return qpl::tuple_size<qpl::function_size<decltype(std::function(F{}))>>();
+	}
+	template<typename F>
+	constexpr qpl::size function_size(F f) {
+		return qpl::function_size<F>();
+	}
 
 
 	template<class F>
@@ -1466,13 +1809,6 @@ namespace qpl {
 		qpl::if_true<(qpl::is_floating_point<T>())>, T,
 		qpl::if_true<(qpl::is_floating_point<U>())>, U,
 		qpl::if_true<(qpl::type_used_bit_size<T>() < qpl::type_used_bit_size<U>())>, U, T>;
-
-
-
-	//template<typename T, typename U>
-	//constexpr inline qpl::superior_arithmetic_type<T, U> superior_arithmetic_cast(T&& data) {
-	//	return qpl::type_cast<qpl::superior_arithmetic_type<T, U>>(data);
-	//}
 
 	template<typename T, typename U>
 	using promote_superior_type_classic =

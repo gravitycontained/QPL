@@ -16,17 +16,17 @@ namespace qpl {
 		perlin_noise_N() {
 			this->construct();
 		}
-		perlin_noise_N(qpl::u32 seed) {
+		perlin_noise_N(qpl::u64 seed) {
 			this->set_seed(seed);
 		}
-		void set_seed(qpl::u32 seed) {
+		void set_seed(qpl::u64 seed) {
 			this->m_seed = seed;
-			this->m_engine.seed(seed);
+			this->seed_random = false;
 			this->create_hash();
 		}
 		void set_seed_random() {
-			this->m_seed = ~qpl::u32{};
-			this->m_engine.seed_random();
+			this->m_seed = ~qpl::u64{};
+			this->seed_random = true;
 			this->create_hash();
 		}
 		qpl::u32 get_seed() const {
@@ -94,19 +94,27 @@ namespace qpl {
 			this->set_seed(5678u);
 		}
 		void create_hash() {
+			qpl::random_engine<64> engine;
+			if (this->seed_random) {
+				engine.seed_random();
+			}
+			else {
+				engine.seed(this->seed_random);
+			}
+
 			std::iota(this->m_hash.begin(), this->m_hash.end(), qpl::u32{});
 			for (qpl::u32 i = 0u; i < N - 1; ++i) {
-				qpl::u32 j = this->m_engine.generate(i + 1, static_cast<qpl::u32>(N) - 1);
+				qpl::u32 j = engine.generate(i + 1, static_cast<qpl::u32>(N) - 1);
 				std::swap(this->m_hash[i], this->m_hash[j]);
 			}
 		}
 
 
-		qpl::u32 m_seed;
-		qpl::random_engine<64> m_engine;
 		std::array<qpl::ibit<bits>, N> m_hash;
 		qpl::fbit<bits> frequency = 0.1;
 		qpl::size depth = 5;
+		qpl::u64 m_seed = qpl::u64_max;
+		bool seed_random = false;
 	};
 
 	using perlin_noise = perlin_noise_N<64, 256>;

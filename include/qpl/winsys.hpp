@@ -78,11 +78,29 @@ namespace qpl {
 		using watch_list = std::vector<process>;
 
 
+		struct minitor_info {
+			HMONITOR monitor;
+			RECT     rect;
+
+			minitor_info(HMONITOR monitor, RECT rect)
+				: monitor(monitor)
+				, rect(rect)
+			{ }
+		};
+
+		namespace impl {
+			QPLDLL BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC, RECT* prcMonitor, LPARAM dwData);
+		}
+		QPLDLL std::vector<minitor_info> get_info_for_all_monitors();
+
+
+
 
 		struct monitor_capture {
 			qpl::u32 index = 0u;
 			bool initialized = false;
 			qpl::winsys::rect rect;
+			qpl::winsys::rect size;
 			RECT rc_client;
 			HDC hDesktopDC;
 			HDC hCaptureDC;
@@ -107,6 +125,7 @@ namespace qpl {
 			QPLDLL void update();
 			QPLDLL qpl::pixels scan_and_get_pixels();
 			QPLDLL void scan_and_generate_bmp(std::string file_name);
+			QPLDLL qpl::winsys::rect get_size();
 
 			QPLDLL qpl::pixels get_pixels() const;
 			QPLDLL void generate_bmp(std::string file_name) const;
@@ -139,8 +158,8 @@ namespace qpl {
 		QPLDLL void close_window(std::wstring name);
 		QPLDLL bool set_window_position(std::string name, qpl::winsys::rect rectangle, bool on_top = true, bool show = true);
 		QPLDLL bool set_window_position(std::wstring name, qpl::winsys::rect rectangle, bool on_top = true, bool show = true);
-
-
+		QPLDLL qpl::winsys::rect get_window_rect(std::wstring name);
+		QPLDLL qpl::winsys::rect get_window_rect(std::string name);
 
 		QPLDLL process_list& get_process_list();
 

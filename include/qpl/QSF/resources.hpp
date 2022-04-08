@@ -1,5 +1,5 @@
-#ifndef QPLSF_RESOURCES_HPP
-#define QPLSF_RESOURCES_HPP
+#ifndef QSF_RESOURCES_HPP
+#define QSF_RESOURCES_HPP
 #pragma once
 
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)

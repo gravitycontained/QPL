@@ -59,6 +59,44 @@ namespace qpl {
 		}
 
 
+		BOOL CALLBACK qpl::winsys::impl::monitor_enum_proc(HMONITOR hMonitor, HDC, RECT* prcMonitor, LPARAM dwData) {
+			//ASSERT(hMonitor != NULL);
+			//ASSERT(prcMonitor != nullptr);
+			//ASSERT(dwData != NULL);
+
+			MONITORINFO mi;
+			mi.cbSize = sizeof(mi);
+			GetMonitorInfo(hMonitor, &mi);
+
+			if ((mi.dwFlags & DISPLAY_DEVICE_MIRRORING_DRIVER) == DISPLAY_DEVICE_MIRRORING_DRIVER) {
+				// Skip mirroring drivers that do not correspond to display screens.
+				return TRUE;
+			}
+			else {
+				auto* const pInfo = reinterpret_cast<std::vector<minitor_info>*>(dwData);
+				//ASSERT(pInfo != nullptr);
+
+				pInfo->emplace_back(hMonitor, *prcMonitor);
+
+				return TRUE;
+			}
+		}
+
+		std::vector<minitor_info> qpl::winsys::get_info_for_all_monitors() {
+			const int cMonitors = ::GetSystemMetrics(SM_CMONITORS);
+
+			std::vector<minitor_info> result;
+			result.reserve(cMonitors);
+
+			::EnumDisplayMonitors(nullptr,
+				nullptr,
+				impl::monitor_enum_proc,
+				reinterpret_cast<LPARAM>(&result));
+
+			return result;
+		}
+
+
 		void qpl::winsys::monitor_capture::_init(HDC hdcMonitor, LPRECT lprcMonitor) {
 			if (this->rect.unset()) {
 				this->rect.bottom_right.x = lprcMonitor->right - lprcMonitor->left;
@@ -138,6 +176,13 @@ namespace qpl {
 		void qpl::winsys::monitor_capture::scan_and_generate_bmp(std::string file_name) {
 			this->scan();
 			this->generate_bmp(file_name);
+		}
+		qpl::winsys::rect qpl::winsys::monitor_capture::get_size() {
+			if (this->size.unset()) {
+				auto rect = qpl::winsys::get_info_for_all_monitors()[this->index].rect;
+				this->size = qpl::winsys::rect(rect.left, rect.top, rect.right, rect.bottom);
+			}
+			return this->size;
 		}
 		qpl::pixels qpl::winsys::monitor_capture::get_pixels() const {
 			return this->pixels;
@@ -352,6 +397,22 @@ namespace qpl {
 			}
 
 			return true;
+		}
+		qpl::winsys::rect qpl::winsys::get_window_rect(std::wstring name) {
+
+			HWND handle = FindWindow(NULL, name.c_str());
+			if (!IsWindow(handle)) {
+				qpl::println("qpl::winsys::get_window_rect: couldn't find \"", name, "\"");
+				return {};
+			}
+
+			RECT rect;
+			GetWindowRect(handle, &rect);
+
+			return qpl::winsys::rect(rect.left, rect.top, rect.right, rect.bottom);
+		}
+		qpl::winsys::rect qpl::winsys::get_window_rect(std::string name) {
+			return qpl::winsys::get_window_rect(qpl::string_to_wstring(name));
 		}
 
 		process_list& qpl::winsys::get_process_list() {

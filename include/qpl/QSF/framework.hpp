@@ -1,5 +1,5 @@
-#ifndef QPLSF_FRAMEWORK_HPP
-#define QPLSF_FRAMEWORK_HPP
+#ifndef QSF_FRAMEWORK_HPP
+#define QSF_FRAMEWORK_HPP
 #pragma once
 
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
@@ -11,7 +11,7 @@
 #include <memory>
 
 #include <qpl/QSF/event_info.hpp>
-#include <qpl/QSF/color.hpp>
+#include <qpl/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/resources.hpp>
 #include <qpl/vector.hpp>
@@ -33,6 +33,8 @@ namespace qsf {
 			this->set_dimension({ 1280, 720 });
 			this->set_style(sf::Style::Default);
 			this->m_created = false;
+
+			this->context_settings.antialiasingLevel = 12u;
 		}
 		
 
@@ -79,16 +81,12 @@ namespace qsf {
 		QPLDLL const sf::Shader& get_shader(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;
 
-
-
 		QPLDLL void create();
 		QPLDLL bool is_created() const;
 		QPLDLL bool is_open() const;
 		QPLDLL void set_info(const std::string& title, qpl::vector2u dimension, qpl::u32 style);
 		QPLDLL void set_title(const std::string& title);
 		QPLDLL void set_dimension(qpl::vector2u dimension);
-		QPLDLL void set_antialising(qpl::u32 antialising);
-		QPLDLL qpl::u32 get_antialising() const;
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void hide_cursor();
 		QPLDLL void set_window_position(qpl::vector2u position);
@@ -126,14 +124,13 @@ namespace qsf {
 		qsf::event_info event;
 		sf::RenderWindow window;
 		std::unordered_map<std::string, qsf::render_texture> m_render_textures;
-		sf::ContextSettings m_settings;
+		sf::ContextSettings context_settings;
 		std::string m_title;
 		qpl::vector2u m_dimension;
 		qpl::u32 m_style = sf::Style::Default;
 		qpl::clock m_run_time_clock;
 		qpl::clock m_frametime_clock;
 		qpl::time m_frametime;
-		qpl::u32 m_antialising = 12u;
 		qpl::u32 m_framerate_limit = 144u;
 		bool m_created = false;
 		bool m_update_if_no_focus = false;
@@ -164,13 +161,17 @@ namespace qsf {
 		
 		QPLDLL virtual void clear();
 		QPLDLL virtual void call_on_resize();
+		QPLDLL virtual void call_before_create();
 		QPLDLL virtual void call_on_close();
-		QPLDLL virtual void call_after_window_create();
+		QPLDLL virtual void call_after_create();
 
 		QPLDLL void draw_call();
 		QPLDLL void display();
 		QPLDLL bool game_loop_segment();
 
+		QPLDLL void set_antialising_level(qpl::u32 antialising);
+		QPLDLL void set_sRGB(bool srgb);
+		QPLDLL void set_depth_bits(qpl::u32 depth_bits);
 		QPLDLL void set_shader(const std::string& name);
 		QPLDLL void set_shader(sf::Shader& shader);
 		QPLDLL void unbind_shader();
@@ -223,7 +224,7 @@ namespace qsf {
 		}
 
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
-		void draw(const T& drawable, qsf::view_rectangle<V> view) {
+		void draw(const T& drawable, qsf::view_rectangle_t<V> view) {
 			if constexpr (qsf::has_any_draw<T>()) {
 				sf::RenderStates states = view.get_render_states();
 				if constexpr (qsf::is_render_texture<T>()) {
@@ -270,7 +271,7 @@ namespace qsf {
 			}
 		}
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
-		void draw_into(const std::string& name, const T& drawable, qsf::view_rectangle<V> view) {
+		void draw_into(const std::string& name, const T& drawable, qsf::view_rectangle_t<V> view) {
 			if constexpr (qsf::has_any_draw<T>()) {
 				sf::RenderStates states = view.get_render_states();
 				this->get_render(name).draw(drawable, states);
@@ -422,7 +423,7 @@ namespace qsf {
 		qsf::framework* framework;
 
 		sf::Color clear_color = sf::Color::Black;
-		sf::RenderStates render_states;
+		sf::RenderStates render_states = sf::RenderStates::Default;
 		qpl::size m_frame_ctr = 0u;
 		bool m_pop_this_state = false;
 		bool m_allow_exit = true;

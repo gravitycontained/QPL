@@ -37,6 +37,7 @@ namespace qsf {
 			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
 			this->window.setView(sf::View(view));
 			this->m_dimension = new_dimension;
+			this->event.m_screen_dimension = this->m_dimension;
 
 			for (auto& i : this->m_render_textures) {
 				if (i.second.is_resize_with_window_enabled()) {
@@ -102,7 +103,7 @@ namespace qsf {
 		return this->m_framerate_limit;
 	}
 	void qsf::framework::disable_framerate_limit() {
-		this->m_framerate_limit = qpl::u32_max;
+		this->m_framerate_limit = 0u;
 	}
 	void qsf::framework::enable_update_if_no_focus() {
 		this->m_update_if_no_focus = true;
@@ -137,7 +138,7 @@ namespace qsf {
 		return this->m_frametime;
 	}
 	void qsf::framework::add_render(const std::string& name, bool smooth) {
-		this->m_render_textures[name].set_antialiasing(this->m_antialising);
+		this->m_render_textures[name].set_antialiasing(this->context_settings.antialiasingLevel);
 		this->m_render_textures[name].resize(this->m_dimension, true);
 		this->m_render_textures[name].set_smooth(smooth);
 	}
@@ -237,18 +238,23 @@ namespace qsf {
 
 	void qsf::framework::create() {
 		if (!this->is_created()) {
-			this->m_settings.antialiasingLevel = this->m_antialising;
+
+			if (this->states.size()) {
+				this->states.back()->call_before_create();
+			}
 
 			sf::String s = this->m_title.c_str(); //??? SFML why is this needed
 
-this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, this->m_settings);
-this->m_created = true;
-if (this->m_framerate_limit != qpl::u32_max) {
-	this->window.setFramerateLimit(this->m_framerate_limit);
-}
-if (this->states.size()) {
-	this->states.back()->call_after_window_create();
-}
+			this->event.m_screen_dimension = this->m_dimension;
+			this->window.create(sf::VideoMode({ this->m_dimension.x, this->m_dimension.y }), s, this->m_style, this->context_settings);
+			this->window.setVerticalSyncEnabled(true);
+			this->m_created = true;
+			this->window.setFramerateLimit(this->m_framerate_limit);
+
+			if (this->states.size()) {
+				this->states.back()->call_after_create();
+			}
+
 		}
 	}
 	bool qsf::framework::is_open() const {
@@ -270,12 +276,7 @@ if (this->states.size()) {
 	}
 	void qsf::framework::set_dimension(qpl::vector2u dimension) {
 		this->m_dimension = dimension;
-	}
-	void qsf::framework::set_antialising(qpl::u32 antialising) {
-		this->m_antialising = antialising;
-	}
-	qpl::u32 qsf::framework::get_antialising() const {
-		return this->m_antialising;
+		this->event.m_screen_dimension = dimension;
 	}
 	void qsf::framework::set_style(qpl::u32 style) {
 		this->m_style = style;
@@ -304,10 +305,13 @@ if (this->states.size()) {
 	void qsf::base_state::call_on_resize() {
 
 	}
+	void qsf::base_state::call_before_create() {
+
+	}
 	void qsf::base_state::call_on_close() {
 
 	}
-	void qsf::base_state::call_after_window_create() {
+	void qsf::base_state::call_after_create() {
 
 	}
 	void qsf::base_state::draw_call() {
@@ -318,6 +322,15 @@ if (this->states.size()) {
 	}
 	bool qsf::base_state::game_loop_segment() {
 		return this->framework->game_loop_segment();
+	}
+	void qsf::base_state::set_antialising_level(qpl::u32 antialising) {
+		this->framework->context_settings.antialiasingLevel = antialising;
+	}
+	void qsf::base_state::set_sRGB(bool srgb) {
+		this->framework->context_settings.sRgbCapable = srgb;
+	}
+	void qsf::base_state::set_depth_bits(qpl::u32 depth_bits) {
+		this->framework->context_settings.depthBits = depth_bits;
 	}
 	void qsf::base_state::set_shader(const std::string& name) {
 		this->render_states.shader = &qsf::get_shader(name);

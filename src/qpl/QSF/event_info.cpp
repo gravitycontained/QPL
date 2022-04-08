@@ -301,6 +301,9 @@ namespace qsf {
 		}
 	}
 
+	qpl::vector2u qsf::event_info::screen_dimension() const {
+		return this->m_screen_dimension;
+	}
 	qpl::time qsf::event_info::frame_time() const {
 		return this->m_frame_time;
 	}

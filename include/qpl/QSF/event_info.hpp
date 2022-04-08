@@ -1,5 +1,5 @@
-#ifndef QPLSF_EVENTINFO_HPP
-#define QPLSF_EVENTINFO_HPP
+#ifndef QSF_EVENTINFO_HPP
+#define QSF_EVENTINFO_HPP
 #pragma once
 
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
@@ -72,6 +72,7 @@ namespace qsf {
 		QPLDLL void reset(const sf::RenderWindow& window);
 		QPLDLL void update(const sf::Event& event);
 
+		QPLDLL qpl::vector2u screen_dimension() const;
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::f64 frame_time_f() const;
 		QPLDLL qpl::vector2i resized_size() const;
@@ -142,6 +143,7 @@ namespace qsf {
 		std::set<sf::Keyboard::Key> m_keys_holding;
 
 		qpl::time m_frame_time = 0;
+		qpl::vector2u m_screen_dimension = qpl::vec(0u, 0u);
 
 		qpl::halted_clock m_left_mouse_clock;
 		qpl::halted_clock m_right_mouse_clock;

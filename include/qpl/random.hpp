@@ -24,27 +24,41 @@ namespace qpl {
 		static constexpr qpl::u64 state_size = N;
 		static constexpr qpl::u64 word_size = W;
 
-		mersenne_twister(Ty seed = Ty{ 5489 }) {
+		mersenne_twister() {
 			this->init();
-			this->seed(seed);
 		}
-		Ty get_current() const {
-			Ty x = this->m_state[this->m_i] & WMSK;
+		Ty get_at(qpl::u32 index) const {
+			Ty x = this->state[index] & WMSK;
 			x ^= (x >> U) & D;
 			x ^= (x << S) & B;
 			x ^= (x << T) & C;
 			x ^= (x & WMSK) >> L;
 			return x;
 		}
+
+		Ty get_current() const {
+			Ty x = this->state[this->index] & WMSK;
+			x ^= (x >> U) & D;
+			x ^= (x << S) & B;
+			x ^= (x << T) & C;
+			x ^= (x & WMSK) >> L;
+			return x;
+		}
+
+		template<typename R = qpl::fbit<qpl::bits_in_type<Ty>()>>
+		R generate_0_1() {
+			return std::generate_canonical<R, std::numeric_limits<R>::digits>(*this);
+		}
+
 		//returns current and advances by 1
 		Ty generate() {
-			if (this->m_i >= N) {
+			if (this->index >= N) {
 				this->shuffle();
 			}
 			auto current = this->get_current();
 
-			++this->m_i;
-			++this->m_state_position;
+			++this->index;
+			++this->state_position;
 
 			return current;
 		}
@@ -53,11 +67,11 @@ namespace qpl {
 			return generate;
 		}
 		void seed(Ty seed) {
-			Ty prev = this->m_state[0] = seed & WMSK;
+			Ty prev = this->state[0] = seed & WMSK;
 			for (qpl::i32 i = 1; i < N; ++i) {
-				prev = this->m_state[i] = (i + F * (prev ^ (prev >> (W - 2))))& WMSK;
+				prev = this->state[i] = (i + F * (prev ^ (prev >> (W - 2))))& WMSK;
 			}
-			this->m_i = N;
+			this->index = N;
 		}
 		void seed(const std::seed_seq& seq) {
 			constexpr auto K = (W + (qpl::bits_in_type<qpl::u32>() - 1)) / qpl::bits_in_type<qpl::u32>();
@@ -67,27 +81,27 @@ namespace qpl {
 			qpl::i32 word_id = 0;
 			Ty sum = 0;
 			for (int i = 0; i < N; ++i, word_id += K) {
-				this->m_state[i] = data[word_id];
+				this->state[i] = data[word_id];
 				for (int j = 0; ++j < K;) {
-					this->m_state[i] |= static_cast<Ty>(data[word_id + j]) << (qpl::bits_in_type<qpl::u32>() * j);
+					this->state[i] |= static_cast<Ty>(data[word_id + j]) << (qpl::bits_in_type<qpl::u32>() * j);
 				}
 
-				this->m_state[i] &= WMSK;
+				this->state[i] &= WMSK;
 
 				if (i == 0) {
-					sum = this->m_state[i] >> R;
+					sum = this->state[i] >> R;
 				}
 				else {
-					sum |= this->m_state[i];
+					sum |= this->state[i];
 				}
 			}
 
 			if (sum == 0) {
-				this->m_state[0] = WMSK;
+				this->state[0] = WMSK;
 			}
 
-			this->m_state_position = 0u;
-			this->m_i = N;
+			this->state_position = 0u;
+			this->index = N;
 		}
 
 		void discard(qpl::u64 count) {
@@ -101,31 +115,31 @@ namespace qpl {
 		static constexpr Ty max() {
 			return WMSK;
 		}
-	private:
+
 		void init() {
-			this->m_i = 0;
-			this->m_using_seed_seq = false;
+			this->index = 0;
+			this->using_seed_seq = false;
 		}
 		void shuffle() {
 			qpl::i32 i;
 			for (i = 0; i < FH; ++i) {
-				Ty bits = (this->m_state[i] & HMSK) | (this->m_state[i + 1] & LMSK);
-				this->m_state[i] = (bits >> 1) ^ this->m_state[i + M] ^ (bits & 0x1 ? P : 0);
+				Ty bits = (this->state[i] & HMSK) | (this->state[i + 1] & LMSK);
+				this->state[i] = (bits >> 1) ^ this->state[i + M] ^ (bits & 0x1 ? P : 0);
 			}
 			for (; i < N - 1; ++i) {
-				Ty bits = (this->m_state[i] & HMSK) | (this->m_state[i + 1] & LMSK);
-				this->m_state[i] = (bits >> 1) ^ this->m_state[i - FH] ^ (bits & 0x1 ? P : 0);
+				Ty bits = (this->state[i] & HMSK) | (this->state[i + 1] & LMSK);
+				this->state[i] = (bits >> 1) ^ this->state[i - FH] ^ (bits & 0x1 ? P : 0);
 			}
-			Ty bits = (this->m_state[i] & HMSK) | (this->m_state[0] & LMSK);
-			this->m_state[i] = (bits >> 1) ^ this->m_state[M - 1] ^ (bits & 0x1 ? P : 0);
+			Ty bits = (this->state[i] & HMSK) | (this->state[0] & LMSK);
+			this->state[i] = (bits >> 1) ^ this->state[M - 1] ^ (bits & 0x1 ? P : 0);
 
-			this->m_i = 0;
+			this->index = 0;
 		}
 
-		std::array<Ty, N * 2> m_state;
-		qpl::u32 m_state_position;
-		qpl::u32 m_i;
-		bool m_using_seed_seq;
+		std::array<Ty, N * 2> state;
+		qpl::u32 state_position;
+		qpl::u32 index;
+		bool using_seed_seq;
 		static constexpr Ty FH = N - M;
 		static constexpr Ty WMSK = ~((~Ty{ 0 } << (W - 1)) << 1);
 		static constexpr Ty HMSK = (WMSK << R) & WMSK;
@@ -244,6 +258,9 @@ namespace qpl {
 		auto generate() {
 			return this->engine.generate();
 		}
+		auto generate_0_1() {
+			return this->engine.generate_0_1();
+		}
 
 		type engine;
 	};
@@ -252,15 +269,15 @@ namespace qpl {
 		struct rng_t {
 			rng_t() {
 				this->seeded = false;
-				set_seed_random();
+				this->set_seed_random();
 			}
 			void set_seed_random() {
 				if (!this->seeded) {
-					this->rng.seed_random();
+					this->engine.seed_random();
 					this->seeded = true;
 				}
 			}
-			qpl::random_engine<64> rng;
+			qpl::random_engine<64> engine;
 			qpl::distribution<qpl::i64> idist;
 			qpl::distribution<qpl::u64> udist;
 			qpl::distribution<qpl::f64> fdist;
@@ -294,19 +311,19 @@ namespace qpl {
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random(T min, T max) {
 		qpl::distribution<T> dist(min, max);
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random(T max) {
 		qpl::distribution<T> dist(T{}, max);
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 	template<qpl::size N, typename T>
 	qpl::vectorN<T, N> random(qpl::vectorN<T, N> max) {
 		qpl::vectorN<T, N> result;
 		for (qpl::u32 i = 0u; i < N; ++i) {
 			qpl::distribution<T> dist(T{}, max.data[i]);
-			result.data[i] = qpl::detail::rng.rng.generate(dist);
+			result.data[i] = qpl::detail::rng.engine.generate(dist);
 		}
 		return result;
 	}
@@ -315,38 +332,38 @@ namespace qpl {
 		qpl::vectorN<T, N> result;
 		for (qpl::u32 i = 0u; i < N; ++i) {
 			qpl::distribution<T> dist(min.data[i], max.data[i]);
-			result.data[i] = qpl::detail::rng.rng.generate(dist);
+			result.data[i] = qpl::detail::rng.engine.generate(dist);
 		}
 		return result;
 	}
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random() {
 		qpl::distribution<T> dist(qpl::type_min<T>(), qpl::type_max<T>());
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 	template<typename T> requires (qpl::is_arithmetic<T>())
 	T random(std::normal_distribution<T> dist) {
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 	template<typename T> requires (qpl::is_integer<T>())
 	T random(std::binomial_distribution<T> dist) {
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 	template<typename T> requires (qpl::is_integer<T>())
 	T random(std::uniform_int_distribution<T> dist) {
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 	template<typename T> requires (qpl::is_floating_point<T>())
 	T random(std::uniform_real_distribution<T> dist) {
-		return qpl::detail::rng.rng.generate(dist);
+		return qpl::detail::rng.engine.generate(dist);
 	}
 
 	QPLDLL qpl::f64 random_falling(qpl::f64 n);
 
 	template<typename C>
 	void shuffle(C& data, qpl::u32 offset = 0u) {
-		qpl::detail::rng.rng.discard(1);
-		std::shuffle(data.begin() + offset, data.end(), qpl::detail::rng.rng.engine);
+		qpl::detail::rng.engine.discard(1);
+		std::shuffle(data.begin() + offset, data.end(), qpl::detail::rng.engine.engine);
 	}
 
 	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
@@ -453,6 +470,50 @@ namespace qpl {
 		return result;
 	}
 
+	template<typename T, typename R> requires(qpl::is_integer<T>())
+	std::vector<T> random_unique_range(T min, T max, qpl::size N, R& engine) {
+		std::vector<T> result(N);
+
+		std::set<T> used;
+		for (qpl::size i = 0u; i < N; ++i) {
+			auto stop = max - static_cast<T>(i);
+			auto n = engine.generate(min, stop);
+
+			for (auto& u : used) {
+				if (u <= n) {
+					++n;
+				}
+				else {
+					break;
+				}
+			}
+			result[i] = n;
+			used.insert(n);
+		}
+		return result;
+	}
+
+	template<typename T> requires(qpl::is_integer<T>())
+	std::vector<T> random_unique_range(T min, T max, qpl::size N) {
+		return qpl::random_unique_range(min, max, N, detail::rng.engine);
+	}
+
+	template<typename T> requires(qpl::is_integer<T>())
+	std::vector<T> random_unique_range_shuffle(T min, T max, qpl::size N) {
+		
+		std::vector<T> result(max - min + 1);
+		for (T i = min; i <= max; ++i) {
+			result[i - min] = i;
+		}
+
+		qpl::shuffle(result);
+		std::vector<T> res(N);
+		for (qpl::size i = 0u; i < N; ++i) {
+			res[i] = result[i];
+		}
+		return res;
+	}
+	
 	template<typename T>
 	std::vector<T> random_distribution_frequency(T min, T max, qpl::size N) {
 		auto size = (max - min + 1);
@@ -468,6 +529,68 @@ namespace qpl {
 		}
 		return result;
 	}
+
+	template<qpl::size B = 64, qpl::size MN = 256u, qpl::u64 MX = 0xFA581ull, qpl::u64 MY = 0x17CD5ull >
+	struct white_noise_engine_N {
+		constexpr static qpl::u64 chunk_width = (B == 64u ? 17u : 24u);
+		using utype = qpl::ubit<B>;
+		using ftype = qpl::fbit<B>;
+
+		qpl::random_engine<B> seed_engine;
+		qpl::random_engine<B> chunk_engine;
+		std::array<utype, MN> hash;
+		qpl::u64 hash_key;
+		qpl::u64 seed = 5489ull;
+		qpl::u64 loaded_chunk = qpl::u64_max;
+		qpl::u64 loaded_seed_chunk = qpl::u64_max;
+		bool first = true;
+
+		void set_seed(qpl::u64 seed) {
+			this->seed = seed;
+
+			this->seed_engine.seed(this->seed);
+			this->seed_engine.engine.shuffle();
+			for (qpl::size i = 0u; i < MN; ++i) {
+				this->hash[i] = qpl::reverse_bits_copied(this->seed_engine.engine.get_at(i));
+			}
+			this->hash_key = qpl::rotate_right(this->seed_engine.engine.get_at(MN), qpl::bits_in_type<utype>() / 2);
+			this->first = true;
+		}
+
+		auto generate(qpl::i64 x, qpl::i64 y) {
+			auto ux = qpl::u64_cast(x);
+			auto uy = qpl::u64_cast(y);
+
+			auto cx = ux / chunk_width;
+			auto cy = uy / chunk_width;
+
+			auto c = cy * chunk_width + cx;
+			auto sc = (cy / chunk_width) * chunk_width + (cx / chunk_width);
+
+			if (first || this->loaded_seed_chunk != sc) {
+				this->loaded_seed_chunk = sc;
+				this->seed_engine.seed(this->seed ^ sc);
+				this->seed_engine.engine.shuffle();
+			}
+			if (first || this->loaded_chunk != c) {
+				this->loaded_chunk = c;
+				auto seed_engine_index = (cy % chunk_width) * chunk_width + (cx % chunk_width);
+				this->chunk_engine.seed(this->seed_engine.engine.get_at(seed_engine_index) ^ this->seed);
+				this->chunk_engine.engine.shuffle();
+			}
+			first = false;
+			auto index = (uy % chunk_width) * chunk_width + (ux % chunk_width);
+			auto magic = (((ux % MX) * (uy % MY)) ^ (~this->seed) ^ this->hash_key) % MN;
+			return this->chunk_engine.engine.get_at(index) ^ this->hash[magic];
+		}
+
+		auto generate_0_1(qpl::i64 x, qpl::i64 y) {
+			return this->generate(x, y) / static_cast<ftype>(qpl::type_max<utype>());
+		}
+	};
+
+	using white_noise_engine = white_noise_engine_N<64u>;
+
 }
 
 #endif

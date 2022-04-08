@@ -78,10 +78,18 @@ namespace qpl {
 		QPLDLL void create();
 		QPLDLL qpl::size feed_size() const;
 		QPLDLL qpl::size out_size() const;
-		QPLDLL void feed(const std::vector<qpl::f64>& input);
-		template<typename args>
-		void feed(qpl::f64 input, const args& pack...) {
-			this->feed(std::vector<qpl::f64>({ input, pack }));
+
+		template<typename C> requires(qpl::is_container<C>())
+		void feed(const C& input) {
+			for (std::size_t i = 0; i < input.size(); ++i) {
+				this->input_layer()[i].set_output(input[i]);
+			}
+			for (std::size_t i = 1; i < this->m_neurons.size(); ++i) {
+				auto& prev_layer = this->m_neurons[i - 1];
+				for (std::size_t j = 0; j < this->m_neurons[i].size() - 1; ++j) {
+					this->m_neurons[i][j].calculate_output(prev_layer);
+				}
+			}
 		}
 		QPLDLL void get_output(std::vector<qpl::f64>& dest);
 		QPLDLL std::vector<qpl::f64> get_output();
@@ -187,11 +195,25 @@ namespace qpl {
 			QPLDLL std::vector<unsigned> get_topology() const;
 			QPLDLL bool created() const;
 			QPLDLL void create();
-			QPLDLL void feed(const std::vector<double>& input);
-			QPLDLL void feed(double input);
-			template<typename args>
-			void feed(double input, const args& pack...) {
-				this->feed(std::vector<double>({ input, pack }));
+
+
+			template<typename C> requires(qpl::is_container<C>())
+			void feed(const C& container) {
+				for (std::size_t i = 0; i < container.size(); ++i) {
+					if (std::isnan(container[i])) {
+						qpl::println("nan");
+						this->input_layer()[i].set_output(0);
+					}
+					else {
+						this->input_layer()[i].set_output(container[i]);
+					}
+				}
+				for (std::size_t i = 1; i < this->m_neurons.size(); ++i) {
+					auto& prev_layer = this->m_neurons[i - 1];
+					for (std::size_t j = 0; j < this->m_neurons[i].size() - 1; ++j) {
+						this->m_neurons[i][j].calculate_output(prev_layer);
+					}
+				}
 			}
 			QPLDLL void get_output(std::vector<double>& dest);
 
@@ -279,7 +301,25 @@ namespace qpl {
 
 			QPLDLL void show_expected_output(const std::vector<qpl::f64>& expected_output);
 
-			QPLDLL void feed(const std::vector<qpl::f64>& input);
+			template<typename C> requires(qpl::is_container<C>())
+			void feed(const C& input) {
+				//set input
+				for (qpl::u32 n = 0u; n < this->input_layer().neurons.size(); ++n) {
+					this->input_layer().neurons[n].output = input[n];
+					this->input_layer().neurons[n].output = 0.0;
+				}
+
+				//feed forward
+				for (qpl::u32 l = 0u; l < this->layers.size(); ++l) {
+					for (qpl::u32 n = 0u; n < this->layers[l].neurons.size(); ++n) {
+						qpl::f64 sum = 0.0;
+						for (qpl::u32 s = 0u; s < this->layers[l].neurons[n].synapses.size(); ++s) {
+							sum += (this->layers[l].neurons[n].synapses[s].weight * this->layers[l - 1].neurons[s].output);
+						}
+						this->layers[l].neurons[n].output = qpl::NN2::activation_function(sum + this->layers[l].neurons[n].bias);
+					}
+				}
+			}
 			QPLDLL void get_output(std::vector<qpl::f64>& destination);
 			QPLDLL void teach(const std::vector<qpl::f64>& expected_output);
 		};
@@ -491,8 +531,8 @@ namespace qpl {
 				}
 			}
 
-			template<typename T>
-			void feed(const std::vector<T>& input) {
+			template<typename C> requires(qpl::is_container<C>())
+			void feed(const C& input) {
 				//set input
 				for (qpl::u32 n = 0u; n < this->input_layer().neurons.size(); ++n) {
 					this->input_layer().neurons[n].output = input[n];

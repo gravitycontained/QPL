@@ -1,5 +1,6 @@
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
+#include <locale>
 
 namespace qpl {
 	std::string qpl::str_spaced(const std::string& string, qpl::size length, char prepend) {
@@ -650,6 +651,32 @@ namespace qpl {
 		return result;
 	}
 
+
+	std::vector<std::string> qpl::split_string_words(const std::string& string) {
+		std::vector<std::string> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (qpl::is_character_special(string[i])) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && qpl::is_character_special(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
+		}
+		return result;
+	}
+
 	std::vector<std::string> qpl::split_string_every(const std::string& string, qpl::size n) {
 		if (string.empty()) {
 			return {};
@@ -830,18 +857,10 @@ namespace qpl {
 		this->string = string;
 	}
 	bool qpl::collection_string::read_info() {
-		if (this->string.length() < qpl::bytes_in_type<qpl::u64>() + qpl::bytes_in_type<qpl::u32>()) {
+		if (this->string.length() < qpl::bytes_in_type<qpl::u32>()) {
 			return false;
 		}
 		qpl::size position = 0;
-		qpl::u64 check;
-		memcpy(&check, this->string.data() + position, qpl::bytes_in_type<qpl::u64>());
-
-		if (check != this->check_value) {
-			return false;
-		}
-
-		position += qpl::bytes_in_type<qpl::u64>();
 		qpl::u32 size_size;
 		memcpy(&size_size, this->string.data() + position, qpl::bytes_in_type<qpl::u32>());
 		position += qpl::bytes_in_type<qpl::u32>();
@@ -867,13 +886,13 @@ namespace qpl {
 	std::string_view qpl::collection_string::get_string_sv() const {
 		return this->string;
 	}
-	std::string qpl::collection_string::get_string(qpl::u32 index) const {
+	std::string qpl::collection_string::get_string(qpl::size index) const {
 		if (index >= this->sizes.size()) {
 			throw std::exception(qpl::to_string("qpl::string_collection::get_string(", index, "): size is only ", this->sizes.size()).c_str());
 		}
 		return std::string(this->string.begin() + this->sizes[index].first, this->string.begin() + this->sizes[index].second);
 	}
-	std::string_view qpl::collection_string::get_string_sv(qpl::u32 index) const {
+	std::string_view qpl::collection_string::get_string_sv(qpl::size index) const {
 		if (index >= this->sizes.size()) {
 			throw std::exception(qpl::to_string("qpl::string_collection::get_string_sv(", index, "): size is only ", this->sizes.size()).c_str());
 		}
@@ -885,11 +904,10 @@ namespace qpl {
 		this->sizes.push_back({ qpl::size_cast(back), qpl::size_cast(back + string.length()) });
 	}
 	void qpl::collection_string::finalize() {
-		auto header_size = qpl::bytes_in_type<qpl::u64>() + qpl::bytes_in_type<qpl::u32>() + (this->sizes.size() * 2 * qpl::bytes_in_type<qpl::size>());
+		auto header_size = qpl::bytes_in_type<qpl::u32>() + (this->sizes.size() * 2 * qpl::bytes_in_type<qpl::size>());
 		std::ostringstream stream;
 
 		qpl::u32 size_size = qpl::u32_cast(this->sizes.size());
-		stream.write(reinterpret_cast<const char*>(&this->check_value), qpl::bytes_in_type<qpl::u64>());
 		stream.write(reinterpret_cast<const char*>(&size_size), qpl::bytes_in_type<qpl::u32>());
 		for (auto& i : this->sizes) {
 			i.first += header_size;
@@ -909,5 +927,9 @@ namespace qpl {
 	void qpl::collection_string::clear() {
 		this->sizes.clear();
 		this->string.clear();
+	}
+
+	void set_language_locale(std::string local) {
+		std::locale::global(std::locale(local));
 	}
 }

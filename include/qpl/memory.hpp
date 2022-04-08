@@ -94,7 +94,7 @@ namespace qpl {
 	inline C string_to_memory(const std::string& data) {
 		C destination;
 		if (data.size() != sizeof(C)) {
-			qpl::println("string_to_memory: sizes not equal: string: ", data.size(), " stack object: ", sizeof(C));
+			throw qpl::exception("string_to_memory: sizes not equal: string: ", data.size(), " stack object: ", sizeof(C));
 			return C{};
 		}
 		memcpy(&destination, data.data(), data.size());
@@ -656,7 +656,6 @@ namespace qpl {
 					stream << qpl::to_string(" (= ", convert, ") ");
 				}
 				stream << " - size of vector is " << this->size();
-				qpl::println(stream.str());
 				throw std::exception(stream.str().c_str());
 			}
 		}
@@ -664,7 +663,6 @@ namespace qpl {
 			if (this->empty()) {
 				std::ostringstream stream;
 				stream << qpl::to_string("qpl::vector<", qpl::type_name<T>(), ">", front ? ".front()" : ".back()", " : vector is empty");
-				qpl::println(stream.str());
 				throw std::exception(stream.str().c_str());
 			}
 		}
@@ -713,7 +711,7 @@ namespace qpl {
 			return this->memory;
 		}
 
-		constexpr void pop_back(const T& value) {
+		constexpr void pop_back() {
 			this->memory.pop_back();
 		}
 		constexpr void push_back(const T& value) {

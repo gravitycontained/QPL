@@ -391,6 +391,11 @@ namespace qpl {
             std::filesystem::rename(this->string(), new_name.string());
             this->m_string = new_name;
         }
+        void qpl::filesys::path::rename_file_name(const qpl::filesys::path& new_name) {
+            auto p = this->get_parent_branch().string() + "/";
+            std::filesystem::rename(this->string(), p + new_name.string() + "." + this->get_extension());
+            this->m_string = new_name;
+        }
         void qpl::filesys::path::remove() const {
             if (!this->exists()) {
                 qpl::println("qpl::filesys::path::remove: ", this->string(), " doesn't exist");
@@ -2795,47 +2800,59 @@ namespace qpl {
     }
 
     void qpl::save_state::clear() {
-        this->string.clear();
-        this->path.clear();
+        this->collection_string.clear();
         this->ctr = 0u;
-        this->check_value = 0x454352554f534552ull;
     }
-    void qpl::save_state::prepare_save(std::string path) {
-        this->path = path;
-        this->ctr = 0u;
-        this->string.clear();
-        this->string.check_value = this->check_value;
+    void qpl::save_state::file_save(std::string path) {
+        this->collection_string.finalize();
+        auto str = this->collection_string.get_string();
+        qpl::filesys::write_data_file(str, path);
     }
-    void qpl::save_state::finalize_save() {
-        this->string.finalize();
-        auto str = this->string.get_string();
-        qpl::filesys::write_data_file(str, this->path);
-    }
-    void qpl::save_state::finalize_save(const std::array<qpl::u64, 4>& key) {
-        this->string.finalize();
-        auto str = this->string.get_string();
+    void qpl::save_state::file_save(std::string path, const std::array<qpl::u64, 4>& key) {
+        this->collection_string.finalize();
+        auto str = this->collection_string.get_string();
         str = qpl::encrypt(str, key);
-        qpl::filesys::write_data_file(str, this->path);
+        qpl::filesys::write_data_file(str, path);
     }
-    void qpl::save_state::prepare_load(std::string path) {
-        this->path = path;
+    void qpl::save_state::file_load(std::string path) {
         this->ctr = 0u;
-        auto str = qpl::filesys::read_file(this->path);
-        this->string.check_value = this->check_value;
-        this->string.set_string(str);
-        if (!this->string.read_info()) {
+        auto str = qpl::filesys::read_file(path);
+        this->collection_string.set_string(str);
+        if (!this->collection_string.read_info()) {
             throw qpl::exception("save_state: \"", path, "\" failed to load.");
         }
     }
-    void qpl::save_state::prepare_load(std::string path, const std::array<qpl::u64, 4>& key) {
-        this->path = path;
+    void qpl::save_state::file_load(std::string path, const std::array<qpl::u64, 4>& key) {
         this->ctr = 0u;
-        auto str = qpl::filesys::read_file(this->path);
+        auto str = qpl::filesys::read_file(path);
         str = qpl::decrypt(str, key);
-        this->string.check_value = this->check_value;
-        this->string.set_string(str);
-        if (!this->string.read_info()) {
+        this->collection_string.set_string(str);
+        if (!this->collection_string.read_info()) {
             throw qpl::exception("save_state: \"", path, "\" failed to load.");
         }
     }
+    void qpl::save_state::set_string(const std::string& str) {
+        this->collection_string.set_string(str);
+        if (!this->collection_string.read_info()) {
+            throw qpl::exception("save_state::set_string: failed to load.");
+        }
+    }
+    void qpl::save_state::finalize_string() {
+        this->collection_string.finalize();
+    }
+    std::string qpl::save_state::get_string() const {
+        return this->collection_string.get_string();
+    }
+    std::string qpl::save_state::get_finalized_string() {
+        this->finalize_string();
+        return this->collection_string.get_string();
+    }
+   std::string qpl::save_state::get_next_string() {
+       return this->collection_string.get_string(this->ctr++);
+   }
+   save_state qpl::save_state::get_next_save_state() {
+       qpl::save_state state;
+       state.set_string(this->collection_string.get_string(this->ctr++));
+       return state;
+   }
 }

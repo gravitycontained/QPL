@@ -421,6 +421,13 @@ namespace qpl {
 			}
 			return result;
 		}
+		constexpr vectorN abs() const {
+			vectorN result = *this;
+			for (auto& i : result.data) {
+				i = std::abs(i);
+			}
+			return result;
+		}
 
 		constexpr void clear() {
 			for (auto& i : this->data) {

@@ -158,62 +158,62 @@ namespace qsf {
 
 	sf::Font& qsf::resources::get_font(const std::string& name) {
 		if (this->fonts.find(name) == this->fonts.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find font with name \"", name, "\""));
+			throw qpl::exception("couldn't find font with name \"", name, "\"");
 		}
 		return this->fonts[name];
 	}
 	sf::SoundBuffer& qsf::resources::get_sound(const std::string& name) {
 		if (this->sounds.find(name) == this->sounds.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find sound with name \"", name, "\""));
+			throw qpl::exception("couldn't find sound with name \"", name, "\"");
 		}
 		return this->sounds[name];
 	}
 	sf::Texture& qsf::resources::get_texture(const std::string& name) {
 		if (this->textures.find(name) == this->textures.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find texture with name \"", name, "\""));
+			throw qpl::exception("couldn't find texture with name \"", name, "\"");
 		}
 		return this->textures[name];
 	}
 	sf::Sprite& qsf::resources::get_sprite(const std::string& name) {
 		if (this->sprites.find(name) == this->sprites.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find sprite with name \"", name, "\""));
+			throw qpl::exception("couldn't find sprite with name \"", name, "\"");
 		}
 		return this->sprites[name];
 	}
 	sf::Shader& qsf::resources::get_shader(const std::string& name) {
 		if (this->shaders.find(name) == this->shaders.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find shader with name \"", name, "\""));
+			throw qpl::exception("couldn't find shader with name \"", name, "\"");
 		}
 		return this->shaders[name];
 	}
 
 	const sf::Font& qsf::resources::get_font(const std::string& name) const {
 		if (this->fonts.find(name) == this->fonts.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find font with name \"", name, "\""));
+			throw qpl::exception("couldn't find font with name \"", name, "\"");
 		}
 		return this->fonts.at(name);
 	}
 	const sf::SoundBuffer& qsf::resources::get_sound(const std::string& name) const {
 		if (this->sounds.find(name) == this->sounds.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find sound with name \"", name, "\""));
+			throw qpl::exception("couldn't find sound with name \"", name, "\"");
 		}
 		return this->sounds.at(name);
 	}
 	const sf::Texture& qsf::resources::get_texture(const std::string& name) const {
 		if (this->textures.find(name) == this->textures.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find texture with name \"", name, "\""));
+			throw qpl::exception("couldn't find texture with name \"", name, "\"");
 		}
 		return this->textures.at(name);
 	}
 	const sf::Sprite& qsf::resources::get_sprite(const std::string& name) const {
 		if (this->sprites.find(name) == this->sprites.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find sprite with name \"", name, "\""));
+			throw qpl::exception("couldn't find sprite with name \"", name, "\"");
 		}
 		return this->sprites.at(name);
 	}
 	const sf::Shader& qsf::resources::get_shader(const std::string& name) const {
 		if (this->shaders.find(name) == this->shaders.cend()) {
-			throw std::runtime_error(qpl::to_string("couldn't find shader with name \"", name, "\""));
+			throw qpl::exception("couldn't find shader with name \"", name, "\"");
 		}
 		return this->shaders.at(name);
 	}

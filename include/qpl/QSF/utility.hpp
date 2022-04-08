@@ -1,5 +1,5 @@
-#ifndef QPLSF_UTILITY_HPP
-#define QPLSF_UTILITY_HPP
+#ifndef QSF_UTILITY_HPP
+#define QSF_UTILITY_HPP
 #pragma once
 
 
@@ -19,7 +19,7 @@ namespace qsf {
 	struct base_state;
 
 	template<typename T>
-	struct view_rectangle {
+	struct view_rectangle_t {
 		sf::Mouse::Button drag_mouse_button = sf::Mouse::Left;
 
 		void set_hitbox(qpl::vector2<T> position, qpl::vector2<T> dimension) {
@@ -37,6 +37,18 @@ namespace qsf {
 		void reset() {
 			this->position = { 0,0 };
 			this->scale = { 1,1 };
+		}
+		void move(qpl::vector2<T> delta) {
+			this->positiom.move(delta);
+		}
+		void move(T dx, T dy) {
+			this->position.move(qpl::vec(dx, dy));
+		}
+		void set_scale(qpl::vector2<T> scale) {
+			this->scale = scale;
+		}
+		void set_scale(T scale) {
+			this->scale = qpl::vec(scale, scale);
 		}
 		void set_position(qpl::vector2<T> position) {
 			this->position = position;
@@ -192,6 +204,8 @@ namespace qsf {
 		bool power_of_two = false;
 		bool allow_dragging = true;
 	};
+
+	using view_rectangle = view_rectangle_t<qpl::f64>;
 }
 
 #endif

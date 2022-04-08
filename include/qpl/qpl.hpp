@@ -36,6 +36,7 @@ freely, subject to the following restrictions:
 #include <qpl/bits.hpp>
 #include <qpl/compression.hpp>
 #include <qpl/config.hpp>
+#include <qpl/color.hpp>
 #include <qpl/date.hpp>
 #include <qpl/encryption.hpp>
 #include <qpl/exception.hpp>
@@ -64,12 +65,10 @@ freely, subject to the following restrictions:
 #include <qpl/vulkan.hpp>
 #include <qpl/camera.hpp>
 #include <qpl/objects.hpp>
-#include <qpl/rgb.hpp>
 #include <qpl/window.hpp>
 #endif
 
 #if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
-#include <qpl/QSF/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/framework.hpp>

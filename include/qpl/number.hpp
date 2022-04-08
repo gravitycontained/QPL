@@ -10365,9 +10365,6 @@ namespace qpl {
 		}
 	};
 	*/
-	std::ostream& operator<<(std::ostream& os, const qpl::big_float& value) {
-		return os << value.string();
-	}
 	template<typename E>
 	std::ostream& operator<<(std::ostream& os, const qpl::big_float_t<E>& value) {
 		return os << value.string();

@@ -336,15 +336,17 @@ namespace qpl {
 	}
 
 
-	template<typename T> requires (qpl::is_integer<T>())
-		T constexpr cantor_pairing(T x, T y) {
-		return (x + y) * (x + y + 1) / 2 + y;
+	template<typename T, typename R = qpl::unsigned_type<T>> requires (qpl::is_integer<T>())
+	R constexpr cantor_pairing(T x, T y) {
+		auto rx = static_cast<R>(x);
+		auto ry = static_cast<R>(y);
+		return (rx + ry) * (rx + ry + 1) / 2 + ry;
 	}
-	template<typename T> requires (qpl::is_integer<T>())
-		std::pair<T, T> cantor_pairing_inverse(T z) {
-		std::pair<T, T> result;
-		auto w = static_cast<T>((std::sqrt(T{ 8 } *z + T{ 1 }) - T{ 1 }) / T{ 2 });
-		result.second = z - (w + T{ 1 }) * w / T{ 2 };
+	template<typename T, typename R = qpl::signed_type<T>> requires (qpl::is_integer<T>())
+	std::pair<R, R> cantor_pairing_inverse(T z) {
+		std::pair<R, R> result;
+		auto w = static_cast<R>((std::sqrt(R{ 8 } *z + R{ 1 }) - R{ 1 }) / R{ 2 });
+		result.second = z - (w + R{ 1 }) * w / R{ 2 };
 		result.first = w - result.second;
 		return result;
 	}
@@ -386,6 +388,15 @@ namespace qpl {
 	template<typename T>
 	std::string type_to_string() {
 		return typeid(T).name();
+	}
+
+	template<class compare, class... Args>
+	constexpr bool is_any_type_equal_to() {
+		return (qpl::is_same<compare, Args>() || ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool are_all_types_equal() {
+		return (qpl::is_same<compare, Args>() && ...);
 	}
 
 
@@ -639,7 +650,7 @@ namespace qpl {
 	auto tuple_to_vector(std::tuple<Args...> tuple) -> std::vector<std::tuple_element_t<0, decltype(tuple)>> {
 		std::vector<std::tuple_element_t<0, decltype(tuple)>> result(std::tuple_size_v<decltype(tuple)>);
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
-			((result[Ints] = std::get<Ints>(tuple)), ...);
+			((result[Ints] = qpl::type_cast<std::tuple_element_t<0, decltype(tuple)>>(std::get<Ints>(tuple))), ...);
 		};
 		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
 		return result;
@@ -648,7 +659,7 @@ namespace qpl {
 	std::vector<T> tuple_to_vector(std::tuple<Args...> tuple) {
 		std::vector<T> result(std::tuple_size_v<decltype(tuple)>);
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
-			((result[Ints] = std::get<Ints>(tuple)), ...);
+			((result[Ints] = qpl::type_cast<T>(std::get<Ints>(tuple))), ...);
 		};
 		unpack(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)>>());
 		return result;
@@ -666,7 +677,7 @@ namespace qpl {
 	constexpr auto tuple_to_array(T tuple) {
 		std::array<qpl::tuple_type<0, T>, qpl::tuple_size<T>()> result{};
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
-			((result[Ints] = std::get<Ints>(tuple)), ...);
+			((result[Ints] = qpl::type_cast<qpl::tuple_type<0, T>>(std::get<Ints>(tuple))), ...);
 		};
 		unpack(tuple, std::make_index_sequence<qpl::tuple_size<T>()>());
 		return result;
@@ -734,6 +745,128 @@ namespace qpl {
 	constexpr auto to_tuple(Args&&... args) {
 		return std::make_tuple(args...);
 	}
+
+	namespace impl {
+		template<typename Tuple, qpl::size N>
+		struct tuple_loop {
+			constexpr tuple_loop(Tuple& tuple) : tuple(tuple) {
+
+			}
+
+			constexpr static qpl::size i = N;
+			constexpr static qpl::size size = qpl::tuple_size<Tuple>();
+
+			template<qpl::i64 I>
+			const auto& at() const {
+				if constexpr (I > 0 && I < size) {
+					return qpl::tuple_value<I>(this->tuple);
+				}
+				else {
+					return decltype(this->operator*()){};
+				}
+			}
+			template<qpl::i64 I>
+			auto& at() {
+				return qpl::tuple_value<I>(this->tuple);
+			}
+
+			auto& operator*() {
+				return qpl::tuple_value<N>(this->tuple);
+			}
+			const auto& operator*() const {
+				return qpl::tuple_value<N>(this->tuple);
+			}
+
+			auto* operator->() {
+				return &qpl::tuple_value<N>(this->tuple);
+			}
+			const auto* operator->() const {
+				return &qpl::tuple_value<N>(this->tuple);
+			}
+
+		private:
+			Tuple& tuple;
+		};
+
+		template<qpl::size compare, qpl::i64 Start, qpl::i64 End, qpl::i64 Inc>
+		constexpr bool tuple_range_valid() {
+			return Inc > 0 && Start >= 0 && End <= 0 && (qpl::signed_cast(compare) - Start + End) / Inc > 0;
+		}
+	}
+	
+	template<typename T, typename F> requires (qpl::is_tuple<T>())
+	void tuple_iterate(T& tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(function(std::get<Ints>(tuple)), ...);
+		};
+		unpack(std::make_index_sequence<qpl::tuple_size<T>()>());
+	}
+	template<qpl::i64 Start, qpl::i64 End, qpl::i64 Inc, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, Inc>())
+	void tuple_iterate(T& tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(function(std::get<Ints * Inc + Start>(tuple)), ...);
+		};
+		constexpr auto size = qpl::unsigned_cast((qpl::signed_cast(qpl::tuple_size<T>()) - Start + End) / Inc);
+		unpack(std::make_index_sequence<size>());
+	}
+	template<qpl::i64 Start, qpl::i64 End, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, 1>())
+	void tuple_iterate(T& tuple, F&& function) {
+		qpl::tuple_iterate<Start, End, 1>(tuple, function);
+	}
+	template<qpl::i64 Start, typename T, typename F>requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, 0, 1>())
+	void tuple_iterate(T& tuple, F&& function) {
+		qpl::tuple_iterate<Start, 0, 1>(tuple, function);
+	}
+
+	template<typename T, typename F> requires (qpl::is_tuple<T>())
+	void tuple_iterate_indexed(T& tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(function(std::get<Ints>(tuple), Ints), ...);
+		};
+		unpack(std::make_index_sequence<qpl::tuple_size<T>()>());
+	}
+	template<qpl::i64 Start, qpl::i64 End, qpl::i64 Inc, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, Inc>())
+	void tuple_iterate_indexed(T& tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(function(std::get<Ints * Inc + Start>(tuple), Ints * Inc + Start), ...);
+		};
+		constexpr auto size = qpl::unsigned_cast((qpl::signed_cast(qpl::tuple_size<T>()) - Start + End) / Inc);
+		unpack(std::make_index_sequence<size>());
+	}
+	template<qpl::i64 Start, qpl::i64 End, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, 1>())
+	void tuple_iterate_indexed(T& tuple, F&& function) {
+		qpl::tuple_iterate_indexed<Start, End, 1>(tuple, function);
+	}
+	template<qpl::i64 Start, typename T, typename F>requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, 0, 1>())
+		void tuple_iterate_indexed(T& tuple, F&& function) {
+		qpl::tuple_iterate_indexed<Start, 0, 1>(tuple, function);
+	}
+
+	template<typename T, typename F> requires (qpl::is_tuple<T>())
+	void tuple_iterate_control(T& tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(function(qpl::impl::tuple_loop<T, Ints>(tuple)), ...);
+		};
+		unpack(std::make_index_sequence<qpl::tuple_size<T>()>());
+	}
+
+	template<qpl::i64 Start, qpl::i64 End, qpl::i64 Inc, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, Inc>())
+	void tuple_iterate_control(T& tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(function(qpl::impl::tuple_loop<T, Ints * Inc + Start>(tuple)), ...);
+		};
+		constexpr auto size = qpl::unsigned_cast((qpl::signed_cast(qpl::tuple_size<T>()) - Start + End) / Inc);
+		unpack(std::make_index_sequence<size>());
+	}
+	template<qpl::i64 Start, qpl::i64 End, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, 1>())
+	void tuple_iterate_control(T& tuple, F&& function) {
+		qpl::tuple_iterate_control<Start, End, 1>(tuple, function);
+	}
+	template<qpl::i64 Start, typename T, typename F>requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, 0, 1>())
+	void tuple_iterate_control(T& tuple, F&& function) {
+		qpl::tuple_iterate_control<Start, 0, 1>(tuple, function);
+	}
+
 	template<typename C>
 	constexpr auto make_span(const C& container) {
 		return std::span(qpl::begin(container), qpl::end(container));
@@ -907,7 +1040,7 @@ namespace qpl {
 					container.at(container.size() - 1) = qpl::type_cast<qpl::container_subtype<C>>(value);
 				}
 			}
-			else if constexpr (qpl::has_pushback<C>()) {
+			else if constexpr (qpl::has_push_back<C>()) {
 				container.push_back(qpl::type_cast<qpl::container_subtype<C>>(value));
 			}
 			else if constexpr (qpl::has_insert<C>()) {
@@ -940,7 +1073,7 @@ namespace qpl {
 					}
 				}
 			}
-			else if constexpr (qpl::has_pushback<C>()) {
+			else if constexpr (qpl::has_push_back<C>()) {
 				if constexpr (qpl::has_reserve<C>()) {
 					container.reserve(container.size() + value.size());
 				}
@@ -975,7 +1108,7 @@ namespace qpl {
 					}
 				}
 			}
-			else if constexpr (qpl::has_pushback<C>()) {
+			else if constexpr (qpl::has_push_back<C>()) {
 				if constexpr (qpl::has_reserve<C>()) {
 					container.reserve(container.size() + std::distance(start, end));
 				}
@@ -1084,7 +1217,7 @@ namespace qpl {
 				}
 			}
 		}
-		else if constexpr (qpl::has_pushback<C>()) {
+		else if constexpr (qpl::has_push_back<C>()) {
 			if constexpr (qpl::has_reserve<C>()) {
 				result.reserve((qpl::min(container.size() - 1, end) - start) + 1);
 			}
@@ -1682,7 +1815,7 @@ namespace qpl {
 				}
 				return *this;
 			}
-			constexpr possibilities_iterator& operator++() {
+			constexpr possibilities_iterator operator++() {
 				auto copy = *this;
 				this->operator++(0);
 				return copy;
@@ -1739,7 +1872,7 @@ namespace qpl {
 				}
 				return *this;
 			}
-			constexpr possibilities_reverse_iterator& operator++() {
+			constexpr possibilities_reverse_iterator operator++() {
 				auto copy = *this;
 				this->operator++(0);
 				return copy;
@@ -1876,6 +2009,12 @@ namespace qpl {
 			return n;
 		}
 	}
+
+	template<typename F, typename T>
+	constexpr F mod_abs(F n, T m) {
+		return (m + (n % m)) % m;
+	}
+
 	template<typename T>
 	constexpr T clamp(T min, T value, T max) {
 		return qpl::min(max, qpl::max(min, value));
@@ -2273,6 +2412,19 @@ namespace qpl {
 			return smooth_curve_triangle(1.0 - progress, slope);
 		}
 		return smooth_curve(progress * 2, slope);
+	}
+	template<typename F>
+	constexpr F triangle_progression(F progress) {
+		if (progress < 0.5) {
+			return progress * 2;
+		}
+		else {
+			return (1 - (progress - 0.5) * 2);
+		}
+	}
+	template<typename F>
+	constexpr F triangle_progression_fmod1(F n) {
+		return triangle_progression(std::fmod(n, F{ 1 }));
 	}
 
 	template<typename F>
