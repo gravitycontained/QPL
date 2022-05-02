@@ -5967,6 +5967,18 @@ namespace qsf {
 		hovering = hovering || this->hovering;
 	}
 
+	void qsf::smooth_button::enable_simple_hitbox() {
+		this->simple_hitbox = true;
+	}
+	void qsf::smooth_button::disable_simple_hitbox() {
+		this->simple_hitbox = false;
+	}
+	void qsf::smooth_button::set_hitbox_increase(qpl::vector2f delta) {
+		this->hitbox_increase = delta;
+	}
+	void qsf::smooth_button::set_hitbox_increase(qpl::f32 delta) {
+		this->hitbox_increase = qpl::vec(delta, delta);
+	}
 	void qsf::smooth_button::set_multiplied_color(qpl::rgb color) {
 		this->multiplied_color = color;
 		this->text.set_multiplied_color(color);
@@ -6059,6 +6071,9 @@ namespace qsf {
 		this->text.set_center(this->smooth_layout.get_center());
 	}
 
+	qpl::vector2f qsf::smooth_button::get_hitbox_increase() const {
+		return this->hitbox_increase;
+	}
 	qpl::rgb qsf::smooth_button::get_multiplied_color() const {
 		return this->multiplied_color;
 	}

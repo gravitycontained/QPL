@@ -193,6 +193,8 @@ namespace qpl {
 	QPLDLL qpl::winsys::point get_screen_dimension();
 	QPLDLL void clear_console();
 
+	QPLDLL void copy_to_clipboard(const std::string& s);
+
 	enum class color : unsigned {
 		black = 0,
 		blue = 1,
@@ -318,8 +320,6 @@ namespace qpl {
 	QPLDLL void set_console_color(qpl::background background);
 	QPLDLL void set_console_color(qpl::cc color);
 	QPLDLL void set_console_color_default();
-
-	QPLDLL void copy_to_clipboard(const std::string& string);
 
 	struct shared_memory {
 		HANDLE hMapFile;

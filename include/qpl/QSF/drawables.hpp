@@ -3315,7 +3315,13 @@ namespace qsf {
 		mutable bool layout_changed = false;
 		bool hovering = false;
 		bool clicked = false;
+		qpl::vector2f hitbox_increase;
+		bool simple_hitbox = false;
 
+		QPLDLL void enable_simple_hitbox();
+		QPLDLL void disable_simple_hitbox();
+		QPLDLL void set_hitbox_increase(qpl::vector2f delta);
+		QPLDLL void set_hitbox_increase(qpl::f32 delta);
 		QPLDLL void set_multiplied_color(qpl::rgb color);
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
@@ -3343,6 +3349,7 @@ namespace qsf {
 		QPLDLL void set_text_multiplied_color(qpl::rgb color);
 		QPLDLL void centerize_text();
 
+		QPLDLL qpl::vector2f get_hitbox_increase() const;
 		QPLDLL qpl::rgb get_multiplied_color() const;
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;

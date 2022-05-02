@@ -133,7 +133,7 @@ namespace qsf {
 		qpl::time m_frametime;
 		qpl::u32 m_framerate_limit = 144u;
 		bool m_created = false;
-		bool m_update_if_no_focus = false;
+		bool m_update_if_no_focus = true;
 
 		bool m_focus = true;
 		bool m_lost_focus = false;

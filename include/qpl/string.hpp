@@ -1708,6 +1708,11 @@ namespace qpl {
 	QPLDLL std::vector<std::string> split_string_every(const std::string& string, qpl::size n);
 	QPLDLL std::string combine_strings(const std::vector<std::string>& strings);
 
+	template<typename... T> requires(sizeof...(T) > 1)
+	constexpr std::string combine_strings(T&&... args) {
+		return qpl::to_string(args...);
+	}
+
 	template<typename T>
 	T string_cast(const std::string_view& string) {
 		if constexpr (qpl::is_qpl_integer<T>() || qpl::is_qpl_floating_point<T>()) {

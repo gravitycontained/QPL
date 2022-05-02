@@ -513,7 +513,7 @@ namespace qpl {
 		}
 		return res;
 	}
-	
+
 	template<typename T>
 	std::vector<T> random_distribution_frequency(T min, T max, qpl::size N) {
 		auto size = (max - min + 1);

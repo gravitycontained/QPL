@@ -574,6 +574,16 @@ namespace qpl {
 		system("cls");
 	}
 
+	void qpl::copy_to_clipboard(const std::string& string) {
+		HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, string.size() + 1);
+		memcpy(GlobalLock(hMem), string.data(), string.size() + 1);
+		GlobalUnlock(hMem);
+		OpenClipboard(0);
+		EmptyClipboard();
+		SetClipboardData(CF_TEXT, hMem);
+		CloseClipboard();
+	}
+
 
 	std::ostream& qpl::operator<<(std::ostream& os, color color) {
 		return os;
@@ -648,16 +658,6 @@ namespace qpl {
 	void qpl::set_console_color_default() {
 		qpl::set_console_color(qpl::color::white, qpl::color::black);
 	}
-	void qpl::copy_to_clipboard(const std::string& string) {
-		HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, string.size() + 1);
-		memcpy(GlobalLock(hMem), string.data(), string.size() + 1);
-		GlobalUnlock(hMem);
-		OpenClipboard(0);
-		EmptyClipboard();
-		SetClipboardData(CF_TEXT, hMem);
-		CloseClipboard();
-	}
-
 	void* qpl::shared_memory::get() {
 		if (this->is_array()) {
 			return reinterpret_cast<char*>(this->ptr) + qpl::bytes_in_type<qpl::size>();
