@@ -49,6 +49,39 @@ then there is also `#define QPL_BIG_LUT` (which is outside of `QPL_USE_ALL`) whi
 
 If you want to use this library in a static way, include all files (as well as `.cpp` files) and add `#define QPLDLL_EXPORTS` to the pre-processor defines. This will remove the "inconsistent dll linkage" errors.
 
+
+# QPL Hello World:
+
+```cpp
+#include <qpl/qpl.hpp>
+
+struct main_state : qsf::base_state {
+	void init() override {
+
+	}
+	void updating() override {
+
+	}
+	void drawing() override {
+
+	}
+};
+
+int main() try {
+	qsf::framework framework;
+	framework.set_title("QPL");
+	framework.set_dimension({ 1400u, 950u });
+
+	framework.add_state<main_state>();
+	framework.game_loop();
+}
+catch (std::exception& any) {
+	qpl::println("caught exception:\n", any.what());
+	qpl::system_pause();
+}
+```
+
+
 ---
 
 # Main Utilities
