@@ -235,6 +235,18 @@ namespace qpl {
 		QPLDLL constexpr qpl::rgb interpolated(qpl::rgb color, qpl::f64 strength = qpl::f64{ 1 }) const;
 
 		QPLDLL constexpr static qpl::rgb interpolation(const std::vector<qpl::rgb>& colors, qpl::f64 strength);
+		template<typename T> requires (qpl::is_container<T>())
+		constexpr static qpl::rgb interpolation(const T& colors, qpl::f64 strength) {
+			strength = qpl::clamp(0.0, strength, 1.0);
+			if (strength == 1.0) {
+				return colors.back();
+			}
+
+			auto index = static_cast<qpl::u32>(strength * (colors.size() - 1));
+			auto left_over = ((colors.size() - 1) * strength) - index;
+
+			return colors[index].interpolated(colors[index + 1], left_over);
+		}
 		QPLDLL constexpr static qpl::rgb grey_shade(qpl::u8 strength = 128) {
 			return qpl::rgb(strength, strength, strength);
 		}
@@ -408,6 +420,20 @@ namespace qpl::vk {
 	};
 
 	QPLDLL qpl::vk::frgb random_color();
+
+
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::red = qpl::vk::frgb(1.0f, 0.0f, 0.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::green = qpl::vk::frgb(0.0f, 1.0f, 0.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::blue = qpl::vk::frgb(0.5f, 0.5f, 1.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::black = qpl::vk::frgb(0.0f, 0.0f, 0.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::white = qpl::vk::frgb(1.0f, 1.0f, 1.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::yellow = qpl::vk::frgb(1.0f, 1.0f, 0.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::magenta = qpl::vk::frgb(1.0f, 0.0f, 1.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::cyan = qpl::vk::frgb(0.0f, 1.0f, 1.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::orange = qpl::vk::frgb(1.0f, 0.5f, 0.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::purple = qpl::vk::frgb(0.5f, 0.0f, 1.0f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::amaranth = qpl::vk::frgb(1.0f, 0.0f, 0.5f);
+	inline constexpr qpl::vk::frgb qpl::vk::frgb::turquoise = qpl::vk::frgb(0.0f, 1.0f, 0.5f);
 }
 #endif
 
@@ -420,4 +446,37 @@ namespace std {
 		}
 	};
 }
+
+
+
+inline constexpr qpl::frgb qpl::frgb::red = qpl::frgb(1.0f, 0.0f, 0.0f);
+inline constexpr qpl::frgb qpl::frgb::green = qpl::frgb(0.0f, 1.0f, 0.0f);
+inline constexpr qpl::frgb qpl::frgb::blue = qpl::frgb(0.0f, 0.0f, 1.0f);
+inline constexpr qpl::frgb qpl::frgb::yellow = qpl::frgb(1.0f, 1.0f, 0.0f);
+inline constexpr qpl::frgb qpl::frgb::orange = qpl::frgb(1.0f, 0.5f, 0.0f);
+inline constexpr qpl::frgb qpl::frgb::cyan = qpl::frgb(0.0f, 1.0f, 1.0f);
+inline constexpr qpl::frgb qpl::frgb::magenta = qpl::frgb(1.0f, 0.0f, 1.0f);
+inline constexpr qpl::frgb qpl::frgb::white = qpl::frgb(1.0f, 1.0f, 1.0f);
+inline constexpr qpl::frgb qpl::frgb::grey = qpl::frgb(0.5f, 0.5f, 0.5f);
+inline constexpr qpl::frgb qpl::frgb::black = qpl::frgb(0.0f, 0.0f, 0.0f);
+inline constexpr qpl::frgb qpl::frgb::transparent = qpl::frgb(1.0f, 1.0f, 1.0f, 0.0f);
+inline constexpr qpl::frgb qpl::frgb::unset = qpl::frgb(-1.0f, -1.0f, -1.0f, -1.0f);
+
+
+inline constexpr qpl::rgb qpl::rgb::red = qpl::rgb(255, 0, 0);
+inline constexpr qpl::rgb qpl::rgb::green = qpl::rgb(0, 255, 0);
+inline constexpr qpl::rgb qpl::rgb::blue = qpl::rgb(0, 0, 255);
+inline constexpr qpl::rgb qpl::rgb::yellow = qpl::rgb(255, 255, 0);
+inline constexpr qpl::rgb qpl::rgb::orange = qpl::rgb(255, 127, 0);
+inline constexpr qpl::rgb qpl::rgb::cyan = qpl::rgb(0, 255, 255);
+inline constexpr qpl::rgb qpl::rgb::magenta = qpl::rgb(255, 0, 255);
+inline constexpr qpl::rgb qpl::rgb::white = qpl::rgb(255, 255, 255);
+inline constexpr qpl::rgb qpl::rgb::grey = qpl::rgb(127, 127, 127);
+inline constexpr qpl::rgb qpl::rgb::black = qpl::rgb(0, 0, 0);
+inline constexpr qpl::rgb qpl::rgb::transparent = qpl::rgb(255, 255, 255, 0);
+inline constexpr qpl::rgb qpl::rgb::unset = qpl::rgb(0, 0, 0, 0);
+
+
+
+
 #endif

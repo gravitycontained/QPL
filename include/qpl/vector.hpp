@@ -833,6 +833,17 @@ namespace qpl {
 			if (atan < 0) atan = static_cast<decltype(atan)>(2 * qpl::pi + atan);
 			return static_cast<maths_float_type>(atan);
 		}
+		void set_rotation_a(qpl::f64 angle) {
+			auto x = std::cos(angle);
+			auto y = std::sin(angle);
+			this->a = this->b + qpl::vec(x, y) * this->length();
+		}
+		void set_rotation_b(qpl::f64 angle) {
+			auto x = std::cos(angle);
+			auto y = std::sin(angle);
+			this->b = this->a + qpl::vec(x, y) * this->length();
+		}
+
 
 		constexpr bool collides(straight_line_t other) const {
 			constexpr auto mode = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {

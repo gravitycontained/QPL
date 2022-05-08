@@ -200,20 +200,6 @@ namespace qpl {
 
 
 
-	const qpl::frgb qpl::frgb::red = qpl::frgb(1.0f, 0.0f, 0.0f);
-	const qpl::frgb qpl::frgb::green = qpl::frgb(0.0f, 1.0f, 0.0f);
-	const qpl::frgb qpl::frgb::blue = qpl::frgb(0.0f, 0.0f, 1.0f);
-	const qpl::frgb qpl::frgb::yellow = qpl::frgb(1.0f, 1.0f, 0.0f);
-	const qpl::frgb qpl::frgb::orange = qpl::frgb(1.0f, 0.5f, 0.0f);
-	const qpl::frgb qpl::frgb::cyan = qpl::frgb(0.0f, 1.0f, 1.0f);
-	const qpl::frgb qpl::frgb::magenta = qpl::frgb(1.0f, 0.0f, 1.0f);
-	const qpl::frgb qpl::frgb::white = qpl::frgb(1.0f, 1.0f, 1.0f);
-	const qpl::frgb qpl::frgb::grey = qpl::frgb(0.5f, 0.5f, 0.5f);
-	const qpl::frgb qpl::frgb::black = qpl::frgb(0.0f, 0.0f, 0.0f);
-	const qpl::frgb qpl::frgb::transparent = qpl::frgb(1.0f, 1.0f, 1.0f, 0.0f);
-	const qpl::frgb qpl::frgb::unset = qpl::frgb(-1.0f, -1.0f, -1.0f, -1.0f);
-
-
 	constexpr qpl::rgb& qpl::rgb::operator=(const rgb& other) {
 		if (std::is_constant_evaluated()) {
 			this->r = other.r;
@@ -474,19 +460,6 @@ namespace qpl {
 		copy += other;
 		return copy;
 	}
-
-	const qpl::rgb qpl::rgb::red = qpl::rgb(255, 0, 0);
-	const qpl::rgb qpl::rgb::green = qpl::rgb(0, 255, 0);
-	const qpl::rgb qpl::rgb::blue = qpl::rgb(0, 0, 255);
-	const qpl::rgb qpl::rgb::yellow = qpl::rgb(255, 255, 0);
-	const qpl::rgb qpl::rgb::orange = qpl::rgb(255, 127, 0);
-	const qpl::rgb qpl::rgb::cyan = qpl::rgb(0, 255, 255);
-	const qpl::rgb qpl::rgb::magenta = qpl::rgb(255, 0, 255);
-	const qpl::rgb qpl::rgb::white = qpl::rgb(255, 255, 255);
-	const qpl::rgb qpl::rgb::grey = qpl::rgb(127, 127, 127);
-	const qpl::rgb qpl::rgb::black = qpl::rgb(0, 0, 0);
-	const qpl::rgb qpl::rgb::transparent = qpl::rgb(255, 255, 255, 0);
-	const qpl::rgb qpl::rgb::unset = qpl::rgb(0, 0, 0, 0);
 
 
 	qpl::rgb qpl::get_random_color() {
