@@ -53,6 +53,9 @@ namespace qpl {
 
     QPLDLL void hide_input(bool enable);
     QPLDLL std::string get_input();
+    QPLDLL std::wstring get_input_wstring();
+    QPLDLL void wait_for_enter();
+
     template<typename T>
     T get_input() {
         std::string value;

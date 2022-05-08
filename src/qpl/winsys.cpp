@@ -2,6 +2,7 @@
 #include <qpl/winsys.hpp>
 #include <qpl/random.hpp>
 #include <qpl/string.hpp>
+#include <qpl/codec.hpp>
 
 #include <iostream>
 #include <exception>
@@ -12,6 +13,10 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <psapi.h>
+
+#include <io.h>
+#include <fcntl.h>
+
 #pragma comment(lib, "psapi")
 
 namespace qpl {
@@ -583,7 +588,94 @@ namespace qpl {
 		SetClipboardData(CF_TEXT, hMem);
 		CloseClipboard();
 	}
+	void qpl::copy_to_clipboard(const std::wstring& string) {
+		auto size = (string.size() + 1) * sizeof(wchar_t);
 
+		HGLOBAL hClipboardData;
+		hClipboardData = GlobalAlloc(GMEM_DDESHARE, size);
+		WCHAR* pchData;
+		pchData = (WCHAR*)GlobalLock(hClipboardData);
+		wcscpy_s(pchData, string.size() + 1, string.data());
+		GlobalUnlock(hClipboardData);
+		OpenClipboard(0);
+		EmptyClipboard();
+		SetClipboardData(CF_UNICODETEXT, hClipboardData);
+		CloseClipboard();
+	}
+
+	void qpl::winsys::enable_utf() {
+		fflush(stdout);
+#if defined _MSC_VER
+#   pragma region WIN_UNICODE_SUPPORT_MAIN
+#endif
+#if defined _WIN32
+		// change code page to UTF-8 UNICODE
+		if (!IsValidCodePage(CP_UTF8)) {
+			throw qpl::exception("qpl::winsys::enable_utf(): error: ", GetLastError());
+		}
+		if (!SetConsoleCP(CP_UTF8)) {
+			throw qpl::exception("qpl::winsys::enable_utf(): error: ", GetLastError());
+		}
+		if (!SetConsoleOutputCP(CP_UTF8)) {
+			throw qpl::exception("qpl::winsys::enable_utf(): error: ", GetLastError());
+		}
+
+		// change console font - post Windows Vista only
+		HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+		CONSOLE_FONT_INFOEX cfie;
+		const auto sz = sizeof(CONSOLE_FONT_INFOEX);
+		ZeroMemory(&cfie, sz);
+		cfie.cbSize = sz;
+		cfie.dwFontSize.Y = 14;
+		wcscpy_s(cfie.FaceName,
+			L"Lucida Console");
+		SetCurrentConsoleFontEx(hStdOut,
+			false,
+			&cfie);
+
+		// change file stream translation mode
+		_setmode(_fileno(stdout), _O_U16TEXT);
+		_setmode(_fileno(stderr), _O_U16TEXT);
+		_setmode(_fileno(stdin), _O_U16TEXT);
+#endif
+#if defined _MSC_VER
+#   pragma endregion
+#endif
+		std::ios_base::sync_with_stdio(false);
+		qpl::detail::utf_enabled = true;
+	}
+	void qpl::winsys::disable_utf() {
+		qpl::detail::utf_enabled = false;
+	}
+	std::wstring qpl::winsys::read_utf_file(const std::wstring& file) {
+		std::wstring buffer;
+		FILE* f;
+		auto error = _wfopen_s(&f, file.c_str(), L"rtS, ccs=UTF-8");
+		if (error) {
+			throw qpl::exception("qpl::winsys::read_utf_file(): can't open / find file \"", file, "\". error type: ", error);
+		}
+
+		if (f == NULL) {
+			throw qpl::exception("qpl::winsys::read_utf_file(): can't open / find file \"", file, "\"");
+		}
+		struct _stat fileinfo;
+		_wstat(file.c_str(), &fileinfo);
+		size_t filesize = fileinfo.st_size;
+
+		if (filesize > 0) {
+			buffer.resize(filesize);
+			size_t wchars_read = fread(&(buffer.front()), sizeof(wchar_t), filesize, f);
+			buffer.resize(wchars_read);
+			buffer.shrink_to_fit();
+		}
+
+		fclose(f);
+
+		return buffer;
+	}
+	std::wstring qpl::winsys::read_utf_file(const std::string& file) {
+		return qpl::winsys::read_utf_file(qpl::string_to_wstring(file));
+	}
 
 	std::ostream& qpl::operator<<(std::ostream& os, color color) {
 		return os;

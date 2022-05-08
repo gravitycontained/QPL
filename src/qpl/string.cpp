@@ -34,6 +34,18 @@ namespace qpl {
 		return true;
 	}
 
+	bool qpl::string_equals_ignore_case(const std::wstring& a, const std::wstring& b) {
+		if (a.size() != b.size()) {
+			return false;
+		}
+		for (qpl::u32 i = 0u; i < a.size(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 	std::wstring qpl::string_to_wstring(const std::string& s) {
 		int len;
@@ -534,6 +546,248 @@ namespace qpl {
 		}
 		return result;
 	}
+	std::string qpl::remove_backslash_r(const std::string& string) {
+		std::string result = string;
+		if (result.back() == '\r') {
+			result.pop_back();
+		}
+		return result;
+	}
+	std::wstring qpl::remove_backslash_r(const std::wstring& string) {
+		std::wstring result = string;
+		if (result.back() == L'\r') {
+			result.pop_back();
+		}
+		return result;
+	}
+
+	std::string qpl::string_replace(const std::string& string, const std::string& search, const std::string& replace, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::ostringstream result;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(0u, i);
+				result << replace << string.substr(i + search.length());
+				return result.str();
+			}
+		}
+		return string;
+	}
+	std::string qpl::string_replace_all(const std::string& string, const std::string& search, const std::string& replace, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::ostringstream result;
+		qpl::size index_before = 0u;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(index_before, i - index_before);
+				result << replace;
+
+				index_before = i + search.length();
+				i += (search.length() - 1);
+			}
+		}
+		result << string.substr(index_before, string.length() - index_before + 1);
+		auto s = result.str();
+		if (s.empty()) {
+			return string;
+		}
+		return s;
+	}
+
+	std::string qpl::string_remove(const std::string& string, const std::string& search, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::ostringstream result;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(0u, i);
+				result << string.substr(i + search.length());
+				return result.str();
+			}
+		}
+		return string;
+	}
+	std::string qpl::string_remove_all(const std::string& string, const std::string& search, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::ostringstream result;
+		qpl::size index_before = 0u;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(index_before, i - index_before);
+
+				index_before = i + search.length();
+				i += (search.length() - 1);
+			}
+		}
+		result << string.substr(index_before, string.length() - index_before + 1);
+		auto s = result.str();
+		if (s.empty()) {
+			return string;
+		}
+		return s;
+	}
+
+	qpl::size qpl::string_find(const std::string& string, const std::string& search, bool ignore_case) {
+		if (search.empty()) {
+			return 0u;
+		}
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				return i;
+			}
+		}
+		return string.length();
+	}
+	std::vector<qpl::size> qpl::string_find_all(const std::string& string, const std::string& search, bool ignore_case) {
+		if (search.empty()) {
+			return {};
+		}
+		std::vector<qpl::size> result;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result.push_back(i);
+				i += (search.length() - 1);
+			}
+		}
+		return result;
+	}
+
+	std::wstring qpl::string_replace(const std::wstring& string, const std::wstring& search, const std::wstring& replace, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::wostringstream result;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(0u, i);
+				result << replace << string.substr(i + search.length());
+				return result.str();
+			}
+		}
+		return string;
+	}
+	std::wstring qpl::string_replace_all(const std::wstring& string, const std::wstring& search, const std::wstring& replace, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::wostringstream result;
+		qpl::size index_before = 0u;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(index_before, i - index_before);
+				result << replace;
+
+				index_before = i + search.length();
+				i += (search.length() - 1);
+			}
+		}
+		result << string.substr(index_before, string.length() - index_before + 1);
+		auto s = result.str();
+		if (s.empty()) {
+			return string;
+		}
+		return s;
+	}
+
+	std::wstring qpl::string_remove(const std::wstring& string, const std::wstring& search, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::wostringstream result;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(0u, i);
+				result << string.substr(i + search.length());
+				return result.str();
+			}
+		}
+		return string;
+	}
+	std::wstring qpl::string_remove_all(const std::wstring& string, const std::wstring& search, bool ignore_case) {
+		if (search.empty()) {
+			return string;
+		}
+		std::wostringstream result;
+		qpl::size index_before = 0u;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result << string.substr(index_before, i - index_before);
+
+				index_before = i + search.length();
+				i += (search.length() - 1);
+			}
+		}
+		result << string.substr(index_before, string.length() - index_before + 1);
+		auto s = result.str();
+		if (s.empty()) {
+			return string;
+		}
+		return s;
+	}
+
+	qpl::size qpl::string_find(const std::wstring& string, const std::wstring& search, bool ignore_case) {
+		if (search.empty()) {
+			return 0u;
+		}
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				return i;
+			}
+		}
+		return string.length();
+	}
+	std::vector<qpl::size> qpl::string_find_all(const std::wstring& string, const std::wstring& search, bool ignore_case) {
+		if (search.empty()) {
+			return {};
+		}
+		std::vector<qpl::size> result;
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				result.push_back(i);
+				i += (search.length() - 1);
+			}
+		}
+		return result;
+	}
+
+
 	std::vector<std::string> qpl::split_string(const std::string& string, char by_what) {
 		std::vector<std::string> result;
 
@@ -780,6 +1034,13 @@ namespace qpl {
 	}
 	bool qpl::is_string_number(std::string string) {
 		std::istringstream iss(string);
+		qpl::i64 i;
+		iss >> std::noskipws >> i; // noskipws considers leading whitespace invalid
+		// Check the entire string was consumed and if either failbit or badbit is set
+		return iss.eof() && !iss.fail();
+	}
+	bool qpl::is_string_number(std::wstring string) {
+		std::wistringstream iss(string);
 		qpl::i64 i;
 		iss >> std::noskipws >> i; // noskipws considers leading whitespace invalid
 		// Check the entire string was consumed and if either failbit or badbit is set

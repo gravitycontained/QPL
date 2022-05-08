@@ -550,6 +550,7 @@ namespace qpl {
 
         QPLDLL bool exists(const qpl::filesys::path& path_source);
         QPLDLL void rename(qpl::filesys::path& path_source, const qpl::filesys::path& new_name);
+        QPLDLL void rename(const qpl::filesys::path& path_source, const qpl::filesys::path& new_name);
         QPLDLL void remove(const qpl::filesys::path& path_target);
         QPLDLL void copy(const qpl::filesys::path& path_source, const qpl::filesys::path& path_destination);
         QPLDLL void copy_overwrite(const qpl::filesys::path& path_source, const qpl::filesys::path& path_destination);

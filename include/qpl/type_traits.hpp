@@ -1585,9 +1585,11 @@ namespace qpl {
 			return value;
 		}
 		else if constexpr (qpl::is_long_wstring_type<U>()) {
-			std::wstring_view sv{ data };
+			std::wstringstream stream;
+			stream << data;
 			T value;
-			std::from_chars(sv.data(), sv.data() + sv.size(), value);
+			stream >> value;
+			
 			return value;
 		}
 		else {

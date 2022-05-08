@@ -2578,6 +2578,9 @@ namespace qpl {
         void qpl::filesys::rename(qpl::filesys::path& path_source, const qpl::filesys::path& new_name) {
             path_source.rename(new_name);
         }
+        void qpl::filesys::rename(const qpl::filesys::path& path_source, const qpl::filesys::path& new_name) {
+            std::filesystem::rename(path_source.string(), new_name.string());
+        }
         void qpl::filesys::remove(const qpl::filesys::path& path_target) {
             path_target.remove();
         }

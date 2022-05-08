@@ -36,6 +36,7 @@ freely, subject to the following restrictions:
 #include <qpl/bits.hpp>
 #include <qpl/compression.hpp>
 #include <qpl/config.hpp>
+#include <qpl/codec.hpp>
 #include <qpl/color.hpp>
 #include <qpl/date.hpp>
 #include <qpl/encryption.hpp>

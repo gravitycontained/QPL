@@ -184,6 +184,11 @@ namespace qpl {
 		QPLDLL void screen_shot_monitors();
 
 		QPLDLL qpl::size monitor_capture_size();
+		QPLDLL void enable_utf();
+		QPLDLL void disable_utf();
+
+		QPLDLL std::wstring read_utf_file(const std::wstring& path);
+		QPLDLL std::wstring read_utf_file(const std::string& path);
 	}
 	QPLDLL void screen_shot(const std::string& file_name);
 	QPLDLL void screen_shot(const std::string& file_name, qpl::winsys::rect rectangle);
@@ -194,6 +199,8 @@ namespace qpl {
 	QPLDLL void clear_console();
 
 	QPLDLL void copy_to_clipboard(const std::string& s);
+	QPLDLL void copy_to_clipboard(const std::wstring& s);
+
 
 	enum class color : unsigned {
 		black = 0,

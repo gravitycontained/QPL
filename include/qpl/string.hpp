@@ -7,6 +7,7 @@
 #include <qpl/vardef.hpp>
 #include <qpl/winsys.hpp>
 #include <qpl/type_traits.hpp>
+#include <qpl/codec.hpp>
 #include <string_view>
 #include <string>
 #include <sstream>
@@ -128,7 +129,6 @@ namespace qpl {
 
 
 
-
 	QPLDLL std::wstring string_to_wstring(const std::string& str);
 	QPLDLL std::wstring string_to_unicode_wstring(const std::string& str);
 	QPLDLL std::string wstring_to_string(const std::wstring& str);
@@ -246,6 +246,47 @@ namespace qpl {
 	}
 
 
+	template<typename T> requires (qpl::is_printable<T>())
+		void ios_print(T&& value) {
+		if (qpl::detail::utf_enabled) {
+			if constexpr (qpl::is_wstring_type<T>()) {
+				std::wcout << value;
+			}
+			else {
+				std::wcout << qpl::string_to_wstring(qpl::to_string(value));
+			}
+		}
+		else {
+			if constexpr (qpl::is_wstring_type<T>()) {
+				std::wcout << value;
+			}
+			else {
+				std::cout << value;
+			}
+		}
+	}
+	template<typename... T>
+	void ios_print(T&&... value) {
+		(ios_print(value), ...);
+	}
+	template<typename T> requires (qpl::is_readable<T>())
+		void ios_read(T& value) {
+		if (qpl::detail::utf_enabled) {
+			std::wcin >> value;
+		}
+		else {
+			if constexpr (qpl::is_wstring_type<T>()) {
+				std::wcin >> value;
+			}
+			else {
+				std::cin >> value;
+			}
+		}
+	}
+	template<typename... T>
+	void ios_read(T&... value) {
+		(ios_read(value), ...);
+	}
 	namespace detail {
 		QPLDLL extern std::wostringstream stream_wstr;
 
@@ -323,6 +364,7 @@ namespace qpl {
 	}
 
 	QPLDLL bool string_equals_ignore_case(const std::string& a, const std::string& b);
+	QPLDLL bool string_equals_ignore_case(const std::wstring& a, const std::wstring& b);
 
 
 	template<typename... Args>
@@ -753,18 +795,18 @@ namespace qpl {
 	inline void single_print(T&& value) {
 		if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
 			bool first = true;
-			std::cout << '{';
+			qpl::ios_print('{');
 			for (auto& i : value) {
 				if (!first) {
-					std::cout << ", ";
+					qpl::ios_print(", ");
 				}
 				first = false;
 				qpl::single_print(i);
 			}
-			std::cout << '}';
+			qpl::ios_print('}');
 		}
 		else if constexpr (qpl::is_tuple<T>()) {
-			std::cout << qpl::to_string(value);
+			qpl::ios_print(qpl::to_string(value));
 		}
 		else if constexpr (!qpl::is_derived<std::decay_t<T>, qpl::print_effect>() && !qpl::is_same<std::decay_t<T>, qpl::color>() && !qpl::is_same<std::decay_t<T>, qpl::background>() && !qpl::is_same<std::decay_t<T>, qpl::foreground>() && !qpl::is_same<std::decay_t<T>, qpl::cc>()) {
 			bool backslashn = false;
@@ -783,30 +825,15 @@ namespace qpl {
 			}
 
 			if (backslashn) {
-				if constexpr (qpl::is_wstring_type<T>()) {
-					std::wcout << value;
-				}
-				else {
-					std::cout << value;
-				}
+				qpl::ios_print(value);
 			}
 			else {
 				if (qpl::detail::next_print_space) {
-					if constexpr (qpl::is_same_decayed<T, std::wstring>() || qpl::is_same_decayed<T, wchar_t>()) {
-						std::wcout << qpl::wstr_spaced(value, qpl::detail::next_print_space);
-					}
-					else {
-						std::cout << qpl::str_spaced(value, qpl::detail::next_print_space);
-					}
+					qpl::ios_print(qpl::str_spaced(value, qpl::detail::next_print_space));
 					qpl::detail::next_print_space = qpl::detail::println_space;
 				}
 				else {
-					if constexpr (qpl::is_wstring_type<T>()) {
-						std::wcout << value;
-					}
-					else {
-						std::cout << value;
-					}
+					qpl::ios_print(value);
 				}
 				if (qpl::detail::next_print_color) {
 					qpl::set_console_color(qpl::detail::println_color);
@@ -850,7 +877,7 @@ namespace qpl {
 				qpl::detail::current_console_color = value.value;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclearln>()) {
-				std::cout << qpl::to_string("\r", qpl::to_string_repeat(' ', 40));
+				qpl::ios_print(qpl::to_string("\r", qpl::to_string_repeat(' ', 40)));
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclear>()) {
 				qpl::clear_console();
@@ -1675,6 +1702,28 @@ namespace qpl {
 	QPLDLL std::string to_lower(const std::string& string);
 	QPLDLL std::string to_upper(const std::string& string);
 
+	QPLDLL std::string remove_backslash_r(const std::string& string);
+	QPLDLL std::wstring remove_backslash_r(const std::wstring& string);
+
+	QPLDLL std::string string_replace(const std::string& string, const std::string& search, const std::string& replace, bool ignore_case = false);
+	QPLDLL std::string string_replace_all(const std::string& string, const std::string& search, const std::string& replace, bool ignore_case = false);
+
+	QPLDLL std::string string_remove(const std::string& string, const std::string& search, bool ignore_case = false);
+	QPLDLL std::string string_remove_all(const std::string& string, const std::string& search, bool ignore_case = false);
+
+	QPLDLL qpl::size string_find(const std::string& string, const std::string& search, bool ignore_case = false);
+	QPLDLL std::vector<qpl::size> string_find_all(const std::string& string, const std::string& search, bool ignore_case = false);
+
+	QPLDLL std::wstring string_replace(const std::wstring& string, const std::wstring& search, const std::wstring& replace, bool ignore_case = false);
+	QPLDLL std::wstring string_replace_all(const std::wstring& string, const std::wstring& search, const std::wstring& replace, bool ignore_case = false);
+
+	QPLDLL std::wstring string_remove(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
+	QPLDLL std::wstring string_remove_all(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
+
+	QPLDLL qpl::size string_find(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
+	QPLDLL std::vector<qpl::size> string_find_all(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
+
+
 	QPLDLL std::vector<std::string> split_string(const std::string& string, char by_what);
 	QPLDLL std::vector<std::string> split_string_whitespace(const std::string& string);
 	QPLDLL std::vector<std::string> split_string(const std::string& string, const std::string& expression);
@@ -1731,35 +1780,38 @@ namespace qpl {
 	}
 	template<typename T>
 	T string_cast(const std::string& string) {
-		if constexpr (std::is_same_v<T, qpl::f64>) {
+		if constexpr (qpl::is_same<T, qpl::f64>()) {
 			return std::stod(string);
 		}
-		else if constexpr (std::is_same_v<T, qpl::f32>) {
+		else if constexpr (qpl::is_same<T, qpl::f32>()) {
 			return std::stof(string);
 		}
-		else if constexpr (std::is_same_v<T, qpl::i8>) {
+		else if constexpr (qpl::is_same<T, qpl::i8>()) {
 			return static_cast<qpl::i8>(std::stoi(string));
 		}
-		else if constexpr (std::is_same_v<T, qpl::u8>) {
+		else if constexpr (qpl::is_same<T, qpl::u8>()) {
 			return static_cast<qpl::u8>(std::stoul(string));
 		}
-		else if constexpr (std::is_same_v<T, qpl::i16>) {
+		else if constexpr (qpl::is_same<T, qpl::i16>()) {
 			return static_cast<qpl::i16>(std::stoi(string));
 		}
-		else if constexpr (std::is_same_v<T, qpl::u16>) {
+		else if constexpr (qpl::is_same<T, qpl::u16>()) {
 			return static_cast<qpl::u16>(std::stoul(string));
 		}
-		else if constexpr (std::is_same_v<T, qpl::i32>) {
+		else if constexpr (qpl::is_same<T, qpl::i32>()) {
 			return std::stoi(string);
 		}
-		else if constexpr (std::is_same_v<T, qpl::u32>) {
+		else if constexpr (qpl::is_same<T, qpl::u32>()) {
 			return static_cast<qpl::u32>(std::stoul(string));
 		}
-		else if constexpr (std::is_same_v<T, qpl::i64>) {
+		else if constexpr (qpl::is_same<T, qpl::i64>()) {
 			return std::stoll(string);
 		}
-		else if constexpr (std::is_same_v<T, qpl::u64>) {
+		else if constexpr (qpl::is_same<T, qpl::u64>()) {
 			return std::stoull(string);
+		}
+		else if constexpr (qpl::is_same<T, std::wstring>()) {
+			return qpl::string_to_wstring(string);
 		}
 	}
 
@@ -1903,6 +1955,7 @@ namespace qpl {
 	}
 	QPLDLL bool is_string_floating_point(std::string string);
 	QPLDLL bool is_string_number(std::string string);
+	QPLDLL bool is_string_number(std::wstring string);
 
 
 	constexpr operator_type get_operator_type(const std::string_view& expression) {

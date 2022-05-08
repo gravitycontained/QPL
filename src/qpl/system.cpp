@@ -13,6 +13,7 @@
 #include <conio.h>
 #include <qpl/winsys.hpp>
 #include <qpl/string.hpp>
+#include <qpl/codec.hpp>
 
 namespace qpl {
 
@@ -127,6 +128,21 @@ namespace qpl {
         std::string result;
         std::getline(std::cin, result);
         return result;
+    }
+    std::wstring get_input_wstring() {
+        std::wstring result;
+        std::getline(std::wcin, result);
+        return result;
+    }
+    void wait_for_enter() {
+        if (qpl::detail::utf_enabled) {
+            std::wstring result;
+            std::getline(std::wcin, result);
+        }
+        else {
+            std::string result;
+            std::getline(std::cin, result);
+        }
     }
     std::string get_hidden_input(const std::string_view& replace) {
         std::string result;
