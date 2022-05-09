@@ -261,6 +261,13 @@ namespace qpl {
 		auto generate_0_1() {
 			return this->engine.generate_0_1();
 		}
+		bool generate_b() {
+			return this->generate() & 0x1ull;
+		}
+		bool generate_b(qpl::f64 probability) {
+			return this->generate_0_1() <= probability;
+		}
+
 
 		type engine;
 	};

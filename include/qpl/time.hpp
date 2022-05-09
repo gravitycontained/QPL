@@ -339,7 +339,7 @@ namespace qpl {
 	QPLDLL void reset_count_signal();
 	QPLDLL bool get_count_signal(qpl::u64 when);
 
-	struct animation2 {
+	struct animation {
 		qpl::small_clock timer;
 		qpl::f64 duration = 1.0;
 		qpl::f64 progress = 0.0;
@@ -363,71 +363,9 @@ namespace qpl {
 		QPLDLL bool just_finished_reverse() const;
 		QPLDLL bool just_finished_no_reverse() const;
 		QPLDLL bool has_progress() const;
-		QPLDLL void set_progress(qpl::f64 progress);
+		QPLDLL void set_progress(qpl::f64 progress, bool backwards = false);
 		QPLDLL qpl::f64 get_progress() const;
 		QPLDLL qpl::f64 get_curve_progress(qpl::f64 curve = 1.5) const;
-	};
-
-	struct animation {
-		qpl::small_clock timer;
-		qpl::f64 duration = 1.0;
-		qpl::f64 reverse_progress_state = 0.0;
-		qpl::small_clock wait_timer;
-		qpl::f64 wait_duration = 0.0;
-		qpl::f64 progress_value = 0.0;
-		bool running_result = false;
-		bool running = false;
-		bool just_finish = false;
-		bool just_finish_no_reverse = false;
-		bool just_finish_reverse = false;
-		bool started = false;
-		bool reversed = false;
-
-		animation(qpl::f64 duration = 1.0) {
-			this->duration = duration;
-		}
-		QPLDLL void set_duration(qpl::f64 duration);
-		QPLDLL void stop();
-		QPLDLL void reverse(bool running = true);
-		QPLDLL void go_forwards();
-		QPLDLL void go_backwards();
-		QPLDLL void swap();
-
-		QPLDLL void reset(bool running = false);
-		QPLDLL void add_time(qpl::f64 seconds);
-		QPLDLL void add_time(qpl::time time);
-		QPLDLL void start();
-		QPLDLL void start_and_reverse();
-		QPLDLL void reset_and_reverse();
-		QPLDLL void reset_and_start();
-		QPLDLL void start_in(qpl::f64 time);
-		QPLDLL void update();
-
-		QPLDLL bool is_reversed() const;
-		QPLDLL bool is_running() const;
-		QPLDLL bool is_running(bool update);
-		QPLDLL bool is_started() const;
-		QPLDLL bool just_finished() const;
-		QPLDLL bool just_finished(bool update);
-		QPLDLL bool just_finished_reverse() const;
-		QPLDLL bool just_finished_reverse(bool update);
-		QPLDLL bool just_finished_no_reverse() const;
-		QPLDLL bool just_finished_no_reverse(bool update);
-		QPLDLL bool is_done() const;
-		QPLDLL bool is_done(bool update);
-		QPLDLL bool has_progress() const;
-		QPLDLL bool has_progress(bool update);
-		QPLDLL bool is_running_or_done() const;
-		QPLDLL bool is_running_or_done(bool update);
-		QPLDLL bool is_done_reverse() const;
-		QPLDLL bool is_done_no_reverse() const;
-		QPLDLL void set_progress(qpl::f64 progress);
-		QPLDLL qpl::f64 get_progress() const;
-		QPLDLL qpl::f64 get_curve_progress(qpl::f64 curve = 1.5) const;
-		QPLDLL qpl::f64 get_smooth_progress(qpl::u32 slope = 21) const;
-		QPLDLL qpl::f64 get_progress(bool update);
-		QPLDLL qpl::f64 get_normalized_progress() const;
-		QPLDLL qpl::f64 get_normalized_progress(bool update);
 	};
 
 	struct timed_task {

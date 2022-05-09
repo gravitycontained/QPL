@@ -1115,32 +1115,111 @@ namespace qsf {
 		qsf::detail::smooth_rectangle.draw(window, states);
 	}
 
-
+	void qsf::smooth_rectangle::set_position(qpl::vector2f position) {
+		this->position = position;
+		this->internal_check = true;
+	}
+	void qsf::smooth_rectangle::set_hitbox(qpl::hitbox hitbox) {
+		this->position = hitbox.position;
+		this->dimension = hitbox.dimension;
+		this->internal_check = true;
+	}
+	void qsf::smooth_rectangle::set_center(qpl::vector2f position) {
+		this->position = position - this->dimension / 2;
+		this->internal_check = true;
+	}
+	void qsf::smooth_rectangle::set_slope(qpl::f64 slope) {
+		this->slope = slope;
+		this->internal_check = true;
+	}
 	void qsf::smooth_rectangle::set_color(qpl::rgb color) {
-		this->polygon.set_color(color);
-	}
-	void qsf::smooth_rectangle::set_outline_color(qpl::rgb color) {
-		this->polygon.set_outline_color(color);
-	}
-	void qsf::smooth_rectangle::set_outline_thickness(qpl::f32 thickness) {
-		this->polygon.set_outline_thickness(thickness);
+		this->color = color;
+		this->internal_check = true;
 	}
 	void qsf::smooth_rectangle::set_multiplied_color(qpl::rgb color) {
-		this->polygon.set_multiplied_color(color);
+		this->multiplied_color = color;
+		this->internal_check = true;
 	}
 	void qsf::smooth_rectangle::set_multiplied_alpha(qpl::u8 alpha) {
-		this->set_multiplied_color(qpl::rgb::white.with_alpha(alpha));
+		this->multiplied_color.a = alpha;
+		this->internal_check = true;
 	}
+	void qsf::smooth_rectangle::set_outline_color(qpl::rgb color) {
+		this->outline_color = color;
+		this->internal_check = true;
+	}
+	void qsf::smooth_rectangle::set_outline_thickness(qpl::f32 thickness) {
+		this->outline_thickness = thickness;
+		this->internal_check = true;
+	}
+	void qsf::smooth_rectangle::set_slope_dimension(qpl::vector2f dimension) {
+		this->slope_dim = dimension;
+		this->internal_check = true;
+	}
+	void qsf::smooth_rectangle::set_slope_point_count(qpl::size point_count) {
+		this->slope_point_count = point_count;
+		this->internal_check = true;
+	}
+	qpl::vector2f qsf::smooth_rectangle::get_dimension() const {
+		return this->dimension;
+	}
+	qpl::vector2f qsf::smooth_rectangle::get_position() const {
+		return this->position;
+	}
+	qpl::vector2f qsf::smooth_rectangle::get_center() const {
+		return this->position + this->dimension / 2;
+	}
+	qpl::f64 qsf::smooth_rectangle::get_slope() const {
+		return this->slope;
+	}
+	qpl::rgb qsf::smooth_rectangle::get_color() const {
+		return this->color;
+	}
+	qpl::rgb qsf::smooth_rectangle::get_multiplied_color() const {
+		return this->multiplied_color;
+	}
+	qpl::rgb qsf::smooth_rectangle::get_outline_color() const {
+		return this->outline_color;
+	}
+	qpl::f32 qsf::smooth_rectangle::get_outline_thickness() const {
+		return this->outline_thickness;
+	}
+	qpl::vector2f qsf::smooth_rectangle::get_slope_dimension() const {
+		return this->slope_dim;
+	}
+	qpl::size qsf::smooth_rectangle::get_slope_point_count() const {
+		return this->slope_point_count;
+	}
+
 	void qsf::smooth_rectangle::move(qpl::vector2f delta) {
-		this->polygon.move(delta);
-	}
-	void qsf::smooth_rectangle::set_position(qpl::vector2f delta) {
-		this->polygon.set_position(delta);
+		this->check_create();
+		this->position.move(delta);
+		this->internal_check = true;
 	}
 	bool qsf::smooth_rectangle::contains(qpl::vector2f point) const {
+		this->check_create();
 		return this->polygon.contains(point);
 	}
-	qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) {
+
+
+	void qsf::smooth_rectangle::check_create() const {
+		if (this->internal_check) {
+			qsf::vsmooth_rectangle rect;
+			rect.set_dimension(this->dimension);
+			rect.set_position(this->position);
+			rect.set_slope(this->slope);
+			rect.set_slope_point_count(this->slope_point_count);
+			rect.set_color(this->color);
+			rect.set_outline_color(this->outline_color);
+			rect.set_multiplied_color(this->multiplied_color);
+			rect.set_slope_dimension(this->slope_dim);
+			rect.set_outline_thickness(this->outline_thickness);
+
+			*this = rect;
+		}
+	}
+
+	const qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) const {
 		this->polygon.set_color(smooth_rectangle.color.multiplied_color(smooth_rectangle.multiplied_color));
 		this->polygon.set_outline_thickness(smooth_rectangle.outline_thickness);
 		this->polygon.set_outline_color(smooth_rectangle.outline_color.multiplied_color(smooth_rectangle.multiplied_color));
@@ -1184,9 +1263,11 @@ namespace qsf {
 			this->polygon.set_point(ctr, pos);
 			++ctr;
 		}
+		this->internal_check = false;
 		return *this;
 	}
 	void qsf::smooth_rectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
+		this->check_create();
 		this->polygon.draw(window, states);
 	}
 

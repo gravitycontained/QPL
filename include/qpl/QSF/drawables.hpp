@@ -697,18 +697,47 @@ namespace qsf {
 		qpl::f32 outline_thickness = 0.0f;
 	};
 	struct smooth_rectangle {
-		qsf::polygon polygon;
+		mutable qsf::polygon polygon;
 
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_hitbox(qpl::hitbox hitbox);
+		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_slope(qpl::f64 slope);
 		QPLDLL void set_color(qpl::rgb color);
-		QPLDLL void set_outline_color(qpl::rgb color);
-		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_multiplied_color(qpl::rgb color);
 		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
+		QPLDLL void set_outline_thickness(qpl::f32 thickness);
+		QPLDLL void set_outline_color(qpl::rgb color);
+		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
+		QPLDLL void set_slope_point_count(qpl::size point_count);
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL qpl::f64 get_slope() const;
+		QPLDLL qpl::rgb get_color() const;
+		QPLDLL qpl::rgb get_multiplied_color() const;
+		QPLDLL qpl::f32 get_outline_thickness() const;
+		QPLDLL qpl::rgb get_outline_color() const;
+		QPLDLL qpl::vector2f get_slope_dimension() const;
+		QPLDLL qpl::size get_slope_point_count() const;
+
+		QPLDLL void check_create() const;
 		QPLDLL void move(qpl::vector2f delta);
-		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL bool contains(qpl::vector2f point) const;
-		QPLDLL qsf::smooth_rectangle& operator=(const qsf::vsmooth_rectangle& smooth_rectangle);
+		QPLDLL const qsf::smooth_rectangle& operator=(const qsf::vsmooth_rectangle& smooth_rectangle) const;
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+	private:
+		qpl::vector2f dimension;
+		qpl::vector2f position;
+		qpl::f64 slope = 2.0;
+		qpl::size slope_point_count = 20u;
+		qpl::rgb color;
+		qpl::rgb outline_color;
+		qpl::rgb multiplied_color;
+		qpl::vector2f slope_dim = { 10, 10 };
+		qpl::f32 outline_thickness = 0.0f;
+		mutable bool internal_check = false;
 	};
 
 	struct vpoint {
@@ -3318,6 +3347,10 @@ namespace qsf {
 		qpl::vector2f hitbox_increase;
 		bool simple_hitbox = false;
 
+		smooth_button() {
+			this->set_background_color(qpl::rgb::black);
+		}
+
 		QPLDLL void enable_simple_hitbox();
 		QPLDLL void disable_simple_hitbox();
 		QPLDLL void set_hitbox_increase(qpl::vector2f delta);
@@ -3670,6 +3703,10 @@ namespace qsf {
 			return this->allow_drag;
 		}
 
+		void set_hover_increase(qpl::f32 value) {
+			this->knob_hover_outline_thickness = value;
+			this->background_hover_outline_thickness = value;
+		}
 
 
 		void update(const qsf::event_info& event) {
