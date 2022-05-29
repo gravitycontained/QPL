@@ -30,104 +30,6 @@
 #endif
 
 namespace qpl {
-	namespace impl {
-		template<typename T>
-		concept is_cout_printable_c = requires(const T t) {
-			std::cout << t;
-		};
-		template<typename T>
-		concept is_cin_readable_c = requires(T & t) {
-			std::cin >> t;
-		};
-		template<typename T>
-		concept is_wcout_printable_c = requires(const T t) {
-			std::wcout << t;
-		};
-		template<typename T>
-		concept is_wcin_readable_c = requires(T & t) {
-			std::wcin >> t;
-		};
-	}
-	template<typename... Args>
-	constexpr bool is_cout_printable() {
-		return (impl::is_cout_printable_c<Args> && ...);
-	}
-	template<typename... Args>
-	constexpr bool is_cin_readable() {
-		return (impl::is_cin_readable_c<Args> && ...);
-	}
-
-	template<typename... Args>
-	constexpr bool is_wcout_printable() {
-		return ((impl::is_wcout_printable_c<Args> || impl::is_cout_printable_c<Args>) && ...);
-	}
-	template<typename... Args>
-	constexpr bool is_wcin_readable() {
-		return ((impl::is_wcin_readable_c<Args> || impl::is_cin_readable_c<Args>) && ...);
-	}
-
-	template<typename T>
-	concept is_cin_readable_c = (qpl::is_cin_readable<T>());
-	template<typename T>
-	concept is_wcin_readable_c = (qpl::is_wcin_readable<T>());
-	template<typename T>
-	concept is_cout_printable_c = (qpl::is_cout_printable<T>());
-	template<typename T>
-	concept is_wcout_printable_c = (qpl::is_wcout_printable<T>());
-
-	namespace impl {
-		template<typename T>
-		concept is_printable_c = is_cout_printable_c<T> || is_wcout_printable_c<T>;
-
-
-		template<typename T>
-		constexpr bool is_printable() {
-			if constexpr (qpl::is_container_c<T>) {
-				return qpl::impl::is_printable<qpl::container_subtype<T>>();
-			}
-			else if constexpr (qpl::is_tuple_c<T>) {
-				constexpr auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
-					constexpr auto b = (qpl::impl::is_printable<Ts>() && ...);
-					if constexpr (b) {
-						return std::true_type{};
-					}
-					else {
-						return std::false_type{};
-					}
-				};
-				return decltype(check(std::declval<T>()))::value;
-			}
-			else {
-				return (static_cast<bool>(impl::is_printable_c<T>));
-			}
-		}
-
-		template<typename T>
-		concept is_readable_c = is_cin_readable_c<T> || is_wcin_readable_c<T>;
-
-
-		template<typename T>
-		constexpr bool is_readable() {
-			if constexpr (qpl::is_container<T>()) {
-				return is_readable<qpl::container_subtype<T>>();
-			}
-			else {
-				return (static_cast<bool>(impl::is_readable_c<T>));
-			}
-		}
-
-	}
-
-	template<typename... Args>
-	constexpr bool is_printable() {
-		return ((qpl::impl::is_printable<Args>()) && ...);
-	}
-	template<typename... Args>
-	constexpr bool is_readable() {
-		return ((qpl::impl::is_readable<Args>()) && ...);
-	}
-
-
 
 	QPLDLL std::wstring string_to_wstring(const std::string& str);
 	QPLDLL std::wstring string_to_unicode_wstring(const std::string& str);
@@ -218,6 +120,9 @@ namespace qpl {
 					unpack(std::make_index_sequence<qpl::tuple_size<T>() - 1>());
 				}
 				stream << qpl::to_string(qpl::tuple_value_back(value)) << '}';
+			}
+			else if constexpr (qpl::is_pair<T>()) {
+				stream << '{' << qpl::to_string(value.first) << ", " << qpl::to_string(value.second) << '}';
 			}
 			else if constexpr (qpl::is_wstring_type_c<T>) {
 				stream << qpl::wstring_to_string(value);
@@ -808,45 +713,8 @@ namespace qpl {
 		else if constexpr (qpl::is_tuple<T>()) {
 			qpl::ios_print(qpl::to_string(value));
 		}
-		else if constexpr (!qpl::is_derived<std::decay_t<T>, qpl::print_effect>() && !qpl::is_same<std::decay_t<T>, qpl::color>() && !qpl::is_same<std::decay_t<T>, qpl::background>() && !qpl::is_same<std::decay_t<T>, qpl::foreground>() && !qpl::is_same<std::decay_t<T>, qpl::cc>()) {
-			bool backslashn = false;
-			bool newln = false;
-			if constexpr (qpl::is_same<std::decay_t<T>, char>()) {
-				if (value == '\n') {
-					backslashn = true;
-				}
-			}
-			else {
-				if constexpr (qpl::is_standard_string_type<T>()) {
-					if (qpl::string_contains(value, '\n')) {
-						newln = true;
-					}
-				}
-			}
-
-			if (backslashn) {
-				qpl::ios_print(value);
-			}
-			else {
-				if (qpl::detail::next_print_space) {
-					qpl::ios_print(qpl::str_spaced(value, qpl::detail::next_print_space));
-					qpl::detail::next_print_space = qpl::detail::println_space;
-				}
-				else {
-					qpl::ios_print(value);
-				}
-				if (qpl::detail::next_print_color) {
-					qpl::set_console_color(qpl::detail::println_color);
-				}
-			}
-			if (newln || backslashn) {
-				qpl::detail::println_color = qpl::detail::println_default_color;
-				qpl::detail::current_console_color = qpl::detail::println_color;
-
-				qpl::detail::next_println_color = false;
-				qpl::detail::println_space = qpl::detail::println_default_space;
-				qpl::detail::next_println_space = false;
-			}
+		else if constexpr (qpl::is_pair<T>()) {
+			qpl::ios_print(qpl::to_string(value));
 		}
 		else if constexpr (qpl::is_derived<std::decay_t<T>, qpl::print_effect>()) {
 			if constexpr (qpl::is_same<std::decay_t<T>, cspace>()) {
@@ -907,6 +775,56 @@ namespace qpl {
 			qpl::set_console_color(value);
 			qpl::detail::current_console_color = value;
 			return;
+		}
+		else {
+			bool backslashn = false;
+			bool newln = false;
+			if constexpr (qpl::is_same<std::decay_t<T>, char>()) {
+				if (value == '\n') {
+					backslashn = true;
+				}
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, wchar_t>()) {
+				if (value == L'\n') {
+					backslashn = true;
+				}
+			}
+			else {
+				if constexpr (qpl::is_standard_string_type<T>()) {
+					if (qpl::string_contains(value, '\n')) {
+						newln = true;
+					}
+				}
+			}
+			
+			if (backslashn) {
+				qpl::ios_print(value);
+			}
+			else {
+				if (qpl::detail::next_print_space) {
+					if constexpr (qpl::is_wstring_type<T>()) {
+						qpl::ios_print(qpl::wstr_spaced(value, qpl::detail::next_print_space));
+					}
+					else {
+						qpl::ios_print(qpl::str_spaced(value, qpl::detail::next_print_space));
+					}
+					qpl::detail::next_print_space = qpl::detail::println_space;
+				}
+				else {
+					qpl::ios_print(value);
+				}
+				if (qpl::detail::next_print_color) {
+					qpl::set_console_color(qpl::detail::println_color);
+				}
+			}
+			if (newln || backslashn) {
+				qpl::detail::println_color = qpl::detail::println_default_color;
+				qpl::detail::current_console_color = qpl::detail::println_color;
+			
+				qpl::detail::next_println_color = false;
+				qpl::detail::println_space = qpl::detail::println_default_space;
+				qpl::detail::next_println_space = false;
+			}
 		}
 	}
 
@@ -1433,6 +1351,28 @@ namespace qpl {
 		return string;
 	}
 
+	template<typename T> requires (qpl::is_arithmetic<T>())
+		constexpr T from_string(const std::wstring_view& string) {
+		if constexpr (qpl::is_same_decayed<T, std::wstring>()) {
+			return string;
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::f64>()) {
+			return std::wcstod(string.data(), nullptr);
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::f32>()) {
+			return std::wcstof(string.data(), nullptr);
+		}
+		else if constexpr (qpl::is_qpl_integer<T>()) {
+			return T{ string };
+		}
+		else {
+			return static_cast<T>(std::wcstoll(string.data()));
+		}
+	}
+	template<typename T> requires (qpl::is_same_decayed<T, std::wstring>())
+	constexpr T from_string(const std::wstring& string) {
+		return string;
+	}
 	template<typename T> requires (qpl::is_integer<T>())
 	constexpr T from_base_string(const std::string_view& string, T base, base_format base_format = base_format::base36l) {
 		bool negative = false;
@@ -1729,6 +1669,7 @@ namespace qpl {
 	QPLDLL std::vector<std::string> split_string(const std::string& string, const std::string& expression);
 	QPLDLL std::vector<std::string> split_string(const std::string& string);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, char by_what);
+	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, wchar_t by_what);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, const std::wstring& expression);
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
 	QPLDLL std::vector<std::string> split_string_words(const std::string& string);
@@ -1780,38 +1721,81 @@ namespace qpl {
 	}
 	template<typename T>
 	T string_cast(const std::string& string) {
-		if constexpr (qpl::is_same<T, qpl::f64>()) {
+		if constexpr (qpl::is_same_decayed<T, qpl::f64>()) {
 			return std::stod(string);
 		}
-		else if constexpr (qpl::is_same<T, qpl::f32>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::f32>()) {
 			return std::stof(string);
 		}
-		else if constexpr (qpl::is_same<T, qpl::i8>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::i8>()) {
 			return static_cast<qpl::i8>(std::stoi(string));
 		}
-		else if constexpr (qpl::is_same<T, qpl::u8>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::u8>()) {
 			return static_cast<qpl::u8>(std::stoul(string));
 		}
-		else if constexpr (qpl::is_same<T, qpl::i16>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::i16>()) {
 			return static_cast<qpl::i16>(std::stoi(string));
 		}
-		else if constexpr (qpl::is_same<T, qpl::u16>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::u16>()) {
 			return static_cast<qpl::u16>(std::stoul(string));
 		}
-		else if constexpr (qpl::is_same<T, qpl::i32>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::i32>()) {
 			return std::stoi(string);
 		}
-		else if constexpr (qpl::is_same<T, qpl::u32>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::u32>()) {
 			return static_cast<qpl::u32>(std::stoul(string));
 		}
-		else if constexpr (qpl::is_same<T, qpl::i64>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::i64>()) {
 			return std::stoll(string);
 		}
-		else if constexpr (qpl::is_same<T, qpl::u64>()) {
+		else if constexpr (qpl::is_same_decayed<T, qpl::u64>()) {
 			return std::stoull(string);
 		}
-		else if constexpr (qpl::is_same<T, std::wstring>()) {
+		else if constexpr (qpl::is_same_decayed<T, std::wstring>()) {
 			return qpl::string_to_wstring(string);
+		}
+		else if constexpr (qpl::is_same_decayed<T, std::string>()) {
+			return string;
+		}
+	}
+
+	template<typename T>
+	T string_cast(const std::wstring& string) {
+		if constexpr (qpl::is_same_decayed<T, qpl::f64>()) {
+			return std::wcstod(string.data(), nullptr);
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::f32>()) {
+			return std::wcstof(string.data(), nullptr);
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::i8>()) {
+			return static_cast<qpl::i8>(std::wcstol(string.data(), nullptr, 10));
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::u8>()) {
+			return static_cast<qpl::u8>(std::wcstoul(string.data(), nullptr, 10));
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::i16>()) {
+			return static_cast<qpl::i16>(std::wcstol(string.data(), nullptr, 10));
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::u16>()) {
+			return static_cast<qpl::u16>(std::wcstoul(string.data(), nullptr, 10));
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::i32>()) {
+			return static_cast<qpl::i32>(std::wcstol(string.data(), nullptr, 10));
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::u32>()) {
+			return static_cast<qpl::u32>(std::wcstoul(string.data(), nullptr, 10));
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::i64>()) {
+			return std::wcstoll(string.data(), nullptr, 10);
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::u64>()) {
+			return std::wcstoull(string.data(), nullptr, 10);
+		}
+		else if constexpr (qpl::is_same_decayed<T, std::wstring>()) {
+			return string;
+		}
+		else if constexpr (qpl::is_same_decayed<T, std::string>()) {
+			return qpl::wstring_to_string(string);
 		}
 	}
 
@@ -1840,6 +1824,32 @@ namespace qpl {
 			static std::regex reg{ "[0-9]+" };
 			auto s = std::sregex_iterator(string.cbegin(), string.cend(), reg);
 			while (s != std::sregex_iterator()) {
+				result.push_back(qpl::string_cast<T>(s->str()));
+				++s;
+			}
+		}
+		else {
+			static_assert("split_numbers<T>: T is not arithmetic");
+		}
+		return result;
+	}
+
+	template<typename T>
+	std::vector<T> split_numbers(const std::wstring& string) {
+		std::vector<T> result;
+
+		if constexpr (qpl::is_floating_point<T>()) {
+			static std::wregex reg{ L"[0-9.e+]+" };
+			auto s = std::wsregex_iterator(string.cbegin(), string.cend(), reg);
+			while (s != std::wsregex_iterator()) {
+				result.push_back(qpl::string_cast<T>(s->str()));
+				++s;
+			}
+		}
+		else if constexpr (qpl::is_integer<T>()) {
+			static std::wregex reg{ L"[0-9]+" };
+			auto s = std::wsregex_iterator(string.cbegin(), string.cend(), reg);
+			while (s != std::wsregex_iterator()) {
 				result.push_back(qpl::string_cast<T>(s->str()));
 				++s;
 			}

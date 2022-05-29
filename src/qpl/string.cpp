@@ -1,6 +1,7 @@
 #include <qpl/string.hpp>
 #include <qpl/random.hpp>
 #include <locale>
+#include <cwctype>
 
 namespace qpl {
 	std::string qpl::str_spaced(const std::string& string, qpl::size length, char prepend) {
@@ -873,12 +874,49 @@ namespace qpl {
 	}
 	std::vector<std::wstring> qpl::split_string(const std::wstring& string, char by_what) {
 		std::vector<std::wstring> result;
-		std::wsmatch smatch;
-		std::wregex reg{ L"[^" + qpl::to_wstring(by_what) + L"]+" };
-		auto s = std::wsregex_iterator(string.cbegin(), string.cend(), reg);
-		while (s != std::wsregex_iterator()) {
-			result.push_back(s->str());
-			++s;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == by_what) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
+		}
+		return result;
+	}
+	std::vector<std::wstring> qpl::split_string(const std::wstring& string, wchar_t by_what) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == by_what) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
 		}
 		return result;
 	}
@@ -895,12 +933,25 @@ namespace qpl {
 	}
 	std::vector<std::wstring> qpl::split_string(const std::wstring& string) {
 		std::vector<std::wstring> result;
-		std::wsmatch smatch;
-		std::wregex reg{ L"[^\\s]+" };
-		auto s = std::wsregex_iterator(string.cbegin(), string.cend(), reg);
-		while (s != std::wsregex_iterator()) {
-			result.push_back(s->str());
-			++s;
+
+		qpl::size before = 0u;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (std::isspace(string[i])) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && std::iswspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
 		}
 		return result;
 	}

@@ -176,6 +176,12 @@ namespace qsf {
 		QPLDLL void set_shader(sf::Shader& shader);
 		QPLDLL void unbind_shader();
 
+		template<typename T>
+		void set_view(const qsf::view_rectangle_t<T>& view) {
+			this->render_states.transform = view.get_render_states().transform;
+		}
+		QPLDLL void reset_view();
+
 		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, sf::RenderStates states) {
 			if constexpr (qsf::has_any_draw<T>()) {
@@ -225,6 +231,10 @@ namespace qsf {
 
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, qsf::view_rectangle_t<V> view) {
+			if (!view.enabled) {
+				this->draw(drawable);
+				return;
+			}
 			if constexpr (qsf::has_any_draw<T>()) {
 				sf::RenderStates states = view.get_render_states();
 				if constexpr (qsf::is_render_texture<T>()) {
@@ -272,6 +282,10 @@ namespace qsf {
 		}
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_into(const std::string& name, const T& drawable, qsf::view_rectangle_t<V> view) {
+			if (!view.enabled) {
+				this->draw_into(name, drawable);
+				return;
+			}
 			if constexpr (qsf::has_any_draw<T>()) {
 				sf::RenderStates states = view.get_render_states();
 				this->get_render(name).draw(drawable, states);
@@ -348,6 +362,28 @@ namespace qsf {
 				}
 			}
 		}
+
+		template<typename T, typename V> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
+		void update(T& updatable, const qsf::view_rectangle_t<V>& view) {
+			if (!view.enabled) {
+				this->update(updatable);
+				return;
+			}
+			
+			auto before = this->event().m_mouse_position;
+		
+			this->event().m_mouse_position = this->event().m_mouse_position * view.scale + view.position;
+		
+			if constexpr (qsf::has_update<T>()) {
+				updatable.update(this->event());
+			}
+			else {
+				for (auto& i : updatable) {
+					this->update(i);
+				}
+			}
+			this->event().m_mouse_position = before;
+		}
 		QPLDLL void create();
 		QPLDLL bool is_open() const;
 		QPLDLL void update_close_window();
@@ -419,6 +455,7 @@ namespace qsf {
 		QPLDLL qpl::f64 frame_time_f() const;
 		QPLDLL qpl::time run_time() const;
 		QPLDLL const qsf::event_info& event() const;
+		QPLDLL qsf::event_info& event();
 
 		qsf::framework* framework;
 

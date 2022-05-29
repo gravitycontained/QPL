@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <type_traits>
 #include <SFML/Graphics.hpp>
+#include <cwctype>
 
 namespace qsf {
 	struct draw_object;
@@ -293,7 +294,7 @@ namespace qsf {
 
 		std::string font_name;
 		qpl::u32 style = sf::Text::Style::Regular;
-		qpl::u32 character_size = 15u;
+		qpl::u32 character_size = 22u;
 		qpl::f32 outline_thickness = 0.0f;
 		qpl::rgb color = qpl::rgb::black;
 		qpl::rgb outline_color;
@@ -306,8 +307,15 @@ namespace qsf {
 	struct text {
 		QPLDLL const sf::Font& get_sf_font() const;
 		QPLDLL const sf::Glyph& get_glyph(qpl::wchar_type c) const;
-		QPLDLL qpl::f32 get_next_advance(qpl::wchar_type c) const;
+		QPLDLL qpl::hitbox get_glyph_hitbox(qpl::wchar_type c) const;
+		QPLDLL qpl::f32 get_character_advance(qpl::wchar_type current) const;
+		QPLDLL qpl::f32 get_next_character_advance() const;
 		QPLDLL qpl::f32 get_line_spacing() const;
+
+		QPLDLL qpl::f32 get_letter_spacing_pixels() const;
+		QPLDLL qpl::f32 get_whitespace_width() const;
+		QPLDLL qpl::f32 get_italic_shear() const;
+
 		QPLDLL bool is_bold() const;
 		QPLDLL std::string get_font() const;
 		QPLDLL qpl::u32 get_style() const;
@@ -320,6 +328,7 @@ namespace qsf {
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL std::string get_string() const;
 		QPLDLL std::wstring get_wstring() const;
+		QPLDLL sf::String get_sfstring() const;
 		QPLDLL void set_font(const sf::Font& font);
 		QPLDLL void set_font(const std::string& font_name);
 		QPLDLL void set_style(qpl::u32 style);
@@ -333,6 +342,7 @@ namespace qsf {
 		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_string(const std::string& string);
 		QPLDLL void set_string(const std::wstring& string);
+		QPLDLL void set_string(const sf::String& string);
 		QPLDLL void set_multiplied_color(qpl::rgb color);
 		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 		QPLDLL qpl::rgb get_multiplied_color() const;
@@ -354,14 +364,25 @@ namespace qsf {
 			*this = other;
 		}
 
+		QPLDLL qpl::vector2f find_character_position(qpl::size index) const;
+		QPLDLL qpl::f32 get_underline_baseline() const;
+		QPLDLL qpl::f32 get_underline_thickness() const;
+		QPLDLL qpl::f32 get_character_size_plus_baseline() const;
+		QPLDLL std::vector<std::pair<qpl::size, qpl::hitbox>> get_all_characters_hitbox() const;
+		QPLDLL std::vector<qpl::hitbox> get_all_characters_hitbox_whitespace_included() const;
+		QPLDLL qpl::vector2f get_starting_line_position() const;
+		QPLDLL qpl::f32 get_line_height() const;
+		QPLDLL qpl::size get_line_number(qpl::size index) const;
 		QPLDLL qpl::hitbox get_visible_hitbox(bool ignore_outline = true) const;
 		QPLDLL qpl::hitbox get_standard_hitbox() const;
 		QPLDLL qpl::vector2f get_offset() const;
 
 		
+		QPLDLL qpl::size size() const;
 		QPLDLL std::string string() const;
 		QPLDLL void clear();
 		QPLDLL qsf::text& operator<<(const std::string& string);
+		QPLDLL qsf::text& operator<<(const std::wstring& string);
 		QPLDLL qsf::text& operator<<(const sf::String& string);
 
 		QPLDLL qsf::text& operator=(const qsf::vtext& text);
@@ -378,8 +399,6 @@ namespace qsf {
 
 	private:
 
-		QPLDLL qpl::f32 get_letter_spacing_pixels() const;
-		QPLDLL qpl::f32 get_whitespace_width() const;
 		QPLDLL qpl::f32 get_letter_kerning(qpl::wchar_type c) const;
 		QPLDLL qpl::f32 get_letter_advance(qpl::wchar_type c) const;
 		QPLDLL qpl::f32 get_letter_advance_and_spacing(qpl::wchar_type c) const;
@@ -476,6 +495,7 @@ namespace qsf {
 
 		QPLDLL qpl::rgb get_multiplied_color() const;
 		QPLDLL qpl::rgb get_color() const;
+		QPLDLL qpl::rgb get_visible_color() const;
 		QPLDLL qpl::rgb get_outline_color() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_dimension() const;
@@ -493,6 +513,7 @@ namespace qsf {
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
+	private:
 		sf::RectangleShape m_rect;
 		qpl::rgb color;
 		qpl::rgb outline_color;
@@ -700,6 +721,7 @@ namespace qsf {
 		mutable qsf::polygon polygon;
 
 		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_hitbox(qpl::hitbox hitbox);
 		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_slope(qpl::f64 slope);
@@ -712,6 +734,7 @@ namespace qsf {
 		QPLDLL void set_slope_point_count(qpl::size point_count);
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::hitbox get_hitbox() const;
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL qpl::f64 get_slope() const;
 		QPLDLL qpl::rgb get_color() const;
@@ -992,6 +1015,13 @@ namespace qsf {
 	};
 
 	struct line {
+		line() {
+
+		}
+		line(qpl::straight_line line) {
+			*this = line;
+		}
+
 		QPLDLL void set_a(qsf::vpoint point);
 		QPLDLL void set_a(qpl::vector2f position);
 		QPLDLL void set_b(qsf::vpoint point);
@@ -1009,6 +1039,7 @@ namespace qsf {
 		
 
 		QPLDLL qsf::line& operator=(const qsf::vline& line);
+		QPLDLL qsf::line& operator=(const qpl::straight_line& line);
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		std::array<sf::Vertex, 2> vertices;
 	};
@@ -1352,501 +1383,6 @@ namespace qsf {
 		bool positions_set = false;
 	};
 
-
-	struct text_stream_old {
-		text_stream_old() {
-			this->states.push_back({});
-		}
-
-		enum class duration_type {
-			next_entry, end_of_line, until_end
-		};
-
-		struct object_t {
-			qsf::text text;
-			qpl::hitbox hitbox;
-			qpl::u32 sprite_index = qpl::u32_max;
-			qpl::vector2f shift;
-			qpl::vector2f shift_before;
-			bool visible = true;
-			bool absolute = false;
-
-			bool is_text() const {
-				return this->sprite_index == qpl::u32_max;
-			}
-		};
-
-		constexpr static duration_type next_entry = duration_type::next_entry;
-		constexpr static duration_type end_of_line = duration_type::end_of_line;
-		constexpr static duration_type until_end = duration_type::until_end;
-
-		struct font {
-			font(const std::string& font, duration_type duration = next_entry) {
-				this->value = font;
-				this->duration = duration;
-			}
-			font until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			font until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			font until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			std::string value;
-			duration_type duration;
-		};
-		struct color {
-			constexpr color(qpl::rgb color, duration_type duration = next_entry) : value(color), duration(duration) {
-
-			}
-			color until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			color until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			color until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::rgb value;
-			duration_type duration;
-		};
-		struct character_size {
-			character_size(qpl::u32 character_size, duration_type duration = next_entry) {
-				this->value = character_size;
-				this->duration = duration;
-			}
-			character_size until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			character_size until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			character_size until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::u32 value;
-			duration_type duration;
-		};
-		struct style {
-			style(qpl::u32 style, duration_type duration = next_entry) {
-				this->duration = duration;
-				this->value = style;
-			}
-			style until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			style until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			style until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::u32 value;
-			duration_type duration;
-		};
-		struct outline_thickness {
-			outline_thickness(qpl::f32 outline_thickness, duration_type duration = next_entry) {
-				this->value = outline_thickness;
-				this->duration = duration;
-			}
-
-			outline_thickness until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			outline_thickness until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			outline_thickness until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::f32 value;
-			duration_type duration;
-		};
-		struct outline_color {
-			outline_color(qpl::rgb outline_color, duration_type duration = next_entry) {
-				this->value = outline_color;
-				this->duration = duration;
-			}
-
-			outline_color until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			outline_color until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			outline_color until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::rgb value;
-			duration_type duration;
-		};
-		struct letter_spacing {
-			letter_spacing(qpl::f32 spacing, duration_type duration = next_entry) {
-				this->value = spacing;
-				this->duration = duration;
-			}
-
-			letter_spacing until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			letter_spacing until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			letter_spacing until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::f32 value;
-			duration_type duration;
-		};
-		struct spacing {
-			spacing(qpl::f32 space, duration_type duration = next_entry) {
-				this->value = space;
-				this->duration = duration;
-			}
-
-			spacing until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			spacing until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			spacing until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::f32 value;
-			duration_type duration;
-		};
-		struct absolute_spacing {
-			absolute_spacing(qpl::f32 space, duration_type duration = next_entry) {
-				this->value = space;
-				this->duration = duration;
-			}
-
-			absolute_spacing until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			absolute_spacing until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			absolute_spacing until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::f32 value;
-			duration_type duration;
-		};
-		struct shift {
-			shift(qpl::vector2f shift, duration_type duration = next_entry) {
-				this->value = shift;
-				this->duration = next_entry;
-			}
-
-			shift until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			shift until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			shift until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::vector2f value;
-			duration_type duration;
-		};
-		struct shift_y {
-			shift_y(qpl::f32 shift, duration_type duration = next_entry) {
-				this->value = shift;
-				this->duration = next_entry;
-			}
-
-			shift_y until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			shift_y until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			shift_y until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::f32 value;
-			duration_type duration;
-		};
-		struct scaling {
-			scaling(qpl::vector2f scaling, duration_type duration = next_entry) {
-				this->value = scaling;
-				this->duration = next_entry;
-			}
-			scaling(qpl::f32 scaling, duration_type duration = next_entry) {
-				this->value = qpl::vector2f(scaling, scaling);
-				this->duration = next_entry;
-			}
-
-			scaling until_next_entry() const {
-				auto copy = *this; copy.duration = duration_type::next_entry; return copy;
-			}
-			scaling until_end_of_line() const {
-				auto copy = *this; copy.duration = duration_type::end_of_line; return copy;
-			}
-			scaling until_end() const {
-				auto copy = *this; copy.duration = duration_type::until_end; return copy;
-			}
-			qpl::vector2f value;
-			duration_type duration;
-		};
-
-
-
-		template<typename T>
-		text_stream_old& operator<<(const T& value) {
-			return this->operator<<(qpl::to_auto_string(value));
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::font& font) {
-			if (this->states.back().duration == font.duration) {
-				this->states.back().font = font.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().font = font.value;
-				this->states.back().duration = font.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::color& color) {
-			if (this->states.back().duration == color.duration) {
-				this->states.back().color = color.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().color = color.value;
-				this->states.back().duration = color.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::character_size& character_size) {
-			if (this->states.back().duration == character_size.duration) {
-				this->states.back().character_size = character_size.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().character_size = character_size.value;
-				this->states.back().duration = character_size.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::style& style) {
-			if (this->states.back().duration == style.duration) {
-				this->states.back().style = style.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().style = style.value;
-				this->states.back().duration = style.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::outline_thickness& outline_thickness) {
-			if (this->states.back().duration == outline_thickness.duration) {
-				this->states.back().outline_thickness = outline_thickness.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().outline_thickness = outline_thickness.value;
-				this->states.back().duration = outline_thickness.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::outline_color& outline_color) {
-			if (this->states.back().duration == outline_color.duration) {
-				this->states.back().outline_color = outline_color.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().outline_color = outline_color.value;
-				this->states.back().duration = outline_color.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::letter_spacing& letter_spacing) {
-			if (this->states.back().duration == letter_spacing.duration) {
-				this->states.back().letter_spacing = letter_spacing.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().letter_spacing = letter_spacing.value;
-				this->states.back().duration = letter_spacing.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::spacing& space) {
-			if (this->states.back().duration == space.duration) {
-				this->states.back().spacing = space.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().spacing = space.value;
-				this->states.back().duration = space.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::absolute_spacing& space) {
-			if (this->states.back().duration == space.duration) {
-				this->states.back().absolute_spacing = space.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().absolute_spacing = space.value;
-				this->states.back().duration = space.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::shift& shift) {
-			if (this->states.back().duration == shift.duration) {
-				this->states.back().shift = shift.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().shift = shift.value;
-				this->states.back().duration = shift.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::shift_y& shift) {
-			if (this->states.back().duration == shift.duration) {
-				this->states.back().shift.y = shift.value;
-				this->states.back().shift.x = 0;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().shift.y = shift.value;
-				this->states.back().shift.x = 0;
-				this->states.back().duration = shift.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const text_stream_old::scaling& scaling) {
-			if (this->states.back().duration == scaling.duration) {
-				this->states.back().scaling = scaling.value;
-			}
-			else {
-				this->states.push_back(this->states.back());
-				this->states.back().scaling = scaling.value;
-				this->states.back().duration = scaling.duration;
-			}
-			return *this;
-		}
-		template<>
-		text_stream_old& operator<<(const qsf::endl_type& end) {
-			this->new_line();
-			return *this;
-		}
-
-
-
-		QPLDLL void apply_state();
-
-		QPLDLL void new_line();
-		QPLDLL void clear();
-		QPLDLL text_stream_old& operator<<(const sf::Texture& texture);
-		QPLDLL text_stream_old& operator<<(const qsf::sprite& sprite);
-		QPLDLL text_stream_old& operator<<(const std::string& string);
-		QPLDLL text_stream_old& operator<<(const std::wstring& string);
-		QPLDLL text_stream_old& add_texture(const sf::Texture& texture);
-		QPLDLL text_stream_old& add_sprite(const qsf::sprite& sprite);
-		QPLDLL text_stream_old& add_string(const std::string& string, bool has_no_newline = false, bool pop_state = true);
-		QPLDLL text_stream_old& add_string(const std::wstring& string, bool has_no_newline = false, bool pop_state = true);
-		QPLDLL qpl::hitbox line_text_hitbox(qpl::size index) const;
-		QPLDLL qpl::hitbox line_sprite_hitbox(qpl::size index) const;
-		QPLDLL qpl::hitbox line_hitbox(qpl::size index) const;
-		QPLDLL qpl::hitbox line_visible_hitbox(qpl::size index) const;
-
-		//I don't have seen it get stuck yet, but because there is a possibility due to floating points being weird, I have a loop check here
-		QPLDLL void centerize_line(qpl::size index, qpl::u32 loop = 0u) const;
-		QPLDLL void centerize_lines() const;
-
-		QPLDLL qpl::size size() const;
-		QPLDLL qpl::size lines() const;
-		QPLDLL object_t& operator[](qpl::size index);
-		QPLDLL const object_t& operator[](qpl::size index) const;
-
-		QPLDLL qpl::size text_size() const;
-		QPLDLL qsf::text& get_text(qpl::size index);
-		QPLDLL const qsf::text& get_text(qpl::size index) const;
-		QPLDLL qsf::text& get_text(qpl::size line, qpl::size index);
-		QPLDLL const qsf::text& get_text(qpl::size line, qpl::size index) const;
-
-		QPLDLL qpl::size sprite_size() const;
-		QPLDLL qsf::sprite& get_sprite(qpl::size index);
-		QPLDLL const qsf::sprite& get_sprite(qpl::size index) const;
-		QPLDLL qsf::sprite& get_sprite(qpl::size line, qpl::size index);
-		QPLDLL const qsf::sprite& get_sprite(qpl::size line, qpl::size index) const;
-
-		QPLDLL object_t& get_object(qpl::size line, qpl::size index);
-		QPLDLL const object_t& get_object(qpl::size line, qpl::size index) const;
-
-		QPLDLL std::vector<qsf::text_stream_old::object_t>& line(qpl::size index);
-		QPLDLL const std::vector<qsf::text_stream_old::object_t>& line(qpl::size index) const;
-		QPLDLL void finalize() const;
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL void set_font(const std::string& font);
-		QPLDLL void set_color(qpl::rgb color);
-		QPLDLL void set_alpha(qpl::u8 alpha);
-		QPLDLL void set_multiplied_color(qpl::rgb color);
-		QPLDLL void set_style(qpl::u32 style);
-		QPLDLL void set_character_size(qpl::u32 character_size);
-		QPLDLL void set_line_spacing(qpl::f32 spacing);
-		QPLDLL void set_outline_thickness(qpl::f32 thickness);
-		QPLDLL void set_outline_color(qpl::rgb color);
-		QPLDLL void set_letter_spacing(qpl::f32 spacing);
-		QPLDLL void set_position(qpl::vector2f position);
-		QPLDLL void move(qpl::vector2f delta);
-		QPLDLL qpl::hitbox get_visible_hitbox() const;
-
-		QPLDLL void update_size_changes();
-
-		struct state {
-			std::string font;
-			qpl::rgb color = qpl::rgb::white;
-			qpl::u32 style = sf::Text::Style::Regular;
-			qpl::u32 character_size = 20u;
-			qpl::f32 outline_thickness = 0.0f;
-			qpl::rgb outline_color;
-			qpl::f32 letter_spacing = 1.0f;
-			qpl::vector2f scaling = qpl::vector2f(qpl::f32_max, qpl::f32_max);
-			qpl::vector2f shift = qpl::vector2f(0, 0);
-			qpl::f32 spacing = 0;
-			qpl::f32 absolute_spacing = qpl::f32_max;
-			qsf::text_stream_old::duration_type duration = qsf::text_stream_old::duration_type::until_end;
-		};
-
-
-		std::vector<state> states;
-		mutable std::vector<qsf::sprite> sprites;
-		mutable std::vector<std::vector<object_t>> objects;
-		mutable bool changed = false;
-		qpl::f32 line_spacing = 5.0f;
-		mutable qpl::hitbox visible_hitbox;
-
-		qpl::vector2f position = { 20, 20 };
-	private:
-		QPLDLL void prepare_next_entry();
-		QPLDLL void calculate_visible_hitbox() const;
-	};
-
-
 	struct text_stream_color {
 		constexpr text_stream_color(qpl::rgb color) : value(color) {
 
@@ -2005,7 +1541,7 @@ namespace qsf {
 			qpl::f32 outline_thickness = 0.0f;
 			qpl::f32 letter_spacing = 1.0f;
 			qpl::vector2f shift = qpl::vec(0.0f, 0.0f);
-			sf::Text::Style style;
+			sf::Text::Style style = sf::Text::Style::Regular;
 			qpl::vector2f scale = qpl::vec(1.0f, 1.0f);
 		};
 
@@ -2151,13 +1687,15 @@ namespace qsf {
 			if (!this->elements.empty() && !currently_new_line) {
 				const auto& element = this->elements.back();
 				if (element.is_text()) {
-					spacing = element.get_text().get_next_advance(L' ');
+					spacing = element.get_text().get_next_character_advance();
 				}
 				else if (element.is_sprite()) {
 					spacing = element.hitbox.dimension.x;
 				}
 				this->next_position.x += spacing;
+
 			}
+			//qpl::println("for ", string, " - spacing = ", spacing, " position.x = ", this->next_position.x);
 
 
 			this->elements.push_back({ *this });
@@ -2180,7 +1718,7 @@ namespace qsf {
 			if (!this->elements.empty() && !currently_new_line) {
 				const auto& element = this->elements.back();
 				if (element.is_text()) {
-					spacing = element.get_text().get_next_advance(L' ');
+					spacing = element.get_text().get_next_character_advance();
 				}
 				else if (element.is_sprite()) {
 					spacing = element.hitbox.dimension.x;
@@ -2427,13 +1965,6 @@ namespace qsf {
 
 		void draw(qsf::draw_object& draw) const {
 			draw.draw(this->elements);
-			//for (qpl::size i = 0u; i < this->lines(); ++i) {
-			//	auto h = this->line_hitbox(i);
-			//	qsf::rectangle rect;
-			//	rect.set_color(qpl::rgb::red.with_alpha(100));
-			//	rect.set_hitbox(h);
-			//	draw.draw(rect);
-			//}
 		}
 	private:
 		void add_state() {
@@ -2458,6 +1989,131 @@ namespace qsf {
 			}
 		}
 
+	};
+
+	struct text_field_old {
+		text_field_old();
+
+		QPLDLL void set_font(std::string font);
+		QPLDLL void set_text_character_size(qpl::u32 size);
+		QPLDLL void set_text_color(qpl::rgb color);
+		QPLDLL void set_text_outline_thickness(qpl::f32 thickness);
+		QPLDLL void set_text_outline_color(qpl::rgb color);
+		QPLDLL void set_text_style(sf::Text::Style style);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void make_dimension_fit_text();
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_background_increase(qpl::vector2f increase);
+		QPLDLL void set_background_increase(qpl::f32 increase);
+		QPLDLL void set_background_color(qpl::rgb color);
+		QPLDLL void set_background_slope_point_count(qpl::size count);
+		QPLDLL void set_text_background_color(qpl::rgb color);
+		QPLDLL void set_text_background_slope_point_count(qpl::size count);
+		QPLDLL void set_hitbox(qpl::hitbox hitbox);
+		QPLDLL void set_cursor_color(qpl::rgb color);
+		QPLDLL void set_cursor_thickness(qpl::f32 thickness);
+		QPLDLL void set_cursor_blink_duration(qpl::f32 duration);
+		QPLDLL void set_cursor_interval_duration(qpl::f32 duration);
+		QPLDLL void allow_editing_text(bool b = true);
+		QPLDLL void disallow_editing_text();
+		QPLDLL bool just_entered_text() const;
+
+		QPLDLL std::string get_string() const;
+		QPLDLL std::wstring get_wstring() const;
+
+		QPLDLL qpl::hitbox get_text_hitbox() const;
+		QPLDLL bool is_dragging() const;
+		QPLDLL bool is_hovering() const;
+		QPLDLL std::wstring get_selection() const;
+		QPLDLL sf::String get_sfselection() const;
+		QPLDLL void set_input_text(const std::wstring& input);
+		QPLDLL void set_input_text(const std::string& input);
+
+		QPLDLL std::vector<qpl::hitbox> get_character_hitboxes() const;
+
+		QPLDLL void update(const qsf::event_info& event);
+		QPLDLL void draw(qsf::draw_object& draw) const;
+
+	private:
+		QPLDLL void create_selection_rectangles();
+		QPLDLL void set_text_position();
+		QPLDLL void set_cursor_position();
+		QPLDLL void calculate_character_hitboxes() const;
+		QPLDLL qpl::straight_line get_character_cursor_hitbox_line(qpl::size index) const;
+		QPLDLL qpl::hitbox get_character_cursor_hitbox(qpl::size index) const;
+		QPLDLL void erase_selection();
+		QPLDLL void set_string(const std::wstring& string);
+		QPLDLL void set_string(const sf::String& string);
+		QPLDLL void apply_settings();
+
+		std::wstring text_string;
+		qsf::vtext text_setting;
+		std::vector<qsf::text> texts;
+		qsf::smooth_rectangle background;
+		qsf::smooth_rectangle text_background;
+		std::vector<qsf::rectangle> selection_rectangles;
+		qsf::rectangle selection_test_rectangle;
+		qpl::hitbox hitbox;
+		qsf::rectangle cursor;
+		qpl::small_clock cursor_interval_timer;
+		qpl::f32 cursor_blink_duration = 0.5;
+		qpl::f32 cursor_interval_duration = 1.0;
+		qpl::vector2f background_increase = qpl::vec(10, 10);
+		qpl::vector2f text_offset = qpl::vec(5, 5);
+		qpl::f32 cursor_margin = 0.2f;
+		qpl::rgb highlight_color = qpl::rgb(0, 120, 215);
+
+		qpl::f32 biggest_text_width = 0.0f;
+		bool hovering = false;
+		bool editing_text = false;
+		bool editing_text_allowed = true;
+		bool cursor_visible = false;
+		bool dragging = false;
+		bool edited_text = false;
+		qpl::vector2f dragging_mouse_click_position;
+		qpl::size dragging_mouse_cursor_position;
+
+		qpl::size selection_hitbox_begin = qpl::size_max;
+		qpl::size selection_hitbox_end = qpl::size_max;
+		qpl::vector2s selection_before = qpl::vec(qpl::size_max, qpl::size_max);
+		qpl::vector2s selection_prior_before = qpl::vec(qpl::size_max, qpl::size_max);
+
+		
+		qpl::size cursor_position = 0u;
+
+		std::vector<qsf::rectangle> test_cursor_hitboxes;
+		mutable std::unordered_map<qpl::size, qpl::size> character_line_map;
+		mutable std::vector<qpl::hitbox> line_hitboxes;
+		mutable std::vector<qpl::hitbox> character_hitboxes;
+		mutable bool hitboxes_changed = false;
+	};
+
+	struct text_field {
+
+		text_field();
+
+		QPLDLL void set_font(std::string font);
+		QPLDLL void set_text_character_size(qpl::u32 character_size);
+		QPLDLL void set_text_style(qpl::u32 style);
+		QPLDLL void set_text_outline_thickness(qpl::f32 outline_thickness);
+		QPLDLL void set_text_outline_color(qpl::rgb outline_color);
+		QPLDLL void set_text_color(qpl::rgb color);
+
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+
+		QPLDLL void update(const qsf::event_info& event);
+		QPLDLL void draw(qsf::draw_object& draw) const;
+	private:
+
+		QPLDLL void internal_update();
+
+		bool update_required = false;
+		qpl::hitbox hitbox;
+		qsf::vtext text_layout;
+		std::vector<qsf::text> texts;
+		qsf::smooth_rectangle text_background;
 	};
 
 	struct tile_map {

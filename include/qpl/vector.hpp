@@ -267,6 +267,13 @@ namespace qpl {
 		};
 	}
 
+	namespace detail {
+		template<typename T, typename U>
+		concept vectorN_castable = requires(T a, U b) {
+			a = b;
+		};
+	}
+
 	template<typename T, qpl::size N>
 	struct vectorN : qpl::conditional<
 		qpl::if_true<N == 0>, qpl::error_type,
@@ -313,7 +320,16 @@ namespace qpl {
 		constexpr vectorN(const vectorN<U, N>& other) : impl_type() {
 			*this = other;
 		}
-		template<typename U, typename... Args> 
+		template<typename U>
+		constexpr vectorN(const std::initializer_list<U>& list) {
+			*this = list;
+		}
+
+		template<qpl::size N, typename U>
+		constexpr vectorN(const std::array<U, N>& array) {
+			*this = array;
+		}
+		template<typename U, typename... Args>
 		constexpr vectorN(U first, Args&&... list) : impl_type() {
 			*this = qpl::tuple_to_array<T>(std::make_tuple(first, list...));
 		}
@@ -368,14 +384,15 @@ namespace qpl {
 			return *this;
 		}
 		template<typename U>
-		constexpr void set(const std::initializer_list<U>& list) {
+		constexpr vectorN& operator=(const std::initializer_list<U>& list) {
 			if (list.size() == 0) {
 				this->clear();
-				return;
+				return *this;
 			}
 			for (qpl::u32 i = 0u; i < qpl::min(list.size(), this->data.size()); ++i) {
 				this->data[i] = static_cast<T>(*(list.begin() + i));
 			}
+			return *this;
 		}
 		template<typename U>
 		void move(const vectorN<U, N>& delta) {
@@ -781,26 +798,31 @@ namespace qpl {
 	using vector2d = qpl::vectorN<qpl::f64, 2>;
 	using vector2i = qpl::vectorN<qpl::i32, 2>;
 	using vector2u = qpl::vectorN<qpl::u32, 2>;
+	using vector2s = qpl::vectorN<qpl::size, 2>;
 
 	using vector3f = qpl::vectorN<qpl::f32, 3>;
 	using vector3d = qpl::vectorN<qpl::f64, 3>;
 	using vector3i = qpl::vectorN<qpl::i32, 3>;
 	using vector3u = qpl::vectorN<qpl::u32, 3>;
+	using vector3s = qpl::vectorN<qpl::size, 3>;
 
 	using vector4f = qpl::vectorN<qpl::f32, 4>;
 	using vector4d = qpl::vectorN<qpl::f64, 4>;
 	using vector4i = qpl::vectorN<qpl::i32, 4>;
 	using vector4u = qpl::vectorN<qpl::u32, 4>;
+	using vector4s = qpl::vectorN<qpl::size, 4>;
 
 	using vector5f = qpl::vectorN<qpl::f32, 5>;
 	using vector5d = qpl::vectorN<qpl::f64, 5>;
 	using vector5i = qpl::vectorN<qpl::i32, 5>;
 	using vector5u = qpl::vectorN<qpl::u32, 5>;
+	using vector5s = qpl::vectorN<qpl::size, 5>;
 
 	using vector6f = qpl::vectorN<qpl::f32, 6>;
 	using vector6d = qpl::vectorN<qpl::f64, 6>;
 	using vector6i = qpl::vectorN<qpl::i32, 6>;
 	using vector6u = qpl::vectorN<qpl::u32, 6>;
+	using vector6s = qpl::vectorN<qpl::size, 6>;
 
 
 	template <typename T, typename ...Args> requires (qpl::is_arithmetic<T>())
@@ -935,9 +957,36 @@ namespace qpl {
 			this->position -= qpl::vector2<T>(delta, delta);
 			this->dimension += qpl::vector2<T>(delta, delta) * 2;
 		}
-		qpl::hitbox_t<T> increased(qpl::f32 delta) const {
+		void increase(qpl::vector2<T> delta) {
+			this->position -= delta;
+			this->dimension += delta * 2;
+		}
+		void increase_x(T delta) {
+			this->position.x -= delta;
+			this->dimension.x += delta * 2;
+		}
+		void increase_y(T delta) {
+			this->position.y -= delta;
+			this->dimension.y += delta * 2;
+		}
+		qpl::hitbox_t<T> increased(T delta) const {
 			auto copy = *this;
 			copy.increase(delta);
+			return copy;
+		}
+		qpl::hitbox_t<T> increased(qpl::vector2<T> delta) const {
+			auto copy = *this;
+			copy.increase(delta);
+			return copy;
+		}
+		qpl::hitbox_t<T> increased_y(T delta) const {
+			auto copy = *this;
+			copy.increase_y(delta);
+			return copy;
+		}
+		qpl::hitbox_t<T> increased_x(T delta) const {
+			auto copy = *this;
+			copy.increase_x(delta);
 			return copy;
 		}
 		bool contains(qpl::vector2f position) const {
@@ -965,6 +1014,47 @@ namespace qpl {
 			auto y2 = this->get_position().y + this->get_dimension().y + increase;
 
 			return this->collides(x1, x2, y1, y2, line);
+		}
+		template<typename U>
+		bool collides(const qpl::hitbox_t<U>& hitbox) const {
+			auto a1 = this->position;
+			auto a2 = this->position + this->dimension;
+			auto b1 = hitbox.position;
+			auto b2 = hitbox.position + hitbox.dimension;
+
+			auto x1_inside = a1.x >= b1.x && a1.x <= b2.x;
+			auto x2_inside = a2.x >= b1.x && a2.x <= b2.x;
+			auto y1_inside = a1.y >= b1.y && a1.y <= b2.y;
+			auto y2_inside = a2.y >= b1.y && a2.y <= b2.y;
+
+			auto either_x_inside = x1_inside || x2_inside;
+			auto either_y_inside = y1_inside || y2_inside;
+
+			if (either_x_inside && either_y_inside) return true;
+
+			auto ax_outside = a1.x < b1.x && a2.x > b2.x;
+			auto ay_outside = a1.y < b1.y && a2.y > b2.y;
+
+			if (ax_outside && ay_outside) return true;
+
+			auto bx_inside = b1.x < a1.x && b2.x > a2.x;
+			auto by_inside = b1.y < a1.y && b2.y > a2.y;
+
+			if (bx_inside && by_inside) return true;
+
+			if (ax_outside && either_y_inside) return true;
+			if (ay_outside && either_x_inside) return true;
+
+			return false;
+		}
+
+		template<typename U>
+		bool corners_collide_with(const qpl::hitbox_t<U>& hitbox) const {
+			auto p1 = this->position;
+			auto p2 = this->position + this->dimension.just_x();
+			auto p3 = this->position + this->dimension.just_y();
+			auto p4 = this->position + this->dimension;
+			return hitbox.contains(p1) || hitbox.contains(p2) || hitbox.contains(p3) || hitbox.contains(p4);
 		}
 
 		template<typename U>
@@ -1078,7 +1168,14 @@ namespace qpl {
 
 	};
 
+
 	using hitbox = hitbox_t<qpl::f32>;
+
+
+	template<typename T>
+	std::ostream& operator<<(std::ostream& os, const qpl::hitbox_t<T>& hitbox) {
+		return os << hitbox.string();
+	}
 }
 
 namespace std {

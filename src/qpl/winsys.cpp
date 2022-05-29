@@ -652,7 +652,7 @@ namespace qpl {
 		FILE* f;
 		auto error = _wfopen_s(&f, file.c_str(), L"rtS, ccs=UTF-8");
 		if (error) {
-			throw qpl::exception("qpl::winsys::read_utf_file(): can't open / find file \"", file, "\". error type: ", error);
+			throw qpl::exception("qpl::winsys::read_utf_file(): can't open / find file \"", file, "\"");
 		}
 
 		if (f == NULL) {

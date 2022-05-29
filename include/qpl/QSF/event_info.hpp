@@ -76,7 +76,8 @@ namespace qsf {
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::f64 frame_time_f() const;
 		QPLDLL qpl::vector2i resized_size() const;
-		QPLDLL qpl::vector2i mouse_position() const;
+		QPLDLL qpl::vector2f mouse_position() const;
+		QPLDLL qpl::vector2i mouse_position_screen() const;
 		QPLDLL qpl::vector2i mouse_position_desktop() const;
 
 		QPLDLL bool text_entered(char c) const;
@@ -84,6 +85,7 @@ namespace qsf {
 		QPLDLL bool text_entered(std::string c) const;
 		QPLDLL bool text_entered(std::wstring c) const;
 
+		QPLDLL bool is_text_entered() const;
 		QPLDLL std::wstring text_entered() const;
 		QPLDLL std::string text_entered_str() const;
 		QPLDLL std::wstring all_text_entered() const;
@@ -134,7 +136,8 @@ namespace qsf {
 		std::wostringstream m_text_entered_stream;
 
 		qpl::vector2i m_resized_size;
-		qpl::vector2i m_mouse_position;
+		qpl::vector2f m_mouse_position;
+		qpl::vector2i m_mouse_position_screen;
 		qpl::vector2i m_mouse_position_desktop;
 		std::set<sf::Keyboard::Key> m_keys_pressed;
 		std::set<sf::Keyboard::Key> m_keys_released;

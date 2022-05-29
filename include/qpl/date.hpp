@@ -18,9 +18,6 @@ namespace qpl {
 		sunday = 7,
 	};
 
-
-
-
 	struct date_ms {
 		qpl::u16 years = 0;
 		qpl::u8 months = 0;

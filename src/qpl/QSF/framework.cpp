@@ -341,6 +341,9 @@ namespace qsf {
 	void qsf::base_state::unbind_shader() {
 		this->render_states.shader = nullptr;
 	}
+	void qsf::base_state::reset_view() {
+		this->render_states = sf::RenderStates::Default;
+	}
 	void qsf::base_state::create() {
 		return this->framework->create();
 	}
@@ -522,6 +525,9 @@ namespace qsf {
 		return this->framework->run_time();
 	}
 	const qsf::event_info& qsf::base_state::event() const {
+		return this->framework->event;
+	}
+	qsf::event_info& qsf::base_state::event() {
 		return this->framework->event;
 	}
 }

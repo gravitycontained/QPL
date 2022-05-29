@@ -190,7 +190,7 @@ namespace qsf {
 
 		this->m_text_entered.clear();
 
-		this->m_mouse_position = sf::Mouse::getPosition(window);
+		this->m_mouse_position_screen = this->m_mouse_position = sf::Mouse::getPosition(window);
 		this->m_mouse_position_desktop = sf::Mouse::getPosition();
 	}
 	void qsf::event_info::update(const sf::Event& event) {
@@ -348,11 +348,17 @@ namespace qsf {
 	}
 
 
-	qpl::vector2i qsf::event_info::mouse_position() const {
+	qpl::vector2f qsf::event_info::mouse_position() const {
 		return this->m_mouse_position;
+	}
+	qpl::vector2i qsf::event_info::mouse_position_screen() const {
+		return this->m_mouse_position_screen;
 	}
 	qpl::vector2i qsf::event_info::mouse_position_desktop() const {
 		return this->m_mouse_position_desktop;
+	}
+	bool qsf::event_info::is_text_entered() const {
+		return !this->m_text_entered.empty();
 	}
 	std::wstring qsf::event_info::text_entered() const {
 		return this->m_text_entered;

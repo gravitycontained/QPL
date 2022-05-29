@@ -74,6 +74,10 @@ namespace qsf {
 			this->mouse_position = this->position + event.mouse_position() * this->scale;
 
 			this->hovering = this->hitbox.contains(event.mouse_position());
+
+			if (!this->allow_dragging) {
+				this->dragging = false;
+			}
 			if (this->hovering) {
 				auto mouse_relative = event.mouse_position() - this->hitbox.position;
 
@@ -203,6 +207,7 @@ namespace qsf {
 		bool integer_step = false;
 		bool power_of_two = false;
 		bool allow_dragging = true;
+		bool enabled = true;
 	};
 
 	using view_rectangle = view_rectangle_t<qpl::f64>;

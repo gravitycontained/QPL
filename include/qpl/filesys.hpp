@@ -641,8 +641,8 @@ namespace qpl {
         };
 
         template<typename T>
-        concept has_load = requires(T a) {
-            a.load(save_state{});
+        concept has_load = requires(T a, save_state state) {
+            a.load(state);
         };
     }
 
