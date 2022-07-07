@@ -58,6 +58,9 @@ namespace qpl {
 		delete[] buf;
 		return r;
 	}
+	std::wstring qpl::string_to_wstring(std::string_view s) {
+		return qpl::string_to_wstring(std::string{ s });
+	}
 	std::wstring qpl::string_to_unicode_wstring(const std::string& str) {
 		wchar_t* wc = new wchar_t[str.size()];
 
@@ -80,6 +83,10 @@ namespace qpl {
 		std::string r(buf);
 		delete[] buf;
 		return r;
+	}
+
+	std::string qpl::wstring_to_string(std::wstring_view s) {
+		return qpl::wstring_to_string(std::wstring{ s });
 	}
 
 
@@ -446,28 +453,28 @@ namespace qpl {
 	}
 
 
-	qpl::char_type qpl::random_visible_char() {
+	qpl::char_type qpl::get_random_visible_char() {
 		return static_cast<qpl::char_type>(qpl::random_i(32, 126));
 	}
-	std::string qpl::random_string_with_repetions(qpl::size length, qpl::size repetion_size) {
+	std::string qpl::get_random_string_with_repetions(qpl::size length, qpl::size repetion_size) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
 
 			auto rep = qpl::random(qpl::size{ 1 }, repetion_size);
 			rep = qpl::min(rep, length - i);
 
-			stream << std::string(rep, qpl::random_visible_char());
+			stream << std::string(rep, qpl::get_random_visible_char());
 		}
 		return stream.str();
 	}
-	std::string qpl::random_string(qpl::size length) {
+	std::string qpl::get_random_string(qpl::size length) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
-			stream << qpl::random_visible_char();
+			stream << qpl::get_random_visible_char();
 		}
 		return stream.str();
 	}
-	std::string qpl::random_number_string(qpl::size length) {
+	std::string qpl::get_random_number_string(qpl::size length) {
 		std::ostringstream stream;
 		qpl::set_random_range_i('0', '9');
 		for (auto i = qpl::size{}; i < length; ++i) {
@@ -475,7 +482,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::random_lowercase_uppercase_number_string(qpl::size length) {
+	std::string qpl::get_random_lowercase_uppercase_number_string(qpl::size length) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
 			qpl::set_random_range_i('a', 'z');
@@ -486,7 +493,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::random_lowercase_number_string(qpl::size length) {
+	std::string qpl::get_random_lowercase_number_string(qpl::size length) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
 			qpl::set_random_range_i('a', 'z');
@@ -497,7 +504,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::random_uppercase_number_string(qpl::size length) {
+	std::string qpl::get_random_uppercase_number_string(qpl::size length) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
 			qpl::set_random_range_i('A', 'Z');
@@ -508,7 +515,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::random_lowercase_uppercase_string(qpl::size length) {
+	std::string qpl::get_random_lowercase_uppercase_string(qpl::size length) {
 		std::ostringstream stream;
 		qpl::set_random_range_i('a', 'z');
 		for (auto i = qpl::size{}; i < length; ++i) {
@@ -517,7 +524,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::random_lowercase_string(qpl::size length) {
+	std::string qpl::get_random_lowercase_string(qpl::size length) {
 		std::ostringstream stream;
 		qpl::set_random_range_i('a', 'z');
 		for (auto i = qpl::size{}; i < length; ++i) {
@@ -525,7 +532,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::random_uppercase_string(qpl::size length) {
+	std::string qpl::get_random_uppercase_string(qpl::size length) {
 		std::ostringstream stream;
 		qpl::set_random_range_i('A', 'Z');
 		for (auto i = qpl::size{}; i < length; ++i) {
@@ -533,6 +540,36 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+
+	std::string qpl::get_random_string_full_range(qpl::size length) {
+		std::ostringstream stream;
+		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
+		for (auto i = qpl::size{}; i < length; ++i) {
+			stream << qpl::char_cast(qpl::random_i());
+		}
+		return stream.str();
+	}
+	std::string qpl::get_random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size) {
+		std::ostringstream stream;
+		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
+		for (auto i = qpl::size{}; i < length; ) {
+			auto rep = qpl::random(qpl::size{ 1 }, repetition_size);
+			rep = qpl::min(rep, length - i);
+
+			stream << std::string(rep, qpl::char_cast(qpl::random_i()));
+			i += rep;
+		}
+		return stream.str();
+	}
+	std::wstring qpl::get_random_wstring_full_range(qpl::size length) {
+		std::wostringstream stream;
+		qpl::set_random_range_i(qpl::type_min<wchar_t>(), qpl::type_max<wchar_t>());
+		for (auto i = qpl::size{}; i < length; ++i) {
+			stream << qpl::char_cast(qpl::random_i());
+		}
+		return stream.str();
+	}
+
 	std::string qpl::to_lower(const std::string& string) {
 		auto result = string;
 		for (auto& i : result) {
@@ -872,6 +909,31 @@ namespace qpl {
 		}
 		return result;
 	}
+	std::vector<std::string> qpl::split_string_allow_empty(const std::string& string, char by_what) {
+		std::vector<std::string> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == by_what) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					result.push_back("");
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
+		}
+		return result;
+	}
 	std::vector<std::wstring> qpl::split_string(const std::wstring& string, char by_what) {
 		std::vector<std::wstring> result;
 
@@ -932,6 +994,9 @@ namespace qpl {
 		return result;
 	}
 	std::vector<std::wstring> qpl::split_string(const std::wstring& string) {
+		if (string.empty()) {
+			return {};
+		}
 		std::vector<std::wstring> result;
 
 		qpl::size before = 0u;
@@ -958,6 +1023,9 @@ namespace qpl {
 
 
 	std::vector<std::string> qpl::split_string_words(const std::string& string) {
+		if (string.empty()) {
+			return {};
+		}
 		std::vector<std::string> result;
 
 		qpl::size before = 0;
@@ -978,6 +1046,41 @@ namespace qpl {
 		}
 		if (before != string.length()) {
 			result.push_back(string.substr(before));
+		}
+		return result;
+	}
+	std::vector<std::wstring> qpl::split_string_allow_empty(const std::wstring& string, wchar_t by_what) {
+		if (string.empty()) {
+			return {};
+		}
+		std::vector<std::wstring> result;
+
+		if (string.front() == by_what) {
+			result.push_back(L"");
+		}
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == by_what) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					result.push_back(L"");
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
+		}
+		if (string.back() == by_what) {
+			result.push_back(L"");
 		}
 		return result;
 	}
@@ -1135,35 +1238,75 @@ namespace qpl {
 		return "";
 	}
 
-	std::string qpl::random_string_full_range(qpl::size length) {
-		std::ostringstream stream;
-		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
-		for (auto i = qpl::size{}; i < length; ++i) {
-			stream << qpl::char_cast(qpl::random_i());
-		}
-		return stream.str();
-	}
-	std::string qpl::random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size) {
-		std::ostringstream stream;
-		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
-		for (auto i = qpl::size{}; i < length; ) {
-			auto rep = qpl::random(qpl::size{ 1 }, repetition_size);
-			rep = qpl::min(rep, length - i);
-			
-			stream << std::string(rep, qpl::char_cast(qpl::random_i()));
-			i += rep;
-		}
-		return stream.str();
-	}
-	std::wstring qpl::random_wstring_full_range(qpl::size length) {
-		std::wostringstream stream;
-		qpl::set_random_range_i(qpl::type_min<wchar_t>(), qpl::type_max<wchar_t>());
-		for (auto i = qpl::size{}; i < length; ++i) {
-			stream << qpl::char_cast(qpl::random_i());
-		}
-		return stream.str();
-	}
 
+
+	std::string qpl::get_string_permutation(const std::string& symbols, qpl::size permutation_size, qpl::size position) {
+		std::string permutation;
+		permutation.resize(permutation_size);
+
+		auto base = symbols.length();
+
+		for (qpl::size i = 0u; i < permutation_size; ++i) {
+
+			auto index = (position / qpl::int_pow(base, i)) % base;
+			permutation[permutation_size - i - 1] = symbols[index];
+		}
+		return permutation;
+	}
+	std::vector<std::string> qpl::list_string_permutations(const std::string& symbols, qpl::size permutation_size) {
+
+		auto result_size = qpl::size(std::pow(symbols.length(), permutation_size));
+		std::vector<std::string> result(result_size);
+
+		for (qpl::size i = 0u; i < result.size(); ++i) {
+			result[i] = get_string_permutation(symbols, permutation_size, i);
+		}
+
+		return result;
+	}
+	std::vector<std::string> qpl::list_unique_string_permutations(const std::string& symbols, qpl::size permutation_size) {
+
+		std::vector<std::string> result;
+
+		std::set<qpl::size> seen;
+		for (std::size_t i = 0u;; ++i) {
+
+			std::string permutation;
+			permutation.resize(permutation_size);
+
+			auto base = symbols.length();
+
+			bool unique = true;
+			bool last_permutation = true;
+			seen.clear();
+
+			qpl::size index_before = 0u;
+			for (qpl::size j = 0u; j < permutation_size; ++j) {
+
+				auto index = (i / qpl::int_pow(base, j)) % base;
+
+				if (seen.find(index) != seen.cend()) {
+					unique = false;
+					break;
+				}
+				seen.insert(index);
+
+				if (index < index_before) {
+					last_permutation = false;
+				}
+				index_before = index;
+				permutation[permutation_size - j - 1] = symbols[index];
+			}
+			if (unique) {
+				result.push_back(permutation);
+				if (last_permutation) {
+					break;
+				}
+			}
+		}
+
+		return result;
+	}
 
 	void qpl::collection_string::set_string(const std::string& string) {
 		this->string = string;

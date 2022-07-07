@@ -155,6 +155,8 @@ namespace qsf {
 	*/
 	struct base_state {
 
+		virtual ~base_state() = default;
+
 		virtual void init() = 0;
 		virtual void updating() = 0;
 		virtual void drawing() = 0;

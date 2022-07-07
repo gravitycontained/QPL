@@ -257,13 +257,13 @@ namespace qpl {
 		result.set_info(this->max_depth());
 		switch (result.bits_mode) {
 		case character_table::mode::b8:
-			this->get_table_helper8(result, 0, 1);
+			this->get_table_helper8(result, 0, 0);
 			break;
 		case character_table::mode::b16:
-			this->get_table_helper16(result, 0, 1);
+			this->get_table_helper16(result, 0, 0);
 			break;
 		case character_table::mode::b32:
-			this->get_table_helper32(result, 0, 1);
+			this->get_table_helper32(result, 0, 0);
 			break;
 		}
 		return result;
@@ -389,7 +389,6 @@ namespace qpl {
 		stream.add(qpl::u32_cast(string.length()));
 		stream.add(qpl::u16_cast(table.data_size()));
 		stream.add(header);
-
 
 		stream.reset_position();
 

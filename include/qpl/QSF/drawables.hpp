@@ -296,7 +296,7 @@ namespace qsf {
 		qpl::u32 style = sf::Text::Style::Regular;
 		qpl::u32 character_size = 22u;
 		qpl::f32 outline_thickness = 0.0f;
-		qpl::rgb color = qpl::rgb::black;
+		qpl::rgb color = qpl::rgb::white;
 		qpl::rgb outline_color;
 		qpl::rgb multiplied_color = qpl::rgb::white;
 		qpl::f32 letter_spacing = 1.0f;
@@ -371,7 +371,9 @@ namespace qsf {
 		QPLDLL std::vector<std::pair<qpl::size, qpl::hitbox>> get_all_characters_hitbox() const;
 		QPLDLL std::vector<qpl::hitbox> get_all_characters_hitbox_whitespace_included() const;
 		QPLDLL qpl::vector2f get_starting_line_position() const;
+		QPLDLL qpl::f32 get_delta_underline() const;
 		QPLDLL qpl::f32 get_line_height() const;
+		QPLDLL qpl::vector2f get_character_dimension(wchar_t character) const;
 		QPLDLL qpl::size get_line_number(qpl::size index) const;
 		QPLDLL qpl::hitbox get_visible_hitbox(bool ignore_outline = true) const;
 		QPLDLL qpl::hitbox get_standard_hitbox() const;
@@ -392,7 +394,6 @@ namespace qsf {
 
 		std::string m_font;
 		sf::Text m_text;
-		std::string m_string;
 		qpl::rgb color = qpl::rgb::white;
 		qpl::rgb outline_color = qpl::rgb::white;
 		qpl::rgb multiplied_color = qpl::rgb::white;
@@ -1135,12 +1136,15 @@ namespace qsf {
 
 		QPLDLL void set_a(qsf::vpoint point);
 		QPLDLL void set_a(qpl::vector2f position);
+		QPLDLL void extend_a(qpl::f32 delta);
 		QPLDLL void set_b(qsf::vpoint point);
 		QPLDLL void set_b(qpl::vector2f position);
+		QPLDLL void extend_b(qpl::f32 delta);
 		QPLDLL void set_color(qpl::rgb color);
 		QPLDLL void set_a_color(qpl::rgb color);
 		QPLDLL void set_b_color(qpl::rgb color);
 		QPLDLL void set_thickness(qpl::f32 thickness);
+		QPLDLL void move(qpl::vector2f delta);
 
 		QPLDLL qsf::vpoints as_points() const;
 		QPLDLL qpl::vector2f normal() const;
@@ -1667,7 +1671,7 @@ namespace qsf {
 		}
 
 		void add_string(const std::string& string, bool check_new_line = true) {
-			
+
 			if (check_new_line) {
 				qpl::size last = 0u;
 				for (qpl::size i = 0u; i < string.length(); ++i) {
@@ -1676,7 +1680,7 @@ namespace qsf {
 							this->add_string(string.substr(last, i), false);
 						}
 						this->new_line();
-						last = i;
+						last = i + 1;
 					}
 				}
 				this->add_string(string.substr(last, string.size()), false);
@@ -1899,6 +1903,14 @@ namespace qsf {
 			result.dimension = qpl::vec(x, y);
 			return result;
 		}
+		qpl::hitbox get_visible_hitbox() const {
+			return this->hitbox();
+		}
+
+		void set_string(const std::string& string) {
+			this->clear();
+			this->operator<<(string);
+		}
 
 		void clear() {
 			this->states.resize(1u);
@@ -1991,105 +2003,25 @@ namespace qsf {
 
 	};
 
-	struct text_field_old {
-		text_field_old();
-
-		QPLDLL void set_font(std::string font);
-		QPLDLL void set_text_character_size(qpl::u32 size);
-		QPLDLL void set_text_color(qpl::rgb color);
-		QPLDLL void set_text_outline_thickness(qpl::f32 thickness);
-		QPLDLL void set_text_outline_color(qpl::rgb color);
-		QPLDLL void set_text_style(sf::Text::Style style);
-		QPLDLL void set_dimension(qpl::vector2f dimension);
-		QPLDLL void make_dimension_fit_text();
-		QPLDLL void set_position(qpl::vector2f position);
-		QPLDLL void set_center(qpl::vector2f position);
-		QPLDLL void set_background_increase(qpl::vector2f increase);
-		QPLDLL void set_background_increase(qpl::f32 increase);
-		QPLDLL void set_background_color(qpl::rgb color);
-		QPLDLL void set_background_slope_point_count(qpl::size count);
-		QPLDLL void set_text_background_color(qpl::rgb color);
-		QPLDLL void set_text_background_slope_point_count(qpl::size count);
-		QPLDLL void set_hitbox(qpl::hitbox hitbox);
-		QPLDLL void set_cursor_color(qpl::rgb color);
-		QPLDLL void set_cursor_thickness(qpl::f32 thickness);
-		QPLDLL void set_cursor_blink_duration(qpl::f32 duration);
-		QPLDLL void set_cursor_interval_duration(qpl::f32 duration);
-		QPLDLL void allow_editing_text(bool b = true);
-		QPLDLL void disallow_editing_text();
-		QPLDLL bool just_entered_text() const;
-
-		QPLDLL std::string get_string() const;
-		QPLDLL std::wstring get_wstring() const;
-
-		QPLDLL qpl::hitbox get_text_hitbox() const;
-		QPLDLL bool is_dragging() const;
-		QPLDLL bool is_hovering() const;
-		QPLDLL std::wstring get_selection() const;
-		QPLDLL sf::String get_sfselection() const;
-		QPLDLL void set_input_text(const std::wstring& input);
-		QPLDLL void set_input_text(const std::string& input);
-
-		QPLDLL std::vector<qpl::hitbox> get_character_hitboxes() const;
-
-		QPLDLL void update(const qsf::event_info& event);
-		QPLDLL void draw(qsf::draw_object& draw) const;
-
-	private:
-		QPLDLL void create_selection_rectangles();
-		QPLDLL void set_text_position();
-		QPLDLL void set_cursor_position();
-		QPLDLL void calculate_character_hitboxes() const;
-		QPLDLL qpl::straight_line get_character_cursor_hitbox_line(qpl::size index) const;
-		QPLDLL qpl::hitbox get_character_cursor_hitbox(qpl::size index) const;
-		QPLDLL void erase_selection();
-		QPLDLL void set_string(const std::wstring& string);
-		QPLDLL void set_string(const sf::String& string);
-		QPLDLL void apply_settings();
-
-		std::wstring text_string;
-		qsf::vtext text_setting;
-		std::vector<qsf::text> texts;
-		qsf::smooth_rectangle background;
-		qsf::smooth_rectangle text_background;
-		std::vector<qsf::rectangle> selection_rectangles;
-		qsf::rectangle selection_test_rectangle;
-		qpl::hitbox hitbox;
-		qsf::rectangle cursor;
-		qpl::small_clock cursor_interval_timer;
-		qpl::f32 cursor_blink_duration = 0.5;
-		qpl::f32 cursor_interval_duration = 1.0;
-		qpl::vector2f background_increase = qpl::vec(10, 10);
-		qpl::vector2f text_offset = qpl::vec(5, 5);
-		qpl::f32 cursor_margin = 0.2f;
-		qpl::rgb highlight_color = qpl::rgb(0, 120, 215);
-
-		qpl::f32 biggest_text_width = 0.0f;
-		bool hovering = false;
-		bool editing_text = false;
-		bool editing_text_allowed = true;
-		bool cursor_visible = false;
-		bool dragging = false;
-		bool edited_text = false;
-		qpl::vector2f dragging_mouse_click_position;
-		qpl::size dragging_mouse_cursor_position;
-
-		qpl::size selection_hitbox_begin = qpl::size_max;
-		qpl::size selection_hitbox_end = qpl::size_max;
-		qpl::vector2s selection_before = qpl::vec(qpl::size_max, qpl::size_max);
-		qpl::vector2s selection_prior_before = qpl::vec(qpl::size_max, qpl::size_max);
-
-		
-		qpl::size cursor_position = 0u;
-
-		std::vector<qsf::rectangle> test_cursor_hitboxes;
-		mutable std::unordered_map<qpl::size, qpl::size> character_line_map;
-		mutable std::vector<qpl::hitbox> line_hitboxes;
-		mutable std::vector<qpl::hitbox> character_hitboxes;
-		mutable bool hitboxes_changed = false;
-	};
-
 	struct text_field {
+
+		struct line {
+			qsf::text text;
+			std::vector<qpl::hitbox> character_hitboxes;
+			std::vector<qpl::hitbox> character_mouse_hitboxes;
+			qpl::hitbox line_hitbox;
+			qpl::hitbox line_mouse_hitbox;
+			bool mouse_hitboxes_changed = false;
+			bool layout_changed = false;
+
+			QPLDLL void apply(qsf::vtext layout);
+			QPLDLL void calculate_hitboxes();
+			QPLDLL void calculate_mouse_hitboxes(qpl::f32 max_line_width, qpl::f32 extended_line_width);
+			QPLDLL void move(qpl::vector2f delta);
+			QPLDLL void move(qpl::f32 x, qpl::f32 y);
+			QPLDLL std::wstring wstring() const;
+			QPLDLL void draw(qsf::draw_object& draw) const;
+		};
 
 		text_field();
 
@@ -2100,20 +2032,128 @@ namespace qsf {
 		QPLDLL void set_text_outline_color(qpl::rgb outline_color);
 		QPLDLL void set_text_color(qpl::rgb color);
 
+		QPLDLL qpl::hitbox get_text_hitbox() const;
+
+		QPLDLL void set_background_color(qpl::rgb color);
+		QPLDLL void set_background_increase(qpl::vector2f increase);
+		QPLDLL void set_background_increase(qpl::f32 increase);
+		QPLDLL void set_background_outline_thickness(qpl::f32 thickness);
+		QPLDLL void set_background_outline_color(qpl::rgb color);
+		QPLDLL qpl::rgb get_background_color() const;
+		QPLDLL qpl::rgb get_background_outline_color() const;
+		QPLDLL qpl::f32 get_background_outline_thickness() const;
+		QPLDLL qpl::vector2f get_background_increase() const;
+
+
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_dimension(qpl::vector2f dimension);
+
+		QPLDLL void set_string(std::wstring string);
+		QPLDLL void set_string(std::string string);
+
+		QPLDLL qpl::f32 get_line_spacing() const;
+		QPLDLL bool is_hovering() const;
+
+		QPLDLL bool just_edited_text() const;
+		QPLDLL bool just_copied_text() const;
+		QPLDLL bool just_pasted_text() const;
+		QPLDLL bool just_entered_text() const;
+		QPLDLL bool just_finished_text() const;
+		QPLDLL bool has_focus() const;
+
+		QPLDLL std::wstring wstring() const;
+		QPLDLL std::string string() const;
+
+		QPLDLL void new_line(qpl::size y = qpl::size_max);
+		QPLDLL qsf::text_field::line& get_line_at_cursor();
+		QPLDLL const qsf::text_field::line& get_line_at_cursor() const;
+
+		QPLDLL std::wstring get_selection_wstring() const;
+		QPLDLL std::string get_selection_string() const;
+		QPLDLL void add_string_at_cursor(std::wstring string);
+
+		QPLDLL void enable_focus();
+		QPLDLL void disable_focus();
+
+		QPLDLL void enable_one_line_limit();
+		QPLDLL void disable_one_line_limit();
+
+		QPLDLL void set_string_stack_size(qpl::size size);
+		QPLDLL qpl::size get_string_stack_size() const;
+
+		QPLDLL void delete_at_cursor();
+		QPLDLL void delete_selection_string(bool update_cursor_position = true);
+		QPLDLL void delete_selection_range();
+		QPLDLL void move_cursor_up();
+		QPLDLL void move_cursor_down();
+		QPLDLL void move_cursor_left();
+		QPLDLL void move_cursor_right();
+		QPLDLL void update_cursor();
+		QPLDLL void update_mouse_events(const qsf::event_info& event);
 
 		QPLDLL void update(const qsf::event_info& event);
 		QPLDLL void draw(qsf::draw_object& draw) const;
 	private:
 
-		QPLDLL void internal_update();
+		QPLDLL std::pair<qpl::vector2s, qpl::vector2s> get_sorted_selection_range() const;
+		QPLDLL void internal_update() const;
+		QPLDLL void internal_update_text() const;
+		QPLDLL void internal_update_cursor();
+		QPLDLL void set_cursor_dimension() const;
+		QPLDLL void set_cursor_position();
+		QPLDLL void make_selection_rectangles() const;
+		QPLDLL void make_selection_rectangles(qpl::size& count, qpl::size y, qpl::size x1, qpl::size x2 = qpl::size_max) const;
+		QPLDLL void find_closest_cursor_position();
 
-		bool update_required = false;
-		qpl::hitbox hitbox;
 		qsf::vtext text_layout;
-		std::vector<qsf::text> texts;
-		qsf::smooth_rectangle text_background;
+		mutable qpl::hitbox hitbox;
+		mutable qpl::vector<line> lines;
+		mutable qsf::smooth_rectangle background;
+		mutable qsf::rectangle cursor;
+		mutable std::vector<qsf::rectangle> selection_rectangles;
+		mutable std::wstring whole_string;
+
+
+		qpl::circular_array<std::pair<std::wstring, qpl::vector2s>> string_stack;
+
+		qpl::vector2s cursor_position = qpl::vec(0u, 0u);
+		qpl::vector2s selection_a = qpl::vec(0u, 0u);
+		qpl::vector2s selection_b = qpl::vec(0u, 0u);
+		qpl::vector2f background_increase = qpl::vec(6.0f, 6.0f);
+		qpl::vector2f click_mouse_position = qpl::vec(0, 0);
+		qpl::vector2f hovering_increase = qpl::vec(5, 5);
+
+		qpl::small_clock selection_drag_timer;
+		qpl::small_clock selection_start_drag_timer;
+		qpl::small_clock cursor_interval_timer;
+		qpl::f64 selection_drag_timer_duration = 0.15;
+		qpl::f64 selection_start_drag_timer_duration = 0.15;
+
+		qpl::rgb selection_color = qpl::rgb(0, 120, 215, 100);
+
+		qpl::size string_stack_position = 0u;
+		qpl::f64 cursor_interval_duration = 1.0;
+		qpl::f64 cursor_blink_duration = 0.5;
+		qpl::f32 cursor_x_offset = 0.3f;
+		qpl::f32 cursor_width_percentage = 0.1f;
+
+		mutable bool text_mouse_hitboxes_changed = false;
+		mutable bool text_layout_changed = false;
+		mutable bool update_required = false;
+		mutable bool whole_string_changed = true;
+		mutable bool cursor_position_changed = false;
+		bool hovering = false;
+		bool dragging = false;
+		bool dragging_selection = false;
+		bool edited_text = false;
+		bool copied_text = false;
+		bool pasted_text = false;
+		bool entered_text = false;
+		bool focus = false;
+		bool one_line_limit = false;
+		bool finished_text = false;
+		bool control_z = false;
+		bool control_y = false;
 	};
 
 	struct tile_map {
@@ -2997,14 +3037,20 @@ namespace qsf {
 		qsf::vsmooth_rectangle smooth_layout;
 		mutable qsf::smooth_rectangle rectangle;
 		qpl::rgb multiplied_color;
+		qpl::vector2f hitbox_increase;
+		qpl::animation hover_animation;
+		qpl::rgb background_color = qpl::rgb::black;
+		qpl::rgb text_color = qpl::rgb::white;
 		mutable bool layout_changed = false;
+		bool simple_hitbox = false;
 		bool hovering = false;
 		bool clicked = false;
-		qpl::vector2f hitbox_increase;
-		bool simple_hitbox = false;
+		bool use_basic_hover_animation = true;
+		bool hover_before = false;
 
 		smooth_button() {
 			this->set_background_color(qpl::rgb::black);
+			this->hover_animation.set_duration(0.2);
 		}
 
 		QPLDLL void enable_simple_hitbox();

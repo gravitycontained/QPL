@@ -211,6 +211,25 @@ namespace qsf {
 	};
 
 	using view_rectangle = view_rectangle_t<qpl::f64>;
+
+	namespace detail {
+		QPLDLL extern sf::Clipboard clipboard;
+	}
+	
+	template<typename T> requires(qpl::is_string_type<T>())
+	void copy_to_clipboard(T&& string) {
+		detail::clipboard.setString(string);
+	}
+	template<typename T = std::wstring> requires(qpl::is_string_type<T>())
+	T copy_from_clipboard() {
+		auto str = detail::clipboard.getString();
+		if constexpr (qpl::is_standard_string_type<T>()) {
+			return str.toAnsiString();
+		}
+		else {
+			return str;
+		}
+	}
 }
 
 #endif

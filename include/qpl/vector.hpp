@@ -1066,6 +1066,38 @@ namespace qpl {
 			this->position += qpl::vector2<T>(x, y);
 		}
 
+		template<typename U>
+		void extend_left(U delta) {
+			this->position -= qpl::vector2<T>(delta, T{ 0 });
+			this->dimension += qpl::vector2<T>(delta, T{ 0 });
+		}
+		template<typename U>
+		void extend_right(U delta) {
+			this->dimension += qpl::vector2<T>(delta, T{ 0 });
+		}
+
+		template<typename U>
+		void extend_up(U delta) {
+			this->position -= qpl::vector2<T>(T{ 0 }, delta);
+			this->dimension += qpl::vector2<T>(T{ 0 }, delta);
+		}
+		template<typename U>
+		void extend_down(U delta) {
+			this->dimension += qpl::vector2<T>(T{ 0 }, delta);
+		}
+
+		qpl::vector2<T> bottom_right() const {
+			return this->position + this->dimension;
+		}
+		qpl::vector2<T> bottom_left() const {
+			return this->position + this->dimension.just_y();
+		}
+		qpl::vector2<T> top_left() const {
+			return this->position;
+		}
+		qpl::vector2<T> top_right() const {
+			return this->position + this->dimension.just_x();
+		}
 
 
 		qpl::vector2<T> dimension;

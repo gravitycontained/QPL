@@ -1980,6 +1980,11 @@ namespace qpl {
 		return qpl::impl::reverse_possibilities(qpl::tuple_to_array(values...));
 	}
 
+	template<std::integral T>
+	constexpr T int_pow(T b, T e) {
+		return (e == 0) ? T{ 1 } : b * int_pow(b, e - 1);
+	}
+
 	template<typename C>
 	std::pair<qpl::container_subtype<C>, qpl::container_subtype<C>> min_max_vector(const C& data) {
 		auto v = std::minmax_element(data.cbegin(), data.cend());

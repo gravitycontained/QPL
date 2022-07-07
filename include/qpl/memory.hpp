@@ -198,6 +198,62 @@ namespace qpl {
 	template<typename T, qpl::size N = 0>
 	struct circular_array {
 
+		struct iterator {
+			circular_array* data;
+			qpl::size index = 0u;
+
+			iterator(circular_array& array, qpl::size index) : data(&array), index(index) {
+
+			}
+			iterator& operator++() {
+				++this->index;
+				return *this;
+			}
+			iterator operator++(int dummy) {
+				auto copy = *this;
+				++this->index;
+				return copy;
+			}
+			bool operator==(const iterator& other) const {
+				return this->index == other.index;
+			}
+			bool operator!=(const iterator& other) const {
+				return this->index != other.index;
+			}
+			T& operator*() {
+				return this->data->get(this->index);
+			}
+			const T& operator*() const {
+				return this->data->get(this->index);
+			}
+		};
+
+		struct const_iterator {
+			const circular_array* data;
+			qpl::size index = 0u;
+
+			const_iterator(const circular_array& array, qpl::size index) : data(&array), index(index) {
+
+			}
+			const_iterator& operator++() {
+				++this->index;
+				return *this;
+			}
+			const_iterator operator++(int dummy) {
+				auto copy = *this;
+				++this->index;
+				return copy;
+			}
+			bool operator==(const const_iterator& other) const {
+				return this->index == other.index;
+			}
+			bool operator!=(const const_iterator& other) const {
+				return this->index != other.index;
+			}
+			const T& operator*() const {
+				return this->data->get(this->index);
+			}
+		};
 		circular_array() {
 			this->index = 0u;
 			this->rotation_finished = false;
@@ -208,11 +264,15 @@ namespace qpl {
 
 		void clear() {
 			if constexpr (is_array() && qpl::is_arithmetic<T>()) {
-				this->data.fill(0u);
+				this->data.fill(T{});
 			}
 			else {
-				std::fill(this->data.begin(), this->data.end(), 0u);
+				std::fill(this->data.begin(), this->data.end(), T{});
 			}
+			this->index = 0u;
+			this->rotation_finished = false;
+		}
+		void reset() {
 			this->index = 0u;
 			this->rotation_finished = false;
 		}
@@ -220,7 +280,7 @@ namespace qpl {
 
 		void add(T value) {
 			if (this->rotation_finished) {
-				this->data[this->index] = value;
+				this->data[this->index] = std::move(value);
 				++this->index;
 
 				if (this->index == this->size()) {
@@ -228,7 +288,7 @@ namespace qpl {
 				}
 			}
 			else {
-				this->data[this->index] = value;
+				this->data[this->index] = std::move(value);
 				++this->index;
 
 				if (this->index == this->size()) {
@@ -248,7 +308,7 @@ namespace qpl {
 				return sum / this->size();
 			}
 			else {
-				for (qpl::u32 i = 0u; i < this->index; ++i) {
+				for (qpl::size i = 0u; i < this->index; ++i) {
 					sum += this->data[i];
 				}
 				return sum / this->index;
@@ -266,7 +326,7 @@ namespace qpl {
 				return min;
 			}
 			else {
-				for (qpl::u32 i = 0u; i < this->index; ++i) {
+				for (qpl::size i = 0u; i < this->index; ++i) {
 					if (this->data[i] < min) {
 						min = this->data[i];
 					}
@@ -287,7 +347,7 @@ namespace qpl {
 				return max;
 			}
 			else {
-				for (qpl::u32 i = 0u; i < this->index; ++i) {
+				for (qpl::size i = 0u; i < this->index; ++i) {
 					if (this->data[i] > max) {
 						max = this->data[i];
 					}
@@ -304,32 +364,32 @@ namespace qpl {
 				return sum;
 			}
 			else {
-				for (qpl::u32 i = 0u; i < this->index; ++i) {
+				for (qpl::size i = 0u; i < this->index; ++i) {
 					sum += this->data[i];
 				}
 				return sum;
 			}
 		}
-		T get_sum_of_last_n(qpl::u32 last_n) const {
+		T get_sum_of_last_n(qpl::size last_n) const {
 			if (last_n == this->size()) {
 				return this->get_sum();
 			}
 			T sum = 0;
 			if (this->rotation_finished) {
-				qpl::u32 start = 0u;
+				qpl::size start = 0u;
 				if (last_n > (this->index - 1)) {
 					start = this->size() - 1 - (last_n - (this->index - 1));
 				}
 				else {
 					start = this->index - 1 - last_n;
 				}
-				for (qpl::u32 i = 0u; i < last_n; ++i) {
+				for (qpl::size i = 0u; i < last_n; ++i) {
 					sum += this->data[(start + i) % this->size()];
 				}
 				return sum;
 			}
 			else {
-				for (qpl::u32 i = this->index - 1 - last_n; i < this->index; ++i) {
+				for (qpl::size i = this->index - 1 - last_n; i < this->index; ++i) {
 					sum += this->data[i];
 				}
 				return sum;
@@ -351,7 +411,7 @@ namespace qpl {
 				return min_max;
 			}
 			else {
-				for (qpl::u32 i = 0u; i < this->index; ++i) {
+				for (qpl::size i = 0u; i < this->index; ++i) {
 					if (this->data[i] < min_max.first) {
 						min_max.first = this->data[i];
 					}
@@ -363,11 +423,10 @@ namespace qpl {
 			}
 		}
 
-
-		void resize(qpl::u32 size) {
+		void resize(qpl::size size) {
 			if constexpr (is_vector()) {
 				this->data.resize(size);
-				std::fill(this->data.begin(), this->data.end(), 0u);
+				std::fill(this->data.begin(), this->data.end(), T{});
 				this->index = 0u;
 				this->rotation_finished = false;
 			}
@@ -380,72 +439,86 @@ namespace qpl {
 		constexpr static bool is_array() {
 			return N != qpl::size{ 0 };
 		}
-
-		T& operator[](qpl::size index) {
+		T& get_actual(qpl::size index) {
 			return this->data[index];
+		}
+		const T& get_actual(qpl::size index) const {
+			return this->data[index];
+		}
+
+		T& get(qpl::size index) {
+			if (this->rotation_finished) {
+				auto idx = (index + this->index) % this->used_size();
+				return this->data[idx];
+			}
+			else {
+				return this->data[index];
+			}
+		}
+		const T& get(qpl::size index) const {
+			if (this->rotation_finished) {
+				auto idx = (index + this->index) % this->used_size();
+				return this->data[idx];
+			}
+			else {
+				return this->data[index];
+			}
+		}
+		T& operator[](qpl::size index) {
+			return this->get(index);
 		}
 		const T& operator[](qpl::size index) const {
+			return this->get(index);
+		}
+
+		auto begin() {
+			return iterator(*this, 0u);
+		}
+		auto cbegin() {
+			return const_iterator(*this, 0u);
+		}
+		auto end() {
+			return iterator(*this, this->used_size());
+		}
+		auto cend() {
+			return const_iterator(*this, this->used_size());
+		}
+
+		T& front() {
+			if (this->rotation_finished) {
+				return this->data[this->index];
+			}
+			else {
+				return this->data[0u];
+			}
+		}
+		const T& front() const {
+			if (this->rotation_finished) {
+				return this->data[this->index];
+			}
+			else {
+				return this->data[0u];
+			}
+		}
+		T& back() {
+			auto index = this->index;
+			if (index) {
+				--index;
+			}
+			else {
+				index = 0u;
+			}
 			return this->data[index];
 		}
-
-		T& get() {
-			if (this->rotation_finished) {
-				auto i = this->index;
-				if (i == 0u) {
-					i = this->size() - 1u;
-				}
-				else {
-					--i;
-				}
-				return this->data[i];
+		const T& back() const {
+			auto index = this->index;
+			if (index) {
+				--index;
 			}
 			else {
-				auto i = this->index;
-				if (i == 0u) {
-					return T{};
-				}
-				else {
-					return this->data[i - 1];
-				}
+				index = 0u;
 			}
-		}
-		const T& get() const {
-			if (this->rotation_finished) {
-				auto i = this->index;
-				if (i == 0u) {
-					i = this->size() - 1u;
-				}
-				else {
-					--i;
-				}
-				return this->data[i];
-			}
-			else {
-				auto i = this->index;
-				if (i == 0u) {
-					return T{};
-				}
-				else {
-					return this->data[i - 1];
-				}
-			}
-		}
-
-		T& last() {
-			if (this->rotation_finished) {
-				return this->data[this->index];
-			}
-			else {
-				return this->data[0u];
-			}
-		}
-		const T& last() const {
-			if (this->rotation_finished) {
-				return this->data[this->index];
-			}
-			else {
-				return this->data[0u];
-			}
+			return this->data[index];
 		}
 
 		constexpr qpl::size size() const {
@@ -460,9 +533,10 @@ namespace qpl {
 			}
 		}
 
-		bool rotation_finished;
-		qpl::size index;
+		private:
 		qpl::conditional<qpl::if_true<N == 0>, std::vector<T>, std::array<T, N>> data;
+		qpl::size index = 0u;
+		bool rotation_finished = false;
 	};
 
 	
@@ -528,7 +602,7 @@ namespace qpl {
 		}
 
 		constexpr array& operator=(const std::initializer_list<T>& list) {
-			for (qpl::u32 i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
+			for (qpl::size i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
 				this->memory[i] = *(list.begin() + i);
 			}
 			return *this;
@@ -687,7 +761,7 @@ namespace qpl {
 		template<typename First, typename... Args>
 		constexpr vector(First first, Args&&... args) : memory() {
 			auto result = qpl::type_cast<T>(first, args...);
-			for (qpl::u32 i = 0u; i < qpl::min(this->size(), result.size()); ++i) {
+			for (qpl::size i = 0u; i < qpl::min(this->size(), result.size()); ++i) {
 				this->memory[i] = result[i];
 			}
 		}
@@ -701,7 +775,7 @@ namespace qpl {
 			return *this;
 		}
 		constexpr vector& operator=(const std::initializer_list<T>& list) {
-			for (qpl::u32 i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
+			for (qpl::size i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
 				this->memory[i] = *(list.begin() + i);
 			}
 			return *this;

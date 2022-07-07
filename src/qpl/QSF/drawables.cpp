@@ -209,6 +209,9 @@ namespace qsf {
 		return *this->m_text.getFont();
 	}
 	const sf::Glyph& qsf::text::get_glyph(qpl::wchar_type c) const {
+		if (this->m_font.empty()) {
+			throw qpl::exception("qsf::text::get_glyph : font not set");
+		}
 		return this->get_sf_font().getGlyph(c, this->get_character_size(), this->is_bold(), this->get_outline_thickness());
 	}
 	qpl::hitbox qsf::text::get_glyph_hitbox(qpl::wchar_type c) const {
@@ -299,11 +302,10 @@ namespace qsf {
 		return this->get_standard_hitbox().get_center();
 	}
 	std::string qsf::text::get_string() const {
-		return this->m_string;
+		return this->m_text.getString().toAnsiString();
 	}
 	std::wstring qsf::text::get_wstring() const {
-		auto s = this->m_text.getString();
-		return s.toWideString();
+		return this->m_text.getString().toWideString();
 	}
 	sf::String qsf::text::get_sfstring() const {
 		return this->m_text.getString();
@@ -353,17 +355,12 @@ namespace qsf {
 		this->centerize();
 	}
 	void qsf::text::set_string(const std::string& string) {
-		this->m_string = string;
-		sf::String s = this->m_string.c_str();
-		this->m_text.setString(s);
+		this->m_text.setString(string);
 	}
 	void qsf::text::set_string(const std::wstring& string) {
-		this->m_string = qpl::wstring_to_string(string);
-		sf::String s = string.c_str();
-		this->m_text.setString(s);
+		this->m_text.setString(string);
 	}
 	void qsf::text::set_string(const sf::String& string) {
-		this->m_string = qpl::wstring_to_string(string.toWideString());
 		this->m_text.setString(string);
 	}
 	void qsf::text::set_multiplied_color(qpl::rgb color) {
@@ -416,9 +413,15 @@ namespace qsf {
 		auto x = this->find_character_position(0).x;
 		auto y = qpl::f32_cast(this->get_character_size());
 		auto string = this->get_wstring();
+
+		wchar_t prev_char = L'\0';
 		for (qpl::size i = 0u; i < string.size(); ++i) {
 			qpl::vector2f pos = this->find_character_position(i);
 			auto glyph = this->get_glyph(string[i]);
+
+			auto c = string[i];
+			x += this->get_sf_font().getKerning(prev_char, c, this->get_character_size());
+			prev_char = c;
 
 			auto left = glyph.bounds.left;
 			auto top = glyph.bounds.top;
@@ -429,8 +432,6 @@ namespace qsf {
 			right = x + right - this->get_italic_shear() * top;
 			top = this->get_position().y + y + top;
 			bottom = this->get_position().y + y + bottom;
-
-			auto c = string[i];
 
 			switch (c) {
 			case L'\n':
@@ -471,6 +472,8 @@ namespace qsf {
 		auto x = this->find_character_position(0).x;
 		auto y = qpl::f32_cast(this->get_character_size());
 		auto string = this->get_wstring();
+
+		wchar_t prev_char = L'\0';
 		for (qpl::size i = 0u; i < string.size(); ++i) {
 			qpl::vector2f pos = this->find_character_position(i);
 			sf::Glyph glyph;
@@ -483,6 +486,9 @@ namespace qsf {
 				glyph = this->get_glyph(string[i]);
 			}
 
+			x += this->get_sf_font().getKerning(prev_char, c, this->get_character_size());
+			prev_char = c;
+
 			qpl::f32 extra_width = 0.0f;
 			qpl::f32 extra_height = 0.0f;
 			qpl::vector2f shift = qpl::vec(0, 0);
@@ -491,11 +497,7 @@ namespace qsf {
 			case L'\n':
 				y += this->get_line_spacing();
 				x = this->find_character_position(0).x;
-				extra_width = this->get_whitespace_width();
-				extra_height = this->get_character_size() / 2.0f;
-				shift = qpl::vec(0.0, -extra_height);
-				special = true;
-				break;
+				continue;
 			case L'\t':
 				extra_width = this->get_whitespace_width() * 4;
 				x += extra_width;
@@ -563,24 +565,48 @@ namespace qsf {
 
 		auto glyph = this->get_glyph(L'A');
 
-		auto x = this->find_character_position(0).x;
 		auto y = this->get_character_size();
-
 		auto top = glyph.bounds.top;
-
 		auto a_top = this->get_position().y + y + top;
-
 
 		glyph = this->get_glyph(L'g');
 
-		x = this->find_character_position(0).x;
 		y = this->get_character_size();
-
 		auto bottom = glyph.bounds.top + glyph.bounds.height;
-
 		auto g_bottom = this->get_position().y + y + bottom;
 
 		return (g_bottom - a_top);
+	}
+	qpl::f32 qsf::text::get_delta_underline() const {
+		auto glyph = this->get_glyph(L'x');
+
+		auto y = this->get_character_size();
+		auto bottom = glyph.bounds.top + glyph.bounds.height;
+		auto x_bottom = this->get_position().y + y + bottom;
+
+		glyph = this->get_glyph(L'g');
+
+		y = this->get_character_size();
+		bottom = glyph.bounds.top + glyph.bounds.height;
+		auto g_bottom = this->get_position().y + y + bottom;
+
+		return g_bottom - x_bottom;
+	}
+	qpl::vector2f qsf::text::get_character_dimension(wchar_t character) const {
+
+		auto glyph = this->get_glyph(character);
+
+		auto left = glyph.bounds.left;
+		auto top = glyph.bounds.top;
+		auto right = glyph.bounds.left + glyph.bounds.width;
+		auto bottom = glyph.bounds.top + glyph.bounds.height;
+
+		left = left - this->get_italic_shear() * bottom;
+		right = right - this->get_italic_shear() * top;
+		top = this->get_position().y + top;
+		bottom = this->get_position().y + bottom;
+
+		return qpl::vec(right - left, bottom - top);
 	}
 	qpl::size qsf::text::get_line_number(qpl::size index) const {
 		qpl::size line = 0u;
@@ -625,30 +651,27 @@ namespace qsf {
 		return this->m_text.getString().getSize();
 	}
 	std::string qsf::text::string() const {
-		return this->m_string;
+		return this->m_text.getString().toAnsiString();
 	}
 
 	void qsf::text::clear() {
-		this->m_string.clear();
-		sf::String s = this->m_string.c_str();
+		sf::String s = L"";
 		this->m_text.setString(s);
 	}
 	qsf::text& qsf::text::operator<<(const std::string& string) {
-		this->m_string.append(string);
-		sf::String s = this->m_string.c_str();
+		sf::String s = this->get_sfstring();
+		s += string;
 		this->m_text.setString(s);
 		return *this;
 	}
 	qsf::text& qsf::text::operator<<(const std::wstring& string) {
-		this->m_string.append(qpl::wstring_to_string(string));
-		auto s = this->m_text.getString();
-		s += string.c_str();
+		sf::String s = this->get_sfstring();
+		s += string;
 		this->m_text.setString(s);
 		return *this;
 	}
 	qsf::text& qsf::text::operator<<(const sf::String& string) {
-		this->m_string.append(string.toAnsiString());
-		auto s = this->m_text.getString();
+		sf::String s = this->get_sfstring();
 		s += string;
 		this->m_text.setString(s);
 		return *this;
@@ -768,7 +791,7 @@ namespace qsf {
 	}
 	bool qsf::vrectangle::contains(qpl::vector2f position, qpl::f32 hitbox_increase) const {
 		return (position.x > (this->position.x - hitbox_increase) && position.x < (this->position.x + this->dimension.x + hitbox_increase) &&
-			position.y > (this->position.y - hitbox_increase) && position.y < (this->position.y + this->dimension.y + hitbox_increase));
+			position.y >(this->position.y - hitbox_increase) && position.y < (this->position.y + this->dimension.y + hitbox_increase));
 	}
 	bool qsf::vrectangle::collides(qpl::straight_line line) const {
 		return this->get_hitbox().collides(line);
@@ -2132,12 +2155,23 @@ namespace qsf {
 	void qsf::thick_line::set_a(qpl::vector2f position) {
 		this->vertices[0].position = this->vertices[1].position = position;
 	}
+	void qsf::thick_line::extend_a(qpl::f32 delta) {
+
+		auto direction = qpl::vector2f{ this->vertices[2].position.y - this->vertices[0].position.y, this->vertices[2].position.x - this->vertices[0].position.x } / this->length();
+		this->vertices[0].position -= sf::Vector2f(direction * delta);
+		this->vertices[1].position -= sf::Vector2f(direction * delta);
+	}
 	void qsf::thick_line::set_b(qsf::vpoint point) {
 		this->vertices[2].position = this->vertices[3].position = point.position;
 		this->vertices[2].color = this->vertices[3].color = point.color;
 	}
 	void qsf::thick_line::set_b(qpl::vector2f position) {
 		this->vertices[2].position = this->vertices[3].position = position;
+	}
+	void qsf::thick_line::extend_b(qpl::f32 delta) {
+		auto direction = qpl::vector2f{ this->vertices[2].position.y - this->vertices[0].position.y, this->vertices[2].position.x - this->vertices[0].position.x } / this->length();
+		this->vertices[2].position += sf::Vector2f(direction * delta);
+		this->vertices[3].position += sf::Vector2f(direction * delta);
 	}
 	void qsf::thick_line::set_color(qpl::rgb color) {
 		this->vertices[0].color = this->vertices[1].color = this->vertices[2].color = this->vertices[3].color = color;
@@ -2151,10 +2185,19 @@ namespace qsf {
 	void qsf::thick_line::set_thickness(qpl::f32 thickness) {
 		auto normal = this->normal();
 
-		this->vertices[0].position = qpl::vector2f(this->vertices[0].position) - normal * thickness;
-		this->vertices[1].position = qpl::vector2f(this->vertices[0].position) + normal * thickness;
-		this->vertices[2].position = qpl::vector2f(this->vertices[2].position) + normal * thickness;
-		this->vertices[3].position = qpl::vector2f(this->vertices[2].position) - normal * thickness;
+		qpl::vector2f a_pos = this->vertices[0].position;
+		qpl::vector2f b_pos = this->vertices[2].position;
+
+		this->vertices[0].position = a_pos - normal * thickness;
+		this->vertices[1].position = a_pos + normal * thickness;
+		this->vertices[2].position = b_pos + normal * thickness;
+		this->vertices[3].position = b_pos - normal * thickness;
+	}
+	void qsf::thick_line::move(qpl::vector2f delta) {
+		this->vertices[0].position += sf::Vector2f(delta);
+		this->vertices[1].position += sf::Vector2f(delta);
+		this->vertices[2].position += sf::Vector2f(delta);
+		this->vertices[3].position += sf::Vector2f(delta);
 	}
 	qpl::f32 qsf::thick_line::length() const {
 		auto diff = this->vertices[0].position - this->vertices[2].position;
@@ -2756,810 +2799,1285 @@ namespace qsf {
 		this->vertices.draw(window, states);
 	}
 
-	qsf::text_field_old::text_field_old() {
-		this->set_background_color(qpl::rgb::grey_shade(40));
-		this->set_text_background_color(qpl::rgb::grey_shade(60));
-		this->set_text_character_size(this->text_setting.character_size);
-		this->set_text_color(qpl::rgb::grey_shade(255));
-		this->set_dimension(qpl::vec(500, 100));
-		this->cursor.set_color(qpl::rgb::white.with_alpha(0));
-		this->set_cursor_thickness(2.0);
-		this->selection_test_rectangle.set_color(qpl::rgb::white.with_alpha(50));
+	void qsf::text_field::line::apply(qsf::vtext layout) {
+		this->text.set_font(layout.font_name);
+		this->text.set_character_size(layout.character_size);
+		this->text.set_color(layout.color);
+		this->text.set_outline_color(layout.outline_color);
+		this->text.set_outline_thickness(layout.outline_thickness);
+		this->text.set_style(layout.style);
 	}
+	void qsf::text_field::line::calculate_hitboxes() {
+		this->character_hitboxes = this->text.get_all_characters_hitbox_whitespace_included();
+		if (this->character_hitboxes.empty()) {
+			this->character_hitboxes.push_back({});
 
-	void qsf::text_field_old::set_font(std::string font) {
-		this->text_setting.set_font(font);
-		this->hitboxes_changed = true;
-		this->apply_settings();
-	}
-	void qsf::text_field_old::set_text_character_size(qpl::u32 size) {
-		this->text_setting.set_character_size(size);
-		this->cursor.set_dimension(qpl::vec(this->cursor.get_dimension().x, size));
-		this->hitboxes_changed = true;
-		this->apply_settings();
-	}
-	void qsf::text_field_old::set_text_color(qpl::rgb color) {
-		this->text_setting.set_color(color);
-		this->apply_settings();
-	}
-	void qsf::text_field_old::set_text_outline_thickness(qpl::f32 thickness) {
-		this->text_setting.set_outline_thickness(thickness);
-		this->hitboxes_changed = true;
-		this->apply_settings();
-	}
-	void qsf::text_field_old::set_text_outline_color(qpl::rgb color) {
-		this->text_setting.set_outline_color(color);
-		this->apply_settings();
-	}
-	void qsf::text_field_old::set_text_style(sf::Text::Style style) {
-		this->text_setting.set_style(style);
-		this->hitboxes_changed = true;
-		this->apply_settings();
-	}
-	void qsf::text_field_old::set_dimension(qpl::vector2f dimension) {
-		this->text_background.set_dimension(dimension);
-		this->hitbox.set_dimension(dimension);
-		this->background.set_dimension(this->hitbox.dimension + this->background_increase * 2);
-		this->set_text_position();
-	}
-	void qsf::text_field_old::make_dimension_fit_text() {
-		auto h = this->get_text_hitbox();
-		auto dim = h.dimension;
-		if (this->get_wstring().size() == 0) {
-			h.position.y = this->texts.front().get_starting_line_position().y;
-			dim.y = this->texts.front().get_line_height();
-			dim.x = this->text_background.get_slope_dimension().x;
+			this->character_hitboxes.back().position = this->text.get_starting_line_position() + qpl::vec(this->text.get_character_size() / 15.0f, 0);
+			this->character_hitboxes.back().dimension = this->text.get_character_dimension(L'x');
 		}
-		auto diff = h.position - this->hitbox.position;
-		dim += diff * 2;
-		this->set_dimension(dim);
+		this->line_hitbox.position = this->text.get_position();
+		this->line_hitbox.position.x = this->text.get_starting_line_position().x;
+		this->line_hitbox.dimension.y = this->text.get_line_spacing();
+		this->line_hitbox.dimension.x = ((this->character_hitboxes.back().dimension + this->character_hitboxes.back().position) - this->line_hitbox.position).x;
 	}
-	void qsf::text_field_old::set_position(qpl::vector2f position) {
-		this->text_background.set_position(position);
-		this->hitbox.set_position(position);
-		this->background.set_position(this->hitbox.position - this->background_increase);
-		this->set_text_position();
-		this->set_cursor_position();
-		this->hitboxes_changed = true;
+	void qsf::text_field::line::calculate_mouse_hitboxes(qpl::f32 max_line_x, qpl::f32 extended_line_width) {
+		this->character_mouse_hitboxes.resize(this->character_hitboxes.size() + 1u);
+
+		qpl::f32 y = this->text.get_starting_line_position().y - this->text.get_delta_underline();
+		qpl::f32 height = this->text.get_line_spacing();
+
+		qpl::f32 first_x = this->line_hitbox.dimension.x + this->line_hitbox.position.x;
+		qpl::f32 last_x = first_x;
+		for (qpl::size i = 0u; i < this->character_hitboxes.size() - 1; ++i) {
+			qpl::f32 x = this->character_hitboxes[i].get_center().x;
+			qpl::f32 width = this->character_hitboxes[i + 1].get_center().x - x;
+
+			if (i == 0u) {
+				first_x = x;
+			}
+			last_x = x + width;
+
+			qpl::hitbox hitbox;
+			hitbox.position = qpl::vec(x, y);
+			hitbox.dimension = qpl::vec(width, height);
+			this->character_mouse_hitboxes[i + 1] = hitbox;
+		}
+
+		auto& front = this->character_mouse_hitboxes.front();
+		auto& back = this->character_mouse_hitboxes.back();
+
+
+		qpl::hitbox hitbox;
+		hitbox.position = qpl::vec(this->line_hitbox.position.x, y);
+		hitbox.dimension = qpl::vec(first_x - this->line_hitbox.position.x, height);
+		hitbox.extend_left(extended_line_width);
+		front = hitbox;
+		hitbox.position = qpl::vec(last_x, y);
+		hitbox.dimension = qpl::vec(max_line_x - last_x, height);
+		hitbox.extend_right(extended_line_width);
+		back = hitbox;
+
+		this->line_mouse_hitbox.position = front.position;
+		this->line_mouse_hitbox.dimension = (back.position + back.dimension) - front.position;
 	}
-	void qsf::text_field_old::set_center(qpl::vector2f position) {
-		this->set_position(position - this->hitbox.dimension / 2);
+	void qsf::text_field::line::move(qpl::vector2f delta) {
+		this->text.move(delta);
+		this->line_hitbox.move(delta);
+		this->line_mouse_hitbox.move(delta);
+		for (auto& i : this->character_hitboxes) {
+			i.move(delta);
+		}
+		for (auto& i : this->character_mouse_hitboxes) {
+			i.move(delta);
+		}
 	}
-	void qsf::text_field_old::set_background_increase(qpl::vector2f increase) {
-		this->background_increase = increase;
-		this->background.set_position(this->hitbox.position - increase);
-		this->background.set_dimension(this->hitbox.dimension + increase * 2);
+	void qsf::text_field::line::move(qpl::f32 x, qpl::f32 y) {
+		this->move(qpl::vec(x, y));
 	}
-	void qsf::text_field_old::set_background_increase(qpl::f32 increase) {
-		this->set_background_increase(qpl::vec(increase, increase));
+	std::wstring qsf::text_field::line::wstring() const {
+		return this->text.get_wstring();
+	}
+	void qsf::text_field::line::draw(qsf::draw_object& draw) const {
+
+		//qsf::rectangle rect;
+		//for (qpl::size i = 0u; i < this->character_mouse_hitboxes.size(); ++i) {
+		//	qpl::rgb color = qpl::rgb::yellow;
+		//	if (i % 2 == 0u) {
+		//		color = qpl::rgb::cyan;
+		//	}
+		//	rect.set_hitbox(this->character_mouse_hitboxes[i]);
+		//	rect.set_color(color.with_alpha(50));
+		//	draw.draw(rect);
+		//}
+
+		draw.draw(this->text);
 	}
 
-	void qsf::text_field_old::set_background_color(qpl::rgb color) {
-		this->background.set_color(color);
-	}
-	void qsf::text_field_old::set_background_slope_point_count(qpl::size count) {
-		this->background.set_slope_point_count(count);
+
+	qsf::text_field::text_field() {
+		this->set_dimension(qpl::vec(300, 50));
+		this->set_background_color(qpl::rgb::grey_shade(30));
+		this->set_background_outline_color(qpl::rgb::grey_shade(220));
+		this->set_background_outline_thickness(1.0f);
+		this->lines.resize(1u);
+		this->set_string_stack_size(10u);
 	}
 
-	void qsf::text_field_old::set_text_background_color(qpl::rgb color) {
-		this->text_background.set_color(color);
-	}
-	void qsf::text_field_old::set_text_background_slope_point_count(qpl::size count) {
-		this->text_background.set_slope_point_count(count);
-	}
-
-	void qsf::text_field_old::set_hitbox(qpl::hitbox hitbox) {
-		this->set_position(hitbox.position);
-		this->set_dimension(hitbox.dimension);
-	}
-	void qsf::text_field_old::set_cursor_color(qpl::rgb color) {
-		this->cursor.set_color(color);
-	}
-	void qsf::text_field_old::set_cursor_thickness(qpl::f32 thickness) {
-		this->cursor.set_dimension(qpl::vec(thickness, this->cursor.get_dimension().y));
-	}
-	void qsf::text_field_old::set_cursor_blink_duration(qpl::f32 duration) {
-		this->cursor_blink_duration = duration;
-	}
-	void qsf::text_field_old::set_cursor_interval_duration(qpl::f32 duration) {
-		this->cursor_interval_duration = duration;
-	}
-	void qsf::text_field_old::allow_editing_text(bool b) {
-		this->editing_text_allowed = b;
-	}
-	void qsf::text_field_old::disallow_editing_text() {
-		this->editing_text_allowed = false;
-	}
-	bool qsf::text_field_old::just_entered_text() const {
-		return this->edited_text;
-	}
-	std::string qsf::text_field_old::get_string() const {
-		return qpl::wstring_to_string(this->text_string);
-	}
-	std::wstring qsf::text_field_old::get_wstring() const {
-		return this->text_string;
+	void qsf::text_field::set_font(std::string font) {
+		this->text_layout.set_font(font);
+		this->text_layout_changed = true;
+		for (auto& line : this->lines) {
+			line.layout_changed = true;
+		}
+		if (this->lines.size() == 1u) {
+			if (this->lines.front().wstring().empty()) {
+				this->set_string(L"");
+			}
+		}
 	}
 
-	qpl::hitbox qsf::text_field_old::get_text_hitbox() const {
+	void qsf::text_field::set_text_character_size(qpl::u32 character_size) {
+		this->text_layout.set_character_size(character_size);
+		this->text_layout_changed = true;
+		for (auto& line : this->lines) {
+			line.layout_changed = true;
+		}
+	}
+	void qsf::text_field::set_text_style(qpl::u32 style) {
+		this->text_layout.set_style(style);
+		this->text_layout_changed = true;
+		for (auto& line : this->lines) {
+			line.layout_changed = true;
+		}
+	}
+	void qsf::text_field::set_text_outline_thickness(qpl::f32 outline_thickness) {
+		this->text_layout.set_outline_thickness(outline_thickness);
+		this->text_layout_changed = true;
+		for (auto& line : this->lines) {
+			line.layout_changed = true;
+		}
+	}
+	void qsf::text_field::set_text_outline_color(qpl::rgb outline_color) {
+		this->text_layout.set_outline_color(outline_color);
+		this->text_layout_changed = true;
+		for (auto& line : this->lines) {
+			line.layout_changed = true;
+		}
+	}
+	void qsf::text_field::set_text_color(qpl::rgb color) {
+		this->text_layout.set_color(color);
+		this->text_layout_changed = true;
+		for (auto& line : this->lines) {
+			line.layout_changed = true;
+		}
+	}
+	qpl::hitbox qsf::text_field::get_text_hitbox() const {
+		this->internal_update();
 		qpl::hitbox result;
-		result.position = this->texts.front().get_visible_hitbox().position;
-		result.dimension = (this->texts.back().get_visible_hitbox().position + qpl::vec(this->biggest_text_width, this->texts.back().get_line_height())) - result.position;
+		result.position = this->lines.front().line_hitbox.position;
+
+		qpl::f32 x = 0.0f;
+		qpl::vector2f dim;
+		for (qpl::size i = 0u; i < this->lines.size(); ++i) {
+			dim = (this->lines[i].line_hitbox.position + this->lines[i].line_hitbox.dimension) - result.position;
+			x = qpl::max(x, dim.x);
+		}
+
+		result.dimension = qpl::vec(x, dim.y);
 		return result;
 	}
-	bool qsf::text_field_old::is_dragging() const {
-		return this->dragging;
+	void qsf::text_field::set_background_increase(qpl::vector2f increase) {
+		this->background_increase = increase;
 	}
-	bool qsf::text_field_old::is_hovering() const {
+	void qsf::text_field::set_background_increase(qpl::f32 increase) {
+		this->background_increase = qpl::vec(increase, increase);
+	}
+
+	void qsf::text_field::set_background_outline_thickness(qpl::f32 thickness) {
+		this->background.set_outline_thickness(thickness);
+	}
+	void qsf::text_field::set_background_outline_color(qpl::rgb color) {
+		this->background.set_outline_color(color);
+	}
+	qpl::rgb qsf::text_field::get_background_color() const {
+		return this->background.get_color();
+	}
+	qpl::rgb qsf::text_field::get_background_outline_color() const {
+		return this->background.get_outline_color();
+	}
+	qpl::f32 qsf::text_field::get_background_outline_thickness() const {
+		return this->background.get_outline_thickness();
+	}
+	void qsf::text_field::set_background_color(qpl::rgb color) {
+		this->background.set_color(color);
+	}
+	qpl::vector2f qsf::text_field::get_background_increase() const {
+		return this->background_increase;
+	}
+	void qsf::text_field::set_position(qpl::vector2f position) {
+
+		auto delta = position - this->hitbox.position;
+		this->hitbox.set_position(position);
+
+		for (auto& i : this->lines) {
+			i.move(delta);
+		}
+
+		this->update_required = true;
+	}
+	void qsf::text_field::set_dimension(qpl::vector2f dimension) {
+		this->hitbox.set_dimension(dimension);
+		this->update_required = true;
+	}
+
+	void qsf::text_field::set_string(std::wstring string) {
+		this->internal_update_text();
+
+		auto split = qpl::split_string_allow_empty(string, L'\n');
+
+		qpl::size size = split.size();
+		if (size == 0u) {
+			this->lines.resize(1u);
+			this->lines.front().apply(this->text_layout);
+			this->lines.front().text.set_string(L"");
+			this->lines.front().calculate_hitboxes();
+			this->lines.front().mouse_hitboxes_changed = true;
+			this->text_mouse_hitboxes_changed = true;
+			return;
+		}
+		auto size_before = this->lines.size();
+		this->lines.resize(split.size());
+		for (qpl::size i = size_before; i < size; ++i) {
+			this->lines[i].apply(this->text_layout);
+		}
+
+		auto pos = this->hitbox.position;
+		for (qpl::size i = 0u; i < size; ++i) {
+			auto diff = pos - this->lines[i].text.get_position();
+			this->lines[i].move(diff);
+			this->lines[i].text.set_string(split[i]);
+			this->lines[i].calculate_hitboxes();
+			this->lines[i].mouse_hitboxes_changed = true;
+			this->text_mouse_hitboxes_changed = true;
+			pos.y += this->get_line_spacing();
+		}
+		this->whole_string_changed = true;
+		this->update_required = true;
+	}
+	void qsf::text_field::set_string(std::string string) {
+		this->set_string(qpl::string_to_wstring(string));
+	}
+
+	qsf::text_field::line& qsf::text_field::get_line_at_cursor() {
+		return this->lines[this->cursor_position.y];
+	}
+	const qsf::text_field::line& qsf::text_field::get_line_at_cursor() const {
+		return this->lines[this->cursor_position.y];
+	}
+
+	std::wstring qsf::text_field::get_selection_wstring() const {
+		auto [begin, end] = this->get_sorted_selection_range();
+		if (begin == end) {
+			return L"";
+		}
+
+		if (begin.y == end.y) {
+			auto str = this->lines[begin.y].wstring();
+			return str.substr(begin.x, end.x - begin.x);
+		}
+		else {
+			std::wstring result;
+			for (qpl::size y = begin.y; y <= end.y; ++y) {
+				if (y == begin.y) {
+					result += this->lines[y].wstring().substr(begin.x);
+				}
+				else if (y == end.y) {
+					result += L"\n";
+					result += this->lines[y].wstring().substr(0u, end.x);
+				}
+				else {
+					result += L"\n";
+					result += this->lines[y].wstring();
+				}
+			}
+			return result;
+		}
+	}
+	std::string qsf::text_field::get_selection_string() const {
+		return qpl::wstring_to_string(this->get_selection_wstring());
+	}
+	void qsf::text_field::add_string_at_cursor(std::wstring string) {
+		auto split = qpl::split_string_allow_empty(string, L'\n');
+
+		for (qpl::size i = 0u; i < split.size(); ++i) {
+			if (i) {
+				this->new_line(this->cursor_position.y);
+			}
+
+			if (split[i].size() && split[i].back() == L'\r') {
+				split[i].pop_back();
+			}
+
+			auto& line = this->get_line_at_cursor();
+			auto str = line.text.get_wstring();
+			std::wstring new_string;
+			new_string += str.substr(0u, this->cursor_position.x);
+			new_string += split[i];
+			if (this->cursor_position.x < str.length()) {
+				new_string += str.substr(this->cursor_position.x);
+			}
+			line.text.set_string(new_string);
+			line.calculate_hitboxes();
+			line.mouse_hitboxes_changed = true;
+
+			this->cursor_position.x += split[i].length();
+		}
+
+		this->whole_string_changed = true;
+		this->text_mouse_hitboxes_changed = true;
+		this->update_required = true;
+		this->internal_update();
+		this->cursor_position_changed = true;
+		this->cursor_interval_timer.reset();
+	}
+
+	void qsf::text_field::enable_focus() {
+		this->focus = true;
+	}
+	void qsf::text_field::disable_focus() {
+		this->focus = false;
+	}
+	void qsf::text_field::enable_one_line_limit() {
+		this->one_line_limit = false;
+	}
+	void qsf::text_field::disable_one_line_limit() {
+		this->one_line_limit = true;
+	}
+
+	void qsf::text_field::set_string_stack_size(qpl::size size) {
+		this->string_stack.resize(size);
+		this->string_stack.front().first = this->wstring();
+		this->string_stack.front().second = this->cursor_position;
+	}
+	qpl::size qsf::text_field::get_string_stack_size() const {
+		return this->string_stack.size();
+	}
+	qpl::f32 qsf::text_field::get_line_spacing() const {
+		return this->lines.front().text.get_line_spacing();
+	}
+
+	bool qsf::text_field::is_hovering() const {
 		return this->hovering;
 	}
 
-	std::wstring qsf::text_field_old::get_selection() const {
-		return this->get_sfselection().toWideString();
+	bool qsf::text_field::just_edited_text() const {
+		return this->edited_text;
 	}
-	sf::String qsf::text_field_old::get_sfselection() const {
-		if (this->selection_hitbox_begin == qpl::size_max || this->selection_hitbox_end == qpl::size_max) {
-			return L"";
-		}
-		auto s = this->get_wstring();
-		return s.substr(this->selection_hitbox_begin, (this->selection_hitbox_end + 1) - this->selection_hitbox_begin);
+	bool qsf::text_field::just_copied_text() const {
+		return this->copied_text;
 	}
-	void qsf::text_field_old::set_input_text(const std::wstring& input) {
-		auto s = this->get_wstring();
-		auto cpos = this->cursor_position / 2;
-
-		wchar_t c = '\0';
-
-		if (s.size()) {
-			c = s[cpos];
-		}
-
-		sf::String string;
-		string += s.substr(0u, cpos + 1);
-		string += input;
-		if (cpos < s.size()) {
-			string += s.substr(cpos + 1);
-		}
-		this->set_string(string);
-
-		this->cursor_position += input.length() * 2;
-		if (this->cursor_position % 2 == 0u) {
-			++this->cursor_position;
-		}
-		if (c == L'\n') {
-			++this->cursor_position;
-		}
+	bool qsf::text_field::just_pasted_text() const {
+		return this->pasted_text;
 	}
-	void qsf::text_field_old::set_input_text(const std::string& input) {
-		this->set_input_text(qpl::string_to_wstring(input));
+	bool qsf::text_field::just_entered_text() const {
+		return this->entered_text;
 	}
-	std::vector<qpl::hitbox> qsf::text_field_old::get_character_hitboxes() const {
-		this->calculate_character_hitboxes();
-		return this->character_hitboxes;
+	bool qsf::text_field::just_finished_text() const {
+		return this->finished_text;
+	}
+	bool qsf::text_field::has_focus() const {
+		return this->focus;
 	}
 
-	void qsf::text_field_old::update(const qsf::event_info& event) {
-		this->hovering = this->hitbox.contains(event.mouse_position());
+	std::wstring qsf::text_field::wstring() const {
+		if (this->whole_string_changed) {
+			this->whole_string = L"";
+			for (qpl::size i = 0u; i < this->lines.size(); ++i) {
+				if (i) {
+					this->whole_string += L"\n";
+				}
+				this->whole_string += this->lines[i].wstring();
+			}
+			this->whole_string_changed = false;
+		}
+		return this->whole_string;
+	}
+	std::string qsf::text_field::string() const {
+		return qpl::wstring_to_string(this->wstring());
+	}
 
-
-		if (this->editing_text_allowed && this->hovering && event.left_mouse_clicked()) {
-			this->editing_text = true;
-			this->dragging = true;
-			this->dragging_mouse_click_position = event.mouse_position();
+	void qsf::text_field::new_line(qpl::size y) {
+		if (y == qpl::size_max) {
+			y = this->lines.size() - 1;
 		}
 
-		if (event.left_mouse_released()) {
-			this->dragging_mouse_cursor_position = this->cursor_position;
+		auto pos = this->hitbox.position;
+		pos.y += this->get_line_spacing() * (y + 1);
+
+		auto current_str = this->lines[y].wstring();
+		this->lines[y].text.set_string(current_str.substr(0u, this->cursor_position.x));
+
+		qsf::text_field::line line;
+
+		line.apply(this->text_layout);
+		line.text.set_string(current_str.substr(this->cursor_position.x));
+		line.text.set_position(pos);
+		line.calculate_hitboxes();
+		line.mouse_hitboxes_changed = true;
+		this->text_mouse_hitboxes_changed = true;
+		this->whole_string_changed = true;
+
+		this->lines.push_back({});
+
+		for (qpl::isize i = qpl::signed_cast(this->lines.size()) - 1; i > qpl::signed_cast(y + 1); --i) {
+			this->lines[i] = this->lines[i - 1];
+
+			this->lines[i].move(0.0, this->get_line_spacing());
+		}
+		this->lines[y + 1] = line;
+
+		this->cursor_position.x = 0u;
+		++this->cursor_position.y;
+
+		this->update_required = true;
+		this->internal_update();
+
+	}
+
+	void qsf::text_field::delete_at_cursor() {
+
+		auto& line = this->get_line_at_cursor();
+		auto str = line.wstring();
+
+		if (this->cursor_position.x == 0u) {
+			if (this->cursor_position.y) {
+				auto& line_before = this->lines[this->cursor_position.y - 1];
+
+				auto new_cursor_x = line_before.wstring().length();
+
+				auto new_string = line_before.wstring();
+				new_string += str;
+
+
+				line_before.text.set_string(new_string);
+				line_before.calculate_hitboxes();
+				line.mouse_hitboxes_changed = true;
+				this->text_mouse_hitboxes_changed = true;
+				this->whole_string_changed = true;
+
+				for (qpl::size i = this->cursor_position.y; i < this->lines.size() - 1; ++i) {
+					this->lines[i] = this->lines[i + 1];
+					this->lines[i].move(0.0, -this->get_line_spacing());
+				}
+				this->lines.pop_back();
+
+				--this->cursor_position.y;
+				this->cursor_position.x = new_cursor_x;
+			}
+		}
+		else {
+			std::wstring new_string;
+			new_string += str.substr(0u, this->cursor_position.x - 1);
+			if (this->cursor_position.x != str.length()) {
+				new_string += str.substr(this->cursor_position.x);
+			}
+			line.text.set_string(new_string);
+			line.calculate_hitboxes();
+			line.mouse_hitboxes_changed = true;
+			this->text_mouse_hitboxes_changed = true;
+			this->whole_string_changed = true;
+
+			--this->cursor_position.x;
+
+		}
+
+		this->cursor_interval_timer.reset();
+		this->update_required = true;
+		this->internal_update();
+
+	}
+	void qsf::text_field::delete_selection_string(bool update_cursor_position) {
+		auto [begin, end] = this->get_sorted_selection_range();
+
+		if (begin == end) {
+			return;
+		}
+
+		if (begin.y == end.y) {
+			auto& line = this->lines[begin.y];
+			auto str = line.wstring();
+			line.text.set_string(str.substr(0u, begin.x) + str.substr(end.x));
+			line.calculate_hitboxes();
+			line.calculate_mouse_hitboxes(this->hitbox.dimension.x + this->hitbox.position.x, this->background_increase.x);
+		}
+		else {
+			auto& first_line = this->lines[begin.y];
+			auto& last_line = this->lines[end.y];
+
+			auto first_str = first_line.wstring().substr(0u, begin.x);
+			auto last_str = last_line.wstring().substr(end.x);
+
+
+			first_line.text.set_string(first_str + last_str);
+			first_line.calculate_hitboxes();
+			first_line.calculate_mouse_hitboxes(this->hitbox.dimension.x + this->hitbox.position.x, this->background_increase.x);
+
+			auto remove = end.y - begin.y;
+			for (qpl::size i = 1u;; ++i) {
+				auto index1 = i + begin.y;
+				auto index2 = index1 + remove;
+				if (index2 >= this->lines.size()) {
+					break;
+				}
+				this->lines[index1] = this->lines[index2];
+				this->lines[index1].move(0.0, -this->get_line_spacing() * remove);
+			}
+			this->lines.resize(this->lines.size() - remove);
+		}
+		this->update_required = true;
+		this->text_mouse_hitboxes_changed = true;
+		this->whole_string_changed = true;
+		this->text_layout_changed = true;
+
+		if (update_cursor_position) {
+			bool larger = (this->cursor_position.y > end.y || (this->cursor_position.y == end.y && this->cursor_position.x > end.x));
+			bool smaller = (this->cursor_position.y < begin.y || (this->cursor_position.y == begin.y && this->cursor_position.x < begin.x));
+
+			if (larger && !smaller) {
+				auto diff = qpl::vector2<qpl::isize>(this->cursor_position) - qpl::vector2<qpl::isize>(begin);
+				if (this->cursor_position.y == end.y) {
+					this->cursor_position.x = begin.x + (this->cursor_position.x - end.x);
+				}
+				this->cursor_position.y -= (end.y - begin.y);
+			}
+			else if (!smaller && !larger) {
+				this->cursor_position = begin;
+			}
+			this->cursor_position_changed = true;
+		}
+		this->internal_update();
+		this->delete_selection_range();
+		this->make_selection_rectangles();
+	}
+
+	void qsf::text_field::delete_selection_range() {
+		this->selection_a = this->selection_b = this->cursor_position;
+	}
+	void qsf::text_field::move_cursor_up() {
+		if (!this->cursor_position.y) {
+			return;
+		}
+		--this->cursor_position.y;
+		this->find_closest_cursor_position();
+		this->cursor_interval_timer.reset();
+	}
+	void qsf::text_field::move_cursor_down() {
+		if (this->cursor_position.y == this->lines.size() - 1) {
+			return;
+		}
+
+		++this->cursor_position.y;
+		this->find_closest_cursor_position();
+		this->cursor_interval_timer.reset();
+	}
+	void qsf::text_field::move_cursor_left() {
+		if (this->cursor_position.x == 0u) {
+			if (this->cursor_position.y) {
+				--this->cursor_position.y;
+				this->cursor_position.x = this->get_line_at_cursor().wstring().length();
+			}
+		}
+		else {
+			--this->cursor_position.x;
+		}
+
+		this->cursor_interval_timer.reset();
+		this->cursor_position_changed = true;
+	}
+	void qsf::text_field::move_cursor_right() {
+		const auto& line = this->get_line_at_cursor();
+		if (this->cursor_position.x == line.wstring().length()) {
+			if (this->cursor_position.y < this->lines.size() - 1) {
+				++this->cursor_position.y;
+				this->cursor_position.x = 0u;
+			}
+		}
+		else {
+			++this->cursor_position.x;
+		}
+
+		this->cursor_interval_timer.reset();
+		this->cursor_position_changed = true;
+	}
+
+	void qsf::text_field::update_cursor() {
+		auto elapsed = this->cursor_interval_timer.elapsed_f();
+		auto delta = std::fmod(elapsed, this->cursor_interval_duration);
+
+		qpl::rgb color = qpl::rgb::white;
+		if (delta > this->cursor_blink_duration) {
+			color.a = 0;
+		}
+		this->cursor.set_color(color);
+	}
+	void qsf::text_field::update_mouse_events(const qsf::event_info& event) {
+		this->hovering = this->hitbox.increased(this->hovering_increase).contains(event.mouse_position());
+
+		bool selection_hovering = false;
+		for (auto& i : this->selection_rectangles) {
+			if (i.contains(event.mouse_position())) {
+				selection_hovering = true;
+				break;
+			}
+		}
+		if (event.left_mouse_clicked() && !selection_hovering) {
+			if (this->hovering && !this->focus) {
+				this->cursor_interval_timer.reset();
+			}
+			else if (!this->hovering && this->focus) {
+				this->delete_selection_range();
+				this->make_selection_rectangles();
+			}
+			this->focus = this->hovering;
+		}
+
+		if (!this->focus) {
 			this->dragging = false;
 		}
 
-
-		qpl::begin_benchmark("cursor mouse");
-		if (event.holding_left_mouse() && this->hitbox.contains(event.mouse_position())) {
-			if (event.mouse_moved() || event.left_mouse_clicked()) {
-				this->cursor_interval_timer.reset();
+		bool stop = false;
+		
+		if (this->hovering && event.left_mouse_clicked()) {
+			if (selection_hovering) {
+				if (this->selection_start_drag_timer.elapsed_f() > this->selection_start_drag_timer_duration) {
+					this->selection_drag_timer.reset();
+					this->dragging_selection = true;
+				}
 			}
-			this->calculate_character_hitboxes();
+			else {
+				for (qpl::size y = 0u; !stop && y < this->lines.size(); ++y) {
+					const auto& line = this->lines[y];
+					if (line.line_mouse_hitbox.contains(event.mouse_position())) {
+						for (qpl::size x = 0u; x < line.character_mouse_hitboxes.size(); ++x) {
+							if (line.character_mouse_hitboxes[x].contains(event.mouse_position())) {
+								this->cursor_position = qpl::vec(x, y);
+
+								if (this->lines[y].wstring().empty()) {
+									this->cursor_position.x = 0u;
+								}
+
+								this->delete_selection_range();
+								this->selection_rectangles.clear();
+								this->click_mouse_position = event.mouse_position();
+								this->dragging = true;
+								this->cursor_interval_timer.reset();
+								this->cursor_position_changed = true;
+								stop = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (event.left_mouse_clicked()) {
+			this->selection_start_drag_timer.reset();
+		}
+
+		if ((this->dragging || this->dragging_selection) && event.mouse_moved()) {
 			bool found = false;
 
-			this->test_cursor_hitboxes.clear();
-			for (qpl::size i = 0u; i < this->character_hitboxes.size(); ++i) {
+			auto before = this->selection_b;
 
-				auto line = this->character_line_map[i];
-				if (!this->line_hitboxes[line].contains(event.mouse_position())) {
-					continue;
-				}
+			for (qpl::size y = 0u; !found && y < this->lines.size(); ++y) {
+				const auto& line = this->lines[y];
+				if (line.line_mouse_hitbox.contains(event.mouse_position())) {
+					for (qpl::size x = 0u; x < line.character_mouse_hitboxes.size(); ++x) {
+						if (line.character_mouse_hitboxes[x].contains(event.mouse_position())) {
 
-				auto h = this->get_character_cursor_hitbox(i).increased(qpl::vec(4, 8));
+							this->cursor_position = qpl::vec(x, y);
 
-				
+							if (line.wstring().empty()) {
+								this->cursor_position.x = 0u;
+							}
 
-				auto left = h;
-				left.dimension.x /= 2;
-				auto right = left;
-				right.position.x += right.dimension.x;
-
-				auto str = this->get_wstring();
-				if (i == 0u || str[i - 1] == L'\n') {
-					auto diff = left.position.x - this->text_background.get_position().x;
-					left.position.x -= diff;
-					left.dimension.x += diff;
-				}
-				if (i >= str.length() || str[i + 1] == L'\n' || str[i + 1] == L'\0') {
-					auto diff = (this->text_background.get_position().x + this->text_background.get_dimension().x) - (right.position.x + right.dimension.x);
-					right.dimension.x += diff;
-				}
-
-				this->test_cursor_hitboxes.push_back(left);
-				this->test_cursor_hitboxes.back().set_color(qpl::rgb::red.with_alpha(50));
-				this->test_cursor_hitboxes.push_back(right);
-				this->test_cursor_hitboxes.back().set_color(qpl::rgb::blue.with_alpha(50));
-
-				if (left.contains(event.mouse_position())) {
-					this->cursor_position = i * 2;
-					found = true;
-					break;
-				}
-				else if (right.contains(event.mouse_position())) {
-					this->cursor_position = i * 2 + 1;
-					found = true;
-					break;
-				}
-			}
-			if (found) {
-				this->set_cursor_position();
-			}
-			else {
-				if (this->selection_prior_before.x != this->selection_hitbox_begin && this->selection_hitbox_begin != qpl::size_max) {
-					this->cursor_position = this->selection_hitbox_begin * 2;
-				}
-				else if (this->selection_prior_before.y != this->selection_hitbox_end && this->selection_hitbox_end != qpl::size_max) {
-					this->cursor_position = (this->selection_hitbox_end + 1) * 2;
-				}
-				this->set_cursor_position();
-			}
-		}
-		qpl::end_benchmark();
-
-		if (this->editing_text_allowed && this->hovering && event.left_mouse_clicked()) {
-			this->dragging_mouse_cursor_position = this->cursor_position;
-		}
-
-		qpl::begin_benchmark("draggin");
-		if (this->dragging) {
-			this->selection_hitbox_begin = this->cursor_position;
-			this->selection_hitbox_end = this->dragging_mouse_cursor_position;
-
-
-			if (this->selection_hitbox_begin >= this->selection_hitbox_end) {
-				std::swap(this->selection_hitbox_begin, this->selection_hitbox_end);
-			}
-			this->selection_hitbox_begin = (this->selection_hitbox_begin + 1) / 2;
-			if (this->selection_hitbox_end) {
-				this->selection_hitbox_end = (this->selection_hitbox_end - 1) / 2;
-			}
-
-			if (this->selection_hitbox_begin == this->selection_hitbox_end) {
-				this->selection_hitbox_begin = this->selection_hitbox_end = qpl::size_max;
-			}
-			if (this->selection_before.x != this->selection_hitbox_begin || this->selection_before.y != this->selection_hitbox_end) {
-				this->selection_prior_before = this->selection_before;
-				this->selection_before = qpl::vec(this->selection_hitbox_begin, this->selection_hitbox_end);
-			}
-
-			this->make_dimension_fit_text();
-			this->create_selection_rectangles();
-		}
-		qpl::end_benchmark();
-
-		bool layout_changed = false;
-		bool special_press = false;
-		if (event.key_pressed(sf::Keyboard::Escape)) {
-			this->editing_text = false;
-			special_press = true;
-		}
-		else if (event.key_holding(sf::Keyboard::LControl) && event.key_pressed(sf::Keyboard::A)) {
-			this->selection_hitbox_begin = 0u;
-			this->selection_hitbox_end = this->get_wstring().size() - 1;
-			this->create_selection_rectangles();
-			special_press = true;
-		}
-		else if (event.key_holding(sf::Keyboard::LControl) && event.key_pressed(sf::Keyboard::C)) {
-			sf::Clipboard clipboard;
-			clipboard.setString(this->get_sfselection());
-			special_press = true;
-		}
-		else if (event.key_holding(sf::Keyboard::LControl) && event.key_pressed(sf::Keyboard::V)) {
-			sf::Clipboard clipboard;
-			auto str = clipboard.getString();
-			this->erase_selection();
-			this->set_input_text(str.toWideString());
-			special_press = true;
-			layout_changed = true;
-		}
-		else if (event.key_holding(sf::Keyboard::LControl) && event.key_pressed(sf::Keyboard::X)) {
-			sf::Clipboard clipboard;
-			clipboard.setString(this->get_sfselection());
-			this->erase_selection();
-			special_press = true;
-			layout_changed = true;
-		}
-		else if (event.key_pressed(sf::Keyboard::Left) && this->cursor_position) {
-			auto cpos = this->cursor_position / 2;
-			auto str = this->get_wstring();
-
-			auto sub = 2;
-			if (this->cursor_position == 1u) {
-				sub = 1;
-			}
-			else if (cpos) {
-				auto c = str[cpos - 1];
-				if (c == L'\n') {
-					sub = 1;
-				}
-				if (str[cpos] != L'\n' && c == L'\n') {
-					sub = 3;
-				}
-				if (str[cpos] == L'\n' && c != L'\n') {
-					sub = 1;
-				}
-				if (str[cpos] == L'\n' && c == L'\n') {
-					sub = 2;
-				}
-			}
-			this->cursor_position -= sub;
-
-			this->cursor_interval_timer.reset();
-			this->set_cursor_position();
-			special_press = true;
-		}
-		else if (event.key_pressed(sf::Keyboard::Right)) {
-			auto right = this->cursor_position % 2 == 1;
-			auto cpos = this->cursor_position / 2;
-			auto str = this->get_wstring();
-
-			auto add = 2u;
-			if (cpos + 1 < str.size()) {
-				auto c = str[cpos + 1];
-				if (c == L'\n' || c == L'\0') {
-					add = 1u;
-				}
-				if (!right && str[cpos] == L'\n') {
-					add = 3u;
-				}
-				if (str[cpos] == L'\n' && c == L'\n') {
-					add = 2u;
-				}
-			}
-
-			this->cursor_position += add;
-
-			this->cursor_interval_timer.reset();
-			this->set_cursor_position();
-			special_press = true;
-		}
-
-		this->cursor.set_color(qpl::rgb::white.with_alpha(0));
-		if (this->editing_text) {
-			auto progress = std::fmod(this->cursor_interval_timer.elapsed_f(), this->cursor_interval_duration);
-			if (progress < this->cursor_blink_duration) {
-				this->cursor.set_color(qpl::rgb::white.with_alpha(255));
-			}
-		}
-
-
-		this->edited_text = false;
-		if (event.is_text_entered() && !special_press) {
-
-			if (this->selection_hitbox_begin != qpl::size_max || this->selection_hitbox_end != qpl::size_max) {
-				this->erase_selection();
-			}
-
-			if (event.key_pressed(sf::Keyboard::Backspace)) {
-				auto s = this->get_wstring();
-				if (s.size()) {
-					auto cpos = this->cursor_position / 2;
-					auto c = s[cpos];
-
-					sf::String string;
-					string += s.substr(0u, cpos);
-					if (cpos < s.size()) {
-						string += s.substr(cpos + 1);
+							if (!this->dragging_selection) {
+								this->selection_b = this->cursor_position;
+							}
+							this->cursor_interval_timer.reset();
+							this->cursor_position_changed = true;
+							found = true;
+							break;
+						}
 					}
-					this->set_string(string);
+				}
+			}
 
-					if (c == L'\n') {
-						--this->cursor_position;
+			if (!found) {
+				if (event.mouse_position().x > this->hitbox.bottom_right().x || event.mouse_position().y > this->hitbox.bottom_right().y) {
+					if (!this->dragging_selection) {
+						this->selection_b.y = this->lines.size() - 1;
+						this->selection_b.x = this->lines.back().wstring().length();
+					}
+					this->cursor_position = this->selection_b;
+					this->cursor_interval_timer.reset();
+					this->cursor_position_changed = true;
+				}
+				else if (event.mouse_position().x < this->hitbox.top_left().x || event.mouse_position().y < this->hitbox.top_left().y) {
+					if (!this->dragging_selection) {
+						this->selection_b = qpl::vec(0u, 0u);
+					}
+					this->cursor_position = this->selection_b;
+					this->cursor_interval_timer.reset();
+					this->cursor_position_changed = true;
+				}
+			}
+
+			if (this->selection_b != before) {
+				this->make_selection_rectangles();
+			}
+		}
+
+		if (event.left_mouse_released()) {
+			this->dragging = false;
+
+			if (this->dragging_selection && this->selection_start_drag_timer.elapsed_f() > this->selection_start_drag_timer_duration && !selection_hovering) {
+				auto str = this->get_selection_wstring();
+
+				this->delete_selection_string();
+				this->delete_selection_range();
+				this->make_selection_rectangles();
+				this->edited_text = true;
+				this->update_required = true;
+				this->text_mouse_hitboxes_changed = true;
+				this->whole_string_changed = true;
+				this->text_layout_changed = true;
+				this->internal_update();
+				this->add_string_at_cursor(str);
+			}
+			this->dragging_selection = false;
+		}
+
+		auto fast_click = event.left_mouse_fast_click_count();
+
+		if (fast_click == 2u) {
+			auto& line = this->get_line_at_cursor();
+
+			if (!line.wstring().empty()) {
+
+				wchar_t c = line.wstring().back();
+				if (this->cursor_position.x < line.wstring().length()) {
+					c = line.wstring()[this->cursor_position.x];
+				}
+
+				bool is_special = !(std::iswalpha(c) || std::iswalnum(c) || (c == L'_'));
+				bool is_space = std::iswspace(c);
+
+				qpl::isize begin = this->cursor_position.x;
+				qpl::isize end = this->cursor_position.x;
+				while (begin > 0) {
+					auto c = line.wstring()[begin - 1];
+					bool allowed;
+					if (is_space) {
+						allowed = std::iswspace(c);
+					}
+					else if (is_special) {
+						allowed = !(std::iswalpha(c) || std::iswalnum(c) || (c == L'_') || std::iswspace(c));
 					}
 					else {
-						this->cursor_position -= 2;
+						allowed = std::iswalpha(c) || std::iswalnum(c) || (c == L'_');
 					}
+
+					if (!allowed) {
+						break;
+					}
+					--begin;
 				}
-			}
-			else if (event.key_pressed(sf::Keyboard::Enter)) {
-				auto s = this->get_wstring();
-				auto cpos = this->cursor_position / 2;
+				while (end < qpl::isize_cast(line.wstring().length())) {
+					auto c = line.wstring()[end];
 
-				sf::String string;
-				string += s.substr(0u, cpos + 1);
-				string += L'\n';
-				if (cpos < s.size()) {
-					string += s.substr(cpos + 1);
+					bool allowed;
+					if (is_space) {
+						allowed = std::iswspace(c);
+					}
+					else if (is_special) {
+						allowed = !(std::iswalpha(c) || std::iswalnum(c) || (c == L'_') || std::iswspace(c));
+					}
+					else {
+						allowed = std::iswalpha(c) || std::iswalnum(c) || (c == L'_');
+					}
+					if (!allowed) {
+						break;
+					}
+					++end;
 				}
-				this->set_string(string);
 
-				this->cursor_position += 2;
-			}
-			else {
-				this->set_input_text(event.text_entered());
+				this->selection_a.y = this->selection_b.y = this->cursor_position.y;
+				this->selection_a.x = qpl::size_cast(begin);
+				this->selection_b.x = qpl::size_cast(end);
+				this->cursor_position.x = qpl::size_cast(end);
 
+				this->cursor_position_changed = true;
+				this->make_selection_rectangles();
 			}
-			if (this->get_wstring().size() <= 1u) {
-				this->cursor_position = 1u;
-			}
-
-			layout_changed = true;
 		}
-		else {
-			this->calculate_character_hitboxes();
-		}
-		if (layout_changed) {
-			this->edited_text = true;
-			this->hitboxes_changed = true;
-			qpl::begin_benchmark_end_previous("calculate_character_hitboxes");
-			this->calculate_character_hitboxes();
+		else if (fast_click == 3u) {
+			this->selection_a.y = this->selection_b.y = this->cursor_position.y;
+			this->selection_a.x = 0u;
+			this->selection_b.x = this->get_line_at_cursor().wstring().length();
+			this->cursor_position.x = this->selection_b.x;
+			if (this->selection_b.y != this->lines.size() - 1) {
+				++this->selection_b.y;
+				this->selection_b.x = 0u;
+			}
 
-			qpl::begin_benchmark_end_previous("set_cursor_position");
-			this->set_cursor_position();
-			qpl::end_benchmark();
+			this->cursor_position_changed = true;
+			this->make_selection_rectangles();
 		}
 	}
-	void qsf::text_field_old::draw(qsf::draw_object& draw) const {
-		draw.draw(this->background);
-		draw.draw(this->text_background);
+	void qsf::text_field::update(const qsf::event_info& event) {
+		auto cursor_before = this->cursor_position;
+		auto string_before = this->wstring();
 
+		this->update_cursor();
+		this->internal_update();
 
-		for (auto& i : this->line_hitboxes) {
-			qsf::rectangle rect;
-			rect.set_hitbox(i);
-			rect.set_color(qpl::rgb::magenta.with_alpha(100));
-			draw.draw(rect);
-		}
+		bool special_input = false;
+		this->edited_text = false;
+		this->copied_text = false;
+		this->pasted_text = false;
+		this->entered_text = false;
+		this->finished_text = false;
+		this->control_z = false;
+		this->control_y = false;
 
-		draw.draw(this->selection_rectangles);
-		draw.draw(this->texts);
-		draw.draw(this->cursor);
-		draw.draw(this->test_cursor_hitboxes);
+		this->update_mouse_events(event);
 
-
-		//auto h = this->get_character_hitboxes();
-		//qsf::rectangle rect;
-		//rect.set_color(qpl::rgb::red.with_alpha(100));
-		//for (auto& i : h) {
-		//	rect.set_hitbox(i);
-		//	draw.draw(rect);
-		//}
-		//draw.draw(this->selection_test_rectangle);
-	}
-
-	void qsf::text_field_old::create_selection_rectangles() {
-		auto str = this->get_wstring();
-
-		this->selection_rectangles.clear();
-		if (this->selection_hitbox_end == qpl::size_max) {
+		if (!this->focus) {
 			return;
 		}
 
-		bool leftover = false;
-		auto y = this->texts.front().get_starting_line_position().y;
-		qpl::vector2f pos = qpl::vec(qpl::f32_max, this->texts.front().get_starting_line_position().y);
-		qpl::vector2f dim = qpl::vec(0, this->texts.front().get_line_height());
-
-
-		auto add_selection = [&]() {
-			this->selection_rectangles.push_back({});
-			this->selection_rectangles.back().set_color(this->highlight_color);
-			this->selection_rectangles.back().set_hitbox(qpl::hitbox(pos, dim));
-		};
-
-		y += this->texts.front().get_line_spacing() * this->character_line_map[this->selection_hitbox_begin];
-		for (qpl::size i = this->selection_hitbox_begin; i <= this->selection_hitbox_end && i < this->character_hitboxes.size(); ++i) {
-			
-			auto c = str[i];
-
-			if (c == '\n' && i != this->selection_hitbox_begin) {
-				add_selection();
-				dim.x = 0.0f;
-				y += this->texts.front().get_line_spacing();
-				pos.x = qpl::f32_max;
-				leftover = false;
+		if (event.key_pressed(sf::Keyboard::Backspace)) {
+			if (this->selection_a != this->selection_b) {
+				this->delete_selection_string();
 			}
-
-			auto hitbox = this->character_hitboxes[i];
-
-			pos.x = qpl::min(pos.x, hitbox.position.x);
-			pos.y = y;
-			dim.x = qpl::max(dim.x, hitbox.position.x + hitbox.dimension.x - pos.x);
-			leftover = true;
-
-
-		}
-		if (leftover) {
-			add_selection();
-		}
-	}
-	void qsf::text_field_old::set_text_position() {
-		if (this->texts.size() < 1u) {
-			this->texts.resize(1u);
-			this->texts.front() = this->text_setting;
-		}
-		qpl::f32 y = 0.0f;
-
-		bool first = true;
-		for (auto& i : this->texts) {
-			if (!first) {
-				y += i.get_line_spacing();
+			else {
+				this->delete_at_cursor();
 			}
-			first = false;
-			i.set_position(this->hitbox.position + this->text_offset + qpl::vec(0.0f, y));
+			special_input = true;
+			this->edited_text = true;
 		}
-	}
-	void qsf::text_field_old::set_cursor_position() {
-		qpl::vector2f position;
-		if (this->character_hitboxes.size()) {
-			auto left = this->cursor_position % 2 == 0u;
-			auto cpos = this->cursor_position / 2;
-
-			if (cpos >= this->character_hitboxes.size()) {
-				this->cursor_position = this->character_hitboxes.size() * 2 - 1;
-				this->set_cursor_position();
+		if (event.key_pressed(sf::Keyboard::Enter)) {
+			this->edited_text = true;
+			if (this->one_line_limit) {
+				this->finished_text = true;
+				this->focus = false;
+				this->delete_selection_range();
+				this->make_selection_rectangles();
 				return;
 			}
-			wchar_t c = L'\0';
-			if (this->get_wstring().size()) {
-				c = this->get_wstring()[cpos];
-			}
-			if (c == L'\n') {
-				if (!left) {
-					--this->cursor_position;
+			this->delete_selection_string();
+			this->new_line(this->cursor_position.y);
+			special_input = true;
+		}
+		if (event.key_pressed(sf::Keyboard::Up)) {
+			auto before = this->cursor_position;
+			this->move_cursor_up();
+			special_input = true;
+			if (event.key_holding(sf::Keyboard::LShift)) {
+				if (this->selection_a == this->selection_b) {
+					this->selection_a = before;
 				}
-				left = true;
-			}
-
-			auto line_number = this->character_line_map[cpos];
-
-			qpl::f32 x_offset = 0;
-
-			auto end_of_line = c == L'\0' || c == L'\n';
-
-			auto h = this->character_hitboxes[cpos];
-
-			if (left) {
-				x_offset = -(this->cursor.get_dimension().x + this->cursor_margin);
+				this->selection_b = this->cursor_position;
+				this->make_selection_rectangles();
 			}
 			else {
-				x_offset = (h.dimension.x + this->cursor_margin);
+				this->delete_selection_range();
+				this->make_selection_rectangles();
 			}
-
-			qpl::println("line_number = ", line_number, " (", this->texts.size(), ") ", cpos);
-			if (line_number >= this->texts.size()) {
-				line_number = this->texts.size() - 1;
-			}
-
-			position.x = h.position.x + x_offset;
-			position.y = this->texts[line_number].get_starting_line_position().y;
 		}
-		else {
-			position = this->texts.front().get_position() + qpl::vec(this->cursor_margin, 0);
-			position.y = this->texts.front().get_starting_line_position().y;
-		}
-
-		
-		this->cursor.set_position(position);
-	}
-	void qsf::text_field_old::calculate_character_hitboxes() const {
-		if (this->hitboxes_changed) {
-			this->line_hitboxes.clear();
-			this->character_line_map.clear();
-
-
-			this->character_hitboxes.clear();
-			for (auto& i : this->texts) {
-				qpl::combine(this->character_hitboxes, i.get_all_characters_hitbox_whitespace_included());
+		if (event.key_pressed(sf::Keyboard::Down)) {
+			auto before = this->cursor_position;
+			this->move_cursor_down();
+			special_input = true;
+			if (event.key_holding(sf::Keyboard::LShift)) {
+				if (this->selection_a == this->selection_b) {
+					this->selection_a = before;
+				}
+				this->selection_b = this->cursor_position;
+				this->make_selection_rectangles();
 			}
+			else {
+				this->delete_selection_range();
+				this->make_selection_rectangles();
+			}
+		}
+		if (event.key_pressed(sf::Keyboard::Left)) {
+			auto before = this->cursor_position;
+			this->move_cursor_left();
+			special_input = true;
+			if (event.key_holding(sf::Keyboard::LShift)) {
+				if (this->selection_a == this->selection_b) {
+					this->selection_a = before;
+				}
+				this->selection_b = this->cursor_position;
+				this->make_selection_rectangles();
+			}
+			else {
+				this->delete_selection_range();
+				this->make_selection_rectangles();
+			}
+		}
+		if (event.key_pressed(sf::Keyboard::Right)) {
+			auto before = this->cursor_position;
+			this->move_cursor_right();
+			special_input = true;
+			if (event.key_holding(sf::Keyboard::LShift)) {
+				if (this->selection_a == this->selection_b) {
+					this->selection_a = before;
+				}
+				this->selection_b = this->cursor_position;
+				this->make_selection_rectangles();
+			}
+			else {
+				this->delete_selection_range();
+				this->make_selection_rectangles();
+			}
+		}
+		if (event.key_holding(sf::Keyboard::LControl)) {
+			if (event.key_pressed(sf::Keyboard::A)) {
+				this->selection_a = qpl::vec(0u, 0u);
+				this->selection_b = qpl::vec(this->lines.back().wstring().length(), this->lines.size() - 1);
 
-			qpl::f32 max_width = 0.f;
-			qpl::f32 max_height = this->texts.front().get_line_spacing();
-			auto y = this->texts.front().get_starting_line_position().y;
-			auto x = this->texts.front().get_starting_line_position().x;
-			for (qpl::size i = 0u; i < this->character_hitboxes.size(); ++i) {
+				this->cursor_position = this->selection_b;
+				this->cursor_interval_timer.reset();
+				this->cursor_position_changed = true;
+				this->make_selection_rectangles();
+				special_input = true;
+			}
+			else if (event.key_pressed(sf::Keyboard::X)) {
+				auto str = this->get_selection_wstring();
+				qsf::copy_to_clipboard(str);
+				this->delete_selection_string();
+				special_input = true;
+				this->edited_text = true;
+				this->copied_text = true;
+			}
+			else if (event.key_pressed(sf::Keyboard::C)) {
+				auto str = this->get_selection_wstring();
+				qsf::copy_to_clipboard(str);
+				special_input = true;
+				this->copied_text = true;
+			}
+			else if (event.key_pressed(sf::Keyboard::V)) {
+				this->delete_selection_string();
+				auto str = qsf::copy_from_clipboard();
+				this->add_string_at_cursor(str);
+				special_input = true;
 
-				if (this->get_wstring()[i] == L'\n') {
-					if (i) {
-						max_width = qpl::max(max_width, (this->character_hitboxes[i - 1].position.x + this->character_hitboxes[i - 1].dimension.x) - x);
+				this->update_required = true;
+				this->internal_update();
+				this->edited_text = true;
+				this->pasted_text = true;
+			}
+			else if (event.key_pressed(sf::Keyboard::Z)) {
+				if (this->string_stack.size()) {
+					auto last = 0u;
+					if (this->string_stack_position != last) {
+						--this->string_stack_position;
+						this->set_string(this->string_stack[this->string_stack_position].first);
+						this->cursor_position = this->string_stack[this->string_stack_position].second;
+
+						this->cursor_position_changed = true;
+						this->whole_string_changed = true;
+						this->text_mouse_hitboxes_changed = true;
+						this->cursor_interval_timer.reset();
+						this->update_required = true;
+						this->internal_update();
+						this->edited_text = true;
+						this->control_z = true;
 					}
-					this->line_hitboxes.push_back({ qpl::vec(x, y), qpl::vec(0, 0)});
-					y += this->texts.front().get_line_spacing();
 				}
-				this->character_line_map[i] = this->line_hitboxes.size();
+				special_input = true;
 			}
-			if (this->character_hitboxes.size()) {
-				max_width = qpl::max(max_width, (this->character_hitboxes.back().position.x + this->character_hitboxes.back().dimension.x) - x);
-				this->character_line_map[this->character_hitboxes.size() - 1] = this->line_hitboxes.size();
-			}
-			this->line_hitboxes.push_back({ qpl::vec(x, y), qpl::vec(0, 0) });
-
-			this->hitboxes_changed = false;
-
-			for (auto& i : this->line_hitboxes) {
-				i.dimension.x = max_width;
-				i.dimension.y = max_height;
-			}
-		}
-	}
-
-	qpl::straight_line qsf::text_field_old::get_character_cursor_hitbox_line(qpl::size index) const {
-
-		const auto& hitbox = this->character_hitboxes[index];
-		qpl::straight_line line;
-		line.a = hitbox.position + qpl::vec(hitbox.dimension.x / 2, 0);
-		line.b = hitbox.position + qpl::vec(hitbox.dimension.x / 2, hitbox.dimension.y);
-		const auto& text = this->texts[this->character_line_map[index]];
-
-
-		auto height = text.get_line_height();
-		auto y = text.get_starting_line_position().y + text.get_line_number(index) * text.get_line_spacing();
-		line.a.y = y;
-		line.b.y = y + height;
-
-		return line;
-	}
-
-	qpl::hitbox qsf::text_field_old::get_character_cursor_hitbox(qpl::size index) const {
-
-		auto hitbox = this->character_hitboxes[index];
-		const auto& text = this->texts[this->character_line_map[index]];
-
-		auto height = text.get_line_height();
-
-		auto y = text.get_starting_line_position().y + text.get_line_number(index) * text.get_line_spacing();
-		hitbox.position.y = y;
-		hitbox.dimension.y = height;
-
-		return hitbox;
-	}
-	void qsf::text_field_old::erase_selection() {
-		if (this->selection_hitbox_begin == qpl::size_max || this->selection_hitbox_end == qpl::size_max) {
-			return;
-		}
-
-		auto s = this->get_wstring();
-		sf::String string;
-		string += s.substr(0u, this->selection_hitbox_begin);
-		string += s.substr(this->selection_hitbox_end + 1);
-		this->set_string(string);
-
-		if (this->selection_hitbox_begin) {
-			this->cursor_position = this->selection_hitbox_begin * 2 - 1;
-		}
-		else {
-			this->cursor_position = 1u;
-		}
-
-
-		this->selection_hitbox_begin = qpl::size_max;
-		this->selection_hitbox_end = qpl::size_max;
-		this->selection_rectangles.clear();
-
-		this->hitboxes_changed = true;
-		this->calculate_character_hitboxes();
-
-		this->set_cursor_position();
-
-	}
-	void qsf::text_field_old::set_string(const std::wstring& string) {
-		this->text_string = string;
-		std::vector<std::wstring> splits;
-		qpl::size before = 0u;
-		for (qpl::size i = 0u; i < string.length(); ++i) {
-			if (string[i] == L'\n') {
-				splits.push_back(string.substr(before, i - before));
-				before = i;
-			}
-
-		}
-		if (string.length() - before) {
-			splits.push_back(string.substr(before, string.length() - before));
-		}
-
-		this->texts.resize(splits.size());
-		if (this->texts.empty()) {
-			this->texts.resize(1u);
-		}
-
-		this->apply_settings();
-
-		this->biggest_text_width = 0.0f;
-		qpl::vector2f position = this->hitbox.position + this->text_offset;
-		for (qpl::size i = 0u; i < splits.size(); ++i) {
-			this->texts[i].set_position(position);
-
-			if (splits[i].front() == L'\n') {
-				auto str = splits[i].substr(1);
-				if (str.empty()) {
-					str = L"\r";
+			else if (event.key_pressed(sf::Keyboard::Y)) {
+				if (this->string_stack.size()) {
+					auto last = this->string_stack.used_size() - 1;
+					if (this->string_stack.used_size() && this->string_stack_position != last) {
+						++this->string_stack_position;
+						this->set_string(this->string_stack[this->string_stack_position].first);
+						this->cursor_position = this->string_stack[this->string_stack_position].second;
+						this->cursor_position_changed = true;
+						this->whole_string_changed = true;
+						this->text_mouse_hitboxes_changed = true;
+						this->cursor_interval_timer.reset();
+						this->update_required = true;
+						this->internal_update();
+						this->edited_text = true;
+						this->control_z = true;
+					}
 				}
-				this->texts[i].set_string(str);
+				special_input = true;
 			}
-			else {
-				this->texts[i].set_string(splits[i]);
-			}
+		}
+		if (event.is_text_entered() && !special_input) {
+			this->delete_selection_string();
+			this->add_string_at_cursor(event.text_entered());
 
-			this->biggest_text_width = qpl::max(this->biggest_text_width, this->texts[i].get_visible_hitbox().dimension.x);
-			position.y += this->texts[i].get_line_spacing();
+			this->update_required = true;
+			this->internal_update();
+			this->edited_text = true;
+			this->entered_text = true;
 		}
 
-		this->hitboxes_changed = true;
-		this->calculate_character_hitboxes();
-	}
-	void qsf::text_field_old::set_string(const sf::String& string) {
-		this->set_string(string.toWideString());
-	}
-	void qsf::text_field_old::apply_settings() {
-		for (auto& i : this->texts) {
-			i.set_font(this->text_setting.font_name);
-			i.set_character_size(this->text_setting.character_size);
-			i.set_outline_thickness(this->text_setting.outline_thickness);
-			i.set_outline_color(this->text_setting.outline_color);
-			i.set_style(this->text_setting.style);
+		if (this->string_stack.size() && this->edited_text && (!this->control_z && !this->control_y)) {
+			auto current_str = this->wstring();
+			if (string_before != current_str) {
+				if (this->string_stack.used_size() == 0u) {
+					this->string_stack.add(std::make_pair(string_before, cursor_before));
+					this->string_stack_position = 0u;
+				}
+				if (this->string_stack_position != this->string_stack.used_size() - 1) {
+					auto copy = this->string_stack;
+					this->string_stack.reset();
+					for (qpl::size i = 0u; i <= this->string_stack_position; ++i) {
+						this->string_stack.add(copy[i]);
+					}
+				}
+				this->string_stack.back().second = cursor_before;
+
+				this->string_stack.add(std::make_pair(current_str, cursor_before));
+				this->string_stack_position = this->string_stack.used_size() - 1;
+
+			}
 		}
+		this->internal_update_cursor();
 	}
+	void qsf::text_field::draw(qsf::draw_object& draw) const {
 
 
-	text_field::text_field() {
-		
+		draw.draw(this->background);
+		draw.draw(this->selection_rectangles);
+		draw.draw(this->lines);
+
+		if (this->focus) {
+			draw.draw(this->cursor);
+		}
+
+
+		//draw.draw(this->test_text);
+		//qsf::rectangle background;
+		//background.set_hitbox(this->hitbox);
+		//background.set_color(qpl::rgb::yellow.with_alpha(50));
+		//draw.draw(background);
 	}
 
-	void text_field::set_font(std::string font) {
-		this->text_layout.set_font(font);
-	}
-	void text_field::set_text_character_size(qpl::u32 character_size) {
-		this->text_layout.set_character_size(character_size);
-	}
-	void text_field::set_text_style(qpl::u32 style) {
-		this->text_layout.set_style(style);
-	}
-	void text_field::set_text_outline_thickness(qpl::f32 outline_thickness) {
-		this->text_layout.set_outline_thickness(outline_thickness);
-	}
-	void text_field::set_text_outline_color(qpl::rgb outline_color) {
-		this->text_layout.set_outline_color(outline_color);
-	}
-	void text_field::set_text_color(qpl::rgb color) {
-		this->text_layout.set_color(color);
-	}
-	void text_field::set_position(qpl::vector2f position) {
-		this->hitbox.set_position(position);
-	}
-	void text_field::set_dimension(qpl::vector2f dimension) {
-		this->hitbox.set_dimension(dimension);
-	}
+	std::pair<qpl::vector2s, qpl::vector2s> qsf::text_field::get_sorted_selection_range() const {
+		auto begin = this->selection_a;
+		auto end = this->selection_b;
 
-	void text_field::update(const qsf::event_info& event) {
+		if (begin.y > end.y) {
+			std::swap(begin, end);
+		}
+		else if (begin.y == end.y && begin.x > end.x) {
+			std::swap(begin, end);
+		}
+		return std::make_pair(begin, end);
+	}
+	void qsf::text_field::internal_update() const {
+		this->internal_update_text();
 
 		if (this->update_required) {
-			this->internal_update();
+			this->update_required = false;
+
+			auto hitbox = this->get_text_hitbox();
+
+			if (hitbox.dimension.x != this->hitbox.dimension.x) {
+				for (auto& line : this->lines) {
+					line.mouse_hitboxes_changed = true;
+				}
+				this->text_mouse_hitboxes_changed = true;
+			}
+
+			this->hitbox.set_dimension(hitbox.dimension);
+			this->background.set_hitbox(hitbox.increased(this->background_increase));
+			this->cursor_position_changed = true;
+		}
+
+
+		if (this->text_mouse_hitboxes_changed) {
+			for (auto& i : this->lines) {
+				if (i.mouse_hitboxes_changed) {
+					i.calculate_mouse_hitboxes(this->hitbox.dimension.x + this->hitbox.position.x, this->background_increase.x);
+					i.mouse_hitboxes_changed = false;
+				}
+			}
+			this->text_mouse_hitboxes_changed = false;
 		}
 	}
-	void text_field::draw(qsf::draw_object& draw) const {
-		draw.draw(this->text_background);
-		draw.draw(this->texts);
+	void qsf::text_field::internal_update_text() const {
+
+		if (this->text_layout_changed) {
+			for (auto& i : this->lines) {
+				if (i.layout_changed) {
+					i.apply(this->text_layout);
+					i.layout_changed = false;
+				}
+			}
+			this->set_cursor_dimension();
+
+			this->text_layout_changed = false;
+		}
 	}
-	void text_field::internal_update() {
 
-		this->update_required = false;
+	void qsf::text_field::internal_update_cursor() {
+		if (this->cursor_position_changed) {
+			this->set_cursor_position();
+			this->cursor_position_changed = false;
+		}
 	}
+	void qsf::text_field::set_cursor_dimension() const {
+		qpl::vector2f cursor_dim;
+		cursor_dim.x = this->cursor_width_percentage * this->text_layout.character_size;
+		cursor_dim.y = this->lines.front().text.get_line_height() + this->lines.front().text.get_delta_underline();
+		this->cursor.set_dimension(cursor_dim);
+	}
+	void qsf::text_field::set_cursor_position() {
+		this->internal_update();
+
+		if (this->cursor_position.y >= this->lines.size()) {
+			this->cursor_position.y = this->lines.size() - 1;
+			if (this->get_line_at_cursor().wstring().empty()) {
+				this->cursor_position.x = 0u;
+			}
+		}
+
+		const auto& line = this->get_line_at_cursor();
+		auto hitbox_index = this->cursor_position.x;
+
+		bool right_side = false;
+		if (line.character_hitboxes.empty()) {
+			return;
+		}
+		if (hitbox_index >= line.character_hitboxes.size()) {
+			hitbox_index = line.character_hitboxes.size() - 1;
+			if (line.wstring().empty()) {
+
+			}
+			right_side = true;
+		}
+		const auto& hitbox = line.character_hitboxes[hitbox_index];
+
+		qpl::f32 x_offset;
+		if (right_side) {
+			x_offset = hitbox.dimension.x + this->cursor_x_offset;
+		}
+		else {
+			x_offset = -(this->cursor_x_offset + this->cursor.get_dimension().x);
+		}
+
+		auto position = hitbox.position;
+		position.y = line.text.get_starting_line_position().y - line.text.get_delta_underline();
+		position.x += x_offset;
+
+		this->cursor.set_position(position);
+	}
+	void qsf::text_field::make_selection_rectangles() const {
+		if (this->selection_a == this->selection_b) {
+			this->selection_rectangles.clear();
+			return;
+		}
+		auto [begin, end] = this->get_sorted_selection_range();
+
+		this->selection_rectangles.clear();
+		auto size = end.y - begin.y + 1;
+		this->selection_rectangles.reserve(size);
+		qpl::size count = 0u;
 
 
+		if (begin.y == end.y) {
+			this->make_selection_rectangles(count, begin.y, begin.x, end.x);
+		}
+		else {
+			for (qpl::size i = 0u; i < size; ++i) {
+				if (i == 0u) {
+					this->make_selection_rectangles(count, i + begin.y, begin.x);
+				}
+				else if (i == size - 1) {
+					this->make_selection_rectangles(count, i + begin.y, 0u, end.x);
+				}
+				else {
+					this->make_selection_rectangles(count, i + begin.y, 0u);
+					//auto l = this->lines[i + begin.y].line_hitbox;
+					//this->selection_rectangles.push_back({});
+					//this->selection_rectangles.back().set_hitbox({ l.position, l.dimension });
+					//this->selection_rectangles.back().set_color(this->selection_color);
+				}
+			}
+		}
+	}
+	void qsf::text_field::make_selection_rectangles(qpl::size& count, qpl::size y, qpl::size x1, qpl::size x2) const {
+
+
+		const auto& line = this->lines[y];
+
+		if (x2 == qpl::size_max) {
+			x2 = line.character_hitboxes.size();
+		}
+		if (x1 >= line.character_hitboxes.size()) {
+
+			auto a = line.character_hitboxes.back();
+			auto length = line.line_mouse_hitbox.dimension.x + line.line_mouse_hitbox.position.x - (a.dimension.x + a.position.x) - this->get_background_outline_thickness();
+			qpl::hitbox result;
+			result.position = a.position + a.dimension.just_x();
+			result.dimension.x = length;
+
+			result.position.y = line.text.get_starting_line_position().y - line.text.get_delta_underline();
+			result.dimension.y = line.text.get_line_height() + line.text.get_delta_underline();
+
+			this->selection_rectangles.push_back({});
+			this->selection_rectangles.back().set_hitbox(result);
+			this->selection_rectangles.back().set_color(this->selection_color);
+			++count;
+
+			return;
+		}
+		auto a = line.character_hitboxes[x1];
+
+		qpl::hitbox b;
+
+		auto right_side = x2 == line.character_hitboxes.size();
+		qpl::f32 offset_x;
+		if (right_side) {
+			if (x2 == 0u) {
+				b = line.character_hitboxes[x2];
+			}
+			else {
+				b = line.character_hitboxes[x2 - 1];
+			}
+			offset_x = b.dimension.x + this->cursor_x_offset;
+		}
+		else {
+			b = line.character_hitboxes[x2];
+			offset_x = -(this->cursor_x_offset + this->cursor.get_dimension().x);
+		}
+
+		qpl::vector2f position = a.position;
+		qpl::vector2f dimension = b.position - a.position + offset_x;
+
+		position.y = line.text.get_starting_line_position().y - line.text.get_delta_underline();
+		dimension.y = line.text.get_line_height() + line.text.get_delta_underline();
+
+		this->selection_rectangles.push_back({});
+		this->selection_rectangles.back().set_hitbox({ position, dimension });
+		this->selection_rectangles.back().set_color(this->selection_color);
+		++count;
+	}
+	void qsf::text_field::find_closest_cursor_position() {
+		const auto& hitboxes = this->lines[this->cursor_position.y].character_hitboxes;
+
+		bool found = false;
+		qpl::size new_position = 0u;
+		qpl::f32 diff_before = qpl::f32_max;
+		for (qpl::size i = 0u; i < hitboxes.size(); ++i) {
+
+			auto x = hitboxes[i].position.x - (this->cursor_x_offset + this->cursor.get_dimension().x);
+			auto diff = qpl::abs(this->cursor.get_position().x - x);
+
+			if (diff > diff_before) {
+				found = true;
+				break;
+			}
+			diff_before = diff;
+			new_position = i;
+		}
+		if (!found) {
+			new_position = hitboxes.size();
+		}
+		this->cursor_position.x = new_position;
+		this->cursor_position_changed = true;
+	}
 
 	qsf::endl_type endl;
 
@@ -5746,8 +6264,8 @@ namespace qsf {
 						else {
 							this->y_lines.resize(this->y_lines.size() + 1);
 							this->y_lines.back().clear();
-							this->y_lines.back().add_thick_line(a, y.second.color,  qpl::f32_cast(y.second.thickness));
-							this->y_lines.back().add_thick_line(b, y.second.color,  qpl::f32_cast(y.second.thickness));
+							this->y_lines.back().add_thick_line(a, y.second.color, qpl::f32_cast(y.second.thickness));
+							this->y_lines.back().add_thick_line(b, y.second.color, qpl::f32_cast(y.second.thickness));
 						}
 					}
 				}
@@ -5810,8 +6328,8 @@ namespace qsf {
 					b.x += graph.dimension.x;
 
 					this->y_lines[i].clear();
-					this->y_lines[i].add_thick_line(a, graph.axis_line_color,  qpl::f32_cast(graph.axis_thickness));
-					this->y_lines[i].add_thick_line(b, graph.axis_line_color,  qpl::f32_cast(graph.axis_thickness));
+					this->y_lines[i].add_thick_line(a, graph.axis_line_color, qpl::f32_cast(graph.axis_thickness));
+					this->y_lines[i].add_thick_line(b, graph.axis_line_color, qpl::f32_cast(graph.axis_thickness));
 				}
 
 			}
@@ -6233,6 +6751,7 @@ namespace qsf {
 		this->layout_changed = true;
 	}
 	void qsf::smooth_button::set_background_color(qpl::rgb color) {
+		this->background_color = color;
 		this->smooth_layout.set_color(color);
 		this->layout_changed = true;
 	}
@@ -6265,6 +6784,7 @@ namespace qsf {
 		this->text.set_character_size(character_size);
 	}
 	void qsf::smooth_button::set_text_color(qpl::rgb color) {
+		this->text_color = color;
 		this->text.set_color(color);
 	}
 	void qsf::smooth_button::set_text_outline_thickness(qpl::f32 outline_thickness) {
@@ -6374,6 +6894,28 @@ namespace qsf {
 		this->create_check();
 		this->hovering = this->rectangle.contains(event.mouse_position());
 		this->clicked = this->hovering && event.left_mouse_clicked();
+
+		if (this->use_basic_hover_animation) {
+			if (this->hovering && !this->hover_before) {
+				this->hover_animation.go_forwards();
+			}
+			else if (!this->hovering && this->hover_before) {
+				this->hover_animation.go_backwards();
+			}
+			this->hover_before = this->hovering;
+
+			this->hover_animation.update();
+			if (this->hover_animation.is_running()) {
+				auto progress = this->hover_animation.get_curve_progress();
+				auto color = this->background_color;
+				color.interpolate(color.inverted(), progress);
+				this->smooth_layout.set_color(color);
+				color = this->text_color;
+				color.interpolate(color.inverted(), progress);
+				this->text.set_color(color);
+				this->layout_changed = true;
+			}
+		}
 	}
 	void qsf::smooth_button::create_check() const {
 		if (this->layout_changed) {
@@ -6480,7 +7022,7 @@ namespace qsf {
 				auto leftover = std::fmod(this->dimension.x, this->texture_dimension.x * this->scale.y);
 				qpl::hitbox hitbox;
 				hitbox.dimension = { this->texture_dimension.x, leftover / this->scale.y };
-			
+
 				this->sprites[ctr].move(qpl::vec(-(this->texture_dimension.x * this->scale.y - leftover), 0));
 				this->sprites[ctr].set_texture_rect(hitbox);
 			}
