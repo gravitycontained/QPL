@@ -80,6 +80,7 @@ freely, subject to the following restrictions:
 
 #ifdef _WIN32
 #include <qpl/winsys.hpp>
+#include <qpl/winsock.hpp>
 #endif
 
 #endif

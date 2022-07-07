@@ -5,6 +5,7 @@
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/memory.hpp>
+#include <qpl/encryption.hpp>
 #include <string>
 
 #include <filesystem>
@@ -61,7 +62,9 @@ namespace qpl {
             QPLDLL bool empty() const;
 
             QPLDLL void create() const;
+            QPLDLL qpl::filesys::path make_file(std::string file_name) const;
             QPLDLL std::string read() const;
+            QPLDLL void write(const std::string& data);
 
             QPLDLL std::filesystem::file_time_type last_write_time() const;
 
@@ -78,7 +81,6 @@ namespace qpl {
             QPLDLL std::string_view get_name_view() const;
             QPLDLL std::string_view get_extension_view() const;
             QPLDLL std::string_view get_file_name_view() const;
-
 
             QPLDLL bool extension_equals(const std::string_view& str) const;
             QPLDLL bool extension_equals(const char* str) const;
@@ -108,8 +110,12 @@ namespace qpl {
             QPLDLL bool name_matches(const std::regex& regex) const;
 
             QPLDLL void rename(const qpl::filesys::path& new_name);
-            QPLDLL void rename_file_name(const qpl::filesys::path& new_name);
+            QPLDLL void set_file_name(const std::string& new_name);
+            QPLDLL void set_file_extension_name(const std::string& new_extension);
+            QPLDLL void set_full_file_name(const std::string& new_file);
             QPLDLL void remove() const;
+            QPLDLL void encrypt(const qpl::filesys::path& destination, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256) const;
+            QPLDLL void decrypt(const qpl::filesys::path& destination, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256) const;
             QPLDLL void copy(const qpl::filesys::path& path_destination) const;
             QPLDLL void copy_overwrite(const qpl::filesys::path& path_destination) const;
             QPLDLL void move(const qpl::filesys::path& path_destination) const;
@@ -118,11 +124,14 @@ namespace qpl {
             QPLDLL void move_overwrite_and_apply_path(const qpl::filesys::path& path_destination);
 
             QPLDLL qpl::size branch_size() const;
-            QPLDLL qpl::filesys::path branch_at(qpl::size index) const;
+            QPLDLL qpl::filesys::path get_branch_at(qpl::size index) const;
             QPLDLL qpl::filesys::paths get_branches() const;
             QPLDLL qpl::filesys::path get_branch_earlier(qpl::u32 n) const;
             QPLDLL qpl::filesys::path get_parent_branch() const;
             QPLDLL std::vector<std::string> get_branch_names() const;
+
+            QPLDLL void set_branch(qpl::size index, std::string branch_name);
+            QPLDLL void ensure_branches_exist();
 
             QPLDLL bool is_root() const;
             QPLDLL path& go_root();
@@ -626,6 +635,12 @@ namespace qpl {
                 file.close();
             }
         }
+
+
+         QPLDLL std::string file_encrypt(const std::string& path, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+         QPLDLL void file_encrypt_to(const std::string& source_path, const std::string& dest_path, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+         QPLDLL std::string file_decrypt(const std::string& path, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+         QPLDLL void file_decrypt_to(const std::string& source_path, const std::string& dest_path, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
     }
 
     QPLDLL std::string read_file(const std::string& path);

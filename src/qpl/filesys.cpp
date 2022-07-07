@@ -115,26 +115,37 @@ namespace qpl {
                 std::filesystem::create_directory(this->string());
             }
         }
+        qpl::filesys::path qpl::filesys::path::make_file(std::string file_name) const {
+            auto path = this->string();
+            if (this->is_file()) {
+                path = this->get_parent_branch();
+            }
+            auto path_slash = path.back() == '/';
+            auto file_slash = file_name.front() == '/';
+            if (path_slash && file_slash) {
+                path.pop_back();
+                path += file_name;
+            }
+            else if (!path_slash && !file_slash) {
+                path += "/" + file_name;
+            }
+            else {
+                path += file_name;
+            }
+            qpl::filesys::create(path);
+            return path;
+        }
         std::string qpl::filesys::path::read() const {
             if (this->empty()) {
                 return "";
             }
-            std::ifstream file(this->string(), std::ios::ate | std::ios::binary);
 
-            if (!file.is_open()) {
-                throw std::runtime_error("failed to open file!");
-            }
-
-            size_t fileSize = (size_t)file.tellg();
-            std::string buffer;
-            buffer.resize(fileSize);
-
-            file.seekg(0);
-            file.read(buffer.data(), fileSize);
-
+            return qpl::filesys::read_file(this->string());
+        }
+        void qpl::filesys::path::write(const std::string& data) {
+            std::ofstream file(this->string(), std::ios::binary);
+            file << data;
             file.close();
-
-            return buffer;
         }
         std::filesystem::file_time_type qpl::filesys::path::last_write_time() const {
             return std::filesystem::last_write_time(this->string());
@@ -391,10 +402,32 @@ namespace qpl {
             std::filesystem::rename(this->string(), new_name.string());
             this->m_string = new_name;
         }
-        void qpl::filesys::path::rename_file_name(const qpl::filesys::path& new_name) {
-            auto p = this->get_parent_branch().string() + "/";
-            std::filesystem::rename(this->string(), p + new_name.string() + "." + this->get_extension());
-            this->m_string = new_name;
+        void qpl::filesys::path::set_file_name(const std::string& new_name) {
+            auto p = this->get_parent_branch().string();
+            if (p.back() != '/') {
+                p.push_back('/');
+            }
+            auto string = p + new_name + "." + this->get_extension();
+            std::filesystem::rename(this->string(), string);
+            this->m_string = string;
+        }
+        void qpl::filesys::path::set_file_extension_name(const std::string& new_extension) {
+            auto p = this->get_parent_branch().string();
+            if (p.back() != '/') {
+                p.push_back('/');
+            }
+            auto string = this->string() + p + this->get_file_name() + "." + new_extension;
+            std::filesystem::rename(this->string(), string);
+            this->m_string = string;
+        }
+        void qpl::filesys::path::set_full_file_name(const std::string& new_file) {
+            auto p = this->get_parent_branch().string();
+            if (p.back() != '/') {
+                p.push_back('/');
+            }
+            auto string = this->string() + p + new_file;
+            std::filesystem::rename(this->string(), string);
+            this->m_string = string;
         }
         void qpl::filesys::path::remove() const {
             if (!this->exists()) {
@@ -402,6 +435,21 @@ namespace qpl {
                 return;
             }
             std::filesystem::remove_all(this->string());
+        }
+
+        void qpl::filesys::path::encrypt(const qpl::filesys::path& destination, const std::string& key, qpl::aes::mode mode) const {
+            if (this->is_file()) {
+                auto content = this->read();
+                qpl::encrypt_keep_size(content, key, mode);
+                qpl::write_data_file(content, destination);
+            }
+        }
+        void qpl::filesys::path::decrypt(const qpl::filesys::path& destination, const std::string& key, qpl::aes::mode mode) const {
+            if (this->is_file()) {
+                auto content = this->read();
+                qpl::decrypt_keep_size(content, key, mode);
+                qpl::write_data_file(content, destination);
+            }
         }
         void qpl::filesys::path::copy(const qpl::filesys::path& path_destination) const {
             if (!this->exists()) {
@@ -479,7 +527,7 @@ namespace qpl {
             }
             return ctr;
         }
-        qpl::filesys::path qpl::filesys::path::branch_at(qpl::size index) const {
+        qpl::filesys::path qpl::filesys::path::get_branch_at(qpl::size index) const {
             qpl::u32 ctr = 0u;
             auto it = this->m_string.cbegin();
             for (; it != this->m_string.cend(); ++it) {
@@ -497,7 +545,9 @@ namespace qpl {
             auto it = this->m_string.cbegin();
             for (; it != this->m_string.cend(); ++it) {
                 if (*it == '/') {
-                    result.push_back(std::string(this->m_string.cbegin(), it));
+                    auto string = std::string(this->m_string.cbegin(), it);
+                    string.push_back('/');
+                    result.push_back(string);
                 }
             }
             return result;
@@ -553,11 +603,54 @@ namespace qpl {
             return result;
         }
 
+        void qpl::filesys::path::set_branch(qpl::size index, std::string branch_name) {
+
+            qpl::size ctr = 0u;
+            for (qpl::size i = 0u; i < this->m_string.length(); ++i) {
+                if (this->m_string[i] == '/') {
+                    ++ctr;
+                    if (ctr == index || !index) {
+                        if (!index) {
+                            i = 0u;
+                        }
+                        auto end = i + 1;
+                        while (true) {
+                            if (end >= this->m_string.length()) {
+                                return;
+                            }
+                            if (this->m_string[end] == '/') {
+                                break;
+                            }
+                            ++end;
+                        }
+                        if (index) {
+                            auto string_a = this->m_string.substr(0u, i + 1u);
+                            auto string_b = this->m_string.substr(end);
+                            this->m_string = string_a + branch_name + string_b;
+                        }
+                        else {
+                            auto string_b = this->m_string.substr(end);
+                            this->m_string = branch_name + string_b;
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+        void qpl::filesys::path::ensure_branches_exist() {
+            auto branches = this->get_branches();
+            for (auto& i : branches) {
+                if (!i.exists()) {
+                    i.create();
+                }
+            }
+        }
+
         bool qpl::filesys::path::is_root() const {
             return this->branch_size() == qpl::size{ 1 };
         }
         path& qpl::filesys::path::go_root() {
-            return  *this = this->branch_at(qpl::u32{ 0 });
+            return  *this = this->get_branch_at(qpl::u32{ 0 });
         }
         bool qpl::filesys::path::go_directories_back(qpl::u32 steps) {
             if (this->empty()) {
@@ -566,7 +659,7 @@ namespace qpl {
             auto size = this->branch_size() - 1;
             auto level = (steps > size ? qpl::size{} : size - steps);
             if (level != size) {
-                *this = this->branch_at(static_cast<qpl::u32>(level));
+                *this = this->get_branch_at(static_cast<qpl::u32>(level));
                 this->m_update = true;
                 return true;
             }
@@ -645,7 +738,7 @@ namespace qpl {
                         qpl::print("|");
                     }
                 }
-                auto str = this->branch_at(i);
+                auto str = this->get_branch_at(i);
                 qpl::print("_ ");
                 qpl::print(str.get_name());
                 widths.push_back(str.get_name().length());
@@ -659,7 +752,7 @@ namespace qpl {
 
                 while (depth_before < depth) {
                     if (depth_before) {
-                        auto name = path.branch_at(static_cast<qpl::u32>(depth_before - 1)).get_name();
+                        auto name = path.get_branch_at(static_cast<qpl::u32>(depth_before - 1)).get_name();
                         widths.push_back(name.size());
                     }
                     ++depth_before;
@@ -1496,7 +1589,7 @@ namespace qpl {
                     tree_destination = destination;
                     depth_ctr = qpl::u32_cast(levels);
                     for (qpl::size l = levels; l < i.branch_size(); ++l) {
-                        tree_destination.go_into(i.branch_at(l).get_name());
+                        tree_destination.go_into(i.get_branch_at(l).get_name());
                         ++depth_ctr;
                     }
                 }
@@ -1529,7 +1622,7 @@ namespace qpl {
                     tree_destination = destination;
                     depth_ctr = levels;
                     for (qpl::size l = levels; l < i.branch_size(); ++l) {
-                        tree_destination.go_into(i.branch_at(l).get_name());
+                        tree_destination.go_into(i.get_branch_at(l).get_name());
                         ++depth_ctr;
                     }
                 }
@@ -1563,7 +1656,7 @@ namespace qpl {
                     tree_destination = destination;
                     depth_ctr = qpl::u32_cast(levels);
                     for (qpl::size l = levels; l < i.branch_size(); ++l) {
-                        tree_destination.go_into(i.branch_at(l).get_name());
+                        tree_destination.go_into(i.get_branch_at(l).get_name());
                         ++depth_ctr;
                     }
                 }
@@ -1596,7 +1689,7 @@ namespace qpl {
                     tree_destination = destination;
                     depth_ctr = levels;
                     for (qpl::size l = levels; l < i.branch_size(); ++l) {
-                        tree_destination.go_into(i.branch_at(l).get_name());
+                        tree_destination.go_into(i.get_branch_at(l).get_name());
                         ++depth_ctr;
                     }
                 }
@@ -1804,7 +1897,7 @@ namespace qpl {
                     level = i.branch_size() - 1;
                 }
                 else if (remove) {
-                    if (i.branch_at(level).get_name() != str) {
+                    if (i.get_branch_at(level).get_name() != str) {
                         this->emplace_back(i);
                         remove = false;
                     }
@@ -2789,6 +2882,21 @@ namespace qpl {
 
         qpl::filesys::path qpl::filesys::get_current_location() {
             return qpl::filesys::path::current_path();
+        }
+
+        std::string qpl::filesys::file_encrypt(const std::string& path, const std::string& key, qpl::aes::mode mode) {
+            return qpl::encrypted_keep_size(qpl::filesys::read_file(path), key, mode);
+        }
+        void qpl::filesys::file_encrypt_to(const std::string& source_path, const std::string& dest_path, const std::string& key, qpl::aes::mode mode) {
+            auto content = qpl::filesys::file_encrypt(source_path, key, mode);
+            qpl::filesys::write_data_file(content, dest_path);
+        }
+        std::string qpl::filesys::file_decrypt(const std::string& path, const std::string& key, qpl::aes::mode mode) {
+            return qpl::decrypted_keep_size(qpl::filesys::read_file(path), key, mode);
+        }
+        void qpl::filesys::file_decrypt_to(const std::string& source_path, const std::string& dest_path, const std::string& key, qpl::aes::mode mode) {
+            auto content = qpl::filesys::file_decrypt(source_path, key, mode);
+            qpl::filesys::write_data_file(content, dest_path);
         }
     }
 

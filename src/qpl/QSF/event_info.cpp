@@ -162,6 +162,24 @@ namespace qsf {
 		return this->m_middle_mouse_double_click;
 	}
 
+	qpl::size qsf::event_info::left_mouse_fast_click_count() const {
+		if (!this->left_mouse_double_clicked()) {
+			return 0u;
+		}
+		return this->m_left_mouse_fast_click_ctr;
+	}
+	qpl::size qsf::event_info::right_mouse_fast_click_count() const {
+		if (!this->right_mouse_double_clicked()) {
+			return 0u;
+		}
+		return this->m_right_mouse_fast_click_ctr;
+	}
+	qpl::size qsf::event_info::middle_mouse_fast_click_count() const {
+		if (!this->middle_mouse_double_clicked()) {
+			return 0u;
+		}
+		return this->m_middle_mouse_fast_click_ctr;
+	}
 	void qsf::event_info::reset(const sf::RenderWindow& window) {
 		this->m_mouse_clicked = false;
 		this->m_mouse_released = false;
@@ -206,45 +224,57 @@ namespace qsf {
 				this->m_left_mouse_clicked = true;
 				this->m_holding_left_mouse = true;
 				if (this->m_left_mouse_clock.is_running()) {
-					if (this->m_left_mouse_clock.elapsed_f() < 0.2) {
+					if (this->m_left_mouse_clock.elapsed_f() < this->m_fast_click_duration) {
 						this->m_left_mouse_double_click = true;
+						++this->m_left_mouse_fast_click_ctr;
+						this->m_left_mouse_clock.reset();
 					}
 					else {
 						this->m_left_mouse_clock.reset();
+						this->m_left_mouse_fast_click_ctr = 1u;
 					}
 				}
 				else {
 					this->m_left_mouse_clock.reset();
+					this->m_left_mouse_fast_click_ctr = 1u;
 				}
 			}
 			else if (event.mouseButton.button == sf::Mouse::Right) {
 				this->m_right_mouse_clicked = true;
 				this->m_holding_right_mouse = true;
 				if (this->m_right_mouse_clock.is_running()) {
-					if (this->m_right_mouse_clock.elapsed_f() < 0.2) {
+					if (this->m_right_mouse_clock.elapsed_f() < this->m_fast_click_duration) {
 						this->m_right_mouse_double_click = true;
+						++this->m_right_mouse_fast_click_ctr;
+						this->m_right_mouse_clock.reset();
 					}
 					else {
 						this->m_right_mouse_clock.reset();
+						this->m_right_mouse_fast_click_ctr = 1u;
 					}
 				}
 				else {
 					this->m_right_mouse_clock.reset();
+					this->m_right_mouse_fast_click_ctr = 1u;
 				}
 			}
 			else if (event.mouseButton.button == sf::Mouse::Middle) {
 				this->m_middle_mouse_clicked = true;
 				this->m_holding_middle_mouse = true;
 				if (this->m_middle_mouse_clock.is_running()) {
-					if (this->m_middle_mouse_clock.elapsed_f() < 0.2) {
+					if (this->m_middle_mouse_clock.elapsed_f() < this->m_fast_click_duration) {
 						this->m_middle_mouse_double_click = true;
+						++this->m_middle_mouse_fast_click_ctr;
+						this->m_middle_mouse_clock.reset();
 					}
 					else {
 						this->m_middle_mouse_clock.reset();
+						this->m_middle_mouse_fast_click_ctr = 1u;
 					}
 				}
 				else {
 					this->m_middle_mouse_clock.reset();
+					this->m_middle_mouse_fast_click_ctr = 1u;
 				}
 			}
 		}
@@ -299,6 +329,13 @@ namespace qsf {
 			this->m_resized = true;
 			this->m_resized_size = { event.size.width, event.size.height };
 		}
+	}
+
+	void qsf::event_info::set_fast_click_duration(qpl::f64 duration) {
+		this->m_fast_click_duration = duration;
+	}
+	qpl::f64 qsf::event_info::get_fast_click_duration() const {
+		return this->m_fast_click_duration;
 	}
 
 	qpl::vector2u qsf::event_info::screen_dimension() const {

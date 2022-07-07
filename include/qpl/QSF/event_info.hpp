@@ -68,9 +68,14 @@ namespace qsf {
 		QPLDLL bool left_mouse_double_clicked() const;
 		QPLDLL bool right_mouse_double_clicked() const;
 		QPLDLL bool middle_mouse_double_clicked() const;
+		QPLDLL qpl::size left_mouse_fast_click_count() const;
+		QPLDLL qpl::size right_mouse_fast_click_count() const;
+		QPLDLL qpl::size middle_mouse_fast_click_count() const;
 
 		QPLDLL void reset(const sf::RenderWindow& window);
 		QPLDLL void update(const sf::Event& event);
+		QPLDLL void set_fast_click_duration(qpl::f64 duration);
+		QPLDLL qpl::f64 get_fast_click_duration() const;
 
 		QPLDLL qpl::vector2u screen_dimension() const;
 		QPLDLL qpl::time frame_time() const;
@@ -151,6 +156,11 @@ namespace qsf {
 		qpl::halted_clock m_left_mouse_clock;
 		qpl::halted_clock m_right_mouse_clock;
 		qpl::halted_clock m_middle_mouse_clock;
+		qpl::size m_left_mouse_fast_click_ctr = 1u;
+		qpl::size m_right_mouse_fast_click_ctr = 1u;
+		qpl::size m_middle_mouse_fast_click_ctr = 1u;
+
+		qpl::f64 m_fast_click_duration = 0.2;
 	};
 
 }

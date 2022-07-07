@@ -19,6 +19,7 @@
 #include <qpl/pictures.hpp>
 #include <string_view>
 #include <span>
+#include <string>
 
 namespace qpl {
 	namespace winsys {
@@ -405,5 +406,6 @@ namespace qpl {
 		return qpl::detail::shared_memories[name].get_array<T>();
 	}
 }
+
 
 #endif

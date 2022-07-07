@@ -1853,6 +1853,10 @@ namespace qpl {
 		return qpl::type_cast<qpl::size>(data);
 	}
 	template<typename T>
+	constexpr inline auto isize_cast(T&& data) {
+		return qpl::type_cast<qpl::isize>(data);
+	}
+	template<typename T>
 	constexpr inline auto signed_size_cast(T&& data) {
 		return static_cast<qpl::signed_type<qpl::size>>(data);
 	}
