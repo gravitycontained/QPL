@@ -67,6 +67,8 @@ namespace qpl {
             QPLDLL void write(const std::string& data);
 
             QPLDLL std::filesystem::file_time_type last_write_time() const;
+            QPLDLL qpl::u64 file_size() const;
+            QPLDLL qpl::u64 file_size_recursive() const;
 
             QPLDLL bool exists() const;
             QPLDLL bool exists_system() const;
@@ -76,11 +78,17 @@ namespace qpl {
             QPLDLL bool has_extension() const;
 
             QPLDLL std::string get_name() const;
-            QPLDLL std::string get_extension() const;
+            QPLDLL std::string get_full_name(bool add_slash_on_directory = false) const;
+            QPLDLL std::string get_file_extension() const;
+            QPLDLL std::string get_full_file_name() const;
             QPLDLL std::string get_file_name() const;
+            QPLDLL std::string get_directory_name() const;
+
             QPLDLL std::string_view get_name_view() const;
-            QPLDLL std::string_view get_extension_view() const;
+            QPLDLL std::string_view get_file_extension_view() const;
+            QPLDLL std::string_view get_full_file_name_view() const;
             QPLDLL std::string_view get_file_name_view() const;
+            QPLDLL std::string_view get_directory_name_view() const;
 
             QPLDLL bool extension_equals(const std::string_view& str) const;
             QPLDLL bool extension_equals(const char* str) const;
@@ -99,6 +107,15 @@ namespace qpl {
             QPLDLL bool file_name_contains(const std::string& str) const;
             QPLDLL bool file_name_matches(const std::string& regex) const;
             QPLDLL bool file_name_matches(const std::regex& regex) const;
+
+            QPLDLL bool full_file_name_equals(const std::string_view& str) const;
+            QPLDLL bool full_file_name_equals(const char* str) const;
+            QPLDLL bool full_file_name_equals(const std::string& str) const;
+            QPLDLL bool full_file_name_contains(const std::string_view& str) const;
+            QPLDLL bool full_file_name_contains(const char* str) const;
+            QPLDLL bool full_file_name_contains(const std::string& str) const;
+            QPLDLL bool full_file_name_matches(const std::string& regex) const;
+            QPLDLL bool full_file_name_matches(const std::regex& regex) const;
 
             QPLDLL bool name_equals(const std::string_view& str) const;
             QPLDLL bool name_equals(const char* str) const;
@@ -128,10 +145,13 @@ namespace qpl {
             QPLDLL qpl::filesys::paths get_branches() const;
             QPLDLL qpl::filesys::path get_branch_earlier(qpl::u32 n) const;
             QPLDLL qpl::filesys::path get_parent_branch() const;
+            QPLDLL qpl::filesys::path get_last_branch() const;
             QPLDLL std::vector<std::string> get_branch_names() const;
 
             QPLDLL void set_branch(qpl::size index, std::string branch_name);
+            QPLDLL qpl::filesys::path subpath(qpl::size off, qpl::size size = qpl::size_max) const;
             QPLDLL void ensure_branches_exist();
+            QPLDLL void ensure_directory_backslash();
 
             QPLDLL bool is_root() const;
             QPLDLL path& go_root();
@@ -143,6 +163,8 @@ namespace qpl {
             QPLDLL path& go_into_directory(const std::string& directory_name);
             QPLDLL path& go_into(const std::string& entry);
             QPLDLL path& cd(const std::string& directory_name);
+            QPLDLL void append(const std::string& string);
+            QPLDLL void append(char c);
 
             QPLDLL qpl::filesys::paths list_current_directory() const;
             QPLDLL qpl::filesys::paths list_current_directory_tree() const;
@@ -153,6 +175,7 @@ namespace qpl {
             QPLDLL qpl::filesys::paths make_directory_range_tree() const;
 
             QPLDLL qpl::size last_common_branch(const qpl::filesys::path& path) const;
+            QPLDLL qpl::filesys::path get_common_branch(const qpl::filesys::path& other) const;
 
             QPLDLL qpl::filesys::paths search_where_extension_equals(const std::string_view& extension) const;
             QPLDLL qpl::filesys::paths search_where_extension_equals(const char* extension) const;
@@ -530,11 +553,13 @@ namespace qpl {
         QPLDLL bool is_directory(const qpl::filesys::path& path);
         QPLDLL bool has_extension(const qpl::filesys::path& path);
         QPLDLL std::string get_name(const qpl::filesys::path& path);
-        QPLDLL std::string get_extension(const qpl::filesys::path& path);
+        QPLDLL std::string get_file_extension(const qpl::filesys::path& path);
         QPLDLL std::string get_file_name(const qpl::filesys::path& path);
+        QPLDLL std::string get_full_file_name(const qpl::filesys::path& path);
         QPLDLL std::string_view get_name_view(const qpl::filesys::path& path);
-        QPLDLL std::string_view get_extension_view(const qpl::filesys::path& path);
+        QPLDLL std::string_view get_file_extension_view(const qpl::filesys::path& path);
         QPLDLL std::string_view get_file_name_view(const qpl::filesys::path& path);
+        QPLDLL std::string_view get_full_file_name_view(const qpl::filesys::path& path);
         QPLDLL qpl::filesys::path get_parent_branch(const qpl::filesys::path& path);
 
         QPLDLL bool extension_equals(const qpl::filesys::path& path, const std::string_view& str);
@@ -549,6 +574,12 @@ namespace qpl {
         QPLDLL bool file_name_contains(const qpl::filesys::path& path, const std::string& str);
         QPLDLL bool file_name_matches(const qpl::filesys::path& path, const std::string& regex);
         QPLDLL bool file_name_matches(const qpl::filesys::path& path, const std::regex& regex);
+        QPLDLL bool full_file_name_equals(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool full_file_name_equals(const qpl::filesys::path& path, const std::string& str);
+        QPLDLL bool full_file_name_contains(const qpl::filesys::path& path, const std::string_view& str);
+        QPLDLL bool full_file_name_contains(const qpl::filesys::path& path, const std::string& str);
+        QPLDLL bool full_file_name_matches(const qpl::filesys::path& path, const std::string& regex);
+        QPLDLL bool full_file_name_matches(const qpl::filesys::path& path, const std::regex& regex);
         QPLDLL bool name_equals(const qpl::filesys::path& path, const std::string_view& str);
         QPLDLL bool name_equals(const qpl::filesys::path& path, const std::string& str);
         QPLDLL bool name_contains(const qpl::filesys::path& path, const std::string_view& str);
@@ -647,130 +678,26 @@ namespace qpl {
     QPLDLL void write_to_file(const std::string& text, const std::string& path);
     QPLDLL void write_data_file(const std::string& data, const std::string& path);
 
-    struct save_state;
 
-    namespace impl {
-        template<typename T>
-        concept has_save = requires(const T a) {
-            { a.save() } -> std::same_as<std::string>;
-        };
+    struct file_encrypter {
+        qpl::filesys::paths paths;
+        qpl::filesys::path common_branch;
+        std::unordered_map<std::string, qpl::filesys::paths> part_paths;
+        std::string keyword_string_part = "AES_PART";
+        std::string keyword_string_enrypted = "ENCRYPTED";
+        std::string keyword_string_derypted = "DECRYPTED";
 
-        template<typename T>
-        concept has_load = requires(T a, save_state state) {
-            a.load(state);
-        };
-    }
+        void clear();
+        void add(std::string path);
+        std::string encrypted_string(const std::string& key, qpl::aes::mode mode);
+        qpl::filesys::paths encrypt(const std::string& key, std::string output_name, qpl::aes::mode mode, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max);
+        qpl::filesys::paths decrypt(const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path = "") const;
 
-    template<typename T>
-    constexpr bool has_save() {
-        if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
-            return qpl::has_save<qpl::container_subtype<T>>();
-        }
-        else {
-            return qpl::impl::has_save<T>;
-        }
-    }
-    template<typename T>
-    constexpr bool has_load() {
-        if constexpr (qpl::is_container<T>() && qpl::has_resize<T>()) {
-            return qpl::has_load<qpl::container_subtype<T>>();
-        }
-        else {
-            return qpl::impl::has_load<T>;
-        }
-    }
+    private:
+        qpl::size additions = 0u;
+        bool adding_parts = false;
 
-    struct save_state {
-        qpl::collection_string collection_string;
-        qpl::size ctr = 0u;
-
-        save_state() {
-
-        }
-        template<typename... Ts>
-        save_state(const Ts&... saves) {
-            this->save(saves...);
-        }
-
-        QPLDLL void clear();
-        QPLDLL void file_save(std::string path);
-        QPLDLL void file_save(std::string path, const std::array<qpl::u64, 4>& key);
-        QPLDLL void file_load(std::string path);
-        QPLDLL void file_load(std::string path, const std::array<qpl::u64, 4>& key);
-        QPLDLL void set_string(const std::string& str);
-        QPLDLL void finalize_string();
-        QPLDLL std::string get_string() const;
-        QPLDLL std::string get_finalized_string();
-        QPLDLL std::string get_next_string();
-        QPLDLL save_state get_next_save_state();
-
-        template<typename T>
-        void save_single(const T& data) {
-            if constexpr (qpl::is_standard_string_type<T>()) {
-                this->collection_string.add_string(data);
-            }
-            else if constexpr (qpl::has_save<T>()) {
-                if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
-                    auto str = qpl::stack_memory_to_string(data.size());
-                    this->collection_string.add_string(str);
-                    for (auto& i : data) {
-                        this->save_single(i);
-                    }
-                }
-                else {
-                    this->collection_string.add_string(data.save());
-                }
-            }
-            else if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
-                auto str = qpl::heap_memory_to_string(data);
-                this->collection_string.add_string(str);
-            }
-            else {
-                auto str = qpl::stack_memory_to_string(data);
-                this->collection_string.add_string(str);
-            }
-        }
-        template<typename... Ts>
-        void save(const Ts&... data) {
-            (this->save_single(data), ...);
-        }
-        template<typename T>
-        void load_single(T& data) {
-            if (this->ctr >= this->collection_string.size()) {
-                throw qpl::exception("save_state: trying to load resource #", this->ctr, " but size is only ", this->collection_string.size());
-            }
-            if constexpr (qpl::has_load<T>()) {
-                if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
-                    qpl::size size;
-                    qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), size);
-                    data.resize(size);
-                    ++ctr;
-                    for (auto& i : data) {
-                        this->load_single(i);
-                    }
-                }
-                else {
-                    data.load(this->get_next_save_state());
-                }
-            }
-            else if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
-                if constexpr (qpl::is_std_array_type<T>()) {
-                    qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), data);
-                }
-                else {
-                    qpl::string_to_heap_memory(this->collection_string.get_string(this->ctr), data);
-                }
-                ++this->ctr;
-            }
-            else {
-                qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), data);
-                ++this->ctr;
-            }
-        }
-        template<typename... Ts>
-        void load(Ts&... data) {
-            (this->load_single(data), ...);
-        }
+        void internal_decrypt(const std::string& string, const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path, qpl::filesys::paths& tree) const;
     };
 
 }

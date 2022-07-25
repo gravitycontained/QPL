@@ -101,6 +101,36 @@ namespace qpl {
 	std::string qpl::bool_string(bool b) {
 		return b ? std::string("true") : std::string("false");
 	}
+	std::string qpl::memory_size_string(qpl::size bytes, bool binary) {
+		if (bytes < 1000) {
+			return qpl::to_string(bytes, " bytes");
+		}
+		else {
+			auto converted = qpl::f64_cast(bytes);
+
+			if (binary) {
+				constexpr auto names = std::array{ "kibi", "mebi", "gibi", "tebi", "pebi", "exbi", "zebi", "yebi" };
+
+				for (qpl::size i = 0u; i < names.size(); ++i) {
+					converted /= 1024.0;
+					if (converted < 1000) {
+						return qpl::to_string(qpl::to_string_precision(1, converted), " ", names[i], "bytes");
+					}
+				}
+			}
+			else {
+				constexpr auto names = std::array{ "kilo", "mega", "giga", "tera", "peta", "exa", "zetta", "yotta" };
+
+				for (qpl::size i = 0u; i < names.size(); ++i) {
+					converted /= 1000.0;
+					if (converted < 1000) {
+						return qpl::to_string(qpl::to_string_precision(1, converted), " ", names[i], "bytes");
+					}
+				}
+			}
+		}
+		return "";
+	}
 
 	std::string qpl::string_to_fit(const std::string& string, char append, qpl::size length) {
 		return std::string(string.length() >= length ? 0ull : length - string.length(), append);
@@ -1081,6 +1111,46 @@ namespace qpl {
 		}
 		if (string.back() == by_what) {
 			result.push_back(L"");
+		}
+		return result;
+	}
+	std::vector<std::string> qpl::split_string_digit_alpha(const std::string& string) {
+		if (string.empty()) {
+			return {};
+		}
+		std::vector<std::string> result;
+
+		bool alpha = qpl::is_character_alpha(string.front());
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (alpha && !qpl::is_character_alpha(string[i])) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				while (i < string.length() && (!qpl::is_character_alpha(string[i]) && !qpl::is_character_digit_or_dot(string[i]))) {
+					++i;
+				}
+
+				alpha = qpl::is_character_alpha(string[i]);
+				before = i;
+			}
+			else if (!alpha && !qpl::is_character_digit_or_dot(string[i])) {
+				if (i - before) {
+					result.push_back(string.substr(before, i - before));
+				}
+				while (i < string.length() && (!qpl::is_character_alpha(string[i]) && !qpl::is_character_digit_or_dot(string[i]))) {
+					++i;
+				}
+
+				alpha = qpl::is_character_alpha(string[i]);
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(string.substr(before));
 		}
 		return result;
 	}

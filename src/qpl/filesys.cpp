@@ -150,6 +150,23 @@ namespace qpl {
         std::filesystem::file_time_type qpl::filesys::path::last_write_time() const {
             return std::filesystem::last_write_time(this->string());
         }
+        qpl::u64 qpl::filesys::path::file_size() const {
+            return std::filesystem::file_size(this->string());
+        }
+        qpl::u64 qpl::filesys::path::file_size_recursive() const {
+            if (this->is_file()) {
+                return this->file_size();
+            }
+
+            qpl::u64 result = 0u;
+            auto paths = this->list_current_directory_tree();
+            for (auto& path : paths) {
+                if (path.is_file()) {
+                    result += path.file_size();
+                }
+            }
+            return result;
+        }
 
         bool qpl::filesys::path::exists() const {
             this->check_update();
@@ -163,26 +180,6 @@ namespace qpl {
             this->check_update();
             return this->m_is_file;
         }
-
-        //bool qpl::filesys::path::is_symlink() const {
-        //    if (this->empty()) {
-        //        return false;
-        //    }
-        //    if (!this->exists()) {
-        //        if (this->m_string.back() == '/') {
-        //            return false;
-        //        }
-        //        auto it = this->m_string.cend() - 1;
-        //        for (; it != this->m_string.cbegin(); --it) {
-        //            if (*it == '.') {
-        //                ++it;
-        //                break;
-        //            }
-        //        }
-        //        return std::string(it, this->m_string.cend()) == "sym";
-        //    }
-        //    return std::filesystem::is_symlink(this->string());
-        //}
 
         bool qpl::filesys::path::is_directory() const {
             this->check_update();
@@ -203,18 +200,40 @@ namespace qpl {
             }
             return false;
         }
-        std::string qpl::filesys::path::get_extension() const {
-            return std::string{ this->get_extension_view() };
+        std::string qpl::filesys::path::get_file_extension() const {
+            return std::string{ this->get_file_extension_view() };
         }
         std::string qpl::filesys::path::get_name() const {
             return std::string{ this->get_name_view() };
         }
+        std::string qpl::filesys::path::get_full_name(bool add_slash_on_directory) const {
+            if (this->empty()) {
+                return "";
+            }
+            if (this->is_file()) {
+                return this->get_full_file_name();
+            }
+            else if (this->is_directory()) {
+                auto str = this->get_directory_name();
+                if (add_slash_on_directory && str.back() != '/') {
+                    str.push_back('/');
+                }
+                return str;
+            }
+            return "";
+        }
         std::string qpl::filesys::path::get_file_name() const {
             return std::string{ this->get_file_name_view() };
         }
+        std::string qpl::filesys::path::get_full_file_name() const {
+            return std::string{ this->get_full_file_name_view() };
+        }
+        std::string qpl::filesys::path::get_directory_name() const {
+            return std::string{ this->get_directory_name_view() };
+        }
 
 
-        std::string_view qpl::filesys::path::get_extension_view() const {
+        std::string_view qpl::filesys::path::get_file_extension_view() const {
             if (!this->is_file() || this->empty()) {
                 return "";
             }
@@ -234,60 +253,69 @@ namespace qpl {
                 return "";
             }
             if (this->is_file()) {
-                auto it = this->m_string.cend() - 1;
-                for (; it != this->m_string.cbegin(); --it) {
-                    if (*it == '/') {
-                        ++it;
-                        break;
-                    }
-                }
-                return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend()));
+                return this->get_file_name_view();
             }
             else if (this->is_directory()) {
-                bool end_slash = false;
-                auto it = this->m_string.cend() - 1;
-                if (it != this->m_string.cbegin() && *it == '/') {
-                    --it;
-                    end_slash = true;
-                }
-
-                for (; it != this->m_string.cbegin(); --it) {
-                    if (*it == '/') {
-                        ++it;
-                        break;
-                    }
-                }
-                return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend() - end_slash));
+                return this->get_directory_name_view();
             }
             return "";
+        }
+        std::string_view qpl::filesys::path::get_full_file_name_view() const {
+            if (!this->is_file() || this->empty()) {
+                return "";
+            }
+
+            auto it = this->m_string.cend() - 1;
+            for (; it != this->m_string.cbegin(); --it) {
+                if (*it == '/') {
+                    ++it;
+                    break;
+                }
+            }
+            return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend()));
         }
         std::string_view qpl::filesys::path::get_file_name_view() const {
             if (!this->is_file() || this->empty()) {
                 return "";
             }
 
-            auto it = this->m_string.cend() - 1;
-            auto end = it;
-            decltype(it) begin;
+            auto file_name = this->get_full_file_name_view();
 
-            for (; it != this->m_string.cbegin(); --it) {
+            auto it = file_name.cend() - 1;
+            for (; it != file_name.cbegin(); --it) {
                 if (*it == '.') {
-                    end = it;
-                }
-                if (*it == '/') {
-                    begin = ++it;
                     break;
                 }
             }
-            return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), begin), std::distance(begin, end));
+            return std::string_view(file_name.cbegin(), it);
+        }
+        std::string_view qpl::filesys::path::get_directory_name_view() const {
+            if (!this->is_directory() || this->empty()) {
+                return "";
+            }
+
+            bool end_slash = false;
+            auto it = this->m_string.cend() - 1;
+            if (it != this->m_string.cbegin() && *it == '/') {
+                --it;
+                end_slash = true;
+            }
+
+            for (; it != this->m_string.cbegin(); --it) {
+                if (*it == '/') {
+                    ++it;
+                    break;
+                }
+            }
+            return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend() - end_slash));
         }
 
 
         bool qpl::filesys::path::extension_equals(const std::string_view& str) const {
             if (str.front() == '.' && str.size()) {
-                return this->get_extension_view() == str.substr(1, str.size() - 1);
+                return this->get_file_extension_view() == str.substr(1, str.size() - 1);
             }
-            return this->get_extension_view() == str;
+            return this->get_file_extension_view() == str;
         }
         bool qpl::filesys::path::extension_equals(const char* str) const {
             return this->extension_equals(std::string_view{ str });
@@ -296,7 +324,7 @@ namespace qpl {
             return this->extension_equals(std::string_view{ str });
         }
         bool qpl::filesys::path::extension_contains(const std::string_view& str) const {
-            auto extension = this->get_extension_view();
+            auto extension = this->get_file_extension_view();
             for (qpl::i32 i = 0; i < qpl::signed_cast(extension.size()) - qpl::signed_cast(str.size()) + 1; ++i) {
                 if (extension.substr(i, str.size()) == str) {
                     return true;
@@ -312,14 +340,14 @@ namespace qpl {
         }
         bool qpl::filesys::path::extension_matches(const std::string& regex) const {
             const std::regex reg{ regex };
-            return std::regex_search(this->get_extension(), reg);
+            return std::regex_search(this->get_file_extension(), reg);
         }
         bool qpl::filesys::path::extension_matches(const std::regex& regex) const {
-            return std::regex_match(this->get_extension(), regex);
+            return std::regex_match(this->get_file_extension(), regex);
         }
 
         bool qpl::filesys::path::file_name_equals(const std::string_view& str) const {
-            return this->get_extension_view() == str;
+            return this->get_file_name_view() == str;
         }
         bool qpl::filesys::path::file_name_equals(const char* str) const {
             return this->file_name_equals(std::string_view{ str });
@@ -348,6 +376,38 @@ namespace qpl {
         }
         bool qpl::filesys::path::file_name_matches(const std::regex& regex) const {
             return std::regex_match(this->get_file_name(), regex);
+        }
+
+        bool qpl::filesys::path::full_file_name_equals(const std::string_view& str) const {
+            return this->get_full_file_name_view() == str;
+        }
+        bool qpl::filesys::path::full_file_name_equals(const char* str) const {
+            return this->full_file_name_equals(std::string_view{ str });
+        }
+        bool qpl::filesys::path::full_file_name_equals(const std::string& str) const {
+            return this->full_file_name_equals(std::string_view{ str });
+        }
+        bool qpl::filesys::path::full_file_name_contains(const std::string_view& str) const {
+            auto name = this->get_full_file_name_view();
+            for (qpl::i32 i = 0; i < qpl::signed_cast(name.size()) - qpl::signed_cast(str.size()) + 1; ++i) {
+                if (name.substr(i, str.size()) == str) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        bool qpl::filesys::path::full_file_name_contains(const char* str) const {
+            return this->full_file_name_contains(std::string_view{ str });
+        }
+        bool qpl::filesys::path::full_file_name_contains(const std::string& str) const {
+            return this->full_file_name_contains(std::string_view{ str });
+        }
+        bool qpl::filesys::path::full_file_name_matches(const std::string& regex) const {
+            const std::regex reg{ regex };
+            return std::regex_search(this->get_full_file_name(), reg);
+        }
+        bool qpl::filesys::path::full_file_name_matches(const std::regex& regex) const {
+            return std::regex_match(this->get_full_file_name(), regex);
         }
 
         bool qpl::filesys::path::name_equals(const std::string_view& str) const {
@@ -407,7 +467,7 @@ namespace qpl {
             if (p.back() != '/') {
                 p.push_back('/');
             }
-            auto string = p + new_name + "." + this->get_extension();
+            auto string = p + new_name + "." + this->get_file_extension();
             std::filesystem::rename(this->string(), string);
             this->m_string = string;
         }
@@ -536,7 +596,6 @@ namespace qpl {
                     break;
                 }
             }
-
             return { std::string(this->m_string.cbegin(), it) };
         }
         qpl::filesys::paths qpl::filesys::path::get_branches() const {
@@ -549,6 +608,10 @@ namespace qpl {
                     string.push_back('/');
                     result.push_back(string);
                 }
+            }
+            if (this->is_directory() && this->m_string.back() != '/') {
+                result.push_back(*this);
+                result.back().append('/');
             }
             return result;
         }
@@ -588,6 +651,9 @@ namespace qpl {
             }
             return { std::string(this->m_string.cbegin(), it) };
         }
+        qpl::filesys::path qpl::filesys::path::get_last_branch() const {
+            return this->get_branch_at(this->branch_size() - 1);
+        }
         std::vector<std::string> qpl::filesys::path::get_branch_names() const {
             std::vector<std::string> result;
             
@@ -604,7 +670,6 @@ namespace qpl {
         }
 
         void qpl::filesys::path::set_branch(qpl::size index, std::string branch_name) {
-
             qpl::size ctr = 0u;
             for (qpl::size i = 0u; i < this->m_string.length(); ++i) {
                 if (this->m_string[i] == '/') {
@@ -637,12 +702,40 @@ namespace qpl {
                 }
             }
         }
+        qpl::filesys::path qpl::filesys::path::subpath(qpl::size off, qpl::size size) const {
+            qpl::u32 ctr = 0u;
+            auto begin = this->m_string.cbegin();
+            for (; begin != this->m_string.cend(); ++begin) {
+                if (*begin == '/' && (ctr++ == off)) {
+                    ++begin;
+                    break;
+                }
+            }
+            ctr = 0u;
+            auto end = begin;
+            for (; end != this->m_string.cend(); ++end) {
+                if (*end == '/' && (ctr++ == size)) {
+                    ++end;
+                    break;
+                }
+            }
+
+            return { std::string(begin, end) };
+        }
         void qpl::filesys::path::ensure_branches_exist() {
+            if (this->exists()) {
+                return;
+            }
             auto branches = this->get_branches();
             for (auto& i : branches) {
                 if (!i.exists()) {
                     i.create();
                 }
+            }
+        }
+        void qpl::filesys::path::ensure_directory_backslash() {
+            if (this->is_directory() && this->m_string.back() != '/') {
+                this->m_string.push_back('/');
             }
         }
 
@@ -693,6 +786,12 @@ namespace qpl {
         path& qpl::filesys::path::cd(const std::string& directory_name) {
             this->go_into_directory(directory_name);
             return *this;
+        }
+        void qpl::filesys::path::append(const std::string& string) {
+            this->m_string.append(string);
+        }
+        void qpl::filesys::path::append(char c) {
+            this->m_string += c;
         }
 
         qpl::filesys::paths qpl::filesys::path::list_current_directory() const {
@@ -798,6 +897,21 @@ namespace qpl {
                 }
             }
             return result;
+        }
+        qpl::filesys::path qpl::filesys::path::get_common_branch(const qpl::filesys::path& other) const {
+            auto branches_a = this->get_branches();
+            auto branches_b = other.get_branches();
+            auto min = qpl::min(branches_a.size(), branches_b.size());
+
+            qpl::size i = 0u;
+            for (; i < min; ++i) {
+                if (branches_a[i] != branches_b[i]) {
+                    if (i == 0u) return "";
+                    return branches_a[i - 1];
+                }
+            }
+            if (i == 0u) return "";
+            return branches_a[i - 1];
         }
 
         qpl::filesys::paths qpl::filesys::path::search_where_extension_equals(const std::string_view& extension) const {
@@ -1793,7 +1907,6 @@ namespace qpl {
             print_branch_names(0u);
 
             for (auto& path : this->m_paths) {
-                //qpl::println("path = ", path);
                 current_branch_names = path.get_branch_names();
 
                 bool not_equal = false;
@@ -1806,7 +1919,7 @@ namespace qpl {
 
                         if (path.is_file()) {
                             print_branch_space(branch_names.size());
-                            qpl::println("_ ", path.get_name());
+                            qpl::println("_ ", path.get_full_name(true));
                         }
                         break;
                     }
@@ -1815,7 +1928,7 @@ namespace qpl {
                 if (!not_equal) {
                     branch_names = current_branch_names;
                     print_branch_space(branch_names.size());
-                    qpl::println("_ ", path.get_name());
+                    qpl::println("_ ", path.get_full_name(true));
                 }
             }
         }
@@ -2590,21 +2703,27 @@ namespace qpl {
         std::string qpl::filesys::get_name(const qpl::filesys::path& path) {
             return path.get_name();
         }
-        std::string qpl::filesys::get_extension(const qpl::filesys::path& path) {
-            return path.get_extension();
+        std::string qpl::filesys::get_file_extension(const qpl::filesys::path& path) {
+            return path.get_file_extension();
         }
         std::string qpl::filesys::get_file_name(const qpl::filesys::path& path) {
             return path.get_file_name();
+        }        
+        std::string qpl::filesys::get_full_file_name(const qpl::filesys::path& path) {
+            return path.get_full_file_name();
         }
 
         std::string_view get_name_view(const qpl::filesys::path& path) {
             return path.get_name_view();
         }
-        std::string_view get_extension_view(const qpl::filesys::path& path) {
-            return path.get_extension_view();
+        std::string_view get_file_extension_view(const qpl::filesys::path& path) {
+            return path.get_file_extension_view();
         }
         std::string_view get_file_name_view(const qpl::filesys::path& path) {
             return path.get_file_name_view();
+        }
+        std::string_view get_full_file_name_view(const qpl::filesys::path& path) {
+            return path.get_full_file_name_view();
         }
         qpl::filesys::path qpl::filesys::get_parent_branch(const qpl::filesys::path& path) {
             return path.get_parent_branch();
@@ -2646,6 +2765,26 @@ namespace qpl {
         bool qpl::filesys::file_name_matches(const qpl::filesys::path& path, const std::regex& regex) {
             return path.file_name_matches(regex);
         }
+
+        bool qpl::filesys::full_file_name_equals(const qpl::filesys::path& path, const std::string_view& str) {
+            return path.full_file_name_equals(str);
+        }
+        bool qpl::filesys::full_file_name_equals(const qpl::filesys::path& path, const std::string& str) {
+            return path.full_file_name_equals(str);
+        }
+        bool qpl::filesys::full_file_name_contains(const qpl::filesys::path& path, const std::string_view& str) {
+            return path.full_file_name_contains(str);
+        }
+        bool qpl::filesys::full_file_name_contains(const qpl::filesys::path& path, const std::string& str) {
+            return path.full_file_name_contains(str);
+        }
+        bool qpl::filesys::full_file_name_matches(const qpl::filesys::path& path, const std::string& regex) {
+            return path.full_file_name_matches(regex);
+        }
+        bool qpl::filesys::full_file_name_matches(const qpl::filesys::path& path, const std::regex& regex) {
+            return path.full_file_name_matches(regex);
+        }
+
         bool qpl::filesys::name_equals(const qpl::filesys::path& path, const std::string_view& str) {
             return path.name_equals(str);
         }
@@ -2910,60 +3049,216 @@ namespace qpl {
         return qpl::filesys::write_data_file(data, path);
     }
 
-    void qpl::save_state::clear() {
-        this->collection_string.clear();
-        this->ctr = 0u;
+    void qpl::file_encrypter::clear() {
+        this->paths.clear();
+        this->additions = 0u;
+        this->part_paths.clear();
     }
-    void qpl::save_state::file_save(std::string path) {
-        this->collection_string.finalize();
-        auto str = this->collection_string.get_string();
-        qpl::filesys::write_data_file(str, path);
-    }
-    void qpl::save_state::file_save(std::string path, const std::array<qpl::u64, 4>& key) {
-        this->collection_string.finalize();
-        auto str = this->collection_string.get_string();
-        str = qpl::encrypt(str, key);
-        qpl::filesys::write_data_file(str, path);
-    }
-    void qpl::save_state::file_load(std::string path) {
-        this->ctr = 0u;
-        auto str = qpl::filesys::read_file(path);
-        this->collection_string.set_string(str);
-        if (!this->collection_string.read_info()) {
-            throw qpl::exception("save_state: \"", path, "\" failed to load.");
+    void qpl::file_encrypter::add(std::string path) {
+        auto file_path = qpl::filesys::path(path);
+
+        auto adding = file_path.get_file_extension().starts_with(this->keyword_string_part);
+
+        if (adding) {
+            if (!this->adding_parts) {
+                ++this->additions;
+            }
+            auto name = file_path.get_file_name();
+            this->part_paths[name].push_back(file_path);
+        }
+        else {
+            this->paths.push_back(path);
+            ++this->additions;
+        }
+        this->adding_parts = adding;
+
+        if (this->common_branch.empty()) {
+            this->common_branch = path;
+        }
+        else {
+            this->common_branch = this->common_branch.get_common_branch(path);
+        }
+
+        if (file_path.is_file()) {
+            return;
+        }
+
+        auto files = file_path.list_current_directory_tree();
+        for (auto& i : files) {
+            if (i.is_directory()) {
+                if (i.string().back() != '/') {
+                    i.append("/");
+                }
+            }
+            this->paths.push_back(i);
+
+            if (this->common_branch.empty()) {
+                this->common_branch = i;
+            }
+            else {
+                this->common_branch = this->common_branch.get_common_branch(i);
+            }
         }
     }
-    void qpl::save_state::file_load(std::string path, const std::array<qpl::u64, 4>& key) {
-        this->ctr = 0u;
-        auto str = qpl::filesys::read_file(path);
-        str = qpl::decrypt(str, key);
-        this->collection_string.set_string(str);
-        if (!this->collection_string.read_info()) {
-            throw qpl::exception("save_state: \"", path, "\" failed to load.");
+    std::string qpl::file_encrypter::encrypted_string(const std::string& key, qpl::aes::mode mode) {
+        if (this->paths.empty()) {
+            return "";
+        }
+        auto common_size = this->common_branch.branch_size() - 1;
+
+        qpl::save_state save_state;
+        save_state.save(this->common_branch.string());
+        save_state.save(this->paths.size());
+
+        for (auto& i : this->paths) {
+            save_state.save(i.string());
+            save_state.save(i.is_file());
+        }
+
+        for (auto& i : this->paths) {
+            if (i.is_file()) {
+                save_state.save(i.read());
+            }
+        }
+
+        this->clear();
+        auto str = save_state.get_finalized_string();
+        str = qpl::encrypted_keep_size(str, key, mode);
+        return str;
+    }
+    qpl::filesys::paths qpl::file_encrypter::encrypt(const std::string& key, std::string output_name, qpl::aes::mode mode, qpl::filesys::path destination_path, qpl::size split_size) {
+        if (!destination_path.empty() && destination_path.string().back() != '/') {
+            destination_path.append("/");
+        }
+
+        auto str = this->encrypted_string(key, mode);
+
+        qpl::filesys::path encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted);
+
+        qpl::size ctr = 0u;
+        while (encrypted_path.exists()) {
+            encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted, ctr);
+            ++ctr;
+        }
+        auto splits = qpl::split_string_every(str, split_size);
+        if (splits.size() > 1) {
+
+            auto log = std::log10(splits.size() - 1) + 1;
+            for (qpl::size i = 0u; i < splits.size(); ++i) {
+                auto part_string = qpl::to_string(".", this->keyword_string_part, qpl::prepended_to_string_to_fit(qpl::to_string(i), '0', qpl::size_cast(log)));
+
+                auto path = encrypted_path;
+                path.append(part_string);
+
+                while (path.exists()) {
+                    encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted, ctr);
+                    path = encrypted_path;
+                    path.append(part_string);
+                    ++ctr;
+                }
+
+                path.write(splits[i]);
+            }
+        }
+        else {
+            encrypted_path.write(str);
+        }
+
+        return this->paths;
+    }
+    qpl::filesys::paths qpl::file_encrypter::decrypt(const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path) const {
+        if (!destination_path.empty() && destination_path.string().back() != '/') {
+            destination_path.append("/");
+        }
+        qpl::filesys::paths tree;
+        for (auto& path : this->paths) {
+            auto string = path.read();
+            this->internal_decrypt(string, key, mode, destination_path, tree);
+        }
+        for (auto& part : this->part_paths) {
+            std::string string;
+
+            const auto& paths = part.second;
+            std::vector<std::pair<qpl::filesys::path, qpl::size>> sorted_parts(paths.size());
+            for (qpl::size i = 0u; i < sorted_parts.size(); ++i) {
+                auto n = qpl::size_cast(paths[i].get_file_extension().substr(this->keyword_string_part.length()));
+                sorted_parts[i] = std::make_pair(paths[i], n);
+            }
+            qpl::sort(sorted_parts, [](const auto& a, const auto& b) {
+                return a.second < b.second;
+                });
+
+            auto p = sorted_parts.size() == 1u ? "part" : "parts";
+            for (auto& file : sorted_parts) {
+                string += file.first.read();
+            }
+            this->internal_decrypt(string, key, mode, destination_path, tree);
+        }
+
+        return tree;
+    }
+
+    void qpl::file_encrypter::internal_decrypt(const std::string& string, const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path, qpl::filesys::paths& tree) const {
+        auto str = qpl::decrypted_keep_size(string, key, mode);
+
+        qpl::save_state load_state;
+        std::string s;
+        load_state.set_string(str);
+        load_state.load(s);
+        qpl::filesys::path common = s;
+
+        qpl::size size;
+        load_state.load(size);
+        qpl::filesys::paths loaded_paths;
+        loaded_paths.resize(size);
+
+        std::unordered_set<std::string> is_file_hash;
+        for (auto& i : loaded_paths) {
+            std::string path_str;
+            load_state.load(path_str);
+            bool is_file;
+            load_state.load(is_file);
+            if (is_file) {
+                is_file_hash.insert(path_str);
+            }
+            i = path_str;
+        }
+
+        std::string branch_name;
+        auto split = qpl::split_string(common.get_full_name(), '.');
+
+        branch_name = common.get_full_name();
+        if (split.size() && split.back() == this->keyword_string_enrypted) {
+            split.pop_back();
+            branch_name = qpl::to_string_format("a.b", split);
+        }
+        branch_name += qpl::to_string('.', this->keyword_string_derypted);
+        auto original_branch_name = branch_name;
+
+        qpl::filesys::path decrypted_path = qpl::to_string(destination_path, branch_name, "/");
+
+        qpl::size ctr = 0u;
+        while (decrypted_path.exists()) {
+            branch_name = qpl::to_string(original_branch_name, ctr);
+            decrypted_path = qpl::to_string(destination_path, branch_name, "/");
+            ++ctr;
+        }
+
+        ctr = 0u;
+        for (auto& i : loaded_paths) {
+            decrypted_path = i;
+            decrypted_path.set_branch(common.branch_size() - 1, branch_name);
+            decrypted_path = qpl::to_string(destination_path, branch_name, "/", decrypted_path.subpath(common.branch_size() - 1));
+
+            decrypted_path.ensure_branches_exist();
+
+            bool is_file = is_file_hash.find(i) != is_file_hash.cend();
+            if (is_file) {
+                std::string data_str;
+                load_state.load(data_str);
+                decrypted_path.write(data_str);
+            }
+            tree.push_back(decrypted_path);
         }
     }
-    void qpl::save_state::set_string(const std::string& str) {
-        this->collection_string.set_string(str);
-        if (!this->collection_string.read_info()) {
-            throw qpl::exception("save_state::set_string: failed to load.");
-        }
-    }
-    void qpl::save_state::finalize_string() {
-        this->collection_string.finalize();
-    }
-    std::string qpl::save_state::get_string() const {
-        return this->collection_string.get_string();
-    }
-    std::string qpl::save_state::get_finalized_string() {
-        this->finalize_string();
-        return this->collection_string.get_string();
-    }
-   std::string qpl::save_state::get_next_string() {
-       return this->collection_string.get_string(this->ctr++);
-   }
-   save_state qpl::save_state::get_next_save_state() {
-       qpl::save_state state;
-       state.set_string(this->collection_string.get_string(this->ctr++));
-       return state;
-   }
 }

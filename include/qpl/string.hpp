@@ -376,6 +376,7 @@ namespace qpl {
 	}
 
 	QPLDLL std::string bool_string(bool b);
+	QPLDLL std::string memory_size_string(qpl::size bytes, bool binary = false);
 
 	#define qpl_vstring(name) std::string(#name)
 	#define qpl_vistring(name) qpl::two_strings_fixed_insert(std::string(#name), name, 80, ' ')
@@ -1181,7 +1182,42 @@ namespace qpl {
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		};
-
+		constexpr std::array<bool, qpl::type_configurations<qpl::u8>()> alpha_table = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+			0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		};
+		constexpr std::array<bool, qpl::type_configurations<qpl::u8>()> digit_table = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		};
 		constexpr std::array<bool, qpl::type_configurations<qpl::u8>()> operator_table = {
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1301,18 +1337,28 @@ namespace qpl {
 
 
 	constexpr bool is_character_special(char c) {
-		return qpl::detail::special_table[c];
+		return qpl::detail::special_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
 	constexpr bool is_character_digit_alpha(char c) {
-		return !qpl::detail::special_table[c];
+		return !qpl::detail::special_table[qpl::size_cast(qpl::u8_cast(c))];
+	}
+	constexpr bool is_character_digit(char c) {
+		return qpl::detail::digit_table[qpl::size_cast(qpl::u8_cast(c))];
+	}
+	constexpr bool is_character_digit_or_dot(char c) {
+		return c == '.' || qpl::detail::digit_table[qpl::size_cast(qpl::u8_cast(c))];
+	}
+	constexpr bool is_character_alpha(char c) {
+		return qpl::detail::alpha_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
 	constexpr bool is_character_whitespace(char c) {
-		return qpl::detail::white_space_table[c];
+		return qpl::detail::white_space_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
 
 
 	template<typename T> requires (qpl::is_integer<T>())
-	std::string base_string(T value, T base, const std::string& prefix = "", base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
+	std::string base_string(T value, T base, const std::string& prefix = "", base_format base_format = base_format::base36l, bool prepend_zeroes = false, qpl::size prepend_size = qpl::size_max) {
+		
 		if (value == T{}) {
 			if (prepend_zeroes) {
 				switch (base_format) {
@@ -1377,7 +1423,8 @@ namespace qpl {
 
 		auto str = digits.str();
 		if (prepend_zeroes) {
-			qpl::i64 left = qpl::i64_cast(qpl::base_max_log(base)) - qpl::i64_cast(str.length());
+			auto base_log = prepend_size == qpl::size_max ? qpl::i64_cast(qpl::base_max_log(base)) : qpl::i64_cast(prepend_size);
+			qpl::i64 left = base_log - qpl::i64_cast(str.length());
 
 			if (left > qpl::i64{}) {
 				switch (base_format) {
@@ -1510,8 +1557,8 @@ namespace qpl {
 	QPLDLL std::string hex_string(const std::string& string);
 
 	template<typename T> requires (qpl::is_integer<T>())
-	std::string hex_string_full(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
-		return qpl::base_string(value, T{ 16 }, prefix, base_format, true);
+	std::string hex_string_full(T value, qpl::size prepended_size = qpl::size_max, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
+		return qpl::base_string(value, T{ 16 }, prefix, base_format, true, prepended_size);
 	}
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string binary_string(T value, base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
@@ -1520,8 +1567,8 @@ namespace qpl {
 	QPLDLL std::string binary_string(const std::string& string);
 
 	template<typename T> requires (qpl::is_integer<T>())
-	std::string binary_string_full(T value, base_format base_format = base_format::base36l) {
-		return qpl::base_string(value, T{ 2 }, "", base_format, true);
+	std::string binary_string_full(T value, qpl::size prepended_size = qpl::size_max, base_format base_format = base_format::base36l) {
+		return qpl::base_string(value, T{ 2 }, "", base_format, true, prepended_size);
 	}
 
 	template<typename C> requires (qpl::is_container<C>())
@@ -1771,6 +1818,7 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
 	QPLDLL std::vector<std::string> split_string_words(const std::string& string);
 	QPLDLL std::vector<std::wstring> split_string_allow_empty(const std::wstring& string, wchar_t by_what);
+	QPLDLL std::vector<std::string> split_string_digit_alpha(const std::string& string);
 
 	template<typename T>
 	constexpr auto split_string(const std::string& string, char by_what) {
@@ -1906,8 +1954,9 @@ namespace qpl {
 		return result;
 	}
 
+
 	template<typename T>
-	std::vector<T> split_numbers(const std::string& string) {
+	std::vector<T> split_string_numbers(const std::string& string) {
 		std::vector<T> result;
 
 		if constexpr (qpl::is_floating_point<T>()) {
@@ -1927,13 +1976,12 @@ namespace qpl {
 			}
 		}
 		else {
-			static_assert("split_numbers<T>: T is not arithmetic");
+			static_assert("split_string_numbers<T>: T is not arithmetic");
 		}
 		return result;
 	}
-
 	template<typename T>
-	std::vector<T> split_numbers(const std::wstring& string) {
+	std::vector<T> split_string_numbers(const std::wstring& string) {
 		std::vector<T> result;
 
 		if constexpr (qpl::is_floating_point<T>()) {
@@ -1957,7 +2005,6 @@ namespace qpl {
 		}
 		return result;
 	}
-
 
 	QPLDLL std::string string_first_n_characters(const std::string& string, qpl::size n);
 	constexpr std::string_view string_first_n_characters(const std::string_view& string, qpl::size n) {

@@ -926,6 +926,132 @@ namespace qpl {
 		return (os << array.string());
 	}
 
+	struct save_state;
+
+	namespace impl {
+		template<typename T>
+		concept has_save = requires(const T a) {
+			{ a.save() } -> std::same_as<std::string>;
+		};
+
+		template<typename T>
+		concept has_load = requires(T a, save_state state) {
+			a.load(state);
+		};
+	}
+
+	template<typename T>
+	constexpr bool has_save() {
+		if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
+			return qpl::has_save<qpl::container_subtype<T>>();
+		}
+		else {
+			return qpl::impl::has_save<T>;
+		}
+	}
+	template<typename T>
+	constexpr bool has_load() {
+		if constexpr (qpl::is_container<T>() && qpl::has_resize<T>()) {
+			return qpl::has_load<qpl::container_subtype<T>>();
+		}
+		else {
+			return qpl::impl::has_load<T>;
+		}
+	}
+
+	struct save_state {
+		qpl::collection_string collection_string;
+		qpl::size ctr = 0u;
+
+		save_state() {
+
+		}
+		template<typename... Ts>
+		save_state(const Ts&... saves) {
+			this->save(saves...);
+		}
+
+		QPLDLL void clear();
+		QPLDLL void file_save(std::string path);
+		QPLDLL void file_save(std::string path, const std::array<qpl::u64, 4>& key);
+		QPLDLL void file_load(std::string path);
+		QPLDLL void file_load(std::string path, const std::array<qpl::u64, 4>& key);
+		QPLDLL void set_string(const std::string& str);
+		QPLDLL void finalize_string();
+		QPLDLL std::string get_string() const;
+		QPLDLL std::string get_finalized_string();
+		QPLDLL std::string get_next_string();
+		QPLDLL save_state get_next_save_state();
+
+		template<typename T>
+		void save_single(const T& data) {
+			if constexpr (qpl::is_standard_string_type<T>()) {
+				this->collection_string.add_string(data);
+			}
+			else if constexpr (qpl::has_save<T>()) {
+				if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
+					auto str = qpl::stack_memory_to_string(data.size());
+					this->collection_string.add_string(str);
+					for (auto& i : data) {
+						this->save_single(i);
+					}
+				}
+				else {
+					this->collection_string.add_string(data.save());
+				}
+			}
+			else if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
+				auto str = qpl::heap_memory_to_string(data);
+				this->collection_string.add_string(str);
+			}
+			else {
+				auto str = qpl::stack_memory_to_string(data);
+				this->collection_string.add_string(str);
+			}
+		}
+		template<typename... Ts>
+		void save(const Ts&... data) {
+			(this->save_single(data), ...);
+		}
+		template<typename T>
+		void load_single(T& data) {
+			if (this->ctr >= this->collection_string.size()) {
+				throw qpl::exception("save_state: trying to load resource #", this->ctr, " but size is only ", this->collection_string.size());
+			}
+			if constexpr (qpl::has_load<T>()) {
+				if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
+					qpl::size size;
+					qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), size);
+					data.resize(size);
+					++ctr;
+					for (auto& i : data) {
+						this->load_single(i);
+					}
+				}
+				else {
+					data.load(this->get_next_save_state());
+				}
+			}
+			else if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
+				if constexpr (qpl::is_std_array_type<T>()) {
+					qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), data);
+				}
+				else {
+					qpl::string_to_heap_memory(this->collection_string.get_string(this->ctr), data);
+				}
+				++this->ctr;
+			}
+			else {
+				qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), data);
+				++this->ctr;
+			}
+		}
+		template<typename... Ts>
+		void load(Ts&... data) {
+			(this->load_single(data), ...);
+		}
+	};
+
 
 }
 
