@@ -395,19 +395,19 @@ namespace qpl {
 			return *this;
 		}
 		template<typename U>
-		void move(const vectorN<U, N>& delta) {
+		constexpr void move(const vectorN<U, N>& delta) {
 			*this += delta;
 		}
 		template<typename U, typename... Args>
-		void move(U first, Args&&... list) {
+		constexpr void move(U first, Args&&... list) {
 			*this += vectorN(first, list...);
 		}
 		template<typename U>
-		auto moved(const vectorN<U, N>& delta) const {
+		constexpr auto moved(const vectorN<U, N>& delta) const {
 			return *this + delta;
 		}
 		template<typename U, typename... Args>
-		auto moved(U first, Args&&... list) {
+		constexpr auto moved(U first, Args&&... list) {
 			return *this + vectorN(first, list...);
 		}
 
@@ -827,7 +827,8 @@ namespace qpl {
 
 	template <typename T, typename ...Args> requires (qpl::is_arithmetic<T>())
 	constexpr auto vec(T first, Args... rest) {
-		return qpl::vectorN<T, sizeof...(Args) + 1>(first, rest...);
+		using R = qpl::superior_arithmetic_type<T, Args...>;
+		return qpl::vectorN<R, sizeof...(Args) + 1>(first, rest...);
 	}
 
 	template<typename T>
@@ -1072,8 +1073,20 @@ namespace qpl {
 			this->dimension += qpl::vector2<T>(delta, T{ 0 });
 		}
 		template<typename U>
+		qpl::hitbox_t<T> extended_left(U delta) const {
+			auto copy = *this;
+			copy.extend_left(delta);
+			return copy;
+		}
+		template<typename U>
 		void extend_right(U delta) {
 			this->dimension += qpl::vector2<T>(delta, T{ 0 });
+		}
+		template<typename U>
+		qpl::hitbox_t<T> extended_right(U delta) const {
+			auto copy = *this;
+			copy.extend_right(delta);
+			return copy;
 		}
 
 		template<typename U>
@@ -1082,8 +1095,20 @@ namespace qpl {
 			this->dimension += qpl::vector2<T>(T{ 0 }, delta);
 		}
 		template<typename U>
+		qpl::hitbox_t<T> extended_up(U delta) const {
+			auto copy = *this;
+			copy.extend_up(delta);
+			return copy;
+		}
+		template<typename U>
 		void extend_down(U delta) {
 			this->dimension += qpl::vector2<T>(T{ 0 }, delta);
+		}
+		template<typename U>
+		qpl::hitbox_t<T> extended_down(U delta) const {
+			auto copy = *this;
+			copy.extend_down(delta);
+			return copy;
 		}
 
 		qpl::vector2<T> bottom_right() const {
@@ -1098,7 +1123,18 @@ namespace qpl {
 		qpl::vector2<T> top_right() const {
 			return this->position + this->dimension.just_x();
 		}
-
+		qpl::vector2<T> middle_left() const {
+			return this->position + qpl::vec(0, this->dimension.y / 2);
+		}
+		qpl::vector2<T> middle_top() const {
+			return this->position + qpl::vec(this->dimension.x / 2, 0);
+		}
+		qpl::vector2<T> middle_bottom() const {
+			return this->position + qpl::vec(this->dimension.x / 2, this->dimension.y);
+		}
+		qpl::vector2<T> middle_right() const {
+			return this->position + qpl::vec(this->dimension.x, this->dimension.y / 2);
+		}
 
 		qpl::vector2<T> dimension;
 		qpl::vector2<T> position;

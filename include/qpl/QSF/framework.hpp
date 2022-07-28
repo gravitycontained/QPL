@@ -11,9 +11,9 @@
 #include <memory>
 
 #include <qpl/QSF/event_info.hpp>
-#include <qpl/color.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/resources.hpp>
+#include <qpl/color.hpp>
 #include <qpl/vector.hpp>
 #include <qpl/time.hpp>
 
@@ -27,140 +27,6 @@ namespace qsf {
 	framework.add_state<state>();
 	framework.game_loop();
 	*/
-	struct framework2 {
-		framework2() {
-			this->set_title(" ");
-			this->set_dimension({ 1280, 720 });
-			this->set_style(sf::Style::Default);
-			this->m_created = false;
-
-			this->context_settings.antialiasingLevel = 12u;
-		}
-		
-
-		template<typename C> requires (std::is_base_of_v<base_state, C>)
-		void add_state() {
-			this->states.push_back(std::make_unique<C>());
-			this->states.back()->framework = this;
-			this->states.back()->init();
-		}
-		
-
-		template<typename C> requires (std::is_base_of_v<base_state, C>)
-		void add_state(C& state) {
-			this->states.push_back(std::make_unique<C>(state));
-			this->states.back()->init();
-		}
-
-		QPLDLL void play_sound(const std::string& name, qpl::f32 volume = 100.0f, qpl::f32 speed = 1.0f);
-		QPLDLL void add_font(const std::string& name, const std::string& path);
-		QPLDLL void add_sound(const std::string& name, const std::string& path);
-		QPLDLL void add_texture(const std::string& name, const std::string& path);
-		QPLDLL void add_sprite(const std::string& name, const std::string& path);
-		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
-		QPLDLL void add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type);
-		QPLDLL void add_shader(const std::string& name, const std::string& path);
-		QPLDLL void add_text(const std::string& name);
-
-		QPLDLL void add_font_from_memory(const std::string& name, const std::string& memory);
-		QPLDLL void add_sound_from_memory(const std::string& name, const std::string& memory);
-		QPLDLL void add_texture_from_memory(const std::string& name, const std::string& memory);
-		QPLDLL void add_shader_from_memory(const std::string& name, const std::string& memory, sf::Shader::Type shader_type);
-
-		QPLDLL sf::Font& get_font(const std::string& name);
-		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
-		QPLDLL sf::Texture& get_texture(const std::string& name);
-		QPLDLL sf::Sprite& get_sprite(const std::string& name);
-		QPLDLL sf::Shader& get_shader(const std::string& name);
-		QPLDLL qsf::text& get_text(const std::string& name);
-
-		QPLDLL const sf::Font& get_font(const std::string& name) const;
-		QPLDLL const sf::SoundBuffer& get_sound(const std::string& name) const;
-		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
-		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
-		QPLDLL const sf::Shader& get_shader(const std::string& name) const;
-		QPLDLL const qsf::text& get_text(const std::string& name) const;
-
-		QPLDLL void create();
-		QPLDLL bool is_created() const;
-		QPLDLL bool is_open() const;
-		QPLDLL void set_info(const std::string& title, qpl::vector2u dimension, qpl::u32 style);
-		QPLDLL void set_title(const std::string& title);
-		QPLDLL void set_dimension(qpl::vector2u dimension);
-		QPLDLL void set_style(qpl::u32 style);
-		QPLDLL void hide_cursor();
-		QPLDLL void set_window_position(qpl::vector2u position);
-		QPLDLL qpl::vector2u get_window_position() const;
-		QPLDLL void show_cursor();
-		QPLDLL void set_cursor_position(qpl::vector2i position);
-		QPLDLL void draw_call();
-
-		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
-		void draw(const T& drawable, sf::RenderStates states) {
-			if constexpr (qsf::is_render_texture<T>()) {
-				this->window.draw(drawable.get_sprite(), states);
-			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->window.draw(drawable, states);
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				draw_object draw(this->window, states);
-				drawable.draw(draw);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				drawable.draw(this->window, states);
-			}
-		}
-
-		QPLDLL void display();
-		QPLDLL void internal_update();
-		QPLDLL bool game_loop_segment();
-		QPLDLL void game_loop();
-
-
-		QPLDLL void set_framerate_limit(qpl::u32 value);
-		QPLDLL qpl::u32 get_framerate_limit() const;
-		QPLDLL void disable_framerate_limit();
-
-		QPLDLL void enable_update_if_no_focus();
-		QPLDLL void disable_update_if_no_focus();
-		QPLDLL bool is_update_if_no_focus_enabled() const;
-
-		QPLDLL bool has_focus() const;
-		QPLDLL bool has_gained_focus() const;
-		QPLDLL bool has_lost_focus() const;
-
-		QPLDLL qpl::time no_focus_time() const;
-		QPLDLL qpl::time run_time() const;
-		QPLDLL qpl::time frame_time() const;
-
-		QPLDLL void add_render(const std::string& name, bool smooth = true);
-		QPLDLL qsf::render_texture& get_render(const std::string& name);
-		QPLDLL const qsf::render_texture& get_render(const std::string& name) const;
-
-		std::vector<std::unique_ptr<qsf::base_state>> states;
-		qsf::event_info event;
-		sf::RenderWindow window;
-		std::unordered_map<std::string, qsf::render_texture> m_render_textures;
-		sf::ContextSettings context_settings;
-		std::string m_title;
-		qpl::vector2u m_dimension;
-		qpl::u32 m_style = sf::Style::Default;
-		qpl::clock m_run_time_clock;
-		qpl::clock m_frametime_clock;
-		qpl::time m_frametime;
-		qpl::u32 m_framerate_limit = 144u;
-		bool m_created = false;
-		bool m_update_if_no_focus = true;
-
-		bool m_focus = true;
-		bool m_lost_focus = false;
-		bool m_gained_focus = false;
-		qpl::small_clock m_no_focus_timer;
-		qpl::time m_no_focus_time;
-	};
-
-
 	struct framework {
 		framework();
 
@@ -168,17 +34,27 @@ namespace qsf {
 		void add_state() {
 			this->states.push_back(std::make_unique<C>());
 			this->states.back()->framework = this;
-			this->states.back()->init();
+			this->states.back()->call_before_create();
+			this->states.back()->last_dimension = this->dimension;
+			if (this->is_created()) {
+				this->init_back();
+			}
 		}
 
 		template<typename C> requires (std::is_base_of_v<qsf::base_state, C>)
 		void add_state(C& state) {
 			this->states.push_back(std::make_unique<C>(state));
-			this->states.back()->init();
+			this->states.back()->framework = this;
+			this->states.back()->call_before_create();
+			this->states.back()->last_dimension = this->dimension;
+			if (this->is_created()) {
+				this->init_back();
+			}
 		}
 
 
 		QPLDLL void draw_call();
+		QPLDLL void init_back();
 
 		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, sf::RenderStates states) {
@@ -217,6 +93,7 @@ namespace qsf {
 		QPLDLL bool has_focus() const;
 		QPLDLL bool has_gained_focus() const;
 		QPLDLL bool has_lost_focus() const;
+		QPLDLL void close();
 		QPLDLL qpl::time get_no_focus_time() const;
 		QPLDLL qpl::time run_time() const;
 		QPLDLL qpl::time frame_time() const;
@@ -265,6 +142,7 @@ namespace qsf {
 		QPLDLL qpl::vector2u get_window_position() const;
 		QPLDLL void show_cursor();
 		QPLDLL void set_cursor_position(qpl::vector2i position);
+		QPLDLL void set_speed_factor(qpl::f64 speed);
 
 
 		std::vector<std::unique_ptr<qsf::base_state>> states;
@@ -279,8 +157,10 @@ namespace qsf {
 		qpl::small_clock no_focus_timer;
 		qpl::time frametime;
 		qpl::time no_focus_time;
+		qpl::size state_size_before = 0u;
 		qpl::u32 framerate_limit = 144u;
 		qpl::u32 style = sf::Style::Default;
+		qpl::f64 speed_factor = 1.0;
 		bool created = false;
 		bool update_if_no_focus = true;
 		bool focus = true;
@@ -313,7 +193,7 @@ namespace qsf {
 		QPLDLL virtual void call_on_resize();
 		QPLDLL virtual void call_before_create();
 		QPLDLL virtual void call_on_close();
-		QPLDLL virtual void call_after_create();
+		QPLDLL virtual void call_on_activate();
 
 		QPLDLL void draw_call();
 		QPLDLL void display();
@@ -519,6 +399,7 @@ namespace qsf {
 		QPLDLL void set_cursor_position(qpl::vector2i position);
 		QPLDLL void set_window_position(qpl::vector2u position);
 		QPLDLL qpl::vector2u get_window_position() const;
+		QPLDLL void set_speed_factor(qpl::f64 speed);
 
 		QPLDLL qpl::vector2i dimension() const;
 		QPLDLL qpl::vector2f center() const;
@@ -575,8 +456,9 @@ namespace qsf {
 		QPLDLL bool has_focus() const;
 		QPLDLL bool has_gained_focus() const;
 		QPLDLL bool has_lost_focus() const;
+		QPLDLL void close();
 
-		QPLDLL qpl::size frame_ctr() const;
+		QPLDLL qpl::size frame_count() const;
 		QPLDLL qpl::time get_no_focus_time() const;
 		QPLDLL qpl::time frame_time() const;
 		QPLDLL qpl::f64 frame_time_f() const;
@@ -586,13 +468,18 @@ namespace qsf {
 
 		qsf::framework* framework;
 
+		friend qsf::framework;
+	private:
 		sf::Color clear_color = sf::Color::Black;
 		sf::RenderStates render_states = sf::RenderStates::Default;
-		qpl::size m_frame_ctr = 0u;
-		bool m_pop_this_state = false;
-		bool m_allow_exit = true;
-		bool m_allow_clear = true;
-		bool m_allow_display = true;
+		qpl::vector2i last_dimension;
+		qpl::f64 speed_factor = 1.0;
+		qpl::size frame_ctr = 0u;
+		bool is_initalized = false;
+		bool is_pop_this_state = false;
+		bool is_allow_exit = true;
+		bool is_allow_clear = true;
+		bool is_allow_display = true;
 	};
 }
 

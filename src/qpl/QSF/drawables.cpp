@@ -347,6 +347,9 @@ namespace qsf {
 	void qsf::text::set_letter_spacing(qpl::f32 spacing) {
 		this->m_text.setLetterSpacing(spacing);
 	}
+	void qsf::text::set_line_spacing(qpl::f32 spacing) {
+		this->m_text.setLineSpacing(spacing);
+	}
 	void qsf::text::set_position(qpl::vector2f position) {
 		this->m_text.setPosition(position);
 	}
@@ -827,6 +830,11 @@ namespace qsf {
 	}
 	void qsf::rectangle::set_multiplied_color(qpl::rgb color) {
 		this->multiplied_color = color;
+		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
+		this->m_rect.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
+	}
+	void qsf::rectangle::set_multiplied_alpha(qpl::u8 alpha) {
+		this->multiplied_color.a = alpha;
 		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
 		this->m_rect.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
 	}
@@ -1414,6 +1422,9 @@ namespace qsf {
 		this->slope_dim = dimension;
 		this->internal_check = true;
 	}
+	void qsf::smooth_rectangle::set_slope_dimension(qpl::f32 dimension) {
+		this->set_slope_dimension(qpl::vec(dimension, dimension));
+	}
 	void qsf::smooth_rectangle::set_slope_point_count(qpl::size point_count) {
 		this->slope_point_count = point_count;
 		this->internal_check = true;
@@ -1481,9 +1492,14 @@ namespace qsf {
 	}
 
 	const qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) const {
-		this->polygon.set_color(smooth_rectangle.color.multiplied_color(smooth_rectangle.multiplied_color));
+		this->position = smooth_rectangle.get_position();
+		this->dimension = smooth_rectangle.get_dimension();
+		
+		this->polygon.set_color(smooth_rectangle.color);
+		this->polygon.set_outline_color(smooth_rectangle.outline_color);
 		this->polygon.set_outline_thickness(smooth_rectangle.outline_thickness);
-		this->polygon.set_outline_color(smooth_rectangle.outline_color.multiplied_color(smooth_rectangle.multiplied_color));
+		this->polygon.shape.setFillColor(smooth_rectangle.color.multiplied_color(smooth_rectangle.multiplied_color));
+		this->polygon.shape.setOutlineColor(smooth_rectangle.outline_color.multiplied_color(smooth_rectangle.multiplied_color));
 
 		auto size = smooth_rectangle.slope_point_count;
 		this->polygon.resize(size * 4);
@@ -2532,6 +2548,14 @@ namespace qsf {
 	void qsf::sprite::set_position(qpl::vector2f position) {
 		this->m_sprite.setPosition(position);
 	}
+	void qsf::sprite::set_position_x(qpl::f32 x) {
+		auto y = this->get_position().y;
+		this->m_sprite.setPosition(qpl::vec(x, y));
+	}
+	void qsf::sprite::set_position_y(qpl::f32 y) {
+		auto x = this->get_position().x;
+		this->m_sprite.setPosition(qpl::vec(x, y));
+	}
 	void qsf::sprite::set_center(qpl::vector2f position) {
 		this->m_sprite.setPosition(position);
 		qsf::centerize_sprite(this->m_sprite);
@@ -2557,6 +2581,9 @@ namespace qsf {
 	qpl::vector2f qsf::sprite::get_position() const {
 		return this->m_sprite.getPosition();
 	}
+	qpl::vector2f qsf::sprite::get_dimension() const {
+		return qsf::get_sprite_hitbox(this->m_sprite).dimension;
+	}
 	qpl::vector2f qsf::sprite::get_scale() const {
 		return this->m_sprite.getScale();
 	}
@@ -2575,6 +2602,19 @@ namespace qsf {
 
 	void qsf::sprite::centerize_origin() {
 		qsf::centerize_sprite_origin(this->m_sprite);
+	}
+	void qsf::sprite::centerize() {
+		this->set_position(this->get_position() - this->get_dimension() / 2);
+	}
+	void qsf::sprite::centerize_x() {
+		auto y = this->get_position().y;
+		auto x = this->get_position().x - this->get_dimension().x / 2;
+		this->set_position(qpl::vec(x, y));
+	}
+	void qsf::sprite::centerize_y() {
+		auto y = this->get_position().y - this->get_dimension().y / 2;
+		auto x = this->get_position().x;
+		this->set_position(qpl::vec(x, y));
 	}
 	void qsf::sprite::move(qpl::vector2f delta) {
 		this->m_sprite.move(delta);
@@ -2598,6 +2638,46 @@ namespace qsf {
 		return *this;
 	}
 
+	qsf::transition_overlay::transition_overlay() {
+		this->overlay.set_color(qpl::rgb::black);
+		this->set_duration(0.3);
+	}
+
+	void qsf::transition_overlay::set_color(qpl::rgb color) {
+		this->overlay.set_color(color);
+	}
+	void qsf::transition_overlay::set_slope(qpl::f64 slope) {
+		this->slope = slope;
+	}
+	void qsf::transition_overlay::set_dimension(qpl::vector2f dimension) {
+		this->overlay.set_dimension(dimension);
+	}
+	void qsf::transition_overlay::set_duration(qpl::f64 duration) {
+		this->animation.set_duration(duration);
+	}
+	void qsf::transition_overlay::make_disappear() {
+		this->animation.reset_and_start();
+	}
+	void qsf::transition_overlay::make_appear() {
+		this->animation.reset_and_start_reverse();
+	}
+	void qsf::transition_overlay::update(const qsf::event_info& event) {
+		this->animation.update(event.frame_time_f());
+		if (this->animation.is_running()) {
+			auto p = this->animation.get_curve_progress(this->slope);
+			auto a = qpl::u8_cast(255 * p);
+			this->overlay.set_multiplied_alpha(a);
+		}
+	}
+	bool qsf::transition_overlay::just_finished_disappearing() const {
+		return this->animation.just_finished_no_reverse();
+	}
+	bool qsf::transition_overlay::just_finished_appearing() const {
+		return this->animation.just_finished_reverse();
+	}
+	void qsf::transition_overlay::draw(qsf::draw_object& draw) const {
+		draw.draw(this->overlay);
+	}
 
 	void qsf::render_texture::set_antialiasing(qpl::u32 antialiasing) {
 		this->m_settings.antialiasingLevel = antialiasing;
@@ -4986,10 +5066,10 @@ namespace qsf {
 		this->scale = scale;
 	}
 	void qsf::small_tile_map::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		if (this->vertices.getVertexCount()) {
+		if (this->vertices.size()) {
 			states.transform.translate(this->position);
 			states.texture = this->texture_ptr;
-			window.draw(this->vertices, states);
+			this->vertices.draw(window, states);
 		}
 	}
 
@@ -6730,6 +6810,9 @@ namespace qsf {
 		this->smooth_layout.set_multiplied_color(color);
 		this->rectangle.polygon.set_multiplied_color(color);
 	}
+	void qsf::smooth_button::set_multiplied_alpha(qpl::u8 alpha) {
+		this->set_multiplied_color(this->multiplied_color.with_alpha(alpha));
+	}
 	void qsf::smooth_button::set_dimension(qpl::vector2f dimension) {
 		this->smooth_layout.set_dimension(dimension);
 		this->layout_changed = true;
@@ -6753,6 +6836,7 @@ namespace qsf {
 	void qsf::smooth_button::set_background_color(qpl::rgb color) {
 		this->background_color = color;
 		this->smooth_layout.set_color(color);
+		this->rectangle.set_color(color);
 		this->layout_changed = true;
 	}
 	void qsf::smooth_button::set_background_outline_thickness(qpl::f32 thickness) {
@@ -6760,7 +6844,9 @@ namespace qsf {
 		this->layout_changed = true;
 	}
 	void qsf::smooth_button::set_background_outline_color(qpl::rgb color) {
+		this->background_outline_color = color;
 		this->smooth_layout.set_outline_color(color);
+		this->rectangle.set_outline_color(color);
 		this->layout_changed = true;
 	}
 	void qsf::smooth_button::set_background_slope_dimension(qpl::vector2f dimension) {
@@ -6892,7 +6978,12 @@ namespace qsf {
 	}
 	void qsf::smooth_button::update(const qsf::event_info& event) {
 		this->create_check();
-		this->hovering = this->rectangle.contains(event.mouse_position());
+		if (this->simple_hitbox) {
+			this->hovering = this->rectangle.get_hitbox().contains(event.mouse_position());
+		}
+		else {
+			this->hovering = this->rectangle.contains(event.mouse_position());
+		}
 		this->clicked = this->hovering && event.left_mouse_clicked();
 
 		if (this->use_basic_hover_animation) {
@@ -6904,12 +6995,18 @@ namespace qsf {
 			}
 			this->hover_before = this->hovering;
 
-			this->hover_animation.update();
+			this->hover_animation.update(event.frame_time_f());
 			if (this->hover_animation.is_running()) {
 				auto progress = this->hover_animation.get_curve_progress();
+
 				auto color = this->background_color;
 				color.interpolate(color.inverted(), progress);
 				this->smooth_layout.set_color(color);
+
+				color = this->background_outline_color;
+				color.interpolate(color.inverted(), progress);
+				this->smooth_layout.set_outline_color(color);
+
 				color = this->text_color;
 				color.interpolate(color.inverted(), progress);
 				this->text.set_color(color);

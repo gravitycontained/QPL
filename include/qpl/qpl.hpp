@@ -76,6 +76,7 @@ freely, subject to the following restrictions:
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/socket.hpp>
 #include <qpl/QSF/utility.hpp>
+#include <qpl/QSF/view.hpp>
 #endif
 
 #ifdef _WIN32

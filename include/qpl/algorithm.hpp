@@ -1283,6 +1283,9 @@ namespace qpl {
 		if constexpr (qpl::is_sorted_container<C>()) {
 			return qpl::find_sorted(container, value);
 		}
+		else if constexpr (qpl::is_std_unordered_map_type<C>()) {
+			return container.find(value) != container.cend();
+		}
 		else {
 			for (auto& i : container) {
 				if (i == value) {

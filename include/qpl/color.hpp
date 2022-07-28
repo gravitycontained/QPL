@@ -338,6 +338,7 @@ namespace qpl {
 	QPLDLL qpl::rgb get_random_color();
 	QPLDLL qpl::rgb get_random_transparency_color();
 	QPLDLL qpl::rgb get_rainbow_color(qpl::f64 f);
+	QPLDLL qpl::rgb get_random_rainbow_color();
 }
 
 

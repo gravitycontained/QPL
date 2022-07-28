@@ -473,6 +473,9 @@ namespace qpl {
 		const static std::vector<qpl::rgb> rainbow = { qpl::rgb::red, qpl::rgb::yellow, qpl::rgb::green, qpl::rgb::cyan, qpl::rgb::blue, qpl::rgb::magenta, qpl::rgb::red };
 		return qpl::rgb::interpolation(rainbow, f);
 	}
+	qpl::rgb qpl::get_random_rainbow_color() {
+		return qpl::get_rainbow_color(qpl::random(0.0, 1.0));
+	}
 }
 
 #if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)

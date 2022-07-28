@@ -29,6 +29,22 @@
 namespace qpl {
 
 	template<typename T>
+	constexpr auto declval() {
+		using pointer = T*;
+		return *(pointer{});
+	}
+
+	template<class T, class... Ignored>
+	struct identity {
+		using type = typename T;
+	};
+
+	template<class... Args>
+	struct empty_indirection {
+		using type = typename identity<Args...>::type;
+	};
+
+	template<typename T>
 	concept is_read_container_c = requires(const T a) {
 		a.cbegin();
 		a.cend();
@@ -607,16 +623,6 @@ namespace qpl {
 		return sizeof(T);
 	}
 
-	template<class T, class... Ignored>
-	struct identity {
-		using type = typename T;
-	};
-
-	template<class... Args>
-	struct empty_indirection {
-		using type = typename identity<Args...>::type;
-	};
-
 	template<typename T, typename U>
 	constexpr bool is_same() {
 		return std::is_same_v<T, U>;
@@ -857,13 +863,13 @@ namespace qpl {
 		template<typename C>
 		auto container_deepest_subtype() {
 			if constexpr (!qpl::is_container<C>()) {
-				return C{};
+				return qpl::declval<C>();
 			}
 			else if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
 				return container_deepest_subtype<qpl::container_subtype<C>>();
 			}
 			else {
-				return qpl::container_subtype<C>{};
+				return qpl::declval<qpl::container_subtype<C>>();
 			}
 		}
 	}
@@ -1325,39 +1331,39 @@ namespace qpl {
 		template <typename U, template <typename, typename...> class container, typename T, typename... rest>
 		auto container_change_subtype(const container<T, rest...>& c) {
 			if constexpr (qpl::is_long_string_type<T>()) {
-				return container<U>{};
+				return qpl::declval<container<U>>();
 			}
 			else if constexpr (qpl::is_container<T>()) {
-				return container<decltype(container_subtype_cast<U>(T{}))>{};
+				return qpl::declval<container<decltype(container_subtype_cast<U>(T{})) >> ();
 			}
 			else {
-				return container<U>{};
+				return qpl::declval<container<U>>();
 			}
 		}
 
 		template<typename R, typename... A>
 		constexpr R return_type(R(*)(A...)) {
-			return R{};
+			return qpl::declval<R>();
 		}
 		template<typename R, typename... A>
 		constexpr R return_type(std::function<R(A...)>) {
-			return R{};
+			return qpl::declval<R>();
 		}
 		template<typename C, typename R, typename... A>
 		constexpr R return_type(R(C::*)(A...)) {
-			return R{};
+			return qpl::declval<R>();
 		}
 		template<typename C, typename R, typename... A>
 		constexpr R return_type(R(C::*)(A...) const) {
-			return R{};
+			return qpl::declval<R>();
 		}
 		template<typename C, typename R, typename... A>
 		constexpr C method_class_type(R(C::*)(A...)) {
-			return C{};
+			return qpl::declval<C>();
 		}
 		template<typename C, typename R, typename... A>
 		constexpr C method_class_type(R(C::*)(A...) const) {
-			return C{};
+			return qpl::declval<C>();
 		}
 
 		template<typename R, typename... A>
@@ -1600,7 +1606,7 @@ namespace qpl {
 		template<typename T>
 		constexpr auto mapped_type() {
 			if constexpr (qpl::has_mapped_type<T>()) {
-				return qpl::container_mapped_type<T>{};
+				return qpl::declval<qpl::container_mapped_type<T>>();
 			}
 			else {
 				return qpl::size{};
@@ -1609,10 +1615,10 @@ namespace qpl {
 		template<typename T>
 		constexpr auto value_type() {
 			if constexpr (qpl::has_key_type<T>()) {
-				return qpl::container_key_type<T>{};
+				return qpl::declval<qpl::container_key_type<T>>();
 			}
 			else {
-				return qpl::container_subtype<T>{};
+				return qpl::declval<qpl::container_subtype<T>>();
 			}
 		}
 	}
@@ -2020,15 +2026,32 @@ namespace qpl {
 		qpl::conditional<qpl::if_true<i2::optimal_base()>, i2, i1>;
 
 
+	namespace detail {
+		//struct superior_arithmetic_type;
+		template<typename T, typename U>
+		using superior_arithmetic_type = typename qpl::conditional<
+			qpl::if_true<(qpl::is_floating_point<T>() && qpl::is_floating_point<U>())>, qpl::superior_floating_point<T, U>,
+			qpl::if_true<(qpl::is_floating_point<T>())>, T,
+			qpl::if_true<(qpl::is_floating_point<U>())>, U,
+			qpl::if_true<(qpl::type_used_bit_size<T>() < qpl::type_used_bit_size<U>())>, U, T>;
 
 
-	template<typename T, typename U>
-	using superior_arithmetic_type = 
-		qpl::conditional<
-		qpl::if_true<(qpl::is_floating_point<T>() && qpl::is_floating_point<U>())>, qpl::superior_floating_point<T, U>,
-		qpl::if_true<(qpl::is_floating_point<T>())>, T,
-		qpl::if_true<(qpl::is_floating_point<U>())>, U,
-		qpl::if_true<(qpl::type_used_bit_size<T>() < qpl::type_used_bit_size<U>())>, U, T>;
+		template<typename T1>
+		constexpr auto superior_arithmetic_types() {
+			return qpl::declval<T1>();
+		}
+		template<typename T1, typename T2>
+		constexpr auto superior_arithmetic_types() {
+			return qpl::declval<superior_arithmetic_type<T1, T2>>();
+		}
+		template<typename T1, typename T2, typename T3, typename ... Ts>
+		constexpr auto superior_arithmetic_types() {
+			return superior_arithmetic_types<decltype(superior_arithmetic_types<T1, T2>()), decltype(superior_arithmetic_types<T3, Ts...>())>();
+		}
+	}
+
+	template<typename ... Ts>
+	using superior_arithmetic_type = decltype(detail::superior_arithmetic_types<Ts...>());
 
 	template<typename T, typename U>
 	using promote_superior_type_classic =
@@ -2047,6 +2070,7 @@ namespace qpl {
 	constexpr R safe_multiplication(T a, U b) {
 		return static_cast<R>(a) * static_cast<R>(b);
 	}
+
 }
 
 #endif

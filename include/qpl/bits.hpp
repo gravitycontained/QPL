@@ -665,6 +665,9 @@ namespace qpl {
 		std::string binary_string() const {
 			return qpl::to_string(this->sign, ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->exponent)), '0', 11), ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->mantissa)), '0', 52));
 		}
+		std::string hex_string() const {
+			return qpl::to_string(this->sign, ' ', qpl::prepended_to_string_to_fit(qpl::hex_string(qpl::u64_cast(this->exponent)), '0', 3), ' ', qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u64_cast(this->mantissa)), '0', 13));
+		}
 	};
 	struct float_content {
 		float_content(float value = 0.f) {

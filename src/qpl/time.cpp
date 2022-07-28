@@ -836,9 +836,17 @@ namespace qpl {
 	}
 
 
+	void qpl::animation::internal_reset() {
+		this->just_finish = false;
+		this->just_finish_reverse = false;
+		this->just_finish_no_reverse = false;
+		this->internal_change_flag = false;
+	}
 	void qpl::animation::reset() {
 		this->progress = 0.0;
 		this->running = false;
+		this->reversed = false;
+		this->internal_reset();
 	}
 	void qpl::animation::start() {
 		this->running = true;
@@ -849,11 +857,19 @@ namespace qpl {
 	void qpl::animation::reset_and_start() {
 		this->progress = 0.0;
 		this->running = true;
+		this->reversed = false;
+		this->internal_reset();
+	}
+	void qpl::animation::reset_and_start_reverse() {
+		this->progress = 1.0;
+		this->running = true;
+		this->reversed = true;
+		this->internal_reset();
 	}
 	void qpl::animation::set_duration(qpl::f64 duration) {
 		this->duration = duration;
 	}
-	void qpl::animation::update() {
+	void qpl::animation::update(qpl::f64 frame_time) {
 		if (this->just_finish && !this->internal_change_flag) {
 			this->running = false;
 		}
@@ -866,7 +882,7 @@ namespace qpl {
 		if (this->running) {
 			auto before = this->progress;
 
-			auto f = this->timer.elapsed_f() / this->duration;
+			auto f = frame_time / this->duration;
 			if (this->reversed) {
 				this->progress -= f;
 			}
@@ -882,7 +898,6 @@ namespace qpl {
 				this->just_finish = this->just_finish_reverse = true;
 			}
 		}
-		this->timer.reset();
 	}
 	void qpl::animation::go_forwards() {
 		this->start();
@@ -896,6 +911,9 @@ namespace qpl {
 	}
 	bool qpl::animation::is_running() const {
 		return this->running;
+	}
+	bool qpl::animation::is_reversed() const {
+		return this->reversed;
 	}
 	bool qpl::animation::just_finished() const {
 		return this->just_finish;

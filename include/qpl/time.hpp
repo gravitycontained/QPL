@@ -340,7 +340,6 @@ namespace qpl {
 	QPLDLL bool get_count_signal(qpl::u64 when);
 
 	struct animation {
-		qpl::small_clock timer;
 		qpl::f64 duration = 1.0;
 		qpl::f64 progress = 0.0;
 		bool reversed = false;
@@ -350,13 +349,16 @@ namespace qpl {
 		bool just_finish_no_reverse = false;
 		bool internal_change_flag = false;
 
+		QPLDLL void internal_reset();
 		QPLDLL void reset();
 		QPLDLL void start();
 		QPLDLL void stop();
 		QPLDLL void reset_and_start();
+		QPLDLL void reset_and_start_reverse();
 		QPLDLL void set_duration(qpl::f64 duration);
-		QPLDLL void update();
+		QPLDLL void update(qpl::f64 frame_time);
 		QPLDLL bool is_running() const;
+		QPLDLL bool is_reversed() const;
 		QPLDLL void go_forwards();
 		QPLDLL void go_backwards();
 		QPLDLL bool just_finished() const;

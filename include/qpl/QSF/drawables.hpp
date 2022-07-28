@@ -338,6 +338,7 @@ namespace qsf {
 		QPLDLL void set_outline_color(qpl::rgb color);
 		QPLDLL void set_rotation(qpl::f32 angle);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
+		QPLDLL void set_line_spacing(qpl::f32 spacing);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_string(const std::string& string);
@@ -485,6 +486,7 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qpl::rgb outline_color);
 		QPLDLL void set_multiplied_color(qpl::rgb color);
+		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 
 		QPLDLL void increase(qpl::f64 delta);
 
@@ -732,6 +734,7 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_outline_color(qpl::rgb color);
 		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
+		QPLDLL void set_slope_dimension(qpl::f32 dimension);
 		QPLDLL void set_slope_point_count(qpl::size point_count);
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
@@ -752,8 +755,8 @@ namespace qsf {
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
 	private:
-		qpl::vector2f dimension;
-		qpl::vector2f position;
+		mutable qpl::vector2f dimension;
+		mutable qpl::vector2f position;
 		qpl::f64 slope = 2.0;
 		qpl::size slope_point_count = 20u;
 		qpl::rgb color;
@@ -1234,6 +1237,8 @@ namespace qsf {
 		QPLDLL void set_multiplied_color(qpl::rgb color);
 		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_position_x(qpl::f32 x);
+		QPLDLL void set_position_y(qpl::f32 y);
 		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_scale(qpl::vector2f scale);
 		QPLDLL void set_scale(qpl::f32 scale);
@@ -1243,6 +1248,7 @@ namespace qsf {
 		QPLDLL qpl::rgb get_color() const;
 		QPLDLL qpl::rgb get_multiplied_color() const;
 		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_scale() const;
 		QPLDLL qpl::vector2f get_origin() const;
 		QPLDLL qpl::f32 get_rotation() const;
@@ -1250,6 +1256,9 @@ namespace qsf {
 		QPLDLL qpl::vector2f get_center() const;
 
 		QPLDLL void centerize_origin();
+		QPLDLL void centerize();
+		QPLDLL void centerize_x();
+		QPLDLL void centerize_y();
 		QPLDLL void move(qpl::vector2f delta);
 		QPLDLL void move_scaled(qpl::vector2f delta);
 
@@ -1258,6 +1267,26 @@ namespace qsf {
 		QPLDLL qsf::sprite& operator=(const sf::Sprite& sprite);
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+	};
+
+	struct transition_overlay {
+		transition_overlay();
+
+		QPLDLL void set_color(qpl::rgb color);
+		QPLDLL void set_slope(qpl::f64 slope);
+
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_duration(qpl::f64 duration);
+		QPLDLL void make_disappear();
+		QPLDLL void make_appear();
+		QPLDLL void update(const qsf::event_info& event);
+		QPLDLL bool just_finished_disappearing() const;
+		QPLDLL bool just_finished_appearing() const;
+		QPLDLL void draw(qsf::draw_object& draw) const;
+
+		qsf::rectangle overlay;
+		qpl::animation animation;
+		qpl::f64 slope = 1.0;
 	};
 
 
@@ -2317,7 +2346,7 @@ namespace qsf {
 	struct small_tile_map {
 
 
-		sf::VertexArray vertices;
+		qsf::vertex_array vertices;
 		qpl::vector2f position;
 		const sf::Texture* texture_ptr;
 		qpl::vector2f scale = { 1, 1 };
@@ -2336,7 +2365,7 @@ namespace qsf {
 			}
 
 			this->vertices.clear();
-			this->vertices.setPrimitiveType(sf::Quads);
+			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(indices.size() * 4);
 
 			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
@@ -2344,26 +2373,82 @@ namespace qsf {
 			qpl::u32 ctr = 0;
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 				auto index = indices[i];
-				//if (index == skip_index) {
-				//	continue;
-				//}
 
 				auto [y, x] = qpl::div_mod(i, index_width);
 
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				this->vertices[ctr + 0].position = this->position + qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 1].position = this->position + qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 2].position = this->position + qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 3].position = this->position + qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
 
-				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
-				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
-				this->vertices[ctr + 2].texCoords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
-				this->vertices[ctr + 3].texCoords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 0].position = qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 1].position = qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 2].position = qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 3].position = qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
+
+				this->vertices[ctr + 0].tex_coords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 1].tex_coords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 2].tex_coords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].tex_coords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
 				ctr += 4;
 			}
+		}
+
+
+		void create(qpl::size index, qpl::vector2f dimension) {
+			if (!this->texture_ptr) {
+				throw qpl::exception("small_tile_map::create: texture_ptr not set");
+			}
+
+			qpl::vector2u dim = (dimension - 1) / (this->scale * this->texture_tile_dimension) + 1;
+			qpl::vector2f dimf = (dimension) / (this->scale * this->texture_tile_dimension);
+
+			this->vertices.clear();
+			this->vertices.set_primitive_type(sf::Quads);
+			this->vertices.resize(dim.x * dim.y * 4);
+
+			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+
+			qpl::u32 ctr = 0;
+			for (qpl::u32 i = 0; i < dim.x * dim.y; ++i) {
+				
+				auto [y, x] = qpl::div_mod(i, dim.x);
+
+				auto tile_x = (index % texture_row_tile_count);
+				auto tile_y = (index / texture_row_tile_count);
+
+
+				qpl::f64 dx = 1.0;
+				qpl::f64 dy = 1.0;
+
+				if (x == qpl::u32_cast(dimf.x)) {
+					dx = std::fmod(dimf.x, 1.0);
+				}
+				if (y == qpl::u32_cast(dimf.y)) {
+					dy = std::fmod(dimf.y, 1.0);
+				}
+				auto pos1 = qpl::vec(x, y) * this->scale * this->texture_tile_dimension;
+				auto pos2 = qpl::vec(x + dx, y + dy) * this->scale * this->texture_tile_dimension;
+
+
+				this->vertices[ctr + 0].position = qpl::vec(pos1.x, pos1.y);
+				this->vertices[ctr + 1].position = qpl::vec(pos2.x, pos1.y);
+				this->vertices[ctr + 2].position = qpl::vec(pos2.x, pos2.y);
+				this->vertices[ctr + 3].position = qpl::vec(pos1.x, pos2.y);
+
+
+				this->vertices[ctr + 0].tex_coords = qpl::vec(tile_x, tile_y)           * this->texture_tile_dimension;
+				this->vertices[ctr + 1].tex_coords = qpl::vec(tile_x + dx, tile_y)      * this->texture_tile_dimension;
+				this->vertices[ctr + 2].tex_coords = qpl::vec(tile_x + dx, tile_y + dy) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].tex_coords = qpl::vec(tile_x,      tile_y + dy) * this->texture_tile_dimension;
+
+				ctr += 4;
+			}
+		}
+
+		void create_fill(qpl::size index, qpl::size x, qpl::size y) {
+			std::vector<qpl::size> indices(x * y);
+			qpl::fill(indices, index);
+			this->create(indices, x);
 		}
 
 		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>() && qsf::detail::has_light<qpl::container_subtype<C>>())
@@ -2374,7 +2459,7 @@ namespace qsf {
 			}
 
 			this->vertices.clear();
-			this->vertices.setPrimitiveType(sf::Quads);
+			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(indices.size() * 4);
 
 			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
@@ -2396,10 +2481,10 @@ namespace qsf {
 				this->vertices[ctr + 2].position = (qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension);
 				this->vertices[ctr + 3].position = (qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension);
 
-				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
-				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
-				this->vertices[ctr + 2].texCoords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
-				this->vertices[ctr + 3].texCoords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 0].tex_coords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 1].tex_coords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 2].tex_coords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].tex_coords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
 
 				this->vertices[ctr + 0].color = no_light.interpolated(full_light, indices[i].light());
 				this->vertices[ctr + 1].color = no_light.interpolated(full_light, indices[i].light());
@@ -2417,7 +2502,7 @@ namespace qsf {
 			}
 
 			this->vertices.clear();
-			this->vertices.setPrimitiveType(sf::Quads);
+			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(indices.size() * 4);
 
 			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
@@ -2434,15 +2519,15 @@ namespace qsf {
 				auto tile_x = (index % texture_row_tile_count);
 				auto tile_y = (index / texture_row_tile_count);
 
-				this->vertices[ctr + 0].position = this->position + qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 1].position = this->position + qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 2].position = this->position + qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
-				this->vertices[ctr + 3].position = this->position + qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 0].position = qpl::vector2u(x, y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 1].position = qpl::vector2u((x + 1), y) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 2].position = qpl::vector2u((x + 1), (y + 1)) * this->scale * this->texture_tile_dimension;
+				this->vertices[ctr + 3].position = qpl::vector2u(x, (y + 1)) * this->scale * this->texture_tile_dimension;
 
-				this->vertices[ctr + 0].texCoords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
-				this->vertices[ctr + 1].texCoords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
-				this->vertices[ctr + 2].texCoords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
-				this->vertices[ctr + 3].texCoords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 0].tex_coords = qpl::vector2u(tile_x, tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 1].tex_coords = qpl::vector2u((tile_x + 1), tile_y) * this->texture_tile_dimension;
+				this->vertices[ctr + 2].tex_coords = qpl::vector2u((tile_x + 1), (tile_y + 1)) * this->texture_tile_dimension;
+				this->vertices[ctr + 3].tex_coords = qpl::vector2u(tile_x, (tile_y + 1)) * this->texture_tile_dimension;
 				ctr += 4;
 			}
 		}
@@ -3040,6 +3125,7 @@ namespace qsf {
 		qpl::vector2f hitbox_increase;
 		qpl::animation hover_animation;
 		qpl::rgb background_color = qpl::rgb::black;
+		qpl::rgb background_outline_color = qpl::rgb::black;
 		qpl::rgb text_color = qpl::rgb::white;
 		mutable bool layout_changed = false;
 		bool simple_hitbox = false;
@@ -3050,7 +3136,8 @@ namespace qsf {
 
 		smooth_button() {
 			this->set_background_color(qpl::rgb::black);
-			this->hover_animation.set_duration(0.2);
+			this->hover_animation.set_duration(0.1);
+			this->enable_simple_hitbox();
 		}
 
 		QPLDLL void enable_simple_hitbox();
@@ -3058,6 +3145,7 @@ namespace qsf {
 		QPLDLL void set_hitbox_increase(qpl::vector2f delta);
 		QPLDLL void set_hitbox_increase(qpl::f32 delta);
 		QPLDLL void set_multiplied_color(qpl::rgb color);
+		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_hitbox(qpl::hitbox hitbox);
@@ -3123,6 +3211,9 @@ namespace qsf {
 			this->ptr = &this->dummy;
 			this->set_colors(qpl::rgb::grey_shade(50), qpl::rgb::white);
 		}
+		slider(const slider<T>& other) {
+			*this = other;
+		}
 
 		qpl::f64 get_progress() const {
 			if (this->end == this->start) return 0.0;
@@ -3177,6 +3268,9 @@ namespace qsf {
 			auto y_extra = this->background.get_dimension().y - this->knob.get_dimension().y;
 			this->knob.set_position(position + qpl::vector2f(0, y_extra / 2));
 			this->set_knob_position();
+		}
+		void set_center(qpl::vector2f position) {
+			this->set_position(position - this->get_dimension() / 2);
 		}
 		qpl::vector2f get_dimension() const {
 			return this->background.get_dimension();
@@ -3410,6 +3504,51 @@ namespace qsf {
 			this->background_hover_outline_thickness = value;
 		}
 
+		slider<T>& operator=(const slider<T>& other) {
+			this->background = other.background;
+			this->knob = other.knob;
+			this->position = other.position;
+			this->knob_visible = other.knob_visible;
+			this->background_visible = other.background_visible;
+			this->knob_hover_effect = other.knob_hover_effect;
+			this->background_hover_effect = other.background_hover_effect;
+			this->knob_hover_color = other.knob_hover_color;
+			this->knob_hover_outline_thickness = other.knob_hover_outline_thickness;
+			this->knob_hover_outline_color = other.knob_hover_outline_color;
+			this->hitbox_increase = other.hitbox_increase;
+			this->background_hover_color = other.background_hover_color;
+			this->background_hover_outline_thickness = other.background_hover_outline_thickness;
+			this->background_hover_outline_color = other.background_hover_outline_color;
+			this->start = other.start;
+			this->end = other.end;
+			this->dummy = other.dummy;
+			this->value_before = other.value_before;
+			this->background_color = other.background_color;
+			this->background_outline_thickness = other.background_outline_thickness;
+			this->background_outline_color = other.background_outline_color;
+			this->knob_color = other.knob_color;
+			this->knob_outline_thickness = other.knob_outline_thickness;
+			this->knob_outline_color = other.knob_outline_color;
+			this->smooth_input_key = other.smooth_input_key;
+			this->smooth_input_multiply = other.smooth_input_multiply;
+			this->click_knob_pos_x = other.click_knob_pos_x;
+			this->click_pos_x = other.click_pos_x;
+			this->range_pixel_width = other.range_pixel_width;
+			this->hovering_over_background = other.hovering_over_background;
+			this->click_on_background_to_skip = other.click_on_background_to_skip;
+			this->input_smooth_values = other.input_smooth_values;
+			this->value_changed = other.value_changed;
+			this->value_modified = other.value_modified;
+			this->range_set = other.range_set;
+			this->allow_change = other.allow_change;
+			this->allow_drag = other.allow_drag;
+			this->dragging = other.dragging;
+			this->released = other.released;
+			this->hovering_over_knob = other.hovering_over_knob;
+			this->ptr = &this->dummy;
+
+			return *this;
+		}
 
 		void update(const qsf::event_info& event) {
 			auto pos = event.mouse_position();
