@@ -3,7 +3,7 @@
 #define QGL_SHAPES_HPP
 
 #include <qpl/defines.hpp>
-#if defined QPL_INTERN_SFML_USE
+#if defined QPL_INTERN_GLEW_USE
 
 #include <qpl/QGL/vertex.hpp>
 #include <qpl/QSF/drawables.hpp>

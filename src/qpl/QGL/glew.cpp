@@ -1,8 +1,8 @@
 #include <qpl/QGL/glew.hpp>
 
+#if defined QPL_INTERN_GLEW_USE
 #include <qpl/exception.hpp>
 
-#if defined QPL_INTERN_GLEW_USE
 
 namespace qgl {
 

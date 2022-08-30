@@ -2,6 +2,9 @@
 #ifndef QGL_ATTRIBUTES_HPP
 #define QGL_ATTRIBUTES_HPP
 
+#include <qpl/defines.hpp>
+#if defined QPL_INTERN_GLEW_USE
+
 #include <qpl/vardef.hpp>
 #include <qpl/type_traits.hpp>
 
@@ -64,4 +67,5 @@ namespace qgl {
 	}
 }
 
+#endif
 #endif

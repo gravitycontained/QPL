@@ -37,15 +37,15 @@ namespace qsf {
 	framework.game_loop();
 	*/
 	struct framework {
-		framework();
-		~framework();
+		QPLDLL framework();
+		QPLDLL ~framework();
 
 		template<typename C> requires (std::is_base_of_v<qsf::base_state, C>)
 		void add_state() {
 			this->states.push_back(std::make_unique<C>());
 			this->states.back()->framework = this;
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 			this->states.back()->use_gl = this->use_gl;
 #endif
 
@@ -76,7 +76,7 @@ namespace qsf {
 		QPLDLL bool game_loop_segment();
 		QPLDLL void game_loop();
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 		QPLDLL void enable_gl();
 		QPLDLL void disable_gl();
 		QPLDLL void create_gl();
@@ -224,7 +224,7 @@ namespace qsf {
 		QPLDLL void pop_gl_states();
 
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 		QPLDLL void enable_gl();
 		QPLDLL void disable_gl();
 #endif
@@ -238,7 +238,7 @@ namespace qsf {
 		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void final_draw(const T& drawable, sf::RenderStates states) {
 			if constexpr (qsf::is_render_texture<T>()) {
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 				if (this->use_gl && !this->states_pushed) {
 					this->push_gl_states();
 					this->framework->window.draw(drawable.get_sprite(), states);
@@ -249,7 +249,7 @@ namespace qsf {
 				this->framework->window.draw(drawable.get_sprite(), states);
 			}
 			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 				if (this->use_gl && !this->states_pushed) {
 					this->push_gl_states();
 					this->framework->window.draw(drawable, states);
@@ -261,7 +261,7 @@ namespace qsf {
 			}
 			else if constexpr (qsf::has_draw_object<T>()) {
 				qsf::draw_object draw(this->framework->window, states);
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 				if (this->use_gl && !this->states_pushed) {
 					this->push_gl_states();
 					drawable.draw(draw);
@@ -276,7 +276,7 @@ namespace qsf {
 				drawable.draw(draw);
 			}
 			else if constexpr (qsf::has_draw_sf<T>()) {
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 				if (this->use_gl && !this->states_pushed) {
 					this->push_gl_states();
 					drawable.draw(this->framework->window, states);

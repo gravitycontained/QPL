@@ -1,8 +1,8 @@
 #include <qpl/QSF/framework.hpp>
 #if defined QPL_INTERN_SFML_USE
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
-#include <GL/glew.h>
+#if defined QPL_INTERN_GLEW_USE
+#include <qpl/QGL/glew.hpp>
 #include <qpl/QGL/shader.hpp>
 #endif
 
@@ -11,13 +11,13 @@ namespace qsf {
 		this->set_title(" ");
 		this->set_dimension({ 1280, 720 });
 		this->set_style(sf::Style::Default);
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 		this->disable_gl();
 #endif
 		this->created = false;
 	}
 	qsf::framework::~framework() {
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 		if (this->created_gl) {
 			this->destroy_gl();
 		}
@@ -76,7 +76,7 @@ namespace qsf {
 				}
 			}
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 			if (this->use_gl && this->states.back()->use_gl) {
 				this->resize_gl();
 			}
@@ -149,7 +149,7 @@ namespace qsf {
 		}
 	}
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 	void qsf::framework::enable_gl() {
 		this->context_settings.depthBits = 24;
 		this->context_settings.sRgbCapable = false;
@@ -375,7 +375,7 @@ namespace qsf {
 			this->window.setFramerateLimit(this->framerate_limit);
 			this->created = true;
 
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 			if (this->use_gl) {
 				this->create_gl();
 			}
@@ -444,7 +444,7 @@ namespace qsf {
 	}
 
 	void qsf::base_state::clear() {
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 		if (this->use_gl) {
 			auto c = qpl::frgba(this->clear_color);
 			qgl::gl::clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -508,7 +508,7 @@ namespace qsf {
 		this->states_pushed = false;
 		this->framework->pop_gl_states();
 	}
-#if !defined QPL_INTERN_STATIC_NO_GLEW
+#if defined QPL_INTERN_GLEW_USE
 	void qsf::base_state::enable_gl() {
 		this->use_gl = true;
 

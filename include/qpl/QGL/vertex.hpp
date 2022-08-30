@@ -3,7 +3,8 @@
 #define QGL_VERTEX_HPP
 
 #include <qpl/defines.hpp>
-#if defined QPL_INTERN_SFML_USE
+#if defined QPL_INTERN_GLEW_USE
+
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/type_traits.hpp>
