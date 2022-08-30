@@ -251,6 +251,13 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	std::string qpl::from_hex_string(const std::string& string) {
+		std::ostringstream stream;
+		for (qpl::size i = 0u; i < string.length(); i += 2u) {
+			stream << qpl::char_cast(qpl::from_base_string(string.substr(i, 2u), 16));
+		}
+		return stream.str();
+	}
 	std::string qpl::binary_string(const std::string& string) {
 		std::ostringstream stream;
 		for (auto& i : string) {
@@ -709,6 +716,15 @@ namespace qpl {
 			return string;
 		}
 		return s;
+	}
+	std::string qpl::string_remove_whitespace(const std::string& string) {
+		std::string result;
+		for (auto& i : string) {
+			if (!qpl::is_character_whitespace(i)) {
+				result.push_back(i);
+			}
+		}
+		return result;
 	}
 
 	qpl::size qpl::string_find(const std::string& string, const std::string& search, bool ignore_case) {

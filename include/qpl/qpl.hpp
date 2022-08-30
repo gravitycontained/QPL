@@ -31,10 +31,12 @@ freely, subject to the following restrictions:
 #define QPL_HPP
 #pragma once
 
+#include <qpl/defines.hpp>
 
 #include <qpl/algorithm.hpp>
 #include <qpl/bits.hpp>
 #include <qpl/compression.hpp>
+#include <qpl/camera.hpp>
 #include <qpl/config.hpp>
 #include <qpl/codec.hpp>
 #include <qpl/color.hpp>
@@ -62,14 +64,13 @@ freely, subject to the following restrictions:
 #include <qpl/vardef.hpp>
 #include <qpl/vector.hpp>
 
-#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
-#include <qpl/vulkan.hpp>
-#include <qpl/camera.hpp>
-#include <qpl/objects.hpp>
-#include <qpl/window.hpp>
+#if defined(QPL_INTERN_VULKAN_USE)
+#include <qpl/VK/vulkan.hpp>
+#include <qpl/VK/objects.hpp>
+#include <qpl/VK/window.hpp>
 #endif
 
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#if defined(QPL_INTERN_SFML_USE)
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/framework.hpp>
@@ -77,6 +78,12 @@ freely, subject to the following restrictions:
 #include <qpl/QSF/socket.hpp>
 #include <qpl/QSF/utility.hpp>
 #include <qpl/QSF/view.hpp>
+
+#include <qpl/QGL/attributes.hpp>
+#include <qpl/QGL/glew.hpp>
+#include <qpl/QGL/shader.hpp>
+#include <qpl/QGL/shapes.hpp>
+#include <qpl/QGL/vertex.hpp>
 #endif
 
 #ifdef _WIN32

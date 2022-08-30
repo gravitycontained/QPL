@@ -779,9 +779,33 @@ namespace qpl {
             this->check_update();
             return *this;
         }
-        path& qpl::filesys::path::go_into(const std::string& entry) {
-            this->go_into_directory(entry);
+        path& qpl::filesys::path::go_into_file(const std::string& file_name) {
+            if (this->m_string.back() != '/' && file_name.front() != '/') {
+                this->m_string.append("/");
+            }
+            else if (this->m_string.back() == '/' && file_name.front() == '/') {
+                this->m_string.pop_back();
+            }
+            this->m_string.append(file_name);
+
+            this->m_update = true;
+            this->m_exists = false;
+
+            this->check_update();
             return *this;
+        }
+        path& qpl::filesys::path::go_into(const std::string& entry) {
+
+            auto dir = *this;
+            dir.go_into_directory(entry);
+
+            if (dir.exists()) {
+                return *this = dir;
+            }
+            auto file = *this;
+            file.go_into_file(entry);
+
+            return *this = file;
         }
         path& qpl::filesys::path::cd(const std::string& directory_name) {
             this->go_into_directory(directory_name);

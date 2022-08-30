@@ -2,7 +2,8 @@
 #define QSF_EVENTINFO_HPP
 #pragma once
 
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#include <qpl/defines.hpp>
+#if defined QPL_INTERN_SFML_USE
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
@@ -82,8 +83,11 @@ namespace qsf {
 		QPLDLL qpl::f64 frame_time_f() const;
 		QPLDLL qpl::vector2i resized_size() const;
 		QPLDLL qpl::vector2f mouse_position() const;
+		QPLDLL qpl::vector2f delta_mouse_position() const;
 		QPLDLL qpl::vector2i mouse_position_screen() const;
 		QPLDLL qpl::vector2i mouse_position_desktop() const;
+
+		QPLDLL void reset_delta_mouse();
 
 		QPLDLL bool text_entered(char c) const;
 		QPLDLL bool text_entered(wchar_t c) const;
@@ -142,7 +146,9 @@ namespace qsf {
 
 		qpl::vector2i m_resized_size;
 		qpl::vector2f m_mouse_position;
+		qpl::vector2f m_delta_mouse_position;
 		qpl::vector2i m_mouse_position_screen;
+		qpl::vector2i m_mouse_position_screen_before;
 		qpl::vector2i m_mouse_position_desktop;
 		std::set<sf::Keyboard::Key> m_keys_pressed;
 		std::set<sf::Keyboard::Key> m_keys_released;

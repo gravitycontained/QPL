@@ -2,7 +2,8 @@
 #define QSF_FRAMEWORK_HPP
 #pragma once
 
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#include <qpl/defines.hpp>
+#if defined QPL_INTERN_SFML_USE
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
@@ -16,8 +17,16 @@
 #include <qpl/color.hpp>
 #include <qpl/vector.hpp>
 #include <qpl/time.hpp>
+#include <qpl/camera.hpp>
 
 namespace qsf {
+
+	enum class cull_face : qpl::u8 {
+		back,
+		front,
+		front_and_back,
+	};
+
 	struct base_state;
 	/*
 	qsf::framework framework;
@@ -29,11 +38,17 @@ namespace qsf {
 	*/
 	struct framework {
 		framework();
+		~framework();
 
 		template<typename C> requires (std::is_base_of_v<qsf::base_state, C>)
 		void add_state() {
 			this->states.push_back(std::make_unique<C>());
 			this->states.back()->framework = this;
+
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+			this->states.back()->use_gl = this->use_gl;
+#endif
+
 			this->states.back()->call_before_create();
 			this->states.back()->last_dimension = this->dimension;
 			if (this->is_created()) {
@@ -56,30 +71,22 @@ namespace qsf {
 		QPLDLL void draw_call();
 		QPLDLL void init_back();
 
-		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
-		void draw(const T& drawable, sf::RenderStates states) {
-			if constexpr (qsf::is_render_texture<T>()) {
-				this->window.draw(drawable.get_sprite(), states);
-			}
-			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
-				this->window.draw(drawable, states);
-			}
-			else if constexpr (qsf::has_draw_object<T>()) {
-				qsf::draw_object draw(this->window, states);
-				drawable.draw(draw);
-			}
-			else if constexpr (qsf::has_draw_sf<T>()) {
-				drawable.draw(this->window, states);
-			}
-		}
-
 		QPLDLL void display();
 		QPLDLL void internal_update();
 		QPLDLL bool game_loop_segment();
 		QPLDLL void game_loop();
 
-		QPLDLL void enable_3d();
-		QPLDLL void disable_3d();
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+		QPLDLL void enable_gl();
+		QPLDLL void disable_gl();
+		QPLDLL void create_gl();
+		QPLDLL void destroy_gl();
+		QPLDLL void resize_gl();
+#endif
+		QPLDLL void enable_vsync();
+		QPLDLL void disable_vsync();
+		QPLDLL bool is_vsync_enabled();
+
 		QPLDLL void set_active(bool active = true);
 		QPLDLL void push_gl_states();
 		QPLDLL void pop_gl_states();
@@ -105,6 +112,7 @@ namespace qsf {
 		QPLDLL void add_font(const std::string& name, const std::string& path);
 		QPLDLL void add_sound(const std::string& name, const std::string& path);
 		QPLDLL void add_texture(const std::string& name, const std::string& path);
+		QPLDLL void add_image(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, const std::string& path);
 		QPLDLL void add_sprite(const std::string& name, sf::Texture& texture);
 		QPLDLL void add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type);
@@ -120,6 +128,7 @@ namespace qsf {
 		QPLDLL sf::SoundBuffer& get_sound(const std::string& name);
 		QPLDLL sf::Texture& get_texture(const std::string& name);
 		QPLDLL sf::Sprite& get_sprite(const std::string& name);
+		QPLDLL sf::Image& get_image(const std::string& name);
 		QPLDLL sf::Shader& get_shader(const std::string& name);
 		QPLDLL qsf::text& get_text(const std::string& name);
 
@@ -127,6 +136,7 @@ namespace qsf {
 		QPLDLL const sf::SoundBuffer& get_sound(const std::string& name) const;
 		QPLDLL const sf::Texture& get_texture(const std::string& name) const;
 		QPLDLL const sf::Sprite& get_sprite(const std::string& name) const;
+		QPLDLL const sf::Image& get_image(const std::string& name) const;
 		QPLDLL const sf::Shader& get_shader(const std::string& name) const;
 		QPLDLL const qsf::text& get_text(const std::string& name) const;
 
@@ -143,6 +153,7 @@ namespace qsf {
 		QPLDLL void show_cursor();
 		QPLDLL void set_cursor_position(qpl::vector2i position);
 		QPLDLL void set_speed_factor(qpl::f64 speed);
+		QPLDLL void set_icon(std::string path, std::string name = "icon");
 
 
 		std::vector<std::unique_ptr<qsf::base_state>> states;
@@ -161,12 +172,15 @@ namespace qsf {
 		qpl::u32 framerate_limit = 144u;
 		qpl::u32 style = sf::Style::Default;
 		qpl::f64 speed_factor = 1.0;
+		cull_face gl_cull_face = cull_face::back;
 		bool created = false;
+		bool created_gl = false;
 		bool update_if_no_focus = true;
 		bool focus = true;
 		bool lost_focus = false;
 		bool gained_focus = false;
-		bool use_opengl_depth = false;
+		bool use_gl = false;
+		bool use_vsync = false;
 	};
 
 	
@@ -209,6 +223,12 @@ namespace qsf {
 		QPLDLL void push_gl_states();
 		QPLDLL void pop_gl_states();
 
+
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+		QPLDLL void enable_gl();
+		QPLDLL void disable_gl();
+#endif
+
 		template<typename T>
 		void set_view(const qsf::view_rectangle_t<T>& view) {
 			this->render_states.transform = view.get_render_states().transform;
@@ -216,13 +236,66 @@ namespace qsf {
 		QPLDLL void reset_view();
 
 		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
+		void final_draw(const T& drawable, sf::RenderStates states) {
+			if constexpr (qsf::is_render_texture<T>()) {
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+				if (this->use_gl && !this->states_pushed) {
+					this->push_gl_states();
+					this->framework->window.draw(drawable.get_sprite(), states);
+					this->pop_gl_states();
+					return;
+				}
+#endif
+				this->framework->window.draw(drawable.get_sprite(), states);
+			}
+			else if constexpr (std::is_base_of<sf::Drawable, T>()) {
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+				if (this->use_gl && !this->states_pushed) {
+					this->push_gl_states();
+					this->framework->window.draw(drawable, states);
+					this->pop_gl_states();
+					return;
+				}
+#endif
+				this->framework->window.draw(drawable, states);
+			}
+			else if constexpr (qsf::has_draw_object<T>()) {
+				qsf::draw_object draw(this->framework->window, states);
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+				if (this->use_gl && !this->states_pushed) {
+					this->push_gl_states();
+					drawable.draw(draw);
+					this->pop_gl_states();
+					return;
+				}
+#endif
+				drawable.draw(draw);
+			}
+			else if constexpr (qsf::has_draw_object_gl<T>()) {
+				qsf::draw_object_gl draw(this->framework->window, states);
+				drawable.draw(draw);
+			}
+			else if constexpr (qsf::has_draw_sf<T>()) {
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+				if (this->use_gl && !this->states_pushed) {
+					this->push_gl_states();
+					drawable.draw(this->framework->window, states);
+					this->pop_gl_states();
+					return;
+				}
+#endif
+				drawable.draw(this->framework->window, states);
+			}
+		}
+
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, sf::RenderStates states) {
 			if constexpr (qsf::has_any_draw<T>()) {
 				if constexpr (qsf::is_render_texture<T>()) {
-					this->framework->draw(drawable.get_sprite(), states);
+					this->final_draw(drawable.get_sprite(), states);
 				}
 				else {
-					this->framework->draw(drawable, states);
+					this->final_draw(drawable, states);
 				}
 			}
 			else {
@@ -235,10 +308,10 @@ namespace qsf {
 		void draw(const T& drawable) {
 			if constexpr (qsf::has_any_draw<T>()) {
 				if constexpr (qsf::is_render_texture<T>()) {
-					this->framework->draw(drawable.get_sprite(), this->render_states);
+					this->final_draw(drawable.get_sprite(), this->render_states);
 				}
 				else {
-					this->framework->draw(drawable, this->render_states);
+					this->final_draw(drawable, this->render_states);
 				}
 			}
 			else {
@@ -261,6 +334,18 @@ namespace qsf {
 			else {
 				for (auto& i : drawable) {
 					this->draw(i, view);
+				}
+			}
+		}
+		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
+		void draw(const T& drawable, const qpl::camera& camera) {
+			if constexpr (qsf::has_any_draw<T>()) {
+				sf::RenderStates states = camera.get_render_states();
+				this->draw(drawable, states);
+			}
+			else {
+				for (auto& i : drawable) {
+					this->draw(i, camera);
 				}
 			}
 		}
@@ -466,11 +551,11 @@ namespace qsf {
 		QPLDLL const qsf::event_info& event() const;
 		QPLDLL qsf::event_info& event();
 
-		qsf::framework* framework;
+		qsf::framework* framework = nullptr;
 
 		friend qsf::framework;
-	private:
-		sf::Color clear_color = sf::Color::Black;
+	protected:
+		qpl::rgb clear_color = qpl::rgb::black;
 		sf::RenderStates render_states = sf::RenderStates::Default;
 		qpl::vector2i last_dimension;
 		qpl::f64 speed_factor = 1.0;
@@ -480,6 +565,8 @@ namespace qsf {
 		bool is_allow_exit = true;
 		bool is_allow_clear = true;
 		bool is_allow_display = true;
+		bool use_gl = false;
+		bool states_pushed = false;
 	};
 }
 

@@ -2,13 +2,16 @@
 #define QPL_CAMERA_HPP
 #pragma once
 
-#if defined(QPL_USE_VULKAN) || defined(QPL_USE_ALL)
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/vector.hpp>
+
+#include <qpl/defines.hpp>
+#if defined QPL_INTERN_SFML_USE
+#include <qpl/QSF/event_info.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
+#endif
 
 namespace qpl {
 	class camera {
@@ -17,25 +20,30 @@ namespace qpl {
 			this->construct();
 		}
 		
-		QPLDLL glm::vec3 get_view_rotation_coordinates() const;
-		QPLDLL glm::vec3 get_resulting_looking_position() const;
-		QPLDLL glm::mat4 get_resulting_projection() const;
+		QPLDLL qpl::vector3f get_view_rotation_coordinates() const;
+		QPLDLL qpl::vector3f get_resulting_looking_position() const;
+		QPLDLL qpl::mat4 get_view() const;
+		QPLDLL qpl::mat4 get_view_projection() const;
 
-		QPLDLL void set_position(glm::vec3 pos);
+		QPLDLL void set_position(qpl::vector3f pos);
 		QPLDLL void set_position(qpl::f32 x, qpl::f32 y, qpl::f32 z);
 		QPLDLL void set_position_x(qpl::f32 x);
 		QPLDLL void set_position_y(qpl::f32 y);
 		QPLDLL void set_position_z(qpl::f32 z);
-		QPLDLL glm::vec3 get_position() const;
+		QPLDLL qpl::vector3f get_position() const;
 		QPLDLL qpl::f32 get_position_x() const;
 		QPLDLL qpl::f32 get_position_y() const;
 		QPLDLL qpl::f32 get_position_z() const;
 
-		QPLDLL void move(glm::vec3 delta);
+		QPLDLL void move(qpl::vector3f delta);
 		QPLDLL void move(qpl::f32 x, qpl::f32 y, qpl::f32 z);
 		QPLDLL void move_x(qpl::f32 x);
 		QPLDLL void move_y(qpl::f32 y);
 		QPLDLL void move_z(qpl::f32 z);
+
+		QPLDLL void set_aspect(qpl::vector2f dimension);
+		QPLDLL void set_near(qpl::f32 value_near);
+		QPLDLL void set_far(qpl::f32 value_far);
 
 		QPLDLL void move_forward(qpl::f32 delta = 1);
 		QPLDLL void move_backwards(qpl::f32 delta = 1);
@@ -44,16 +52,16 @@ namespace qpl {
 		QPLDLL void move_up(qpl::f32 delta = 1);
 		QPLDLL void move_down(qpl::f32 delta = 1);
 
-		QPLDLL void set_view_rotation(glm::vec2 pos);
+		QPLDLL void set_view_rotation(qpl::vector2f pos);
 		QPLDLL void set_view_rotation(qpl::f32 x, qpl::f32 y);
 		QPLDLL void set_view_rotation_x(qpl::f32 x);
 		QPLDLL void set_view_rotation_y(qpl::f32 y);
 
-		QPLDLL glm::vec2 get_view_rotation() const;
+		QPLDLL qpl::vector2f get_view_rotation() const;
 		QPLDLL qpl::f32 get_view_rotation_x() const;
 		QPLDLL qpl::f32 get_view_rotation_y() const;
 
-		QPLDLL void rotate_view(glm::vec2 delta);
+		QPLDLL void rotate_view(qpl::vector2f delta);
 
 		QPLDLL void look_backwards();
 		QPLDLL void look_up(qpl::f32 delta = qpl::pi_32 / 2);
@@ -74,32 +82,46 @@ namespace qpl {
 		QPLDLL void set_deacceleration(qpl::f32 deacceleration);
 		QPLDLL qpl::f32 get_deacceleration() const;
 
-		QPLDLL void accelerate_forward(qpl::f32 delta = 1);
-		QPLDLL void accelerate_backwards(qpl::f32 delta = 1);
-		QPLDLL void accelerate_left(qpl::f32 delta = 1);
-		QPLDLL void accelerate_right(qpl::f32 delta = 1);
-		QPLDLL void accelerate_up(qpl::f32 delta = 1);
-		QPLDLL void accelerate_down(qpl::f32 delta = 1);
+		QPLDLL void accelerate_forwards(qpl::f32 delta);
+		QPLDLL void accelerate_backwards(qpl::f32 delta);
+		QPLDLL void accelerate_left(qpl::f32 delta);
+		QPLDLL void accelerate_right(qpl::f32 delta);
+		QPLDLL void accelerate_up(qpl::f32 delta);
+		QPLDLL void accelerate_down(qpl::f32 delta);
 
 		QPLDLL void set_speed(qpl::f32 speed);
 		QPLDLL qpl::f32 get_speed() const;
 
 		QPLDLL void update(qpl::f32 delta_time);
-		QPLDLL glm::vec3 get_velocity() const;
-	private:
+		QPLDLL void cap_max_velocity();
+
+#if defined QPL_INTERN_SFML_USE
+		QPLDLL void update(const qsf::event_info& event);
+		QPLDLL sf::RenderStates get_render_states() const;
+#endif
+
+		QPLDLL qpl::vector3f get_velocity() const;
+
 		QPLDLL void construct();
-		QPLDLL void ignore_y_axis();
 
-		glm::vec2 m_view_rotation;
-		glm::vec3 m_position;
+		qpl::mat4 perspective;
+		qpl::f32 value_near = 1e-3f;
+		qpl::f32 value_far = 1e3;
+		qpl::f32 aspect = 16 / 9.0f;
+		qpl::mat4 model;
+		qpl::vector2f view_rotation;
+		qpl::vector3f position;
 
-		glm::vec3 m_velocites;
-		qpl::f32 m_max_velocity;
-		qpl::f32 m_accelerate;
-		qpl::f32 m_deaccelerate;
-		qpl::f32 m_speed;
+		qpl::vector3f velocities;
+		qpl::f32 max_velocity;
+		qpl::f32 accelerate;
+		qpl::f32 deaccelerate;
+		qpl::f32 speed;
+		qpl::f32 mouse_speed = 2.5f;
+		bool allow_looking = true;
+		bool accelerating = false;
+		bool accelerate_in_view_direction = false;
 	};
 }
 
-#endif
 #endif

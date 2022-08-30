@@ -1,6 +1,6 @@
 #include <qpl/QSF/event_info.hpp>
 
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#if defined QPL_INTERN_SFML_USE
 
 namespace qsf {
 
@@ -210,6 +210,9 @@ namespace qsf {
 
 		this->m_mouse_position_screen = this->m_mouse_position = sf::Mouse::getPosition(window);
 		this->m_mouse_position_desktop = sf::Mouse::getPosition();
+
+		this->m_delta_mouse_position = this->m_mouse_position_screen - this->m_mouse_position_screen_before;
+		this->m_mouse_position_screen_before = this->m_mouse_position_screen;
 	}
 	void qsf::event_info::update(const sf::Event& event) {
 		if (event.type == sf::Event::TextEntered) {
@@ -388,11 +391,18 @@ namespace qsf {
 	qpl::vector2f qsf::event_info::mouse_position() const {
 		return this->m_mouse_position;
 	}
+	qpl::vector2f qsf::event_info::delta_mouse_position() const {
+		return this->m_delta_mouse_position;
+	}
 	qpl::vector2i qsf::event_info::mouse_position_screen() const {
 		return this->m_mouse_position_screen;
 	}
 	qpl::vector2i qsf::event_info::mouse_position_desktop() const {
 		return this->m_mouse_position_desktop;
+	}
+	void qsf::event_info::reset_delta_mouse() {
+		this->m_mouse_position_screen_before = this->m_mouse_position_screen;
+		this->m_delta_mouse_position.clear();
 	}
 	bool qsf::event_info::is_text_entered() const {
 		return !this->m_text_entered.empty();

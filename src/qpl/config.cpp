@@ -9,7 +9,6 @@ namespace qpl {
     void qpl::config::load(const std::string& file_name, char seperate) {
         std::ifstream infile(file_name);
 
-        qpl::println("loading config file \"", file_name, "\"");
         if (!infile.good()) {
             qpl::println("couldn't load \"", file_name, "\"!");
             qpl::system_pause();

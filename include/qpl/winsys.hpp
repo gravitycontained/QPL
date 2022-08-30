@@ -2,6 +2,8 @@
 #define QPL_WINSYS_HPP
 #pragma once
 
+#ifdef _WIN32
+
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -408,4 +410,5 @@ namespace qpl {
 }
 
 
+#endif
 #endif

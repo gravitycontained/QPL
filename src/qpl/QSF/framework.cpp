@@ -1,15 +1,27 @@
 #include <qpl/QSF/framework.hpp>
+#if defined QPL_INTERN_SFML_USE
 
-
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+#include <GL/glew.h>
+#include <qpl/QGL/shader.hpp>
+#endif
 
 namespace qsf {
 	qsf::framework::framework() {
 		this->set_title(" ");
 		this->set_dimension({ 1280, 720 });
 		this->set_style(sf::Style::Default);
-		this->disable_3d();
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+		this->disable_gl();
+#endif
 		this->created = false;
+	}
+	qsf::framework::~framework() {
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+		if (this->created_gl) {
+			this->destroy_gl();
+		}
+#endif
 	}
 
 	void qsf::framework::draw_call() {
@@ -63,6 +75,12 @@ namespace qsf {
 					i.second.resize(new_dimension, true);
 				}
 			}
+
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+			if (this->use_gl && this->states.back()->use_gl) {
+				this->resize_gl();
+			}
+#endif
 
 			this->states.back()->call_on_resize();
 		}
@@ -131,16 +149,59 @@ namespace qsf {
 		}
 	}
 
-	void qsf::framework::enable_3d() {
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+	void qsf::framework::enable_gl() {
 		this->context_settings.depthBits = 24;
 		this->context_settings.sRgbCapable = false;
 		this->context_settings.antialiasingLevel = 12u;
-		this->use_opengl_depth = true;
+		this->use_gl = true;
 	}
-	void qsf::framework::disable_3d() {
+	void qsf::framework::disable_gl() {
 		this->context_settings.depthBits = 0;
 		this->context_settings.antialiasingLevel = 12u;
-		this->use_opengl_depth = false;
+		this->use_gl = false;
+	}
+	void qsf::framework::create_gl() {
+		if (!this->created) {
+			this->create();
+		}
+		if (this->created_gl) {
+			return;
+		}
+		this->created_gl = true;
+		qgl::gl::enable(GL_DEPTH_TEST);
+		qgl::gl::enable(GL_CULL_FACE);
+
+		switch (this->gl_cull_face) {
+		case cull_face::front: qgl::gl::cull_face(GL_FRONT); break;
+			case cull_face::back: qgl::gl::cull_face(GL_BACK); break;
+			case cull_face::front_and_back: qgl::gl::cull_face(GL_FRONT_AND_BACK); break;
+		};
+
+		qgl::gl::front_face(GL_CW);
+		qgl::gl::enable_glew_experimental();
+
+		this->resize_gl();
+	}
+	void qsf::framework::destroy_gl() {
+		for (auto& shader : qgl::shaders) {
+			shader.second.destroy();
+		}
+	}
+	void qsf::framework::resize_gl() {
+		qgl::gl::viewport(0, 0, this->dimension.x, this->dimension.y);
+	}
+#endif
+	void qsf::framework::enable_vsync() {
+		this->use_vsync = true;
+		this->window.setVerticalSyncEnabled(this->use_vsync);
+	}
+	void qsf::framework::disable_vsync() {
+		this->use_vsync = false;
+		this->window.setVerticalSyncEnabled(this->use_vsync);
+	}
+	bool qsf::framework::is_vsync_enabled() {
+		return this->use_vsync;
 	}
 	void qsf::framework::set_active(bool active) {
 		this->window.setActive(active);
@@ -226,6 +287,9 @@ namespace qsf {
 	void qsf::framework::add_texture(const std::string& name, const std::string& path) {
 		qsf::add_texture(name, path);
 	}
+	void qsf::framework::add_image(const std::string& name, const std::string& path) {
+		qsf::add_image(name, path);
+	}
 	void qsf::framework::add_sprite(const std::string& name, const std::string& path) {
 		qsf::add_sprite(name, path);
 	}
@@ -269,6 +333,9 @@ namespace qsf {
 	sf::Sprite& qsf::framework::get_sprite(const std::string& name) {
 		return qsf::get_sprite(name);
 	}
+	sf::Image& qsf::framework::get_image(const std::string& name) {
+		return qsf::get_image(name);
+	}
 	sf::Shader& qsf::framework::get_shader(const std::string& name) {
 		return qsf::get_shader(name);
 	}
@@ -285,6 +352,9 @@ namespace qsf {
 	const sf::Texture& qsf::framework::get_texture(const std::string& name) const {
 		return qsf::get_texture(name);
 	}
+	const sf::Image& qsf::framework::get_image(const std::string& name) const {
+		return qsf::get_image(name);
+	}
 	const sf::Sprite& qsf::framework::get_sprite(const std::string& name) const {
 		return qsf::get_sprite(name);
 	}
@@ -300,12 +370,16 @@ namespace qsf {
 
 			sf::String s = this->title.c_str(); //??? SFML why is this needed
 
-
 			this->event.m_screen_dimension = this->dimension;
 			this->window.create(sf::VideoMode({ this->dimension.x, this->dimension.y }), s, this->style, this->context_settings);
-			this->window.setVerticalSyncEnabled(true);
-			this->created = true;
 			this->window.setFramerateLimit(this->framerate_limit);
+			this->created = true;
+
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+			if (this->use_gl) {
+				this->create_gl();
+			}
+#endif
 
 			if (this->states.size()) {
 				this->init_back();
@@ -342,7 +416,6 @@ namespace qsf {
 	}
 	void qsf::framework::hide_cursor() {
 		this->window.setMouseCursorVisible(false);
-		//todo
 	}
 	void qsf::framework::set_window_position(qpl::vector2u position) {
 		this->window.setPosition(sf::Vector2i(position));
@@ -352,24 +425,38 @@ namespace qsf {
 	}
 	void qsf::framework::show_cursor() {
 		this->window.setMouseCursorVisible(true);
-		//todo
 	}
 	void qsf::framework::set_cursor_position(qpl::vector2i position) {
-		//todo
+		sf::Mouse::setPosition(position, this->window);
+		this->event.m_mouse_position_screen = position;
+		this->event.m_delta_mouse_position = this->event.m_mouse_position_screen_before - this->event.m_mouse_position_screen;
+		this->event.m_mouse_position_screen_before = this->event.m_mouse_position_screen;
 	}
 
 	void qsf::framework::set_speed_factor(qpl::f64 speed) {
 		this->speed_factor = speed;
 	}
 
-
-
-
-
-
+	void qsf::framework::set_icon(std::string path, std::string name) {
+		this->add_image(name, path);
+		const auto& image = this->get_image(name);
+		this->window.setIcon(image.getSize().x, image.getSize().y, image.getPixelsPtr());
+	}
 
 	void qsf::base_state::clear() {
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+		if (this->use_gl) {
+			auto c = qpl::frgba(this->clear_color);
+			qgl::gl::clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			qgl::gl::clear_color(c.r, c.g, c.b, c.a);
+		}
+		else {
+			this->framework->window.clear(this->clear_color);
+		}
+#else
 		this->framework->window.clear(this->clear_color);
+#endif
+
 	}
 	void qsf::base_state::call_on_resize() {
 
@@ -414,11 +501,26 @@ namespace qsf {
 		this->framework->set_active(active);
 	}
 	void qsf::base_state::push_gl_states() {
+		this->states_pushed = true;
 		this->framework->push_gl_states();
 	}
 	void qsf::base_state::pop_gl_states() {
+		this->states_pushed = false;
 		this->framework->pop_gl_states();
 	}
+#if !defined QPL_INTERN_STATIC_NO_GLEW
+	void qsf::base_state::enable_gl() {
+		this->use_gl = true;
+
+		if (!this->framework->created_gl) {
+			this->framework->create_gl();
+		}
+	}
+	void qsf::base_state::disable_gl() {
+		this->use_gl = false;
+	}
+#endif
+
 	void qsf::base_state::reset_view() {
 		this->render_states = sf::RenderStates::Default;
 	}

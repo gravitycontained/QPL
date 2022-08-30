@@ -1,7 +1,7 @@
 #include <qpl/QSF/resources.hpp>
 #include <qpl/exception.hpp>
 
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#if defined QPL_INTERN_SFML_USE
 #include <qpl/string.hpp>
 
 namespace qsf {
@@ -16,6 +16,11 @@ namespace qsf {
 			throw qpl::exception("load texture: couldn't find / load \"", path, "\"");
 		}
 		texture.setSmooth(set_smooth);
+	}
+	void qsf::load_image(sf::Image& image, const std::string& path) {
+		if (!image.loadFromFile(path)) {
+			throw qpl::exception("load image: couldn't find / load \"", path, "\"");
+		}
 	}
 	void qsf::load_sound(sf::SoundBuffer& sound, const std::string& path) {
 		if (!sound.loadFromFile(path)) {
@@ -111,6 +116,9 @@ namespace qsf {
 	void qsf::resources::add_texture(const std::string& name, const std::string& path) {
 		qsf::load_texture(this->textures[name], path);
 	}
+	void qsf::resources::add_image(const std::string& name, const std::string& path) {
+		qsf::load_image(this->images[name], path);
+	}
 	void qsf::resources::add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type) {
 		qsf::load_shader(this->shaders[name], path, shader_type);
 	}
@@ -149,6 +157,9 @@ namespace qsf {
 	bool qsf::resources::find_texture(const std::string& name) const {
 		return this->textures.find(name) != this->textures.cend();
 	}
+	bool qsf::resources::find_image(const std::string& name) const {
+		return this->images.find(name) != this->images.cend();
+	}
 	bool qsf::resources::find_sprite(const std::string& name) const {
 		return this->sprites.find(name) != this->sprites.cend();
 	}
@@ -173,6 +184,12 @@ namespace qsf {
 			throw qpl::exception("couldn't find texture with name \"", name, "\"");
 		}
 		return this->textures[name];
+	}
+	sf::Image& qsf::resources::get_image(const std::string& name) {
+		if (this->images.find(name) == this->images.cend()) {
+			throw qpl::exception("couldn't find image with name \"", name, "\"");
+		}
+		return this->images[name];
 	}
 	sf::Sprite& qsf::resources::get_sprite(const std::string& name) {
 		if (this->sprites.find(name) == this->sprites.cend()) {
@@ -204,6 +221,12 @@ namespace qsf {
 			throw qpl::exception("couldn't find texture with name \"", name, "\"");
 		}
 		return this->textures.at(name);
+	}
+	const sf::Image& qsf::resources::get_image(const std::string& name) const {
+		if (this->images.find(name) == this->images.cend()) {
+			throw qpl::exception("couldn't find image with name \"", name, "\"");
+		}
+		return this->images.at(name);
 	}
 	const sf::Sprite& qsf::resources::get_sprite(const std::string& name) const {
 		if (this->sprites.find(name) == this->sprites.cend()) {
@@ -243,6 +266,9 @@ namespace qsf {
 	void qsf::add_sprite(const std::string& name, sf::Texture& texture) {
 		qsf::detail::resources.add_sprite(name, texture);
 	}
+	void qsf::add_image(const std::string& name, const std::string& path) {
+		qsf::detail::resources.add_image(name, path);
+	}
 	void qsf::add_shader(const std::string& name, const std::string& path, sf::Shader::Type shader_type) {
 		qsf::detail::resources.add_shader(name, path, shader_type);
 	}
@@ -273,6 +299,9 @@ namespace qsf {
 	sf::Texture& qsf::get_texture(const std::string& name) {
 		return qsf::detail::resources.get_texture(name);
 	}
+	sf::Image& qsf::get_image(const std::string& name) {
+		return qsf::detail::resources.get_image(name);
+	}
 	sf::Sprite& qsf::get_sprite(const std::string& name) {
 		return qsf::detail::resources.get_sprite(name);
 	}
@@ -287,6 +316,9 @@ namespace qsf {
 		return qsf::detail::resources.find_sound(name);
 	}
 	bool qsf::find_texture(const std::string& name) {
+		return qsf::detail::resources.find_texture(name);
+	}
+	bool qsf::find_image(const std::string& name) {
 		return qsf::detail::resources.find_texture(name);
 	}
 	bool qsf::find_sprite(const std::string& name){

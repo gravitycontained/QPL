@@ -92,6 +92,17 @@ namespace qpl {
 	using container_subtype_with_reference = std::remove_const_t<decltype(*(std::declval<C>().begin()))>;
 
 
+	template<class T>
+	constexpr auto& access_member(T const& val) {
+		auto& [member] = val;
+		return member;
+	}
+
+	template<class T>
+	constexpr auto& access_member(T& val) {
+		auto& [member] = val;
+		return member;
+	}
 
 
 	namespace impl {
@@ -134,11 +145,11 @@ namespace qpl {
 
 
 	template<typename T> requires(qpl::is_tuple<T>())
-		constexpr qpl::size tuple_size() {
+	constexpr qpl::size tuple_size() {
 		return std::tuple_size_v<T>;
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-		constexpr qpl::size tuple_size(T tuple) {
+	constexpr qpl::size tuple_size(T tuple) {
 		return std::tuple_size_v<T>;
 	}
 	template<typename... Ts>
@@ -158,6 +169,63 @@ namespace qpl {
 
 	template<qpl::size N, typename... Ts>
 	using variadic_type = std::tuple_element_t<N, std::tuple<Ts...>>;
+
+	template<typename... Ts>
+	using variadic_type_back = std::tuple_element_t<sizeof...(Ts) - 1, std::tuple<Ts...>>;
+
+	template<typename... Ts>
+	using variadic_type_front = std::tuple_element_t<0, std::tuple<Ts...>>;
+
+	namespace detail {
+
+		template<qpl::size N, typename... Ts>
+		constexpr auto variadic_type_splice_back() {
+			using tuple = std::tuple<Ts...>;
+			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+				return std::tuple<std::tuple_element_t<Ints, Tuple>...>();
+			};
+			return unpack_tuple.template operator()<tuple>(std::make_index_sequence<qpl::tuple_size<tuple>() - N>());
+		}
+
+		template<qpl::size N, typename... Ts>
+		constexpr auto variadic_type_splice_front() {
+			using tuple = std::tuple<Ts...>;
+			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+				return std::tuple<std::tuple_element_t<Ints + N, Tuple>...>();
+			};
+			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<qpl::tuple_size<tuple>() - N>());
+		}
+		template<qpl::size front, qpl::size back, typename... Ts>
+		constexpr auto variadic_type_splice_front_back() {
+			using tuple = std::tuple<Ts...>;
+			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+				return std::tuple<std::tuple_element_t<Ints + front, Tuple>...>();
+			};
+			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<qpl::tuple_size<tuple>() - (front + back)>());
+		}
+		template<qpl::size offset, qpl::size size, typename... Ts>
+		constexpr auto variadic_type_splice() {
+			using tuple = std::tuple<Ts...>;
+			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+				return std::tuple<std::tuple_element_t<Ints + offset, Tuple>...>();
+			};
+			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<size>());
+		}
+	}
+
+	template<qpl::size N, typename... Ts>
+	using variadic_type_splice_back = decltype(qpl::detail::variadic_type_splice_back<N, Ts...>());
+
+	template<qpl::size N, typename... Ts>
+	using variadic_type_splice_front = decltype(qpl::detail::variadic_type_splice_front<N, Ts...>());
+
+	template<qpl::size offset, qpl::size size, typename... Ts>
+	using variadic_type_splice = decltype(qpl::detail::variadic_type_splice<offset, size, Ts...>());
+
+
+	template<qpl::size front, qpl::size back, typename... Ts>
+	using variadic_type_splice_front_back = decltype(qpl::detail::variadic_type_splice_front_back<front, back, Ts...>());
+
 
 	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
 		constexpr const auto& tuple_value(const T& tuple) {
@@ -644,33 +712,47 @@ namespace qpl {
 	constexpr bool all_equal_decayed() {
 		return qpl::is_same_decayed<T, U>() && (qpl::is_same_decayed<T, Args>() && ...);
 	}
+
 	template<class compare, class... Args>
-	constexpr bool is_equal_to_any() {
+	constexpr bool is_any_type_equal_to() {
 		return (qpl::is_same<compare, Args>() || ...);
 	}
 	template<class compare, class... Args>
-	constexpr bool is_equal_to_any_decayed() {
+	constexpr bool is_any_type_decayed_equal_to() {
 		return (qpl::is_same_decayed<compare, Args>() || ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool are_all_types_equal() {
+		return (qpl::is_same<compare, Args>() && ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool are_all_types_unique() {
+		if constexpr (sizeof...(Args) == 0) {
+			return true;
+		}
+		else {
+			return (!qpl::is_any_type_equal_to<compare, Args...>() && qpl::are_all_types_unique<Args...>());
+		}
 	}
 
 
 	template<typename T>
 	constexpr bool is_string_type() {
-		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view, wchar_t, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
+		return qpl::is_any_type_decayed_equal_to<T, char, const char*, char*, const char[], std::string, std::string_view, wchar_t, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
 	}
 	template<typename T>
 	concept is_string_type_c = (is_string_type<T>());
 
 	template<typename T>
 	constexpr bool is_standard_string_type() {
-		return qpl::is_equal_to_any_decayed<T, char, const char*, char*, const char[], std::string, std::string_view>();
+		return qpl::is_any_type_decayed_equal_to<T, char, const char*, char*, const char[], std::string, std::string_view>();
 	}
 	template<typename T>
 	concept is_standard_string_type_c = (is_standard_string_type<T>());
 
 	template<typename T>
 	constexpr bool is_wstring_type() {
-		return qpl::is_equal_to_any_decayed<T, wchar_t, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
+		return qpl::is_any_type_decayed_equal_to<T, wchar_t, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
 	}
 	template<typename T>
 	concept is_wstring_type_c = (is_wstring_type<T>());
@@ -678,21 +760,21 @@ namespace qpl {
 
 	template<typename T>
 	constexpr bool is_long_string_type() {
-		return qpl::is_equal_to_any_decayed<T, const char*, char*, const char[], std::string, std::string_view, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
+		return qpl::is_any_type_decayed_equal_to<T, const char*, char*, const char[], std::string, std::string_view, const wchar_t*, const wchar_t[], wchar_t*, std::wstring, std::wstring_view>();
 	}
 	template<typename T>
 	concept is_long_string_type_c = (is_long_string_type<T>());
 
 	template<typename T>
 	constexpr bool is_long_standard_string_type() {
-		return qpl::is_equal_to_any_decayed<T, const char*, char*, const char[], std::string, std::string_view>();
+		return qpl::is_any_type_decayed_equal_to<T, const char*, char*, const char[], std::string, std::string_view>();
 	}
 	template<typename T>
 	concept is_long_standard_string_type_c = (is_long_standard_string_type<T>());
 
 	template<typename T>
 	constexpr bool is_long_wstring_type() {
-		return qpl::is_equal_to_any_decayed<T, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
+		return qpl::is_any_type_decayed_equal_to<T, const wchar_t*, wchar_t*, const wchar_t[], std::wstring, std::wstring_view>();
 	}
 	template<typename T>
 	concept is_long_wstring_type_c = (is_long_wstring_type<T>());
@@ -709,6 +791,7 @@ namespace qpl {
 	constexpr bool is_wstring_type(T value) {
 		return is_wstring_type<T>();
 	}
+	struct empty_type {};
 	struct true_type {};
 	struct false_type {};
 	struct default_type {};
@@ -720,7 +803,7 @@ namespace qpl {
 
 	template<class T>
 	constexpr bool is_truth_type() {
-		return qpl::is_equal_to_any<T, true_type, false_type>();
+		return qpl::is_any_type_equal_to<T, true_type, false_type>();
 	}
 	template<class T>
 	constexpr bool is_true() {
@@ -758,7 +841,10 @@ namespace qpl {
 	using resolved_conditional = typename conditional_impl<Truth, T, Args...>::type;
 
 	template<class Truth, class T, typename... Args>
-	using conditional = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>::type;
+	using conditional_t = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>;
+
+	template<class Truth, class T, typename... Args>
+	using conditional = typename qpl::conditional_t<Truth, T, Args...>::type;
 	
 
 	template<typename T>

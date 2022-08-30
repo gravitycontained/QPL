@@ -1,5 +1,8 @@
 
 #include <qpl/winsys.hpp>
+
+
+#ifdef _WIN32
 #include <qpl/random.hpp>
 #include <qpl/string.hpp>
 #include <qpl/codec.hpp>
@@ -900,3 +903,4 @@ namespace qpl {
 	}
 
 }
+#endif

@@ -795,7 +795,13 @@ namespace qpl {
 
 	template<typename T> requires (qpl::is_printable<T>())
 	inline void single_print(T&& value) {
-		if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
+		if constexpr (qpl::is_cout_printable<T>()) {
+			qpl::ios_print(value);
+		}
+		else if constexpr (qpl::is_wcout_printable<T>()) {
+			qpl::ios_print(value);
+		}
+		else if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
 			bool first = true;
 			qpl::ios_print('{');
 			for (auto& i : value) {
@@ -1529,7 +1535,7 @@ namespace qpl {
 		}
 		T result = T{};
 		T mul = T{ 1 };
-		for (qpl::i32 i = string.length() - 1; i >= stop; --i) {
+		for (qpl::isize i = qpl::isize_cast(string.length() - 1); i >= stop; --i) {
 			switch (base_format) {
 			case base_format::base36l:
 			case base_format::base36u:
@@ -1555,6 +1561,7 @@ namespace qpl {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, prepend_zeroes);
 	}
 	QPLDLL std::string hex_string(const std::string& string);
+	QPLDLL std::string from_hex_string(const std::string& string);
 
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string hex_string_full(T value, qpl::size prepended_size = qpl::size_max, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
@@ -1793,6 +1800,8 @@ namespace qpl {
 
 	QPLDLL std::string string_remove(const std::string& string, const std::string& search, bool ignore_case = false);
 	QPLDLL std::string string_remove_all(const std::string& string, const std::string& search, bool ignore_case = false);
+
+	QPLDLL std::string string_remove_whitespace(const std::string& string);
 
 	QPLDLL qpl::size string_find(const std::string& string, const std::string& search, bool ignore_case = false);
 	QPLDLL std::vector<qpl::size> string_find_all(const std::string& string, const std::string& search, bool ignore_case = false);

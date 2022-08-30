@@ -161,6 +161,7 @@ namespace qpl {
             //returns false if empty path or afterwards at root, otherwise true
             QPLDLL bool go_directory_back();
             QPLDLL path& go_into_directory(const std::string& directory_name);
+            QPLDLL path& go_into_file(const std::string& file_name);
             QPLDLL path& go_into(const std::string& entry);
             QPLDLL path& cd(const std::string& directory_name);
             QPLDLL void append(const std::string& string);

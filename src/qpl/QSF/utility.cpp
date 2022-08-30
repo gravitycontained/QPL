@@ -1,4 +1,7 @@
 #include <qpl/QSF/utility.hpp>
+
+#if defined QPL_INTERN_SFML_USE
+
 #include <qpl/QSF/framework.hpp>
 
 namespace qsf {
@@ -62,3 +65,5 @@ namespace qsf {
 		framework.game_loop();
 	}
 }
+
+#endif

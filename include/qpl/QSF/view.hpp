@@ -2,13 +2,14 @@
 #ifndef QSF_VIEW_HPP
 #define QSF_VIEW_HPP
 
-#if !defined (QPL_NO_SFML) || defined(QPL_USE_ALL)
+#include <qpl/defines.hpp>
+#if defined QPL_INTERN_SFML_USE
 
 #include <qpl/qpldeclspec.hpp>
-#include <qpl/QSF/event_info.hpp>
-#include <qpl/QSF/drawables.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/vector.hpp>
+#include <qpl/QSF/event_info.hpp>
+#include <qpl/QSF/drawables.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
 
 namespace qsf {
@@ -20,15 +21,14 @@ namespace qsf {
 		sf::Mouse::Button drag_mouse_button = sf::Mouse::Left;
 
 		void set_hitbox(qpl::vector2<T> position, qpl::vector2<T> dimension) {
-			this->hitbox.set_position(position);
-			this->hitbox.set_dimension(dimension);
-			this->dimension = (dimension - position) * this->scale;
-			this->hitbox_set = true;
+			this->set_hitbox(qpl::hitbox{ position, dimension });
 		}
 		void set_hitbox(const qsf::base_state& state) {
-			this->hitbox.set_position({ 0,0 });
-			this->hitbox.set_dimension(state.dimension());
-			this->dimension = state.dimension() * this->scale;
+			this->set_hitbox(qpl::hitbox{ {0,0}, state.dimension });
+		}
+		void set_hitbox(qpl::hitbox hitbox) {
+			this->hitbox = hitbox;
+			this->dimension = hitbox.dimension() * this->scale;
 			this->hitbox_set = true;
 		}
 		void reset() {

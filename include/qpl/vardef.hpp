@@ -14,6 +14,7 @@
 #include <tuple>
 #include <limits>
 
+
 namespace qpl {
 	using size = std::size_t;
 	using isize = std::conditional_t<sizeof(std::size_t) == 8u, std::int64_t, std::int32_t>;
