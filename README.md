@@ -113,7 +113,7 @@ catch (std::exception& any) {
 ```
 
 # QPL GLEW hello world
-```
+```cpp
 #include <qpl/qpl.hpp>
 
 struct opengl_state : qsf::base_state {
