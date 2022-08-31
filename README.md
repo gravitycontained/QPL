@@ -38,7 +38,7 @@ sfml-network-d.lib
 qpl-d.lib
 ```
 
-There are also the compiled GLEW binaries to use 3D utilities with SFML (`qpl-gl.lib`/`qpl-gl.dll` and `qpl-gl-d.lib`/`qpl-gl-d.dll`). You need to `#define QPL_USE_GLEW` and include & link the glew [library](http://glew.sourceforge.net/). Linker dependencies look as follows:
+There are also the compiled GLEW binaries to use 3D utilities with SFML (`qpl-gl.lib`/`qpl-gl.dll` and `qpl-gl-d.lib`/`qpl-gl-d.dll`). You need to `#define QPL_USE_GLEW` for preprocessor and include & link the glew [library](http://glew.sourceforge.net/). Linker dependencies will look as follows:
 
 release x86/x64:
 ```
