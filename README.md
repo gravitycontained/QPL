@@ -38,16 +38,47 @@ sfml-network-d.lib
 qpl-d.lib
 ```
 
+There are also the compiled GLEW binaries to use 3D utilities with SFML (`qpl-gl.lib`/`qpl-gl.dll` and `qpl-gl-d.lib`/`qpl-gl-d.dll`). You need to `#define QPL_USE_GLEW` and include & link the glew [library](http://glew.sourceforge.net/). Linker dependencies look as follows:
+
+release x86/x64:
+```
+sfml-graphics.lib
+sfml-window.lib
+sfml-main.lib
+sfml-system.lib
+sfml-audio.lib
+sfml-network.lib
+opengl32.lib
+glew32.lib
+qpl-gl.lib
+```
+debug x86/x64:
+```
+sfml-graphics-d.lib
+sfml-window-d.lib
+sfml-main-d.lib
+sfml-system-d.lib
+sfml-audio-d.lib
+sfml-network-d.lib
+opengl32.lib
+glew32.lib
+qpl-gl-d.lib
+```
+
+----
+
 When building yourself, there are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` or defined as a preprocessor define will have a different effect. 
 `QPL_USE_ALL` to use all 3 below.
 
 - `#define QPL_USE_INTRINSICS` enables (Intel) intrinsics and let's you use the optimized `qpl::x64_integer` types.
 - `#define QPL_USE_VULKAN` this will enable the Vulkan utilites. You have to include and link the [Vulkan](https://www.khronos.org/vulkan/) library, [glm](https://glm.g-truc.net/0.9.9/index.html), [GLFW](https://www.glfw.org/) and [stb_image](https://github.com/nothings/stb) in order to compile your program. (`glfw3.lib` `vulkan-1.lib` linker dependencies)
 - SFML is enabled by default. use `#define QPL_NO_SFML` to disable SFML utilies. Read at the start of this readme how to include and link SFML.
+- `#define QPL_USE_GLEW` enables glew utilities to use 3D utilities with SFML. you need to include and link the glew [library](http://glew.sourceforge.net/). 
 
 then there is also `#define QPL_BIG_LUT` (which is outside of `QPL_USE_ALL`) which loads up 66 tables with 1024 entries for high precision floating point arithmetic (32768 bits of mantissa accuracy). Without `QPL_BIG_LUT` the 66 tables are loaded with 32 entries and therefore have 1024 accurate bits of mantissa. these look up tables contain constant numbers such as pi, e, ln2, sqrt2, and e^x x∈(-31, 31) (excluding e^0)
 
 If you want to use this library in a static way, include all files (as well as `.cpp` files) and add `#define QPLDLL_EXPORTS` to the pre-processor defines. This will remove the "inconsistent dll linkage" errors.
+
 
 
 # QPL Hello World:
