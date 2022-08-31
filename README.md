@@ -17,7 +17,7 @@ To use this library download the zip and include the include folder. Copy the `q
 these are the required linker dependencies:
 
 
-release x86/x64:
+- release x86/x64:
 ```
 sfml-graphics.lib
 sfml-window.lib
@@ -27,7 +27,7 @@ sfml-audio.lib
 sfml-network.lib
 qpl.lib
 ```
-debug x86/x64:
+- debug x86/x64:
 ```
 sfml-graphics-d.lib
 sfml-window-d.lib
@@ -40,7 +40,7 @@ qpl-d.lib
 
 There are also the compiled GLEW binaries to use 3D utilities with SFML (`qpl-gl.lib`/`qpl-gl.dll` and `qpl-gl-d.lib`/`qpl-gl-d.dll`). You need to `#define QPL_USE_GLEW` for preprocessor and include & link the glew [library](http://glew.sourceforge.net/). Linker dependencies will look as follows:
 
-release x86/x64:
+- release x86/x64:
 ```
 sfml-graphics.lib
 sfml-window.lib
@@ -52,7 +52,7 @@ opengl32.lib
 glew32.lib
 qpl-gl.lib
 ```
-debug x86/x64:
+- debug x86/x64:
 ```
 sfml-graphics-d.lib
 sfml-window-d.lib
