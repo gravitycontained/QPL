@@ -530,7 +530,7 @@ is std container:        true
 
 ---
 
-**basic tuple typetrais and utilities**
+**basic tuple typetraits and utilities**
 
 ```cpp
 auto type_info = []<typename T>(T tuple) {
