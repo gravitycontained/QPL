@@ -61,6 +61,12 @@ namespace qgl {
 	void qgl::gl::delete_shader(GLuint shader) {
 		glDeleteShader(shader);
 	}
+	void qgl::gl::bind_shader(GLuint program) {
+		glUseProgram(program);
+	}
+	void qgl::gl::unbind_shader() {
+		glUseProgram(0);
+	}
 
 	void qgl::gl::enable_vertex_attribute(GLuint position, qpl::size elements, qpl::size stride, qpl::size offset) {
 		glEnableVertexAttribArray(position);

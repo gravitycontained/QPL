@@ -50,7 +50,7 @@ namespace qgl {
 				18, 17, 16, 19, 18, 16,
 				20, 21, 22, 20, 22, 23 };
 		
-		return qgl::make_vertex_index_array(array, indices);
+		return qgl::make_va_index(array, indices);
 	}
 
 	struct cuboid {
@@ -60,7 +60,7 @@ namespace qgl {
 		qpl::vec3 dimension;
 		qpl::rgb color;
 		mutable bool changed = true;
-		mutable qgl::vertex_index_array vertex_array;
+		mutable qgl::va_index vertex_array;
 
 		QPLDLL void apply() const;
 

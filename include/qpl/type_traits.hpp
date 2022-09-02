@@ -7,6 +7,8 @@
 
 #include <type_traits>
 #include <limits>
+#include <bit>
+#include <cstdint>
 #include <tuple>
 #include <string>
 #include <vector>
@@ -28,6 +30,75 @@
 
 namespace qpl {
 
+	template<typename T>
+	std::string type_name(T value) {
+		return std::string(typeid(T).name());
+	}
+	template<typename T>
+	std::string type_name() {
+		return std::string(typeid(T).name());
+	}
+
+
+	constexpr qpl::size bits_in_byte() {
+#ifdef CHAR_BIT
+		return CHAR_BIT;
+#else
+		return 8u;
+#endif
+	}
+
+	template<typename T>
+	constexpr qpl::size bits_in_type() {
+		return sizeof(T) * bits_in_byte();
+	}
+
+	template<typename T>
+	constexpr qpl::size bytes_in_type() {
+		return sizeof(T);
+	}
+
+	namespace detail {
+		template<typename A, template<typename...> typename B> struct rename_variadic {};
+
+		template<template<typename...> typename A, typename... T, template<typename...> typename B> struct rename_variadic<A<T...>, B> {
+			using type = B<T...>;
+		};
+	}
+	template<typename A, template<typename...> typename B>
+	using rename_variadic = detail::rename_variadic<A, B>::type;
+
+
+	namespace detail {
+		template<auto flags, typename... types>
+		constexpr auto flags_to_tuple() {
+			using flag_tuple = std::tuple<types...>;
+
+			constexpr auto SET_BITS = std::popcount(flags);
+
+			constexpr auto flags_to_array = [&]() {
+				std::array<unsigned, SET_BITS> result{};
+				unsigned ctr = 0u;
+				for (unsigned i = 0u; i < qpl::bits_in_type<decltype(flags)>(); ++i) {
+					if (flags & (1 << i)) {
+						result[ctr] = i;
+						++ctr;
+					}
+				}
+				return result;
+			};
+			constexpr auto bit_array = flags_to_array();
+
+			auto make_tuple = [&]<typename I, I... indices>(std::index_sequence<indices...>) {
+				return std::tuple<std::tuple_element_t<bit_array[indices], flag_tuple>...>{};
+			};
+			return make_tuple(std::make_index_sequence<SET_BITS>());
+		}
+	}
+
+	template<auto flags, typename... types>
+	using flags_to_tuple = decltype(qpl::detail::flags_to_tuple<flags, types...>());
+	
 	template<typename T>
 	constexpr auto declval() {
 		using pointer = T*;
@@ -175,6 +246,8 @@ namespace qpl {
 
 	template<typename... Ts>
 	using variadic_type_front = std::tuple_element_t<0, std::tuple<Ts...>>;
+
+
 
 	namespace detail {
 
@@ -385,6 +458,16 @@ namespace qpl {
 	constexpr auto tuple_splice(Ts&&... values) {
 		return qpl::tuple_splice<start, end>(std::make_tuple(values...));
 	}
+
+	template<typename ... types>
+	struct inheritance_variadic : types... {};
+
+	template<typename Tuple> requires (qpl::is_tuple<Tuple>())
+	using inheritance_tuple = qpl::rename_variadic<Tuple, inheritance_variadic>;
+
+	template<auto flags, typename ... FlagTypes>
+	using inheritance_flags = qpl::inheritance_tuple<qpl::flags_to_tuple<flags, FlagTypes...>>;
+
 
 	namespace impl {
 		template<typename T>
@@ -667,30 +750,6 @@ namespace qpl {
 	}
 
 
-	template<typename T>
-	std::string type_name(T value) {
-		return std::string(typeid(T).name());
-	}
-	template<typename T>
-	std::string type_name() {
-		return std::string(typeid(T).name());
-	}
-
-
-	constexpr qpl::size bits_in_byte() {
-		return CHAR_BIT;
-	}
-
-	template<typename T>
-	constexpr qpl::size bits_in_type() {
-		return sizeof(T) * bits_in_byte();
-	}
-
-	template<typename T>
-	constexpr qpl::size bytes_in_type() {
-		return sizeof(T);
-	}
-
 	template<typename T, typename U>
 	constexpr bool is_same() {
 		return std::is_same_v<T, U>;
@@ -791,7 +850,9 @@ namespace qpl {
 	constexpr bool is_wstring_type(T value) {
 		return is_wstring_type<T>();
 	}
+
 	struct empty_type {};
+	
 	struct true_type {};
 	struct false_type {};
 	struct default_type {};

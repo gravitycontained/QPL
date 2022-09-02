@@ -42,6 +42,8 @@ namespace qgl {
 		QPLDLL void validate_program(GLuint program);
 		QPLDLL void detach_shader(GLuint program, GLuint shader);
 		QPLDLL void delete_shader(GLuint shader);
+		QPLDLL void bind_shader(GLuint program);
+		QPLDLL void unbind_shader();
 
 		QPLDLL void enable_vertex_attribute(GLuint position, qpl::size elements, qpl::size stride, qpl::size offset);
 

@@ -226,7 +226,7 @@ namespace qpl {
 			this->engine.seed(seeds);
 		}
 		template<typename T>
-		T generate(const qpl::distribution<T>& dist) {
+		T generate(qpl::distribution<T> dist) {
 			return dist.m_dist(this->engine);
 		}
 		template<typename T>
