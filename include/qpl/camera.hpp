@@ -20,28 +20,28 @@ namespace qpl {
 			this->construct();
 		}
 		
-		QPLDLL qpl::vector3f get_view_rotation_coordinates() const;
-		QPLDLL qpl::vector3f get_resulting_looking_position() const;
+		QPLDLL qpl::vec3 get_view_rotation_coordinates() const;
+		QPLDLL qpl::vec3 get_resulting_looking_position() const;
 		QPLDLL qpl::mat4 get_view() const;
 		QPLDLL qpl::mat4 get_view_projection() const;
 
-		QPLDLL void set_position(qpl::vector3f pos);
+		QPLDLL void set_position(qpl::vec3 pos);
 		QPLDLL void set_position(qpl::f32 x, qpl::f32 y, qpl::f32 z);
 		QPLDLL void set_position_x(qpl::f32 x);
 		QPLDLL void set_position_y(qpl::f32 y);
 		QPLDLL void set_position_z(qpl::f32 z);
-		QPLDLL qpl::vector3f get_position() const;
+		QPLDLL qpl::vec3 get_position() const;
 		QPLDLL qpl::f32 get_position_x() const;
 		QPLDLL qpl::f32 get_position_y() const;
 		QPLDLL qpl::f32 get_position_z() const;
 
-		QPLDLL void move(qpl::vector3f delta);
+		QPLDLL void move(qpl::vec3 delta);
 		QPLDLL void move(qpl::f32 x, qpl::f32 y, qpl::f32 z);
 		QPLDLL void move_x(qpl::f32 x);
 		QPLDLL void move_y(qpl::f32 y);
 		QPLDLL void move_z(qpl::f32 z);
 
-		QPLDLL void set_aspect(qpl::vector2f dimension);
+		QPLDLL void set_aspect(qpl::vec2 dimension);
 		QPLDLL void set_near(qpl::f32 value_near);
 		QPLDLL void set_far(qpl::f32 value_far);
 
@@ -52,16 +52,16 @@ namespace qpl {
 		QPLDLL void move_up(qpl::f32 delta = 1);
 		QPLDLL void move_down(qpl::f32 delta = 1);
 
-		QPLDLL void set_view_rotation(qpl::vector2f pos);
+		QPLDLL void set_view_rotation(qpl::vec2 pos);
 		QPLDLL void set_view_rotation(qpl::f32 x, qpl::f32 y);
 		QPLDLL void set_view_rotation_x(qpl::f32 x);
 		QPLDLL void set_view_rotation_y(qpl::f32 y);
 
-		QPLDLL qpl::vector2f get_view_rotation() const;
+		QPLDLL qpl::vec2 get_view_rotation() const;
 		QPLDLL qpl::f32 get_view_rotation_x() const;
 		QPLDLL qpl::f32 get_view_rotation_y() const;
 
-		QPLDLL void rotate_view(qpl::vector2f delta);
+		QPLDLL void rotate_view(qpl::vec2 delta);
 
 		QPLDLL void look_backwards();
 		QPLDLL void look_up(qpl::f32 delta = qpl::pi_32 / 2);
@@ -100,7 +100,7 @@ namespace qpl {
 		QPLDLL sf::RenderStates get_render_states() const;
 #endif
 
-		QPLDLL qpl::vector3f get_velocity() const;
+		QPLDLL qpl::vec3 get_velocity() const;
 
 		QPLDLL void construct();
 
@@ -109,10 +109,10 @@ namespace qpl {
 		qpl::f32 value_far = 1e3;
 		qpl::f32 aspect = 16 / 9.0f;
 		qpl::mat4 model;
-		qpl::vector2f view_rotation;
-		qpl::vector3f position;
+		qpl::vec2 view_rotation;
+		qpl::vec3 position;
 
-		qpl::vector3f velocities;
+		qpl::vec3 velocities;
 		qpl::f32 max_velocity;
 		qpl::f32 accelerate;
 		qpl::f32 deaccelerate;

@@ -16,15 +16,15 @@ namespace qgl {
 	void qgl::gl::unbind_vertex_array() {
 		glBindVertexArray(0);
 	}
-	void qgl::gl::buffer_vertex_data(GLuint vertexVBO, qpl::size size, void* data) {
+	void qgl::gl::buffer_vertex_data(GLuint vertexVBO, qpl::size size, const void* data) {
 		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
 		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 	}
-	void qgl::gl::generate_vertex_buffer(GLuint& vertexVBO, qpl::size size, void* data) {
+	void qgl::gl::generate_vertex_buffer(GLuint& vertexVBO, qpl::size size, const void* data) {
 		glGenBuffers(1, &vertexVBO);
 		qgl::gl::buffer_vertex_data(vertexVBO, size, data);
 	}
-	void qgl::gl::generate_index_buffer(GLuint& indexVBO, qpl::size size, void* data) {
+	void qgl::gl::generate_index_buffer(GLuint& indexVBO, qpl::size size, const void* data) {
 		glGenBuffers(1, &indexVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
@@ -68,9 +68,9 @@ namespace qgl {
 		glUseProgram(0);
 	}
 
-	void qgl::gl::enable_vertex_attribute(GLuint position, qpl::size elements, qpl::size stride, qpl::size offset) {
+	void qgl::gl::enable_vertex_attribute(GLuint position, qpl::size elements, GLenum type, qpl::size stride, qpl::size offset) {
 		glEnableVertexAttribArray(position);
-		glVertexAttribPointer(position, static_cast<GLint>(elements), GL_FLOAT, GL_FALSE, static_cast<GLsizei>(stride), (void*)offset);
+		glVertexAttribPointer(position, static_cast<GLint>(elements), type, GL_FALSE, static_cast<GLsizei>(stride), (void*)offset);
 	}
 	void qgl::gl::enable(GLenum mode) {
 		glEnable(mode);

@@ -375,7 +375,7 @@ namespace qsf {
 		this->m_text.setOutlineColor(this->outline_color.multiplied_color(color));
 	}
 	void qsf::text::set_multiplied_alpha(qpl::u8 alpha) {
-		this->set_multiplied_color(qpl::rgba::white.with_alpha(alpha));
+		this->set_multiplied_color(qpl::rgba::white().with_alpha(alpha));
 	}
 	qpl::rgba qsf::text::get_multiplied_color() const {
 		return this->multiplied_color;
@@ -683,7 +683,7 @@ namespace qsf {
 		return *this;
 	}
 	qsf::text& qsf::text::operator=(const qsf::vtext& text) {
-		this->multiplied_color = qpl::rgba::white;
+		this->multiplied_color = qpl::rgba::white();
 		this->set_character_size(text.character_size);
 		this->set_color(text.color);
 		this->set_letter_spacing(text.letter_spacing);
@@ -999,7 +999,7 @@ namespace qsf {
 		this->m_rect.move(delta);
 	}
 	qsf::rectangle& qsf::rectangle::operator=(const qsf::vrectangle& rectangle) {
-		this->multiplied_color = qpl::rgba::white;
+		this->multiplied_color = qpl::rgba::white();
 		this->set_color(rectangle.color);
 		this->set_position(rectangle.position);
 		this->set_dimension(rectangle.dimension);
@@ -1224,7 +1224,7 @@ namespace qsf {
 		this->shape.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
 	}
 	void qsf::polygon::set_multiplied_alpha(qpl::u8 alpha) {
-		this->set_multiplied_color(qpl::rgba::white.with_alpha(alpha));
+		this->set_multiplied_color(qpl::rgba::white().with_alpha(alpha));
 	}
 	void qsf::polygon::set_position(qpl::vector2f position) {
 		this->shape.setPosition(position);
@@ -2637,12 +2637,12 @@ namespace qsf {
 	}
 	qsf::sprite& qsf::sprite::operator=(const sf::Sprite& sprite) {
 		this->m_sprite = sprite;
-		this->color = this->multiplied_color = qpl::rgba::white;
+		this->color = this->multiplied_color = qpl::rgba::white();
 		return *this;
 	}
 
 	qsf::transition_overlay::transition_overlay() {
-		this->overlay.set_color(qpl::rgba::black);
+		this->overlay.set_color(qpl::rgba::black());
 		this->set_duration(0.3);
 	}
 
@@ -3477,7 +3477,7 @@ namespace qsf {
 		auto elapsed = this->cursor_interval_timer.elapsed_f();
 		auto delta = std::fmod(elapsed, this->cursor_interval_duration);
 
-		qpl::rgba color = qpl::rgba::white;
+		qpl::rgba color = qpl::rgba::white();
 		if (delta > this->cursor_blink_duration) {
 			color.a = 0;
 		}
@@ -4198,7 +4198,7 @@ namespace qsf {
 
 		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
-		if (color == qpl::rgba::white) {
+		if (color == qpl::rgba::white()) {
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 
 				auto [y, x] = qpl::div_mod(i, width);
@@ -4355,7 +4355,7 @@ namespace qsf {
 
 	}
 	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width) {
-		this->create(indices, width, qpl::rgba::white);
+		this->create(indices, width, qpl::rgba::white());
 	}
 
 
@@ -4380,7 +4380,7 @@ namespace qsf {
 
 		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
-		if (color == qpl::rgba::white) {
+		if (color == qpl::rgba::white()) {
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 
 				auto [y, x] = qpl::div_mod(i, width);
@@ -4511,7 +4511,7 @@ namespace qsf {
 
 	}
 	void qsf::tile_map::create(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width) {
-		this->create(indices, width, qpl::rgba::white);
+		this->create(indices, width, qpl::rgba::white());
 	}
 	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::size width, qpl::rgba color) {
 		if (!this->texture_ptr_set) {
@@ -4534,7 +4534,7 @@ namespace qsf {
 
 		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
-		if (color == qpl::rgba::white) {
+		if (color == qpl::rgba::white()) {
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 				auto [y, x] = qpl::div_mod(i, width);
 				auto index = indices[i];
@@ -4593,7 +4593,7 @@ namespace qsf {
 
 	}
 	void qsf::tile_map::create(const std::vector<qpl::u32>& indices, qpl::size width) {
-		this->create(indices, width, qpl::rgba::white);
+		this->create(indices, width, qpl::rgba::white());
 	}
 
 
@@ -4617,7 +4617,7 @@ namespace qsf {
 			chunk.setPrimitiveType(sf::Quads);
 		}
 
-		if (color == qpl::rgba::white) {
+		if (color == qpl::rgba::white()) {
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 				auto tile = indices[i];
 				if (tile.first == skip_index) {
@@ -4795,7 +4795,7 @@ namespace qsf {
 
 	}
 	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::u32>>& indices, qpl::size width, qpl::u32 skip_index) {
-		this->create_skip_empty(indices, width, qpl::rgba::white, skip_index);
+		this->create_skip_empty(indices, width, qpl::rgba::white(), skip_index);
 	}
 
 	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width, qpl::rgba color, qpl::u32 skip_index) {
@@ -4820,7 +4820,7 @@ namespace qsf {
 
 		auto diagonal = std::sqrt(std::pow(this->texture_tile_dimension.x, 2) + std::pow(this->texture_tile_dimension.y, 2));
 
-		if (color == qpl::rgba::white) {
+		if (color == qpl::rgba::white()) {
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 				auto tile = indices[i];
 				if (tile.first == skip_index) {
@@ -4916,7 +4916,7 @@ namespace qsf {
 
 	}
 	void qsf::tile_map::create_skip_empty(const std::vector<std::pair<qpl::u32, qpl::f32>>& indices, qpl::size width, qpl::u32 skip_index) {
-		this->create_skip_empty(indices, width, qpl::rgba::white, skip_index);
+		this->create_skip_empty(indices, width, qpl::rgba::white(), skip_index);
 	}
 	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size width, qpl::rgba color, qpl::u32 skip_index) {
 		if (!this->texture_ptr_set) {
@@ -4940,7 +4940,7 @@ namespace qsf {
 		auto texture_row_tile_count = texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
 		qpl::u32 ctr = 0;
-		if (color == qpl::rgba::white) {
+		if (color == qpl::rgba::white()) {
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
 				auto index = indices[i];
 				if (index == skip_index) {
@@ -5008,7 +5008,7 @@ namespace qsf {
 
 	}
 	void qsf::tile_map::create_skip_empty(const std::vector<qpl::u32>& indices, qpl::size width, qpl::u32 skip_index) {
-		this->create_skip_empty(indices, width, qpl::rgba::white, skip_index);
+		this->create_skip_empty(indices, width, qpl::rgba::white(), skip_index);
 	}
 
 	void qsf::tile_map::set_color(qpl::rgba color) {
@@ -6015,7 +6015,7 @@ namespace qsf {
 	}
 
 	void qsf::vgraph::add_y_axis_line(qpl::f64 value) {
-		this->add_y_axis_line(value, qpl::rgba::red, this->axis_thickness / 2);
+		this->add_y_axis_line(value, qpl::rgba::red(), this->axis_thickness / 2);
 	}
 	void qsf::vgraph::add_y_axis_line(qpl::f64 value, qpl::rgba color, qpl::f64 thickness, bool foreground) {
 		this->y_axis_highlighted_lines[value].color = color;
@@ -6024,7 +6024,7 @@ namespace qsf {
 	}
 	qsf::vgraph::highlighted_line& qsf::vgraph::get_y_axis_line(qpl::f64 value) {
 		if (this->y_axis_highlighted_lines.find(value) == this->y_axis_highlighted_lines.cend()) {
-			this->y_axis_highlighted_lines[value].color = qpl::rgba::red;
+			this->y_axis_highlighted_lines[value].color = qpl::rgba::red();
 			this->y_axis_highlighted_lines[value].thickness = this->axis_thickness;
 		}
 		return this->y_axis_highlighted_lines[value];
@@ -6119,7 +6119,7 @@ namespace qsf {
 					use_interpolated_thickness = true;
 				}
 
-				if (!use_interpolated_color && span[i].color != qpl::frgba::unset) {
+				if (!use_interpolated_color && span[i].color != qpl::frgba::unset()) {
 					use_interpolated_color = true;
 				}
 
@@ -6137,7 +6137,7 @@ namespace qsf {
 				using_thickness *= graph.closest_graph_at_cursor_multiply_thickness;
 			}
 			qpl::frgba using_color = g.second.color;
-			if (using_color == qpl::frgba::unset) {
+			if (using_color == qpl::frgba::unset()) {
 				using_color = graph.color;
 			}
 
@@ -6205,7 +6205,7 @@ namespace qsf {
 					use_interpolated_thickness = true;
 				}
 
-				if (!use_interpolated_color && span[i].color != qpl::frgba::unset) {
+				if (!use_interpolated_color && span[i].color != qpl::frgba::unset()) {
 					use_interpolated_color = true;
 				}
 
@@ -6224,7 +6224,7 @@ namespace qsf {
 			}
 
 			qpl::frgba using_color = g.second.color;
-			if (using_color == qpl::frgba::unset) {
+			if (using_color == qpl::frgba::unset()) {
 				using_color = graph.color;
 			}
 
@@ -6271,7 +6271,7 @@ namespace qsf {
 			}
 
 			qpl::frgba using_color = g.second.color;
-			if (using_color == qpl::frgba::unset) {
+			if (using_color == qpl::frgba::unset()) {
 				using_color = graph.color;
 			}
 
@@ -6475,7 +6475,7 @@ namespace qsf {
 			}
 		}
 
-		this->cursor_graph_text.set_color(qpl::rgba::unset);
+		this->cursor_graph_text.set_color(qpl::rgba::unset());
 		if (graph.display_closest_graph_at_cursor && !graph.closest_graph_at_cursor.empty()) {
 			this->cursor_graph_text = graph.closest_graph_at_cursor_text;
 			if (this->cursor_graph_text.get_font().empty()) {

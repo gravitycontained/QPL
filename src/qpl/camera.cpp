@@ -21,31 +21,36 @@ namespace qpl {
 		this->set_acceleration(15.0f);
 		this->set_max_velocity(3.0f);
 		this->set_position({ 3, 3, 3 });
-		this->set_view_rotation({ 2.5, 0.5 });
+		this->set_view_rotation({ -2.5, -0.5 });
 	}
 
 	
-	qpl::vector3f qpl::camera::get_view_rotation_coordinates() const {
-		qpl::vector3f result;
-		result.x = std::cos(-this->view_rotation.x) * std::cos(-this->view_rotation.y);
-		result.y = std::sin(-this->view_rotation.y);
-		result.z = std::sin(-this->view_rotation.x) * std::cos(-this->view_rotation.y);
+	qpl::vec3 qpl::camera::get_view_rotation_coordinates() const {
+
+		auto pitch = this->view_rotation.x;
+		auto yaw = this->view_rotation.y;
+
+		qpl::vec3 result;
+		result.x = std::cos(pitch) * std::cos(yaw);
+		result.y = std::sin(yaw);
+		//result.y = std::sin(pitch);
+		result.z = std::sin(pitch) * std::cos(yaw);
 		return result;
 	}
-	qpl::vector3f qpl::camera::get_resulting_looking_position() const {
+	qpl::vec3 qpl::camera::get_resulting_looking_position() const {
 		return this->position + this->get_view_rotation_coordinates();
 	}
 	qpl::mat4 qpl::camera::get_view() const {
-		qpl::vector3f rot = { 0, 1, 0 };
+		qpl::vec3 rot = { 0, 1, 0 };
 
-		auto pos = this->get_resulting_looking_position();
-		return qpl::mat4::look_at(this->position, pos, rot);
+		auto look = this->get_resulting_looking_position();
+		return qpl::mat4::look_at(this->position, look, rot);
 	}
 	qpl::mat4 qpl::camera::get_view_projection() const {
 		return this->perspective * this->get_view() * this->model;
 	}
 
-	void qpl::camera::set_position(qpl::vector3f pos) {
+	void qpl::camera::set_position(qpl::vec3 pos) {
 		this->position = pos;
 	}
 	void qpl::camera::set_position(qpl::f32 x, qpl::f32 y, qpl::f32 z) {
@@ -60,7 +65,7 @@ namespace qpl {
 	void qpl::camera::set_position_z(qpl::f32 z) {
 		this->position.z = z;
 	}
-	qpl::vector3f qpl::camera::get_position() const {
+	qpl::vec3 qpl::camera::get_position() const {
 		return this->position;
 	}
 
@@ -74,7 +79,7 @@ namespace qpl {
 		return this->position.z;
 	}
 
-	void qpl::camera::move(qpl::vector3f delta) {
+	void qpl::camera::move(qpl::vec3 delta) {
 		this->position += delta;
 	}
 	void qpl::camera::move(qpl::f32 x, qpl::f32 y, qpl::f32 z) {
@@ -91,7 +96,7 @@ namespace qpl {
 	}
 
 
-	void qpl::camera::set_aspect(qpl::vector2f dimension) {
+	void qpl::camera::set_aspect(qpl::vec2 dimension) {
 		this->aspect = dimension.x / dimension.y;
 		this->perspective = qpl::mat4::perspective(qpl::radians(45.0f), this->aspect, this->value_near, this->value_far);
 	}
@@ -138,7 +143,7 @@ namespace qpl {
 		this->move(vec);
 	}
 
-	void qpl::camera::set_view_rotation(qpl::vector2f pos) {
+	void qpl::camera::set_view_rotation(qpl::vec2 pos) {
 		this->set_view_rotation_x(pos.x);
 		this->set_view_rotation_y(pos.y);
 	}
@@ -152,7 +157,7 @@ namespace qpl {
 	void qpl::camera::set_view_rotation_y(qpl::f32 y) {
 		this->view_rotation.y = y;
 	}
-	qpl::vector2f qpl::camera::get_view_rotation() const {
+	qpl::vec2 qpl::camera::get_view_rotation() const {
 		return this->view_rotation;
 	}
 	qpl::f32 qpl::camera::get_view_rotation_x() const {
@@ -162,7 +167,7 @@ namespace qpl {
 		return this->view_rotation.y;
 	}
 
-	void qpl::camera::rotate_view(qpl::vector2f delta) {
+	void qpl::camera::rotate_view(qpl::vec2 delta) {
 		this->set_view_rotation(this->get_view_rotation() + delta);
 	}
 
@@ -170,16 +175,16 @@ namespace qpl {
 		this->rotate_view_y(static_cast<qpl::f32>(qpl::pi));
 	}
 	void qpl::camera::look_up(qpl::f32 delta) {
-		this->rotate_view_y(-delta);
-	}
-	void qpl::camera::look_down(qpl::f32 delta) {
 		this->rotate_view_y(delta);
 	}
+	void qpl::camera::look_down(qpl::f32 delta) {
+		this->rotate_view_y(-delta);
+	}
 	void qpl::camera::look_left(qpl::f32 delta) {
-		this->rotate_view_x(delta);
+		this->rotate_view_x(-delta);
 	}
 	void qpl::camera::look_right(qpl::f32 delta) {
-		this->rotate_view_x(-delta);
+		this->rotate_view_x(delta);
 	}
 	void qpl::camera::rotate_view_x(qpl::f32 x) {
 		this->set_view_rotation_x(this->view_rotation.x + x);
@@ -285,10 +290,11 @@ namespace qpl {
 			this->velocities *= deaccel;
 		}
 
-		this->position += this->velocities * this->speed * delta_time;
+		this->position += this->velocities * delta_time * this->speed;
 
 		this->view_rotation.x = static_cast<qpl::f32>(std::fmod(this->view_rotation.x, qpl::pi * 2));
 		this->view_rotation.y = static_cast<qpl::f32>(std::fmod(this->view_rotation.y + qpl::pi_32 / 2, qpl::pi * 2)) - qpl::pi_32 / 2;
+
 		this->view_rotation.y = std::max(this->view_rotation.y, -qpl::pi_32 / 2 + 0.01f);
 		this->view_rotation.y = std::min(this->view_rotation.y, qpl::pi_32 / 2 - 0.01f);
 	}
@@ -338,7 +344,7 @@ namespace qpl {
 
 #endif
 
-	qpl::vector3f qpl::camera::get_velocity() const {
+	qpl::vec3 qpl::camera::get_velocity() const {
 		return this->velocities;
 	}
 }

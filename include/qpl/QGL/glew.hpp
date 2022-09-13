@@ -7,6 +7,7 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
+#include <qpl/type_traits.hpp>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -28,9 +29,9 @@ namespace qgl {
 		QPLDLL void generate_vertex_array(GLuint& id);
 		QPLDLL void bind_vertex_array(GLuint id);
 		QPLDLL void unbind_vertex_array();
-		QPLDLL void buffer_vertex_data(GLuint vertexVBO, qpl::size size, void* data);
-		QPLDLL void generate_vertex_buffer(GLuint& vertexVBO, qpl::size size, void* data);
-		QPLDLL void generate_index_buffer(GLuint& indexVBO, qpl::size size, void* data);
+		QPLDLL void buffer_vertex_data(GLuint vertexVBO, qpl::size size, const void* data);
+		QPLDLL void generate_vertex_buffer(GLuint& vertexVBO, qpl::size size, const void* data);
+		QPLDLL void generate_index_buffer(GLuint& indexVBO, qpl::size size, const void* data);
 		QPLDLL void delete_buffer(GLuint& id);
 		QPLDLL void delete_vertex_array(GLuint& id);
 		QPLDLL void draw_triangles(qpl::size size);
@@ -45,7 +46,50 @@ namespace qgl {
 		QPLDLL void bind_shader(GLuint program);
 		QPLDLL void unbind_shader();
 
-		QPLDLL void enable_vertex_attribute(GLuint position, qpl::size elements, qpl::size stride, qpl::size offset);
+		QPLDLL void enable_vertex_attribute(GLuint position, qpl::size elements, GLenum type, qpl::size stride, qpl::size offset);
+
+		/*
+		#define GL_BYTE 0x1400
+		#define GL_UNSIGNED_BYTE 0x1401
+		#define GL_SHORT 0x1402
+		#define GL_UNSIGNED_SHORT 0x1403
+		#define GL_INT 0x1404
+		#define GL_UNSIGNED_INT 0x1405
+		#define GL_FLOAT 0x1406
+		#define GL_2_BYTES 0x1407
+		#define GL_3_BYTES 0x1408
+		#define GL_4_BYTES 0x1409
+		#define GL_DOUBLE 0x140A
+		*/
+		template<typename T>
+		void enable_vertex_attribute(GLuint position, qpl::size elements, qpl::size stride, qpl::size offset) {
+			if constexpr (qpl::is_same<T, qpl::i8>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_BYTE, stride, offset);
+			}
+			else if constexpr (qpl::is_same<T, qpl::u8>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_UNSIGNED_BYTE, stride, offset);
+			}
+			if constexpr (qpl::is_same<T, qpl::i16>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_SHORT, stride, offset);
+			}
+			else if constexpr (qpl::is_same<T, qpl::u16>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_UNSIGNED_SHORT, stride, offset);
+			}
+			if constexpr (qpl::is_same<T, qpl::i32>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_INT, stride, offset);
+			}
+			else if constexpr (qpl::is_same<T, qpl::u32>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_UNSIGNED_INT, stride, offset);
+			}
+			else if constexpr (qpl::is_same<T, float>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_FLOAT, stride, offset);
+			}
+			else if constexpr (qpl::is_same<T, double>()) {
+				qgl::gl::enable_vertex_attribute(position, elements, GL_DOUBLE, stride, offset);
+			}
+		}
+
+
 
 		QPLDLL void enable(GLenum mode);
 		QPLDLL void cull_face(GLenum mode);

@@ -461,7 +461,7 @@ namespace qpl {
 		else {
 			auto tuple = std::tuple(args...);
 
-			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 				return qpl::is_operation_to_any(op, std::get<sizeof...(Ints)>(tuple), std::get<Ints>(tuple)...);
 			};
 			return unpack_tuple(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)> -1>());
@@ -502,7 +502,7 @@ namespace qpl {
 		else {
 			auto tuple = std::tuple(args...);
 
-			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 				return qpl::is_operation_to_all(op, std::get<sizeof...(Ints)>(tuple), std::get<Ints>(tuple)...);
 			};
 			return unpack_tuple(tuple, std::make_index_sequence<std::tuple_size_v<decltype(tuple)> -1>());
@@ -783,15 +783,6 @@ namespace qpl {
 			Tuple& tuple;
 		};
 
-		template<qpl::size N>
-		struct constexpr_loop {
-			constexpr static qpl::size i = N;
-
-			constexpr static qpl::size index() {
-				return N;
-			}
-		};
-
 		template<qpl::size compare, qpl::i64 Start, qpl::i64 End, qpl::i64 Inc>
 		constexpr bool tuple_range_valid() {
 			return Inc > 0 && Start >= 0 && End <= 0 && (qpl::signed_cast(compare) - Start + End) / Inc > 0;
@@ -831,7 +822,7 @@ namespace qpl {
 	}
 	template<qpl::i64 Start, qpl::i64 End, qpl::i64 Inc, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, Inc>())
 	constexpr void tuple_iterate_indexed(T tuple, F function) {
-		constexpr auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
 			(function(std::get<Ints * Inc + Start>(tuple), Ints * Inc + Start), ...);
 		};
 		constexpr auto size = qpl::unsigned_cast((qpl::signed_cast(qpl::tuple_size<T>()) - Start + End) / Inc);
@@ -848,7 +839,7 @@ namespace qpl {
 
 	template<typename T, typename F> requires (qpl::is_tuple<T>())
 	constexpr void tuple_iterate_control(T tuple, F function) {
-		constexpr auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
 			(function(qpl::impl::tuple_loop<T, Ints>(tuple)), ...);
 		};
 		unpack(std::make_index_sequence<qpl::tuple_size<T>()>());
@@ -856,7 +847,7 @@ namespace qpl {
 
 	template<qpl::i64 Start, qpl::i64 End, qpl::i64 Inc, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, End, Inc>())
 	constexpr void tuple_iterate_control(T tuple, F function) {
-		constexpr auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
 			(function(qpl::impl::tuple_loop<T, Ints * Inc + Start>(tuple)), ...);
 		};
 		constexpr auto size = qpl::unsigned_cast((qpl::signed_cast(qpl::tuple_size<T>()) - Start + End) / Inc);
@@ -869,14 +860,6 @@ namespace qpl {
 	template<qpl::i64 Start, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, 0, 1>())
 	constexpr void tuple_iterate_control(T tuple, F function) {
 		qpl::tuple_iterate_control<Start, 0, 1>(tuple, function);
-	}
-
-	template<qpl::size N, typename F>
-	constexpr void constexpr_iterate(F function) {
-		constexpr auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
-			(function(qpl::impl::constexpr_loop<Ints>()), ...);
-		};
-		unpack(std::make_index_sequence<N>());
 	}
 
 	template<typename C>

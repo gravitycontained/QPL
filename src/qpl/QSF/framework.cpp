@@ -368,7 +368,7 @@ namespace qsf {
 	void qsf::framework::create() {
 		if (!this->is_created()) {
 
-			sf::String s = this->title.c_str(); //??? SFML why is this needed
+			sf::String s = this->title.c_str();
 
 			this->event.m_screen_dimension = this->dimension;
 			this->window.create(sf::VideoMode({ this->dimension.x, this->dimension.y }), s, this->style, this->context_settings);

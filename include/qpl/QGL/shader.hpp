@@ -37,12 +37,12 @@ namespace qgl {
 	};
 
 
-	template<typename ... Attributes> requires(qgl::is_attribute<Attributes>() && ...)
+	template<typename ... Attributes> requires(qgl::is_vertex_attribute<Attributes>() && ...)
 	std::string get_vertex_shader(qpl::u32 version = 330u) {
 		constexpr auto pos3 = qgl::has_pos3<Attributes...>();
 		constexpr auto pos2 = qgl::has_pos2<Attributes...>();
-		constexpr auto rgb = qgl::has_rgb<Attributes...>();
-		constexpr auto rgba = qgl::has_rgba<Attributes...>();
+		constexpr auto rgb = qgl::has_rgb<Attributes...>() || qgl::has_frgb<Attributes...>();
+		constexpr auto rgba = qgl::has_rgba<Attributes...>() || qgl::has_frgba<Attributes...>();
 		constexpr auto tex = qgl::has_tex<Attributes...>();
 
 		std::ostringstream stream;
@@ -102,12 +102,12 @@ namespace qgl {
 
 		return stream.str();
 	}
-	template<typename ... Attributes> requires(qgl::is_attribute<Attributes>() && ...)
+	template<typename ... Attributes> requires(qgl::is_vertex_attribute<Attributes>() && ...)
 	constexpr std::string get_fragment_shader(qpl::u32 version = 330u) {
 		constexpr auto pos3 = qgl::has_pos3<Attributes...>();
 		constexpr auto pos2 = qgl::has_pos2<Attributes...>();
-		constexpr auto rgb = qgl::has_rgb<Attributes...>();
-		constexpr auto rgba = qgl::has_rgba<Attributes...>();
+		constexpr auto rgb = qgl::has_rgb<Attributes...>() || qgl::has_frgb<Attributes...>();
+		constexpr auto rgba = qgl::has_rgba<Attributes...>() || qgl::has_frgba<Attributes...>();
 		constexpr auto tex = qgl::has_tex<Attributes...>();
 
 		std::ostringstream stream;
@@ -278,19 +278,19 @@ namespace qgl {
 
 	QPLDLL extern std::unordered_map<qpl::u8, shader_small> shaders;
 
-	template<typename ... Attributes> requires (qgl::is_attribute<Attributes>() && ...)
+	template<typename ... Attributes> requires (qgl::is_vertex_attribute<Attributes>() && ...)
 	void bind_shader() {
 		constexpr auto flag = qgl::attribute_flag<Attributes...>();
 		auto& shader = qgl::shaders[flag];
 		shader.bind();
 	}
-	template<typename ... Attributes> requires (qgl::is_attribute<Attributes>() && ...)
+	template<typename ... Attributes> requires (qgl::is_vertex_attribute<Attributes>() && ...)
 	void unbind_shader() {
 		constexpr auto flag = qgl::attribute_flag<Attributes...>();
 		auto& shader = qgl::shaders[flag];
 		shader.unbind();
 	}
-	template<typename ... Attributes> requires (qgl::is_attribute<Attributes>() && ...)
+	template<typename ... Attributes> requires (qgl::is_vertex_attribute<Attributes>() && ...)
 	void check_shader() {
 		constexpr auto flag = qgl::attribute_flag<Attributes...>();
 		auto& shader = qgl::shaders[flag];
@@ -300,7 +300,7 @@ namespace qgl {
 		}
 	}
 
-	template<typename ... Attributes> requires (qgl::is_attribute<Attributes>() && ...)
+	template<typename ... Attributes> requires (qgl::is_vertex_attribute<Attributes>() && ...)
 	qgl::shader_small& get_shader() {
 		constexpr auto flag = qgl::attribute_flag<Attributes...>();
 		return qgl::shaders[flag];

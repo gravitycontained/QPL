@@ -30,6 +30,33 @@
 
 namespace qpl {
 
+
+	struct empty_type {};
+
+	struct true_type {};
+	struct false_type {};
+	struct default_type {};
+	using error_type = std::enable_if<false, void>;
+	using default_error = error_type;
+
+
+
+	namespace detail {
+		template<size_t Index, size_t Size>
+		struct constexpr_index {
+			constexpr operator size_t() { return Index; }
+			constexpr static size_t size = Size;
+		};
+	}
+
+	template<qpl::size N, typename F>
+	constexpr void constexpr_iterate(F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			(std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>()), ...);
+		};
+		unpack(std::make_index_sequence<N>());
+	}
+
 	template<typename T>
 	std::string type_name(T value) {
 		return std::string(typeid(T).name());
@@ -66,39 +93,11 @@ namespace qpl {
 		};
 	}
 	template<typename A, template<typename...> typename B>
+	using rename_variadic_type = detail::rename_variadic<A, B>;
+
+	template<typename A, template<typename...> typename B>
 	using rename_variadic = detail::rename_variadic<A, B>::type;
 
-
-	namespace detail {
-		template<auto flags, typename... types>
-		constexpr auto flags_to_tuple() {
-			using flag_tuple = std::tuple<types...>;
-
-			constexpr auto SET_BITS = std::popcount(flags);
-
-			constexpr auto flags_to_array = [&]() {
-				std::array<unsigned, SET_BITS> result{};
-				unsigned ctr = 0u;
-				for (unsigned i = 0u; i < qpl::bits_in_type<decltype(flags)>(); ++i) {
-					if (flags & (1 << i)) {
-						result[ctr] = i;
-						++ctr;
-					}
-				}
-				return result;
-			};
-			constexpr auto bit_array = flags_to_array();
-
-			auto make_tuple = [&]<typename I, I... indices>(std::index_sequence<indices...>) {
-				return std::tuple<std::tuple_element_t<bit_array[indices], flag_tuple>...>{};
-			};
-			return make_tuple(std::make_index_sequence<SET_BITS>());
-		}
-	}
-
-	template<auto flags, typename... types>
-	using flags_to_tuple = decltype(qpl::detail::flags_to_tuple<flags, types...>());
-	
 	template<typename T>
 	constexpr auto declval() {
 		using pointer = T*;
@@ -236,7 +235,7 @@ namespace qpl {
 		return qpl::variadic_size<Ts...>();
 	}
 	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
-		using tuple_type = std::tuple_element_t<N, T>;
+	using tuple_type = std::tuple_element_t<N, T>;
 
 	template<qpl::size N, typename... Ts>
 	using variadic_type = std::tuple_element_t<N, std::tuple<Ts...>>;
@@ -249,12 +248,46 @@ namespace qpl {
 
 
 
+
+	namespace detail {
+		template<auto flags, typename... types>
+		constexpr auto flags_to_tuple() {
+			using flag_tuple = std::tuple<types...>;
+			constexpr auto tuple_size = qpl::tuple_size<flag_tuple>();
+
+			constexpr qpl::size SET_BITS = std::popcount(flags);
+
+			auto flags_to_array = [&]() {
+				std::array<qpl::size, SET_BITS> result{};
+				qpl::size ctr = 0u;
+				for (qpl::size i = 0u; i < qpl::bits_in_type<decltype(flags)>() && i < tuple_size; ++i) {
+					if (flags & (1 << i)) {
+						result[ctr] = i;
+						++ctr;
+					}
+				}
+				return result;
+			};
+			constexpr auto bit_array = flags_to_array();
+
+			auto make_tuple = [&]<typename I, I... indices>(std::index_sequence<indices...>) {
+				return std::tuple<std::tuple_element_t<bit_array[indices], flag_tuple>...>{};
+			};
+			return make_tuple.template operator()<qpl::size>(std::make_index_sequence<std::min(qpl::tuple_size<flag_tuple>(), SET_BITS)>());
+		}
+	}
+
+	template<auto flags, typename... types>
+	using flags_to_tuple = decltype(qpl::detail::flags_to_tuple<flags, types...>());
+
+
+
 	namespace detail {
 
 		template<qpl::size N, typename... Ts>
 		constexpr auto variadic_type_splice_back() {
 			using tuple = std::tuple<Ts...>;
-			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return std::tuple<std::tuple_element_t<Ints, Tuple>...>();
 			};
 			return unpack_tuple.template operator()<tuple>(std::make_index_sequence<qpl::tuple_size<tuple>() - N>());
@@ -263,7 +296,7 @@ namespace qpl {
 		template<qpl::size N, typename... Ts>
 		constexpr auto variadic_type_splice_front() {
 			using tuple = std::tuple<Ts...>;
-			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return std::tuple<std::tuple_element_t<Ints + N, Tuple>...>();
 			};
 			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<qpl::tuple_size<tuple>() - N>());
@@ -271,7 +304,7 @@ namespace qpl {
 		template<qpl::size front, qpl::size back, typename... Ts>
 		constexpr auto variadic_type_splice_front_back() {
 			using tuple = std::tuple<Ts...>;
-			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return std::tuple<std::tuple_element_t<Ints + front, Tuple>...>();
 			};
 			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<qpl::tuple_size<tuple>() - (front + back)>());
@@ -279,7 +312,7 @@ namespace qpl {
 		template<qpl::size offset, qpl::size size, typename... Ts>
 		constexpr auto variadic_type_splice() {
 			using tuple = std::tuple<Ts...>;
-			constexpr auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return std::tuple<std::tuple_element_t<Ints + offset, Tuple>...>();
 			};
 			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<size>());
@@ -525,7 +558,7 @@ namespace qpl {
 				return qpl::impl::is_printable<qpl::container_subtype<T>>();
 			}
 			else if constexpr (qpl::is_tuple_c<T>) {
-				constexpr auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
+				auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
 					constexpr auto b = (qpl::impl::is_printable<Ts>() && ...);
 					if constexpr (b) {
 						return std::true_type{};
@@ -537,7 +570,7 @@ namespace qpl {
 				return decltype(check(std::declval<T>()))::value;
 			}
 			else if constexpr (qpl::is_pair_c<T>) {
-				constexpr auto check = [&]<typename... Ts>(std::pair<Ts...>) {
+				auto check = [&]<typename... Ts>(std::pair<Ts...>) {
 					constexpr auto b = (qpl::impl::is_printable<Ts>() && ...);
 					if constexpr (b) {
 						return std::true_type{};
@@ -793,6 +826,16 @@ namespace qpl {
 			return (!qpl::is_any_type_equal_to<compare, Args...>() && qpl::are_all_types_unique<Args...>());
 		}
 	}
+	template<typename Tuple, class... Args>
+	constexpr qpl::size type_match_count() {
+		qpl::size result = 0u;
+		qpl::constexpr_iterate<qpl::tuple_size<Tuple>()>([&](auto i) {
+			if constexpr (qpl::is_any_type_equal_to<qpl::tuple_type<i, Tuple>, Args...>()) {
+				++result;
+			}
+		});
+		return result;
+	}
 
 
 	template<typename T>
@@ -851,14 +894,6 @@ namespace qpl {
 		return is_wstring_type<T>();
 	}
 
-	struct empty_type {};
-	
-	struct true_type {};
-	struct false_type {};
-	struct default_type {};
-	using error_type = std::enable_if<false, void>;
-	using default_error = error_type;
-
 	template<bool condition>
 	using if_true = std::conditional_t<condition, true_type, false_type>;
 
@@ -902,10 +937,10 @@ namespace qpl {
 	using resolved_conditional = typename conditional_impl<Truth, T, Args...>::type;
 
 	template<class Truth, class T, typename... Args>
-	using conditional_t = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>;
+	using conditional_type = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>;
 
 	template<class Truth, class T, typename... Args>
-	using conditional = typename qpl::conditional_t<Truth, T, Args...>::type;
+	using conditional = typename qpl::conditional_type<Truth, T, Args...>::type;
 	
 
 	template<typename T>
@@ -1561,7 +1596,7 @@ namespace qpl {
 
 		template<typename C, typename F>
 		constexpr auto make_method() {
-			constexpr auto unpack_tuple = [&]<class C, class Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = [&]<class C, class Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return make_method_help<C, std::tuple_element_t<Ints, Tuple>...>();
 			};
 			using function_type = decltype(impl::function_type(std::declval<F>()));

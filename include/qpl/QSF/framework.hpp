@@ -555,7 +555,7 @@ namespace qsf {
 
 		friend qsf::framework;
 	protected:
-		qpl::rgb clear_color = qpl::rgb::black;
+		qpl::rgb clear_color = qpl::rgb::black();
 		sf::RenderStates render_states = sf::RenderStates::Default;
 		qpl::vector2i last_dimension;
 		qpl::f64 speed_factor = 1.0;

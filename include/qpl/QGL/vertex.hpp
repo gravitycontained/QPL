@@ -11,28 +11,28 @@
 #include <qpl/vector.hpp>
 #include <qpl/color.hpp>
 
-#include <array>
-#include <tuple>
-#include <iostream>
-#include <vector>
-
 #include <qpl/QGL/glew.hpp>
 #include <qpl/QGL/attributes.hpp>
 #include <qpl/QGL/shader.hpp>
 
 #include <qpl/QSF/drawables.hpp>
 
+#include <array>
+#include <tuple>
+#include <iostream>
+#include <vector>
 
 namespace qgl {
 
 
 	namespace detail {
-		struct vertex_pos2 { qpl::vec2 position = qpl::vec2{}; };
-		struct vertex_pos3 { qpl::vec3 position = qpl::vec3{}; };
-		struct vertex_rgb { qpl::frgb color = qpl::frgb{}; };
-		struct vertex_rgba { qpl::frgba color = qpl::frgba{}; };
-		struct vertex_tex { qpl::vec2 tex_coords = qpl::vec2{}; };
-
+		struct vertex_pos2 {  qpl::vec2 position = qpl::vec2{}; };
+		struct vertex_pos3 {  qpl::vec3 position = qpl::vec3{}; };
+		struct vertex_frgb {  qpl::frgb  color = qpl::frgb{}; };
+		struct vertex_frgba { qpl::frgba color = qpl::frgba{}; };
+		struct vertex_rgb {   qpl::rgb   color = qpl::rgb{}; };
+		struct vertex_rgba {  qpl::rgba  color = qpl::rgba{}; };
+		struct vertex_tex {   qpl::vec2 tex_coords = qpl::vec2{}; };
 
 		template<typename T>
 		using vertex_type = qpl::conditional<
@@ -40,6 +40,8 @@ namespace qgl {
 			qpl::if_true<qpl::is_same<T, qgl::pos3>()>, qgl::detail::vertex_pos3,
 			qpl::if_true<qpl::is_same<T, qgl::rgb>()>, qgl::detail::vertex_rgb,
 			qpl::if_true<qpl::is_same<T, qgl::rgba>()>, qgl::detail::vertex_rgba,
+			qpl::if_true<qpl::is_same<T, qgl::frgb>()>, qgl::detail::vertex_frgb,
+			qpl::if_true<qpl::is_same<T, qgl::frgba>()>, qgl::detail::vertex_frgba,
 			qpl::if_true<qpl::is_same<T, qgl::tex>()>, qgl::detail::vertex_tex,
 			qpl::default_type, qpl::error_type>;
 
@@ -48,26 +50,26 @@ namespace qgl {
 			qpl::if_true<qpl::is_vectorN<T, 2>()>, qgl::pos2,
 			qpl::if_true<qpl::is_vectorN<T, 3>()>, qgl::pos3,
 			qpl::if_true<qpl::is_same<T, qpl::rgb>()>, qgl::rgb,
-			qpl::if_true<qpl::is_same<T, qpl::frgb>()>, qgl::rgb,
 			qpl::if_true<qpl::is_same<T, qpl::rgba>()>, qgl::rgba,
-			qpl::if_true<qpl::is_same<T, qpl::frgba>()>, qgl::rgba,
+			qpl::if_true<qpl::is_same<T, qpl::frgb>()>, qgl::frgb,
+			qpl::if_true<qpl::is_same<T, qpl::frgba>()>, qgl::frgba,
 			qpl::if_true<qpl::is_texN<T, 2>()>, qgl::tex,
 			qpl::default_type, qpl::error_type>;
 
 		template<typename... T>
 		constexpr bool is_valid_vertex_attributes() {
 			return
-				!(qpl::is_any_type_equal_to<qgl::rgb, T...>() && qpl::is_any_type_equal_to<qgl::rgba, T...>()) &&
-				!(qpl::is_any_type_equal_to<qgl::pos2, T...>() && qpl::is_any_type_equal_to<qgl::pos3, T...>()) &&
+				qpl::type_match_count<std::tuple<qgl::rgb, qgl::frgb, qgl::rgba, qgl::frgba>, T...>() <= 1 &&
+				qpl::type_match_count<std::tuple<qgl::pos2, qgl::pos3>, T...>() <= 1 &&
 				qpl::are_all_types_unique<T...>() &&
-				(qgl::is_attribute<T>() && ...);
+				(qgl::is_vertex_attribute<T>() && ...);
 		}
 	}
 
 
 
 	template<typename... Attributes> requires(qgl::detail::is_valid_vertex_attributes<Attributes...>())
-		struct vertex : qgl::detail::vertex_type<Attributes>... {
+	struct vertex : qgl::detail::vertex_type<Attributes>... {
 		constexpr static GLsizei stride() {
 			return sizeof(vertex);
 		}
@@ -83,6 +85,12 @@ namespace qgl {
 		constexpr static bool has_rgba() {
 			return qpl::is_any_type_equal_to<qgl::rgba, Attributes...>();
 		}
+		constexpr static bool has_frgb() {
+			return qpl::is_any_type_equal_to<qgl::frgb, Attributes...>();
+		}
+		constexpr static bool has_frgba() {
+			return qpl::is_any_type_equal_to<qgl::frgba, Attributes...>();
+		}
 		constexpr static bool has_tex() {
 			return qpl::is_any_type_equal_to<qgl::tex, Attributes...>();
 		}
@@ -90,12 +98,17 @@ namespace qgl {
 			return has_pos2() || has_pos3();
 		}
 		constexpr static bool has_color() {
-			return has_rgb() || has_rgba();
+			return has_rgb() || has_rgba() || has_frgb() || has_frgba();
 		}
 
-		using position_type = qpl::conditional_t<qpl::if_true<has_pos2()>, qpl::vec2, qpl::if_true<has_pos3()>, qpl::vec3, qpl::default_error>;
-		using color_type = qpl::conditional_t<qpl::if_true<has_rgb()>, qpl::frgb, qpl::if_true<has_rgba()>, qpl::frgba, qpl::default_error>;
-		using tex_type = qpl::conditional_t<qpl::if_true<has_tex()>, qpl::vec2, qpl::default_error>;
+		using position_type = qpl::conditional_type<qpl::if_true<has_pos2()>, qpl::vec2, qpl::if_true<has_pos3()>, qpl::vec3, qpl::default_error>;
+		using color_type = qpl::conditional_type<
+			qpl::if_true<has_rgb()>, qpl::rgb,
+			qpl::if_true<has_rgba()>, qpl::rgba,
+			qpl::if_true<has_frgb()>, qpl::frgb,
+			qpl::if_true<has_frgba()>, qpl::frgba,
+			qpl::default_error>;
+		using tex_type = qpl::conditional_type<qpl::if_true<has_tex()>, qpl::vec2, qpl::default_error>;
 
 
 		constexpr auto get_tuple() const {
@@ -128,6 +141,10 @@ namespace qgl {
 		template<typename T> requires(qpl::is_tuple<T>())
 		constexpr vertex(const T& tuple) {
 			*this = tuple;
+		}		
+		template<typename ...Ts> requires(qgl::detail::is_valid_vertex_attributes<Ts...>())
+		constexpr vertex(const qgl::vertex<Ts...>& other) {
+			*this = other;
 		}
 
 		template<typename ... Ts>
@@ -135,8 +152,7 @@ namespace qgl {
 			auto tuple = this->get_ref_tuple();
 
 			constexpr auto N = qpl::tuple_size<decltype(tuple)>();
-			qpl::constexpr_iterate<N>([&](auto e) {
-				constexpr auto i = e.i;
+			qpl::constexpr_iterate<N>([&](auto i) {
 				std::get<i>(tuple) = static_cast<std::decay_t<std::tuple_element_t<i, decltype(tuple)>>>(std::get<i>(values));
 			});
 
@@ -151,7 +167,7 @@ namespace qgl {
 					this->position = other.position;
 				}
 				else {
-					this->position = position_type{};
+					this->position = decltype(this->position){};
 				}
 			}
 			if constexpr (has_color()) {
@@ -159,7 +175,7 @@ namespace qgl {
 					this->color = other.color;
 				}
 				else {
-					this->color = color_type{};
+					this->color = decltype(this->color){};
 				}
 			}
 			if constexpr (has_tex()) {
@@ -167,7 +183,7 @@ namespace qgl {
 					this->tex_coords = other.tex_coords;
 				}
 				else {
-					this->tex_coords = tex_type{};
+					this->tex_coords = decltype(this->tex_coords){};
 				}
 			}
 			return *this;
@@ -191,16 +207,10 @@ namespace qgl {
 		return vertex<qgl::detail::vertex_type_map<Ts>...>(std::make_tuple(ts...));
 	}
 
-	constexpr qpl::u8 flag_default        = 0b1 << 0;
-	constexpr qpl::u8 flag_index          = 0b1 << 1;
-	constexpr qpl::u8 flag_shader         = 0b1 << 2;
-	constexpr qpl::u8 flag_primitive_type = 0b1 << 3;
-
-
 	namespace detail {
 		template<typename Tuple> requires(qpl::is_tuple<Tuple>())
 		constexpr auto vertex_from_tuple_convert() {
-			constexpr auto unpack_tuple = []<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = []<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return qgl::vertex<std::tuple_element_t<Ints, Tuple>...>();
 			};
 			return unpack_tuple.template operator() < Tuple > (std::make_index_sequence<qpl::tuple_size<Tuple>()>());
@@ -208,7 +218,7 @@ namespace qgl {
 
 		template<typename Tuple> requires(qpl::is_tuple<Tuple>())
 		constexpr bool is_valid_vertex_attributes_tuple() {
-			constexpr auto unpack_tuple = []<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
+			auto unpack_tuple = []<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
 				return qgl::detail::is_valid_vertex_attributes<std::tuple_element_t<Ints, Tuple>...>();
 			};
 			return unpack_tuple.template operator() < Tuple > (std::make_index_sequence<qpl::tuple_size<Tuple>()>());
@@ -260,8 +270,12 @@ namespace qgl {
 			QPLDLL qgl::primitive_type get_primitive_type() const;
 		};
 
+		struct va_autoupdate_type {
+			mutable bool changed = true;
+		};
+
 		template<qpl::u8 info_flag>
-		using va_inheritance = qpl::inheritance_flags<info_flag, qpl::empty_type, va_tex, va_shader, va_primitive_type>;
+		using va_inheritance = qpl::inheritance_flags<info_flag, va_tex, va_shader, va_primitive_type, va_autoupdate_type>;
 
 		template<typename... Attributes>
 		constexpr static bool va_using_custom_indices_uint() {
@@ -269,7 +283,7 @@ namespace qgl {
 		}
 
 		template<typename... Attributes> requires(qgl::detail::is_valid_va_attributes<Attributes...>())
-		using va_index_type = typename qpl::conditional_t<qpl::if_true<va_using_custom_indices_uint<Attributes...>()>, qpl::variadic_type_back<Attributes...>, qpl::u32>::type;
+		using va_index_type = typename qpl::conditional_type<qpl::if_true<va_using_custom_indices_uint<Attributes...>()>, qpl::variadic_type_back<Attributes...>, qpl::u32>::type;
 
 		template<typename... Attributes> requires(qgl::detail::is_valid_va_attributes<Attributes...>())
 		using va_vertex_type = decltype(qgl::detail::vertex_type_convert<Attributes...>());
@@ -285,24 +299,33 @@ namespace qgl {
 		};
 
 		template<qpl::u8 info_flag, typename... Attributes>
-		using va_conditional_content = qpl::conditional<qpl::if_true<qpl::bool_cast(info_flag & qgl::flag_index)>, 
+		using va_conditional_content = qpl::conditional<qpl::if_true<qpl::bool_cast(info_flag & qgl::flag_bit_index)>, 
 			va_content_array_vertex_index<Attributes...>, 
 			va_content_array_vertex<Attributes...>>;
 	}
 
 	template<typename V, qpl::size N, typename I, qpl::size M>
-	struct va_index_initalization {
+	struct va_index_initialization {
 		std::array<V, N> vertices;
 		std::array<I, M> indices;
+	};
+	template<typename V, typename I>
+	struct va_index_vector_initialization {
+		std::vector<V> vertices;
+		std::vector<I> indices;
 	};
 	template<typename V, qpl::size N>
 	struct va_initialization {
 		std::array<V, N> vertices;
 	};
+	template<typename V>
+	struct va_vector_initialization {
+		std::vector<V> vertices;
+	};
 
 	template<typename V, qpl::size N, typename I, qpl::size M>
 	constexpr auto make_va_index(const std::array<V, N>& vertices, const std::array<I, M>& indices) {
-		return va_index_initalization<V, N, I, M>{ vertices, indices };
+		return va_index_initialization<V, N, I, M>{ vertices, indices };
 	}
 
 	template<typename V, qpl::size N>
@@ -321,16 +344,19 @@ namespace qgl {
 			return qpl::bool_cast(qpl::is_integer<qpl::variadic_type_back<Attributes...>>());
 		}
 		constexpr static bool has_indices() {
-			return qpl::bool_cast(info_flag & qgl::flag_index);
+			return qpl::bool_cast(info_flag & qgl::flag_bit_index);
 		}
 		constexpr static bool has_shader() {
-			return qpl::bool_cast(info_flag & qgl::flag_shader);
+			return qpl::bool_cast(info_flag & qgl::flag_bit_shader);
 		}
 		constexpr static bool has_primitive_type() {
-			return qpl::bool_cast(info_flag & qgl::flag_primitive_type);
+			return qpl::bool_cast(info_flag & qgl::flag_bit_primitive_type);
+		}
+		constexpr static bool has_autoupdate() {
+			return qpl::bool_cast(info_flag & qgl::flag_bit_autoupdate);
 		}
 
-		using index_type = typename qpl::conditional_t<qpl::if_true<using_custom_indices_uint()>, qpl::variadic_type_back<Attributes...>, qpl::u32>::type;
+		using index_type = typename qpl::conditional_type<qpl::if_true<using_custom_indices_uint()>, qpl::variadic_type_back<Attributes...>, qpl::u32>::type;
 		using vertex_type = typename decltype(qgl::detail::vertex_type_convert<Attributes...>());
 
 		~vertex_array() {
@@ -358,11 +384,19 @@ namespace qgl {
 			*this = other;
 		}
 		template<typename V, qpl::size N, typename I, qpl::size M>
-		constexpr vertex_array(const qgl::va_index_initalization<V, N, I, M>& other) {
+		constexpr vertex_array(const qgl::va_index_initialization<V, N, I, M>& other) {
+			*this = other;
+		}
+		template<typename V, typename I>
+		constexpr vertex_array(const qgl::va_index_vector_initialization<V, I>& other) {
 			*this = other;
 		}
 		template<typename V, qpl::size N>
 		constexpr vertex_array(const qgl::va_initialization<V, N>& other) {
+			*this = other;
+		}
+		template<typename V>
+		constexpr vertex_array(const qgl::va_vector_initialization<V>& other) {
 			*this = other;
 		}
 		constexpr vertex_array() {
@@ -371,10 +405,7 @@ namespace qgl {
 
 		template<qpl::u8 info_flag2, typename ...Ts>
 		constexpr qgl::vertex_array<info_flag, Attributes...>& operator=(const qgl::vertex_array<info_flag2, Ts...>& other) {
-			this->vertices.resize(other.vertices.size());
-			for (qpl::size i = 0u; i < this->vertices.size(); ++i) {
-				this->vertices[i] = other[i];
-			}
+			
 			if constexpr (has_indices()) {
 				if constexpr (other.has_indices()) {
 					this->indices.resize(other.indices.size());
@@ -386,6 +417,22 @@ namespace qgl {
 					this->indices.clear();
 				}
 			}
+
+			constexpr bool make_vertices_from_indices = !has_indices() && other.has_indices();
+
+			if constexpr (make_vertices_from_indices) {
+				this->vertices.resize(other.indices.size());
+				for (qpl::size i = 0u; i < other.indices.size(); ++i) {
+					this->vertices[i] = other.vertices[other.indices[i]];
+				}
+			}
+			else {
+				this->vertices.resize(other.vertices.size());
+				for (qpl::size i = 0u; i < this->vertices.size(); ++i) {
+					this->vertices[i] = other[i];
+				}
+			}
+
 			this->id = other.id;
 			this->vertexVBO = other.vertexVBO;
 			this->indexVBO = other.indexVBO;
@@ -402,15 +449,42 @@ namespace qgl {
 			return *this;
 		}
 		template<typename V, qpl::size N, typename I, qpl::size M>
-		constexpr qgl::vertex_array<info_flag, Attributes...>& operator=(const qgl::va_index_initalization<V, N, I, M>& init) {
-			this->vertices.resize(N);
-			for (qpl::size i = 0u; i < N; ++i) {
-				this->vertices[i] = init.vertices[i];
-			}
+		constexpr qgl::vertex_array<info_flag, Attributes...>& operator=(const qgl::va_index_initialization<V, N, I, M>& init) {
+
 			if constexpr (has_indices()) {
+				this->vertices.resize(N);
+				for (qpl::size i = 0u; i < N; ++i) {
+					this->vertices[i] = init.vertices[i];
+				}
 				this->indices.resize(M);
 				for (qpl::size i = 0u; i < M; ++i) {
 					this->indices[i] = static_cast<index_type>(init.indices[i]);
+				}			
+			}
+			else {
+				this->vertices.resize(init.indices.size());
+				for (qpl::size i = 0u; i < init.indices.size(); ++i) {
+					this->vertices[i] = init.vertices[init.indices[i]];
+				}
+			}
+			return *this;
+		}
+		template<typename V, typename I>
+		constexpr qgl::vertex_array<info_flag, Attributes...>& operator=(const qgl::va_index_vector_initialization<V, I>& init) {
+			if constexpr (has_indices()) {
+				this->vertices.resize(init.vertices.size());
+				for (qpl::size i = 0u; i < this->vertices.size(); ++i) {
+					this->vertices[i] = init.vertices[i];
+				}
+				this->indices.resize(init.indices.size());
+				for (qpl::size i = 0u; i < this->indices.size(); ++i) {
+					this->indices[i] = static_cast<index_type>(init.indices[i]);
+				}
+			}
+			else {
+				this->vertices.resize(init.indices.size());
+				for (qpl::size i = 0u; i < init.indices.size(); ++i) {
+					this->vertices[i] = init.vertices[init.indices[i]];
 				}
 			}
 			return *this;
@@ -426,13 +500,27 @@ namespace qgl {
 			}
 			return *this;
 		}
-		void update() {
+		template<typename V>
+		constexpr qgl::vertex_array<info_flag, Attributes...>& operator=(const qgl::va_vector_initialization<V>& init) {
+			this->vertices.resize(init.vertices.size());
+			for (qpl::size i = 0u; i < this->vertices.size(); ++i) {
+				this->vertices[i] = init.vertices[i];
+			}
+			if constexpr (has_indices()) {
+				this->indices.clear();
+			}
+			return *this;
+		}
+
+		void update() const {
+			if (!this->generated()) {
+				this->generate();
+			}
 			qgl::gl::bind_vertex_array(this->id);
 			qgl::gl::buffer_vertex_data(this->vertexVBO, this->draw_count() * vertex_type::stride(), this->vertices.data());
 			qgl::gl::unbind_vertex_array();
 		}
-
-		void generate() {
+		void generate() const {
 			if constexpr (has_shader()) {
 				if (!this->shader.loaded) {
 					this->shader.set_vertex(qgl::get_vertex_shader<Attributes...>());
@@ -453,23 +541,31 @@ namespace qgl {
 			qpl::size offset = 0u;
 			auto add_attribute = [&]<typename T>() {
 				if constexpr (qpl::is_same<T, qgl::pos2>()) {
-					qgl::gl::enable_vertex_attribute(static_cast<GLuint>(qgl::vertex_attribute::position), 2, vertex_type::stride(), offset);
+					qgl::gl::enable_vertex_attribute<qpl::f32>(static_cast<GLuint>(qgl::vertex_attribute::position), 2, vertex_type::stride(), offset);
 					offset += sizeof(qpl::vector2f);
 				}
 				else if constexpr (qpl::is_same<T, qgl::pos3>()) {
-					qgl::gl::enable_vertex_attribute(static_cast<GLuint>(qgl::vertex_attribute::position), 3, vertex_type::stride(), offset);
+					qgl::gl::enable_vertex_attribute<qpl::f32>(static_cast<GLuint>(qgl::vertex_attribute::position), 3, vertex_type::stride(), offset);
 					offset += sizeof(qpl::vector3f);
 				}
 				else if constexpr (qpl::is_same<T, qgl::rgb>()) {
-					qgl::gl::enable_vertex_attribute(static_cast<GLuint>(qgl::vertex_attribute::color), 3, vertex_type::stride(), offset);
-					offset += sizeof(qpl::frgb);
+					qgl::gl::enable_vertex_attribute<qpl::u8>(static_cast<GLuint>(qgl::vertex_attribute::color), 3, vertex_type::stride(), offset);
+					offset += sizeof(qpl::rgb);
 				}
 				else if constexpr (qpl::is_same<T, qgl::rgba>()) {
-					qgl::gl::enable_vertex_attribute(static_cast<GLuint>(qgl::vertex_attribute::color), 4, vertex_type::stride(), offset);
+					qgl::gl::enable_vertex_attribute<qpl::u8>(static_cast<GLuint>(qgl::vertex_attribute::color), 4, vertex_type::stride(), offset);
+					offset += sizeof(qpl::rgba);
+				}
+				else if constexpr (qpl::is_same<T, qgl::frgb>()) {
+					qgl::gl::enable_vertex_attribute<qpl::f32>(static_cast<GLuint>(qgl::vertex_attribute::color), 3, vertex_type::stride(), offset);
+					offset += sizeof(qpl::frgb);
+				}
+				else if constexpr (qpl::is_same<T, qgl::frgba>()) {
+					qgl::gl::enable_vertex_attribute<qpl::f32>(static_cast<GLuint>(qgl::vertex_attribute::color), 4, vertex_type::stride(), offset);
 					offset += sizeof(qpl::frgba);
 				}
 				else if constexpr (qpl::is_same<T, qgl::tex>()) {
-					qgl::gl::enable_vertex_attribute(static_cast<GLuint>(qgl::vertex_attribute::tex_coord), 2, vertex_type::stride(), offset);
+					qgl::gl::enable_vertex_attribute<qpl::f32>(static_cast<GLuint>(qgl::vertex_attribute::tex_coord), 2, vertex_type::stride(), offset);
 					offset += sizeof(qpl::vector2f);
 				}
 			};
@@ -488,9 +584,16 @@ namespace qgl {
 				qgl::unbind_shader<Attributes...>();
 			}
 		}
+
 		void draw(qsf::draw_object_gl& draw) const {
 			draw.window->setActive(true);
 
+			if (!this->generated()) {
+				this->generate();
+			}
+			if constexpr (has_autoupdate()) {
+				this->update();
+			}
 			auto view = draw.states.transform.getMatrix();
 
 			if constexpr (vertex_type::has_tex()) {
@@ -501,18 +604,21 @@ namespace qgl {
 
 			if constexpr (has_shader()) {
 				this->shader.bind();
+				this->shader.set_pvm(view);
 			}
 			else {
 				qgl::check_shader<Attributes...>();
 				qgl::bind_shader<Attributes...>();
+				qgl::get_shader<Attributes...>().set_pvm(view);
 			}
 
 			qgl::gl::bind_vertex_array(this->id);
 
-			qgl::get_shader<Attributes...>().set_pvm(view);
-
 			if constexpr (has_primitive_type()) {
 				qgl::gl::draw_elements(this->primitive_type, this->draw_count());
+			}
+			else if constexpr (!has_indices()) {
+				qgl::gl::draw_elements(qgl::primitive_type::triangles, this->draw_count());
 			}
 			else {
 				qgl::gl::draw_triangles(this->draw_count());
@@ -611,12 +717,8 @@ namespace qgl {
 
 		template<qpl::u8 info_flag2, typename ...Ts>
 		constexpr void add(const qgl::vertex_array<info_flag2, Ts...>& other) {
-			auto vertices_size = this->vertices.size();
-			this->vertices.resize(vertices_size + other.vertices.size());
-			for (qpl::size i = 0u; i < other.vertices.size(); ++i) {
-				this->vertices[vertices_size + i] = other[i];
-			}
 			if constexpr (has_indices()) {
+				auto vertices_size = this->vertices.size();
 				if constexpr (other.has_indices()) {
 					auto indices_size = this->indices.size();
 					this->indices.resize(indices_size + other.indices.size());
@@ -628,9 +730,32 @@ namespace qgl {
 					this->indices.clear();
 				}
 			}
+
+			constexpr bool make_vertices_from_indices = !has_indices() && other.has_indices();
+
+			if constexpr (make_vertices_from_indices) {
+				auto vertices_size = this->vertices.size();
+				this->vertices.resize(vertices_size + other.indices.size());
+				for (qpl::size i = 0u; i < other.indices.size(); ++i) {
+					this->vertices[vertices_size + i] = other.vertices[other.indices[i]];
+				}
+			}
+			else {
+				auto vertices_size = this->vertices.size();
+				this->vertices.resize(vertices_size + other.vertices.size());
+				for (qpl::size i = 0u; i < other.vertices.size(); ++i) {
+					this->vertices[vertices_size + i] = other.vertices[i];
+				}
+			}
 		}
 		constexpr qpl::size size() const {
 			return this->vertices.size();
+		}
+		constexpr void clear() {
+			this->vertices.clear();
+			if constexpr (has_indices()) {
+				this->indices.clear();
+			}
 		}
 		constexpr GLsizei draw_count() const {
 			if constexpr (has_indices()) {
@@ -644,14 +769,14 @@ namespace qgl {
 		friend struct vertex_array_flag_type;
 
 	private:
-		GLuint id = 0u;
-		GLuint vertexVBO = 0u;
-		GLuint indexVBO = 0u;
+		mutable GLuint id = 0u;
+		mutable GLuint vertexVBO = 0u;
+		mutable GLuint indexVBO = 0u;
 	};
 
-	using va_index = qgl::vertex_array<qgl::flag_index, qgl::pos3, qgl::tex, qgl::rgb>;
-	using va_index_primitive = qgl::vertex_array<qgl::flag_index, qgl::pos3, qgl::tex, qgl::rgb>;
-	using va = qgl::vertex_array<qgl::flag_default, qgl::pos3, qgl::tex, qgl::rgb>;
+	using va_index = qgl::vertex_array<qgl::flag_bit_index, qgl::pos3, qgl::tex, qgl::frgb>;
+	using va_index_primitive = qgl::vertex_array<qgl::flag_bit_index, qgl::pos3, qgl::tex, qgl::frgb>;
+	using va = qgl::vertex_array<qgl::flag_default, qgl::pos3, qgl::tex, qgl::frgb>;
 }
 
 #endif

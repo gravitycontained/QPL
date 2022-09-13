@@ -62,7 +62,7 @@ namespace qpl {
 		}
 
 		bool first = true;
-		constexpr auto add_to_stream = [&]<typename T>(T value) {
+		auto add_to_stream = [&]<typename T>(T value) {
 			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
 				stream << open;
 				bool first = true;
@@ -139,7 +139,7 @@ namespace qpl {
 		}
 
 		bool first = true;
-		constexpr auto add_to_stream = [&]<typename T>(T value) {
+		auto add_to_stream = [&]<typename T>(T value) {
 			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
 				stream << open;
 				bool first = true;
@@ -194,7 +194,7 @@ namespace qpl {
 	
 		std::ostringstream stream;
 		
-		constexpr auto add_to_stream = [&]<typename T>(T value) {
+		auto add_to_stream = [&]<typename T>(T value) {
 			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
 				stream << '{';
 				bool first = true;
@@ -393,7 +393,7 @@ namespace qpl {
 	std::string to_string_precision(qpl::size precision, Args&&... args) {
 		std::ostringstream stream;
 		
-		constexpr auto add_to_stream = [&]<typename T>(T value) {
+		auto add_to_stream = [&]<typename T>(T value) {
 			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
 				stream << '{';
 				bool first = true;
@@ -422,7 +422,7 @@ namespace qpl {
 	std::string to_string_full_precision(Args&&... args) {
 		std::ostringstream stream;
 		
-		constexpr auto add_to_stream = [&]<typename T>(T value) {
+		auto add_to_stream = [&]<typename T>(T value) {
 			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
 				stream << '{';
 				bool first = true;

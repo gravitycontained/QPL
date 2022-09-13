@@ -7,7 +7,7 @@ namespace qgl {
 		this->vertex_array = qgl::get_cube();
 		this->position = qpl::vec(0, 0, 0);
 		this->dimension = qpl::vec(1, 1, 1);
-		this->color = qpl::rgb::white;
+		this->color = qpl::rgb::white();
 	}
 
 	void qgl::cuboid::apply() const {

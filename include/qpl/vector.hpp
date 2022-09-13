@@ -245,27 +245,27 @@ namespace qpl {
 			}
 
 			template<typename U> requires (qpl::is_arithmetic<U>())
-				constexpr V with_a(U a) const {
+			constexpr V with_a(U a) const {
 				return V{ static_cast<T>(a), this->b, this->c, this->d, this->e, this->f };
 			}
 			template<typename U> requires (qpl::is_arithmetic<U>())
-				constexpr V with_b(U b) const {
+			constexpr V with_b(U b) const {
 				return V{ this->a, static_cast<T>(b), this->c, this->d, this->e, this->f };
 			}
 			template<typename U> requires (qpl::is_arithmetic<U>())
-				constexpr V with_c(U c) const {
+			constexpr V with_c(U c) const {
 				return V{ this->a, this->b, static_cast<T>(c), this->d, this->e, this->f };
 			}
 			template<typename U> requires (qpl::is_arithmetic<U>())
-				constexpr V with_d(U d) const {
+			constexpr V with_d(U d) const {
 				return V{ this->a, this->b, this->c, static_cast<T>(d), this->e, this->f };
 			}
 			template<typename U> requires (qpl::is_arithmetic<U>())
-				constexpr V with_e(U e) const {
+			constexpr V with_e(U e) const {
 				return V{ this->a, this->b, this->c, this->d, static_cast<T>(e), this->f };
 			}
 			template<typename U> requires (qpl::is_arithmetic<U>())
-				constexpr V with_f(U f) const {
+			constexpr V with_f(U f) const {
 				return V{ this->a, this->b, this->c, this->d, this->e, static_cast<T>(f) };
 			}
 
@@ -303,20 +303,10 @@ namespace qpl {
 		concept vectorN_castable = requires(T a, U b) {
 			a = b;
 		};
-	}
 
-	template<typename T, qpl::size N>
-	struct vectorN : qpl::conditional<
-		qpl::if_true<N == 0>, qpl::error_type,
-		qpl::if_true<N == 1>, impl::vector_impl_1<T, vectorN<T, N>>,
-		qpl::if_true<N == 2>, impl::vector_impl_2<T, vectorN<T, N>>,
-		qpl::if_true<N == 3>, impl::vector_impl_3<T, vectorN<T, N>>,
-		qpl::if_true<N == 4>, impl::vector_impl_4<T, vectorN<T, N>>,
-		qpl::if_true<N == 5>, impl::vector_impl_5<T, vectorN<T, N>>,
-		qpl::if_true<N == 6>, impl::vector_impl_6<T, vectorN<T, N>>,
-		qpl::default_type,    impl::vector_impl_N<T, N>> {
 
-		using impl_type = qpl::conditional<
+		template<typename T, qpl::size N>
+		using vector_impl_conditional = qpl::conditional<
 			qpl::if_true<N == 0>, qpl::error_type,
 			qpl::if_true<N == 1>, impl::vector_impl_1<T, vectorN<T, N>>,
 			qpl::if_true<N == 2>, impl::vector_impl_2<T, vectorN<T, N>>,
@@ -324,13 +314,18 @@ namespace qpl {
 			qpl::if_true<N == 4>, impl::vector_impl_4<T, vectorN<T, N>>,
 			qpl::if_true<N == 5>, impl::vector_impl_5<T, vectorN<T, N>>,
 			qpl::if_true<N == 6>, impl::vector_impl_6<T, vectorN<T, N>>,
-			qpl::default_type,    impl::vector_impl_N<T, N>>;
+			qpl::default_type, impl::vector_impl_N<T, N>>;
+	}
+
+	template<typename T, qpl::size N>
+	struct vectorN : qpl::detail::vector_impl_conditional<T, N> {
+		using impl_type = qpl::detail::vector_impl_conditional<T, N>;
 
 		constexpr vectorN() : impl_type() {
 			this->clear();
 		}
-		template<typename U>
-		constexpr vectorN(const vectorN<U, N>& other) : impl_type() {
+		template<typename U, qpl::size M>
+		constexpr vectorN(const vectorN<U, M>& other) : impl_type() {
 			*this = other;
 		}
 		template<typename U>
@@ -360,7 +355,7 @@ namespace qpl {
 
 #if defined QPL_INTERN_SFML_USE
 		template<typename U>
-		constexpr vectorN(const sf::Vector2<U>& other) : impl_type() /*: x(), y()*/ {
+		constexpr vectorN(const sf::Vector2<U>& other) : impl_type() {
 			*this = other;
 		}
 		template<typename U>
@@ -387,6 +382,23 @@ namespace qpl {
 		}
 #endif
 
+#if defined QPL_INTERN_GLM_USE
+		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+		constexpr vectorN(const glm::vec<L, T, Q >& other) : impl_type() {
+			*this = other;
+		}
+		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+		constexpr operator glm::vec<L, T, Q>() const {
+			glm::vec<L, T, Q> result;
+			memcpy(&result, this, sizeof(*this));
+			return result;
+		}
+		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+		constexpr vectorN& operator=(const glm::vec<L, T, Q>& vec) {
+			memcpy(this, &vec, sizeof(*this));
+			return *this;
+		}
+#endif
 
 		template<typename U, qpl::size M>
 		constexpr vectorN& operator=(const vectorN<U, M>& other) {
@@ -430,7 +442,7 @@ namespace qpl {
 				this->clear();
 				return *this;
 			}
-			for (qpl::u32 i = 0u; i < qpl::min(list.size(), this->data.size()); ++i) {
+			for (qpl::size i = 0u; i < qpl::min(list.size(), this->data.size()); ++i) {
 				this->data[i] = static_cast<T>(*(list.begin() + i));
 			}
 			return *this;
@@ -485,13 +497,6 @@ namespace qpl {
 			vectorN result = *this;
 			for (auto& i : result.data) {
 				i = std::ceil(i);
-			}
-			return result;
-		}
-		constexpr vectorN abs() const {
-			vectorN result = *this;
-			for (auto& i : result.data) {
-				i = std::abs(i);
 			}
 			return result;
 		}
@@ -911,6 +916,74 @@ namespace qpl {
 			}
 			return n;
 		}
+
+
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto sum(const vectorN<T, N>& vec) {
+			return std::accumulate(vec.begin(), vec.end(), T{ 0 });
+		}
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto abs(const vectorN<T, N>& vec) {
+			qpl::vectorN<T, N> result = vec;
+			for (auto& i : result) {
+				i = std::abs(i);
+			}
+			return result;
+		}
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto sin(const vectorN<T, N>& vec) {
+			qpl::vectorN<T, N> result = vec;
+			for (auto& i : result) {
+				i = std::sin(i);
+			}
+			return result;
+		}
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto cos(const vectorN<T, N>& vec) {
+			qpl::vectorN<T, N> result = vec;
+			for (auto& i : result) {
+				i = std::cos(i);
+			}
+			return result;
+		}
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto tan(const vectorN<T, N>& vec) {
+			qpl::vectorN<T, N> result = vec;
+			for (auto& i : result) {
+				i = std::tan(i);
+			}
+			return result;
+		}
+
+		template<typename T, qpl::size N>
+		constexpr void clamp(T min, T max) {
+			for (auto& i : this->data) {
+				i = qpl::clamp(min, i, max);
+			}
+		}
+		template<typename T, qpl::size N>
+		constexpr auto clamped(T min, T max) const {
+			qpl::vectorN<T, N> result = *this;
+			result.clamp(min, max);
+			return result;
+		}
+		constexpr auto sum() const {
+			return qpl::vectorN<T, N>::sum(*this);
+		}
+		constexpr auto abs() const {
+			return qpl::vectorN<T, N>::abs(*this);
+		}
+		constexpr qpl::vectorN<T, N> sin() const {
+			return qpl::vectorN<T, N>::sin(*this);
+		}
+		constexpr qpl::vectorN<T, N> cos() const {
+			return qpl::vectorN<T, N>::cos(*this);
+		}
+		constexpr qpl::vectorN<T, N> tan() const {
+			return qpl::vectorN<T, N>::tan(*this);
+		}
+
+
 		template<typename T, typename U, qpl::size N>
 		[[nodiscard]] constexpr static auto dot(const vectorN<T, N>& a, const vectorN<U, N>& b) {
 			auto n = qpl::superior_arithmetic_type<T, U>{ 0 };
@@ -1109,7 +1182,7 @@ namespace qpl {
 		}
 
 		template<qpl::size check, typename T, qpl::size N> requires(N == check)
-			constexpr auto texN_signature(qpl::texN<T, N>) {
+		constexpr auto texN_signature(qpl::texN<T, N>) {
 			return std::true_type{};
 		}
 		template<qpl::size check, typename T>
@@ -1325,6 +1398,15 @@ namespace qpl {
 
 			return result;
 		}
+		constexpr qpl::vectorN<T, N> operator*(const qpl::vectorN<T, N>& vec) const {
+			qpl::vectorN<T, N> result;
+			for (qpl::size i = 0u; i < N; ++i) {
+				for (qpl::size j = 0u; j < N; ++j) {
+					result.data[i] += this->data[j][i] * vec.data[j];
+				}
+			}
+			return result;
+		}
 
 		template<typename U, qpl::size M>
 		constexpr matrixN& operator/=(const matrixN<U, M>& other) {
@@ -1384,13 +1466,11 @@ namespace qpl {
 
 		template<typename A, typename U> requires(N == 4)
 		constexpr matrixN rotated(A angle, const qpl::vector3<U>& vec) const {
-			auto a = angle;
-			auto c = std::cos(a);
-			auto s = std::sin(a);
+			auto c = std::cos(angle);
+			auto s = std::sin(angle);
 
 			auto axis = vec.normalized();
 			auto temp = (A{ 1 } - c) * axis;
-
 
 			matrixN rotate;
 			rotate[0].x = static_cast<T>(c + temp.x * axis.x);
@@ -1443,7 +1523,7 @@ namespace qpl {
 			matrixN<T, N> result;
 
 			for (qpl::size i = 0u; i < N; ++i) {
-				result.data[i][i] = value;
+				result.data[i][i] = static_cast<T>(value);
 			}
 			return result;
 		}
@@ -1560,6 +1640,39 @@ namespace qpl {
 		friend std::ostream& operator<<(std::ostream& os, const qpl::matrixN<T, N>& mat);
 	};
 
+
+	template<typename T1, typename T2>
+	constexpr auto rotate(T1 angle, const qpl::vectorN<T2, 3>& normal) {
+		using superior = qpl::superior_arithmetic_type<T1, T2>;
+		return qpl::matrixN<superior, 4>(1).rotated(angle, normal);
+	}
+	template<typename T1, typename T2, typename T3>
+	constexpr qpl::vec3 rotate(const qpl::vectorN<T1, 3>& vec, T2 angle, const qpl::vectorN<T3, 3>& normal) {
+		using superior = qpl::superior_arithmetic_type<T1, T2, T3>;
+		return qpl::matrixN<superior, 3>(qpl::rotate(angle, normal)) * vec;
+	}
+
+	template<typename T1, typename T2, typename T3>
+	constexpr qpl::vec3 rotate_towards(const qpl::vectorN<T1, 3>& vec, T2 angle, const qpl::vectorN<T3, 3>& normal) {
+		using superior = qpl::superior_arithmetic_type<T1, T3>;
+		auto up = qpl::vectorN<superior, 3>::cross(vec, normal);
+		return qpl::rotate(vec, angle, up);
+	}
+	template<typename T1, typename T2>
+	constexpr qpl::vec3 rotate_x(const qpl::vectorN<T1, 3>& vec, T2 angle) {
+		return qpl::rotate_towards(vec, angle, qpl::vec(1, 0, 0));
+	}
+	template<typename T1, typename T2>
+	constexpr qpl::vec3 rotate_y(const qpl::vectorN<T1, 3>& vec, T2 angle) {
+		return qpl::rotate_towards(vec, angle, qpl::vec(0, 1, 0));
+	}
+	template<typename T1, typename T2>
+	constexpr qpl::vec3 rotate_z(const qpl::vectorN<T1, 3>& vec, T2 angle) {
+		return qpl::rotate_towards(vec, angle, qpl::vec(0, 0, 1));
+	}
+
+
+
 	template<qpl::size N, typename T>
 	std::ostream& operator<<(std::ostream& os, const qpl::matrixN<T, N>& mat) {
 		return os << mat.string();
@@ -1666,7 +1779,7 @@ namespace qpl {
 
 
 		constexpr bool collides(straight_line_t other) const {
-			constexpr auto mode = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {
+		auto mode = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {
 				auto ba = b - a;
 				auto cb = c - b;
 				auto x = ba.y * cb.x - ba.x * cb.y;
@@ -1681,7 +1794,7 @@ namespace qpl {
 					return 0u;
 				}
 			}; 
-			constexpr auto collide = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {
+			auto collide = [](qpl::vector2<T> a, qpl::vector2<T> b, qpl::vector2<T> c) {
 				auto check_x = b.x <= qpl::max(a.x, c.x) && b.x >= qpl::min(a.x, c.x);
 				auto check_y = b.y <= qpl::max(a.y, c.y) && b.y >= qpl::min(a.y, c.y);
 				return check_x && check_y;
