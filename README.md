@@ -119,68 +119,34 @@ catch (std::exception& any) {
 struct opengl_state : qsf::base_state {
 
 	void init() override {
-		this->set_active(true);
+		this->clear_color = qpl::rgb(30, 30, 40);
 
 		this->cube = qgl::get_cube();
-		this->cube.generate();
-
-		this->set_active(false);
-
 		this->color_gens.resize(this->cube.size());
-
-		this->hide_cursor();
 	}
-
-	void cursor_on() {
-		this->show_cursor();
-		this->camera.allow_looking = false;
-		this->lock_cursor = false;
-	}
-	void cursor_off() {
-		this->hide_cursor();
-		this->camera.allow_looking = true;
-		this->lock_cursor = true;
-
-		this->set_cursor_position(this->center());
-	}
-
-	void update_cursor() {
-		if (this->has_gained_focus()) {
-			this->cursor_off();
-		}
-		if (this->has_lost_focus()) {
-			this->cursor_on();
-		}
-
-		if (this->lock_cursor) {
-			if (this->frame_ctr == 0u) {
-				this->cursor_off();
-			}
-			this->set_cursor_position(this->center());
-		}
-	}
-
 	void updating() override {
-		this->update_cursor();
+		this->camera_lock.update(this->camera, *this);
 		this->update(this->camera);
 
-		for (auto& i : this->color_gens) {
-			i.update(this->frame_time_f());
-		}
 		for (qpl::size i = 0u; i < this->cube.size(); ++i) {
+			this->color_gens[i].update(this->frame_time_f());
 			this->cube[i].color = this->color_gens[i].get() * 2;
 		}
 		this->cube.update();
+
+		if (this->event().key_single_pressed(sf::Keyboard::Escape)) {
+			this->pop_this_state();
+		}
 	}
 
 	void drawing() override {
 		this->draw(this->cube, this->camera);
 	}
 
-	qgl::vertex_index_array_type<qgl::pos3, qgl::rgb> cube;
+	qgl::vertex_array<qgl::flag_bit_index, qgl::pos3, qgl::frgb> cube;
 	std::vector<qpl::cubic_generator_vector3f> color_gens;
+	qsf::camera_cursor_lock camera_lock;
 	qpl::camera camera;
-	bool lock_cursor = true;
 };
 
 int main() try {
