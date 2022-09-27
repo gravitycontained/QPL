@@ -39,24 +39,49 @@ namespace qpl {
 	using error_type = std::enable_if<false, void>;
 	using default_error = error_type;
 
+	template<typename T>
+	constexpr auto declval() {
+		using pointer = T*;
+		return *(pointer{});
+	}
 
+	template<class T, class... Ignored>
+	struct identity {
+		using type = typename T;
+	};
+
+	template<typename T>
+	using decay = std::decay_t<T>;
+
+	template<class... Args>
+	struct empty_indirection {
+		using type = typename identity<Args...>::type;
+	};
 
 	namespace detail {
-		template<size_t Index, size_t Size>
+		template<qpl::size Index, qpl::size Size>
 		struct constexpr_index {
-			constexpr operator size_t() { return Index; }
-			constexpr static size_t size = Size;
+			constexpr operator qpl::size() { return Index; }
+			constexpr static qpl::size size = Size;
+			constexpr static qpl::size i = Index;
 		};
 	}
 
 	template<qpl::size N, typename F>
 	constexpr void constexpr_iterate(F&& function) {
 		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
-			(std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>()), ...);
+			(std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}), ...);
 		};
 		unpack(std::make_index_sequence<N>());
 	}
 
+	template<qpl::size N, typename F>
+	constexpr auto constexpr_unpack(F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			return std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}...);
+		};
+		return unpack(std::make_index_sequence<N>());
+	}
 	template<typename T>
 	std::string type_name(T value) {
 		return std::string(typeid(T).name());
@@ -93,26 +118,12 @@ namespace qpl {
 		};
 	}
 	template<typename A, template<typename...> typename B>
-	using rename_variadic_type = detail::rename_variadic<A, B>;
+	using rename_variadic_identity = detail::rename_variadic<A, B>;
 
 	template<typename A, template<typename...> typename B>
-	using rename_variadic = detail::rename_variadic<A, B>::type;
+	using rename_variadic = qpl::rename_variadic_identity<A, B>::type;
 
-	template<typename T>
-	constexpr auto declval() {
-		using pointer = T*;
-		return *(pointer{});
-	}
 
-	template<class T, class... Ignored>
-	struct identity {
-		using type = typename T;
-	};
-
-	template<class... Args>
-	struct empty_indirection {
-		using type = typename identity<Args...>::type;
-	};
 
 	template<typename T>
 	concept is_read_container_c = requires(const T a) {
@@ -419,6 +430,55 @@ namespace qpl {
 			return result;
 		}
 	}
+
+	template<typename T>
+	constexpr bool is_default_constructible() {
+		return std::is_default_constructible_v<T>;
+	}
+	template<typename ... Ts> requires (sizeof...(Ts) > 1)
+	constexpr bool is_default_constructible() {
+		return (qpl::is_default_constructible<Ts>() && ...);
+	}
+	template<typename T> requires (qpl::is_tuple<T>())
+	constexpr bool is_default_constructible() {
+		return qpl::constexpr_unpack<qpl::tuple_size<T>()>([&](auto... pack) {
+			return qpl::is_default_constructible<qpl::tuple_type<pack.i, T>...>();
+		});
+	}
+
+
+	template<typename T, typename U>
+	concept is_assignable_c = requires(T a, U b) {
+		a = b;
+	};
+	template<typename T, typename U>
+	constexpr bool is_assignable() {
+		return qpl::is_assignable_c<T, U>;
+	}
+
+	template<typename Tuple, typename F> requires (qpl::is_tuple<Tuple>())
+	constexpr auto tuple_unpack(F&& function) {
+		if constexpr (qpl::is_default_constructible<Tuple>()) {
+			auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+				return std::forward<F>(function)(qpl::decay<qpl::tuple_type<Ints, Tuple>>{}...);
+			};
+			return unpack(std::make_index_sequence<qpl::tuple_size<Tuple>()>());
+		}
+		else {
+			auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+				return std::forward<F>(function)(qpl::identity<qpl::decay<qpl::tuple_type<Ints, Tuple>>>{}...);
+			};
+			return unpack(std::make_index_sequence<qpl::tuple_size<Tuple>()>());
+		}
+	}
+	template<typename Tuple, typename F> requires (qpl::is_tuple<Tuple>())
+		constexpr auto tuple_unpack(Tuple tuple, F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			return std::forward<F>(function)(qpl::tuple_value<Ints>(tuple)...);
+		};
+		return unpack(std::make_index_sequence<qpl::tuple_size<Tuple>()>());
+	}
+
 
 	template<typename T> requires(qpl::is_tuple<T>())
 		using tuple_type_reverse = decltype(qpl::tuple_reverse(std::declval<T>()));
@@ -937,10 +997,10 @@ namespace qpl {
 	using resolved_conditional = typename conditional_impl<Truth, T, Args...>::type;
 
 	template<class Truth, class T, typename... Args>
-	using conditional_type = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>;
+	using conditional_identity = typename std::conditional_t<std::is_same_v<qpl::resolved_conditional<Truth, T, Args...>, qpl::error_type>, qpl::error_type, conditional_impl<Truth, T, Args...>>;
 
 	template<class Truth, class T, typename... Args>
-	using conditional = typename qpl::conditional_type<Truth, T, Args...>::type;
+	using conditional = typename qpl::conditional_identity<Truth, T, Args...>::type;
 	
 
 	template<typename T>

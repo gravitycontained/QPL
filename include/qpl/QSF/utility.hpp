@@ -69,7 +69,7 @@ namespace qsf {
 			this->cursor_off(camera, state);
 		}
 
-		template<typename T> requires (qpl::is_derived<T, qsf::base_state>())
+		template<typename T> requires (qpl::is_derived<qpl::decay<T>, qsf::base_state>())
 		void update(qpl::camera& camera, T& state) {
 			if (this->first) {
 				this->reset(camera, state);

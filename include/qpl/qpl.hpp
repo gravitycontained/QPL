@@ -84,6 +84,7 @@ freely, subject to the following restrictions:
 #include <qpl/QGL/shader.hpp>
 #include <qpl/QGL/shapes.hpp>
 #include <qpl/QGL/vertex.hpp>
+#include <qpl/QGL/vertex_array.hpp>
 #endif
 
 #ifdef _WIN32

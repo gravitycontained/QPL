@@ -317,7 +317,6 @@ namespace qpl {
 		QPLDLL extern qpl::u64 signal_count;
 	}
 
-
 	QPLDLL void begin_benchmark_end_previous(const std::string& name);
 	QPLDLL void begin_benchmark_end_previous(const std::string& sub, const std::string& name);
 	QPLDLL qpl::halted_clock get_benchmark(const std::string& name = "");
@@ -326,8 +325,15 @@ namespace qpl {
 	QPLDLL void end_benchmark();
 	QPLDLL void end_benchmark(const std::string& name);
 
+	template<typename F>
+	void benchmark(std::string name, F&& function) {
+		qpl::begin_benchmark(name);
+		std::invoke(function);
+		qpl::end_benchmark(name);
+	}
 
 	QPLDLL void clear_benchmark();
+	QPLDLL void reset_benchmark();
 	QPLDLL void begin_benchmark_segments();
 	QPLDLL void print_benchmark();
 	QPLDLL void print_benchmark(const std::string& name);
@@ -368,6 +374,55 @@ namespace qpl {
 		QPLDLL void set_progress(qpl::f64 progress, bool backwards = false);
 		QPLDLL qpl::f64 get_progress() const;
 		QPLDLL qpl::f64 get_curve_progress(qpl::f64 curve = 1.5) const;
+		QPLDLL qpl::f64 get_double_curve_progress(qpl::f64 curve = 1.5) const;
+	};
+
+	template<typename T>
+	struct value_animation : animation {
+		T begin;
+		T end;
+		double curve = 1.5;
+		bool use_double_curve = true;
+
+		void set_begin(T value) {
+			this->begin = value;
+		}
+		void set_end(T value) {
+			this->end = value;
+		}
+		void set_range(T begin, T end) {
+			this->begin = begin;
+			this->end = end;
+		}
+		void set_curve(qpl::f64 curve) {
+			this->curve = curve;
+		}
+		void enable_double_curve() {
+			this->use_double_curve = true;
+		}
+		void disable_double_curve() {
+			this->use_double_curve = false;
+		}
+		qpl::f64 get_resulting_progress() const {
+			if (this->use_double_curve) {
+				return this->get_double_curve_progress(this->curve);
+			}
+			else {
+				return this->get_curve_progress(this->curve);
+			}
+		}
+		T get() const {
+			auto p = this->get_resulting_progress();
+			return qpl::linear_interpolation(this->begin, this->end, p);
+		}
+		T get(T begin) const {
+			auto p = this->get_resulting_progress();
+			return qpl::linear_interpolation(begin, this->end, p);
+		}
+		T get(T begin, T end) const {
+			auto p = this->get_resulting_progress();
+			return qpl::linear_interpolation(begin, end, p);
+		}
 	};
 
 	struct timed_task {

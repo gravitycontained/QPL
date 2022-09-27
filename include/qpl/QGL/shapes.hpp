@@ -5,7 +5,7 @@
 #include <qpl/defines.hpp>
 #if defined QPL_INTERN_GLEW_USE
 
-#include <qpl/QGL/vertex.hpp>
+#include <qpl/QGL/vertex_array.hpp>
 #include <qpl/QSF/drawables.hpp>
 
 #include <qpl/vector.hpp>
@@ -22,24 +22,31 @@ namespace qgl {
 				qgl::make_vertex(qpl::vec(0, 0, 0), qpl::tex(0, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 0, 0), qpl::tex(1, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 1, 0), qpl::tex(1, 1), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(0, 1, 0), qpl::tex(0, 1), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 1, 0), qpl::tex(1, 1), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 1, 1), qpl::tex(0, 1), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(1, 0, 1), qpl::tex(0, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 0, 0), qpl::tex(1, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 0, 1), qpl::tex(0, 0), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(1, 0, 1), qpl::tex(1, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 1, 1), qpl::tex(1, 1), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 1, 1), qpl::tex(0, 1), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(0, 0, 1), qpl::tex(0, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 0, 0), qpl::tex(1, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 1, 0), qpl::tex(1, 1), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(0, 1, 1), qpl::tex(0, 1), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 0, 1), qpl::tex(0, 1), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 0, 1), qpl::tex(1, 1), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(0, 0, 0), qpl::tex(1, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 0, 0), qpl::tex(0, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 1, 0), qpl::tex(0, 1), qpl::frgb::white()),
+
 				qgl::make_vertex(qpl::vec(1, 1, 0), qpl::tex(1, 1), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(1, 1, 1), qpl::tex(1, 0), qpl::frgb::white()),
 				qgl::make_vertex(qpl::vec(0, 1, 1), qpl::tex(0, 0), qpl::frgb::white()),

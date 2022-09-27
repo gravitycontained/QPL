@@ -24,11 +24,11 @@ namespace qsf {
 			this->set_hitbox(qpl::hitbox{ position, dimension });
 		}
 		void set_hitbox(const qsf::base_state& state) {
-			this->set_hitbox(qpl::hitbox{ {0,0}, state.dimension });
+			this->set_hitbox(qpl::hitbox{ {0,0}, state.dimension()});
 		}
 		void set_hitbox(qpl::hitbox hitbox) {
 			this->hitbox = hitbox;
-			this->dimension = hitbox.dimension() * this->scale;
+			this->dimension = hitbox.dimension * this->scale;
 			this->hitbox_set = true;
 		}
 		void reset() {

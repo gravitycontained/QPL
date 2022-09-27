@@ -13,6 +13,7 @@
 #include <glm/gtx/transform.hpp>
 #endif
 
+#include <qpl/algorithm.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/defines.hpp>
 #include <qpl/string.hpp>
@@ -954,6 +955,14 @@ namespace qpl {
 			}
 			return result;
 		}
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto min(const vectorN<T, N>& vec) {
+			return *std::min_element(vec.data.begin(), vec.data.end());
+		}
+		template<typename T, qpl::size N>
+		[[nodiscard]] constexpr static auto max(const vectorN<T, N>& vec) {
+			return *std::max_element(vec.data.begin(), vec.data.end());
+		}
 
 		template<typename T, qpl::size N>
 		constexpr void clamp(T min, T max) {
@@ -982,6 +991,12 @@ namespace qpl {
 		constexpr qpl::vectorN<T, N> tan() const {
 			return qpl::vectorN<T, N>::tan(*this);
 		}
+		constexpr auto min() const {
+			return qpl::vectorN<T, N>::min(*this);
+		}
+		constexpr auto max() const {
+			return qpl::vectorN<T, N>::max(*this);
+		}
 
 
 		template<typename T, typename U, qpl::size N>
@@ -1006,7 +1021,7 @@ namespace qpl {
 		}
 		template<typename U> requires(qpl::is_arithmetic<U>())
 		[[nodiscard]] constexpr static vectorN<T, N> filled(U value) {
-		vectorN<T, N> result;
+			vectorN<T, N> result;
 			result.data.fill(static_cast<T>(value));
 			return result;
 		}
@@ -1055,6 +1070,16 @@ namespace qpl {
 	template<typename T, qpl::size N>
 	std::ostream& operator<<(std::ostream& os, const qpl::vectorN<T, N>& vec) {
 		return os << vec.string();
+	}
+
+
+	template<typename T> requires (qpl::is_vectorN<T>())
+	constexpr auto list_possibilities(T value) {
+		return qpl::impl::possibilities(value.data);
+	}
+	template<typename T> requires (qpl::is_vectorN<T>())
+		constexpr auto list_possibilities(T start, T end) {
+		return qpl::impl::possibilities(start.data, end.data);
 	}
 
 	template<typename T = qpl::f32>
@@ -1133,12 +1158,7 @@ namespace qpl {
 	using vec6s = qpl::vector6s;
 
 	template<typename T, qpl::size N>
-	struct texN : qpl::vectorN<T, N> {
-		
-		//constexpr operator qpl::vectorN<T, N>() {
-		//	return *this;
-		//}
-	};
+	struct texN : qpl::vectorN<T, N> {};
 
 	template <typename ...Args> requires (qpl::is_arithmetic<Args>() && ...)
 	constexpr auto vec(Args... rest) {
@@ -1153,16 +1173,6 @@ namespace qpl {
 	}
 
 	namespace detail {
-		template<typename T, qpl::size N>
-		constexpr auto vector_signature(qpl::vectorN<T, N>) {
-			return std::true_type{};
-		}
-		template<typename T>
-		constexpr auto vector_signature(T) {
-			return std::false_type{};
-		}
-
-
 		template<qpl::size check, typename T, qpl::size N> requires(N == check)
 		constexpr auto vectorN_signature(qpl::vectorN<T, N>) {
 			return std::true_type{};
@@ -1189,10 +1199,6 @@ namespace qpl {
 		constexpr auto texN_signature(T) {
 			return std::false_type{};
 		}
-	}
-	template<typename T>
-	constexpr bool is_vector() {
-		return decltype(detail::vector_signature(qpl::declval<T>()))::value;
 	}
 	template<typename T, qpl::size N>
 	constexpr bool is_vectorN() {
@@ -2154,10 +2160,30 @@ namespace qpl {
 }
 
 namespace std {
-	template <typename T>
-	struct hash<qpl::vector2<T>> {
-		qpl::u64 operator()(const qpl::vector2<T>& k) const {
-			return ((std::hash<qpl::u64>()(k.x) ^ (std::hash<qpl::u64>()(k.y) << 32)));
+	template<class T, qpl::size N>
+	struct std::hash<std::array<T, N>> {
+		qpl::u64 operator() (const std::array<T, N>& key) const {
+			std::hash<T> hash;
+			qpl::u64 result = 9613230923329544087ull;
+			for (qpl::size i = 0u; i < N; ++i) {
+				result = qpl::rotate_right(result, 1) ^ hash(key[i]);
+			}
+			return result;
+		}
+	};
+
+	template <typename T, qpl::size N>
+	struct hash<qpl::vectorN<T, N>> {
+		qpl::u64 operator()(const qpl::vectorN<T, N>& k) const {
+			std::hash<std::array<T, N>> hash;
+			return hash(k.data);
+		}
+	};
+	template <typename T, qpl::size N>
+	struct hash<qpl::matrixN<T, N>> {
+		qpl::u64 operator()(const qpl::matrixN<T, N>& k) const {
+			std::hash<std::array<T, N>> hash;
+			return hash(k.data);
 		}
 	};
 }

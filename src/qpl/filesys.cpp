@@ -309,6 +309,19 @@ namespace qpl {
             }
             return std::string_view(this->m_string.data() + std::distance(this->m_string.cbegin(), it), std::distance(it, this->m_string.cend() - end_slash));
         }
+        qpl::filesys::path qpl::filesys::path::with_file_name(std::string file_name) const {
+            qpl::filesys::path copy = qpl::to_string(this->get_parent_branch().string(), file_name, ".", this->get_file_extension());
+            return copy;
+        }
+        qpl::filesys::path qpl::filesys::path::with_full_file_name(std::string file_name) const {
+            qpl::filesys::path copy = qpl::to_string(this->get_parent_branch().string(), file_name);
+            return copy;
+        }
+        qpl::filesys::path qpl::filesys::path::with_extension(std::string extension) const {
+            qpl::filesys::path copy = qpl::to_string(this->get_parent_branch().string(), this->get_file_name(), ".", extension);
+            return copy;
+        }
+
 
 
         bool qpl::filesys::path::extension_equals(const std::string_view& str) const {

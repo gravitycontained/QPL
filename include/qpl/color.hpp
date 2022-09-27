@@ -158,7 +158,7 @@ namespace qpl {
 		constexpr rgbN(const Tuple& tuple) : impl_type() {
 			*this = tuple;
 		}
-		template<typename... Args> requires(sizeof...(Args) > 1)
+		template<typename... Args> requires(sizeof...(Args) > 1 && sizeof...(Args) <= N)
 		constexpr rgbN(Args&&... list) : impl_type() {
 			*this = std::make_tuple(list...);
 		}
@@ -415,8 +415,9 @@ namespace qpl {
 			}
 			return *this;
 		}
-		constexpr qpl::rgbN<T, N> operator/(const qpl::rgbN<T, N>& other) const {
-			auto copy = *this;
+		template<typename U>
+		constexpr qpl::rgbN<T, N> operator/(const qpl::rgbN<U, N>& other) const {
+			qpl::rgbN<qpl::superior_arithmetic_type<T, U>, N> copy = *this;
 			copy /= other;
 			return copy;
 		}
@@ -427,8 +428,9 @@ namespace qpl {
 			}
 			return *this;
 		}
-		constexpr qpl::rgbN<T, N> operator*(const qpl::rgbN<T, N>& other) const {
-			auto copy = *this;
+		template<typename U>
+		constexpr qpl::rgbN<T, N> operator*(const qpl::rgbN<U, N>& other) const {
+			qpl::rgbN<qpl::superior_arithmetic_type<T, U>, N> copy = *this;
 			copy *= other;
 			return copy;
 		}
@@ -439,8 +441,9 @@ namespace qpl {
 			}
 			return *this;
 		}
-		constexpr qpl::rgbN<T, N> operator+(const qpl::rgbN<T, N>& other) const {
-			auto copy = *this;
+		template<typename U>
+		constexpr qpl::rgbN<T, N> operator+(const qpl::rgbN<U, N>& other) const {
+			qpl::rgbN<qpl::superior_arithmetic_type<T, U>, N> copy = *this;
 			copy += other;
 			return copy;
 		}
@@ -451,8 +454,9 @@ namespace qpl {
 			}
 			return *this;
 		}
-		constexpr qpl::rgbN<T, N> operator-(const qpl::rgbN<T, N>& other) const {
-			auto copy = *this;
+		template<typename U>
+		constexpr qpl::rgbN<T, N> operator-(const qpl::rgbN<U, N>& other) const {
+			qpl::rgbN<qpl::superior_arithmetic_type<T, U>, N> copy = *this;
 			copy -= other;
 			return copy;
 		}
@@ -626,23 +630,23 @@ namespace qpl {
 			return copy;
 		}
 
-		constexpr qpl::rgbN<T, N> with_alpha(T alpha) const {
-			auto copy = *this;
-			copy.a = alpha;
-			return copy;
-		}
-		constexpr qpl::rgbN<T, N> multiplied_color(const qpl::rgbN<T, N>& other) const {
-			auto copy = *this;
-			copy = *this * (other / qpl::f64_cast(max_channel()));
-			return copy;
-		}
-
-		constexpr qpl::rgbN<T, N> multiplied_alpha(T alpha) const requires (N >= 4) {
+		constexpr qpl::rgbN<T, N> with_alpha(T alpha) const requires (N >= 4) {
 			auto copy = *this;
 			copy.data[3] = alpha;
 			return copy;
 		}
-
+		constexpr qpl::rgbN<T, N> multiplied_color(const qpl::rgbN<T, N>& other) const {
+			auto copy = *this;
+			copy = copy * qpl::rgbN<qpl::f32, N>(other);
+			//copy = qpl::rgbN<qpl::f32, N>(copy) * qpl::rgbN<qpl::f32, N>(other);
+			return copy;
+		}
+		
+		constexpr qpl::rgbN<T, N> multiplied_alpha(T alpha) const requires (N >= 4) {
+			auto copy = *this;
+			copy.data[3] = static_cast<T>(copy.data[3] * (alpha / qpl::f64_cast(max_channel())));
+			return copy;
+		}
 
 		constexpr static auto red() {
 			return qpl::rgbN<T, N> { max_channel(), 0, 0 };

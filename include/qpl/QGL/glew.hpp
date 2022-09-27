@@ -30,12 +30,15 @@ namespace qgl {
 		QPLDLL void bind_vertex_array(GLuint id);
 		QPLDLL void unbind_vertex_array();
 		QPLDLL void buffer_vertex_data(GLuint vertexVBO, qpl::size size, const void* data);
+		QPLDLL void buffer_vertex_sub_data(GLuint vertexVBO, qpl::size ofset, qpl::size size, const void* data);
 		QPLDLL void generate_vertex_buffer(GLuint& vertexVBO, qpl::size size, const void* data);
 		QPLDLL void generate_index_buffer(GLuint& indexVBO, qpl::size size, const void* data);
 		QPLDLL void delete_buffer(GLuint& id);
 		QPLDLL void delete_vertex_array(GLuint& id);
-		QPLDLL void draw_triangles(qpl::size size);
 		QPLDLL void draw_elements(primitive_type type, qpl::size size);
+		QPLDLL void draw_arrays(primitive_type type, qpl::size size);
+		QPLDLL std::string error_description(GLenum error);
+		QPLDLL void print_errors();
 
 		QPLDLL void attach_shader(GLuint program, GLuint shader);
 		QPLDLL void create_program(GLuint& program);

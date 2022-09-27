@@ -90,6 +90,10 @@ namespace qpl {
             QPLDLL std::string_view get_file_name_view() const;
             QPLDLL std::string_view get_directory_name_view() const;
 
+            QPLDLL qpl::filesys::path with_file_name(std::string file_name) const;
+            QPLDLL qpl::filesys::path with_full_file_name(std::string file_name) const;
+            QPLDLL qpl::filesys::path with_extension(std::string extension) const;
+
             QPLDLL bool extension_equals(const std::string_view& str) const;
             QPLDLL bool extension_equals(const char* str) const;
             QPLDLL bool extension_equals(const std::string& str) const;

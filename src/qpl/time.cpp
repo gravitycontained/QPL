@@ -738,6 +738,9 @@ namespace qpl {
 	void qpl::clear_benchmark() {
 		qpl::detail::benchmark_clocks.clear();
 	}
+	void qpl::reset_benchmark() {
+		qpl::clear_benchmark();
+	}
 	void qpl::print_benchmark() {
 		qpl::time sum = 0;
 
@@ -761,13 +764,17 @@ namespace qpl {
 				qpl::print(qpl::foreground::light_red);
 			}
 			auto f = i.second.elapsed().nsecs_f() / sum.nsecs_f();
+
+			auto precision = 3;
+			auto percentage_string = qpl::percentage_string_precision(f, precision);
+			percentage_string = qpl::prepended_to_string_to_fit(percentage_string, ' ', precision + 4);
+			qpl::print(qpl::to_string(qpl::appended_to_string_to_fit(i.first, ' ', length_max + 1), " - ", qpl::str_spaced(percentage_string, 10), " time usage : ", i.second.elapsed().string()));
+
 			if (i.first != sorted.back().first && sorted.size() >= 2u) {
 				double p = sorted.back().second / i.second.elapsed_f();
-				qpl::println(qpl::to_string(qpl::appended_to_string_to_fit(i.first, ' ', length_max + 1), " - ", qpl::str_spaced(qpl::to_string_precision(7, f * 100), 14), "% time usage : ", i.second.elapsed().string(), " [ ", qpl::to_string_precision(3, p), "x ]"));
+				qpl::print(" [ ", qpl::to_string_precision(3, p), "x ]");
 			}
-			else {
-				qpl::println(qpl::to_string(qpl::appended_to_string_to_fit(i.first, ' ', length_max + 1), " - ", qpl::str_spaced(qpl::to_string_precision(7, f * 100), 14), "% time usage : ", i.second.elapsed().string()));
-			}
+			qpl::println();
 		}
 
 		for (auto& sub : qpl::detail::sub_benchmark_clocks) {
@@ -941,6 +948,9 @@ namespace qpl {
 	}
 	qpl::f64 qpl::animation::get_curve_progress(qpl::f64 curve) const {
 		return qpl::curve_slope(this->progress, curve);
+	}
+	qpl::f64 qpl::animation::get_double_curve_progress(qpl::f64 curve) const {
+		return qpl::double_curve_slope(this->progress, curve);
 	}
 
 	void qpl::timed_task::update() {

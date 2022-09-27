@@ -182,7 +182,6 @@ namespace qpl {
 			qpl::u32 end;
 		};
 
-
 		class bitset_proxy {
 		public:
 			bitset_proxy(bitset& data, qpl::size index) {
@@ -340,7 +339,7 @@ namespace qpl {
 			}
 			return qpl::approximate_multiple_up(bits, qpl::u64{ 64 }) / 64;
 		}
-		constexpr qpl::size number_of_set_bits() {
+		constexpr qpl::size number_of_set_bits() const {
 			if constexpr (is_array()) {
 				qpl::size size = 0u;
 				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {

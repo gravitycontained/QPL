@@ -337,13 +337,13 @@ namespace qpl {
 
 
 	template<typename T, typename R = qpl::unsigned_type<T>> requires (qpl::is_integer<T>())
-	R constexpr cantor_pairing(T x, T y) {
+	constexpr R cantor_pairing(T x, T y) {
 		auto rx = static_cast<R>(x);
 		auto ry = static_cast<R>(y);
 		return (rx + ry) * (rx + ry + 1) / 2 + ry;
 	}
 	template<typename T, typename R = qpl::signed_type<T>> requires (qpl::is_integer<T>())
-	std::pair<R, R> cantor_pairing_inverse(T z) {
+	constexpr std::pair<R, R> cantor_pairing_inverse(T z) {
 		std::pair<R, R> result;
 		auto w = static_cast<R>((std::sqrt(R{ 8 } *z + R{ 1 }) - R{ 1 }) / R{ 2 });
 		result.second = z - (w + R{ 1 }) * w / R{ 2 };
@@ -352,17 +352,49 @@ namespace qpl {
 	}
 
 	template<typename T> requires (qpl::is_integer<T>())
-		T constexpr rosenberg_pairing(T x, T y) {
+	constexpr T rosenberg_pairing(T x, T y) {
 		return ((x > y ? x : y) * (x > y ? x : y)) + (x > y ? x : y) + x - y;
 	}
 	template<typename T> requires (qpl::is_integer<T>())
-		std::pair<T, T> rosenberg_pairing_inverse(T z) {
+	constexpr std::pair<T, T> rosenberg_pairing_inverse(T z) {
 		auto m = static_cast<T>(std::sqrt(z));
 		if (z - m * m < m) {
 			return std::make_pair(z - m * m, m);
 		}
 		else {
 			return std::make_pair(m, m * m + T{ 2 } *m - z);
+		}
+	}
+
+	template<typename T, typename R = qpl::signed_type<T>> requires (qpl::is_integer<T>())
+	constexpr std::pair<R, R> spiral_pairing(T n) {
+
+		if (n == T{ 0 }) {
+			return std::make_pair(R{ 0 }, R{ 0 });
+		}
+
+		R arm = 0;
+		T sub = 1u;
+		while (n >= sub) {
+			n -= sub;
+			sub = (arm * 2 + 1) * 4 + 4;
+			++arm;
+		}
+
+
+		auto width = static_cast<R>(arm * 2);
+		auto side = n / width;
+		auto leftover = static_cast<R>(n % width);
+
+		switch (side) {
+		case 0:
+			return std::make_pair(-arm + leftover, -arm);
+		case 1:
+			return std::make_pair(arm, -arm + leftover);
+		case 2:
+			return std::make_pair(arm - leftover, arm);
+		case 3:
+			return std::make_pair(-arm, arm - leftover);
 		}
 	}
 
@@ -373,7 +405,7 @@ namespace qpl {
 
 
 	template<typename T> requires (qpl::is_integer<T>())
-		constexpr T binary_configurations(T n) {
+	constexpr T binary_configurations(T n) {
 		return T{ 1 } << n;
 	}
 	template<typename T>
@@ -623,17 +655,6 @@ namespace qpl {
 		std::vector<T> result(source.size());
 		memcpy(result.data(), source.data(), source.size() * sizeof(T));
 		return result;
-	}
-	template<typename T>
-	void remove_vector_element(std::vector<T>& source, qpl::u32 index) {
-		std::vector<T> result;
-		result.reserve(source.size() - 1);
-		for (qpl::u32 i = 0u; i < source.size(); ++i) {
-			if (i != index) {
-				result.push_back(source[i]);
-			}
-		}
-		source = result;
 	}
 	template< qpl::size N, typename T>
 	std::array<T, N> vector_to_array(const std::vector<T>& source) {
@@ -1420,6 +1441,49 @@ namespace qpl {
 			std::swap(result, container);
 		}
 	}
+
+	template<typename C, typename I> requires (qpl::is_container<C>() && qpl::has_push_back<C>() && qpl::has_reserve<C>() && qpl::is_integer<I>())
+	constexpr C removed_index(const C& container, I index) {
+		C result;
+		if (container.empty()) {
+			return result;
+		}
+
+		result.reserve(container.size() - 1);
+		for (qpl::size i = 0u; i < container.size(); ++i) {
+			if (i != index) {
+				result.push_back(container[i]);
+			}
+		}
+		return result;
+	}
+	template<typename C, typename I> requires (qpl::is_container<C>() && qpl::has_push_back<C>() && qpl::has_reserve<C>() && qpl::is_integer<I>())
+	constexpr void remove_index(C& container, I index) {
+		if (index < I{ 0 } || index >= container.size()) {
+			return;
+		}
+		container = removed_index(container, index);
+	}
+	template<typename C, typename I> requires (qpl::is_container<C>() && qpl::has_push_back<C>() && qpl::has_reserve<C>() && qpl::is_container<I>())
+	constexpr C removed_indices(const C& container, const I& indices) {
+		C result;
+
+		result.reserve(qpl::size_cast(qpl::max(qpl::isize{ 0 }, qpl::isize_cast(container.size()) - qpl::isize_cast(indices.size()))));
+		for (qpl::size i = 0u; i < container.size(); ++i) {
+			if (!qpl::find(indices, i)) {
+				result.push_back(container[i]);
+			}
+		}
+		return result;
+	}
+	template<typename C, typename I> requires (qpl::is_container<C>() && qpl::has_push_back<C>() && qpl::is_container<I>())
+	constexpr void remove_indices(C& container, const I& indices) {
+		if (indices.empty()) {
+			return;
+		}
+		container = qpl::removed_indices(container, indices);
+	}
+
 	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
 	constexpr void remove_sorted(C& container, T&& value) {
 		if constexpr (qpl::is_sorted_container<C>() && qpl::has_erase<C>()) {
@@ -1774,15 +1838,22 @@ namespace qpl {
 		template<typename T, qpl::size N>
 		struct possibilities_iterator {
 			std::array<T, N> values;
+			std::array<T, N> min;
 			std::array<T, N> max;
 
 
-			constexpr possibilities_iterator(const std::array<T, N>& max) : values(), max() {
+			constexpr possibilities_iterator(const std::array<T, N>& max) : min(), values(), max() {
 				this->values.fill(T{});
 				this->max = max;
 			}
-			constexpr possibilities_iterator() : values(), max() {
+			constexpr possibilities_iterator(const std::array<T, N>& min, const std::array<T, N>& max) : min(), values(), max() {
+				this->values = min;
+				this->min = min;
+				this->max = max;
+			}
+			constexpr possibilities_iterator() : min(), values(), max() {
 				this->values.fill(T{});
+				this->min.fill(T{});
 				this->max.fill(T{});
 			}
 			constexpr bool operator==(const possibilities_iterator& other) {
@@ -1801,7 +1872,7 @@ namespace qpl {
 				for (qpl::u32 i = 0u; i < this->values.size(); ++i) {
 					++this->values[i];
 					if (this->values[i] == this->max[i]) {
-						this->values[i] = 0u;
+						this->values[i] = this->min[i];
 					}
 					else {
 						ended = true;
@@ -1827,17 +1898,19 @@ namespace qpl {
 		template<typename T, qpl::size N>
 		struct possibilities_reverse_iterator {
 			std::array<T, N> values;
+			std::array<T, N> min;
 			std::array<T, N> max;
 
 
-			constexpr possibilities_reverse_iterator(const std::array<T, N>& max) : values(), max() {
+			constexpr possibilities_reverse_iterator(const std::array<T, N>& max) : min(), values(), max() {
 				this->values = max;
 				for (auto& i : this->values) {
 					--i;
 				}
+				this->min.fill(T{});
 				this->max = max;
 			}
-			constexpr possibilities_reverse_iterator() : values(), max() {
+			constexpr possibilities_reverse_iterator() : min(), values(), max() {
 				this->values.fill(T{});
 				this->max.fill(T{});
 			}
@@ -1856,7 +1929,7 @@ namespace qpl {
 				bool ended = false;
 				for (qpl::u32 i = 0u; i < this->values.size(); ++i) {
 					auto index = this->values.size() - i - 1;
-					if (this->values[index] == T{}) {
+					if (this->values[index] == this->min[i]) {
 						this->values[index] = this->max[index] - 1;
 					}
 					else {
@@ -1882,14 +1955,19 @@ namespace qpl {
 
 		template<typename T, qpl::size N>
 		struct possibilities {
-			std::array<T, N> values;
+			std::array<T, N> min;
+			std::array<T, N> max;
 
-			constexpr possibilities(const std::array<T, N>& values) : values() {
-				this->values = values;
+			constexpr possibilities(const std::array<T, N>& max) : min(), max() {
+				this->max = max;
+			}
+			constexpr possibilities(const std::array<T, N>& min, const std::array<T, N>& max) : min(), max() {
+				this->min = min;
+				this->max = max;
 			}
 
 			constexpr possibilities_iterator<T, N> cbegin() const {
-				possibilities_iterator<T, N> it(this->values);
+				possibilities_iterator<T, N> it(this->min, this->max);
 				return it;
 			}
 			constexpr possibilities_iterator<T, N> begin() const {
@@ -1907,7 +1985,7 @@ namespace qpl {
 
 
 			constexpr possibilities_reverse_iterator<T, N> crbegin() const {
-				possibilities_reverse_iterator<T, N> it(this->values);
+				possibilities_reverse_iterator<T, N> it(this->min, this->max);
 				return it;
 			}
 			constexpr possibilities_reverse_iterator<T, N> rbegin() const {
@@ -1926,14 +2004,19 @@ namespace qpl {
 
 		template<typename T, qpl::size N>
 		struct reverse_possibilities {
-			std::array<T, N> values;
+			std::array<T, N> min;
+			std::array<T, N> max;
 
-			constexpr reverse_possibilities(const std::array<T, N>& values) : values() {
-				this->values = values;
+			constexpr reverse_possibilities(const std::array<T, N>& max) : min(), max() {
+				this->max = max;
+			}
+			constexpr reverse_possibilities(const std::array<T, N>& min, const std::array<T, N>& max) : min(), max() {
+				this->min = min;
+				this->max = max;
 			}
 
 			constexpr possibilities_reverse_iterator<T, N> cbegin() const {
-				possibilities_reverse_iterator<T, N> it(this->values);
+				possibilities_reverse_iterator<T, N> it(this->min, this->max);
 				return it;
 			}
 			constexpr possibilities_reverse_iterator<T, N> begin() const {
@@ -1951,7 +2034,7 @@ namespace qpl {
 
 
 			constexpr possibilities_iterator<T, N> crbegin() const {
-				possibilities_iterator<T, N> it(this->values);
+				possibilities_iterator<T, N> it(this->min, this->max);
 				return it;
 			}
 			constexpr possibilities_iterator<T, N> rbegin() const {
@@ -1973,11 +2056,27 @@ namespace qpl {
 	constexpr auto list_possibilities(Ts... values) {
 		return qpl::impl::possibilities(qpl::tuple_to_array(values...));
 	}
+	template<typename T, qpl::size N>
+	constexpr auto list_possibilities(const std::array<T, N>& start) {
+		return qpl::impl::possibilities(start);
+	}
+	template<typename T, qpl::size N>
+	constexpr auto list_possibilities(const std::array<T, N>& start, const std::array<T, N>& end) {
+		return qpl::impl::possibilities(start, end);
+	}
 	template<typename... Ts>
 	constexpr auto list_reverse_possibilities(Ts... values) {
 		return qpl::impl::reverse_possibilities(qpl::tuple_to_array(values...));
 	}
 
+	template<typename T, qpl::size N>
+	constexpr auto list_reverse_possibilities(const std::array<T, N>& start) {
+		return qpl::impl::reverse_possibilities(start);
+	}
+	template<typename T, qpl::size N>
+	constexpr auto list_reverse_possibilities(const std::array<T, N>& start, const std::array<T, N>& end) {
+		return qpl::impl::reverse_possibilities(start, end);
+	}
 	template<std::integral T>
 	constexpr T int_pow(T b, T e) {
 		return (e == 0) ? T{ 1 } : b * int_pow(b, e - 1);
@@ -2335,6 +2434,15 @@ namespace qpl {
 		return std::pow(1 - std::pow(1 - progress, slope), 1.0 / slope);
 	}
 	template<typename F>
+	constexpr F double_curve_slope(F progress, F slope = 2.0) {
+		if (progress < F{ 0.5 }) {
+			return qpl::curve_slope(progress * 2, slope) / 2;
+		}
+		else {
+			return (qpl::curve_slope((progress - F{ 0.5 }) * 2, 1 / slope) / 2) + F{ 0.5 };
+		}
+	}
+	template<typename F>
 	constexpr F curve_slope_inverse(F n, F slope = 2.0) {
 		return 1 - std::pow(1 - std::pow(n, slope), 1.0 / slope);
 	}
@@ -2492,6 +2600,28 @@ namespace qpl {
 	template<typename F>
 	qpl::f64 inverse_tanh(F n) {
 		return (std::log((1 + n) / (1 - n))) / 2;
+	}
+
+
+	template<qpl::size Base, qpl::size N, typename T> requires (qpl::is_integer<T>())
+	constexpr auto base_array(T number) {
+		std::array<T, N> result{};
+		result.fill(T{ 0 });
+		for (qpl::size i = 0u; i < N; ++i) {
+			result[i] = number % Base;
+			number /= Base;
+		}
+		return result;
+	}
+	template<qpl::size N, typename T> requires (qpl::is_integer<T>())
+	constexpr auto base_array(T number, T base) {
+		std::array<T, N> result{};
+		result.fill(T{ 0 });
+		for (qpl::size i = 0u; i < N; ++i) {
+			result[i] = number % base;
+			number /= base;
+		}
+		return result;
 	}
 }
 

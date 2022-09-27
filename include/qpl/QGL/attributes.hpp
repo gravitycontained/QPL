@@ -89,6 +89,9 @@ namespace qgl {
 	constexpr qpl::u8 attribute_flag() {
 		return (attribute_flag_bit<Attributes>() | ...);
 	}
+
+
+
 }
 
 #endif

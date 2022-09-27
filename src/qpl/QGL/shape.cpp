@@ -15,9 +15,9 @@ namespace qgl {
 			this->vertex_array.generate();
 		}
 
-		constexpr auto cube = qgl::get_cube();
+		constexpr auto block = qgl::get_cube();
 		for (qpl::size i = 0u; i < this->vertex_array.vertices.size(); ++i) {
-			this->vertex_array.vertices[i].position = cube.vertices[i].position * this->dimension + this->position;
+			this->vertex_array.vertices[i].position = block.vertices[i].position * this->dimension + this->position;
 			this->vertex_array.vertices[i].color = this->color;
 		} 
 		this->vertex_array.update();
