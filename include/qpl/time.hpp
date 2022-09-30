@@ -348,12 +348,14 @@ namespace qpl {
 	struct animation {
 		qpl::f64 duration = 1.0;
 		qpl::f64 progress = 0.0;
+		qpl::f64 progress_before = qpl::f64_max;
 		bool reversed = false;
 		bool running = false;
 		bool just_finish = false;
 		bool just_finish_reverse = false;
 		bool just_finish_no_reverse = false;
 		bool internal_change_flag = false;
+		bool progress_change_flag = true;
 
 		QPLDLL void internal_reset();
 		QPLDLL void reset();
@@ -365,6 +367,7 @@ namespace qpl {
 		QPLDLL void update(qpl::f64 frame_time);
 		QPLDLL bool is_running() const;
 		QPLDLL bool is_reversed() const;
+		QPLDLL bool changed() const;
 		QPLDLL void go_forwards();
 		QPLDLL void go_backwards();
 		QPLDLL bool just_finished() const;

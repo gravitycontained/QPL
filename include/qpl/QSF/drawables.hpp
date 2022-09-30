@@ -7,10 +7,11 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/color.hpp>
-#include <qpl/QSF/event_info.hpp>
 #include <qpl/string.hpp>
 #include <qpl/vector.hpp>
 #include <qpl/type_traits.hpp>
+
+#include <qpl/QSF/event_info.hpp>
 
 #include <functional>
 #include <string>
@@ -261,6 +262,9 @@ namespace qsf {
 		QPLDLL void set_primitive_type(qsf::primitive_type primitive_type);
 		QPLDLL void set_primitive_type(sf::PrimitiveType primitive_type);
 
+		QPLDLL void set_color(qpl::rgba color);
+		QPLDLL void move(qpl::vector2f delta);
+
 		QPLDLL qpl::size size() const;
 		QPLDLL bool empty() const;
 		QPLDLL void resize(qpl::size new_size);
@@ -318,7 +322,6 @@ namespace qsf {
 		qpl::f32 outline_thickness = 0.0f;
 		qpl::rgba color = qpl::rgba::white();
 		qpl::rgba outline_color;
-		qpl::rgba multiplied_color = qpl::rgba::white();
 		qpl::f32 letter_spacing = 1.0f;
 		qpl::vector2f position;
 		std::string string;
@@ -342,8 +345,8 @@ namespace qsf {
 		QPLDLL qpl::u32 get_style() const;
 		QPLDLL qpl::u32 get_character_size() const;
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qpl::rgba get_outline_color() const;
+		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qpl::f32 get_letter_spacing() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_center() const;
@@ -355,8 +358,8 @@ namespace qsf {
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void set_character_size(qpl::u32 character_size);
 		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qpl::rgba color);
+		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_rotation(qpl::f32 angle);
 		QPLDLL void set_letter_spacing(qpl::f32 spacing);
 		QPLDLL void set_line_spacing(qpl::f32 spacing);
@@ -365,9 +368,6 @@ namespace qsf {
 		QPLDLL void set_string(const std::string& string);
 		QPLDLL void set_string(const std::wstring& string);
 		QPLDLL void set_string(const sf::String& string);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
-		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
-		QPLDLL qpl::rgba get_multiplied_color() const;
 
 		template<typename T, typename ...Args> requires (qpl::is_printable<T, Args...>())
 		void set_string(T first, Args... values) {
@@ -416,9 +416,6 @@ namespace qsf {
 
 		std::string m_font;
 		sf::Text m_text;
-		qpl::rgba color = qpl::rgba::white();
-		qpl::rgba outline_color = qpl::rgba::white();
-		qpl::rgba multiplied_color = qpl::rgba::white();
 
 	private:
 
@@ -459,7 +456,6 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_color(qpl::rgba color);
 		QPLDLL void set_outline_color(qpl::rgba outline_color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
 
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
@@ -468,7 +464,6 @@ namespace qsf {
 		QPLDLL qpl::rgba get_color() const;
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qpl::rgba get_outline_color() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 
 		QPLDLL std::string string() const;
 
@@ -488,7 +483,6 @@ namespace qsf {
 		qpl::f32 outline_thickness = 0.0f;
 		qpl::rgba color;
 		qpl::rgba outline_color;
-		qpl::rgba multiplied_color = qpl::rgba::white();
 	};
 
 	struct rectangle {
@@ -506,8 +500,6 @@ namespace qsf {
 		QPLDLL void set_color(qpl::rgba color);
 		QPLDLL void set_outline_thickness(qpl::f32 outline_thickness);
 		QPLDLL void set_outline_color(qpl::rgba outline_color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
-		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 
 		QPLDLL void increase(qpl::f64 delta);
 
@@ -517,9 +509,7 @@ namespace qsf {
 		QPLDLL bool collides(qpl::straight_line line) const;
 		QPLDLL bool collides(qpl::straight_line line, qpl::f32 hitbox_increase) const;
 
-		QPLDLL qpl::rgba get_multiplied_color() const;
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::rgba get_visible_color() const;
 		QPLDLL qpl::rgba get_outline_color() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_dimension() const;
@@ -539,9 +529,6 @@ namespace qsf {
 
 	private:
 		sf::RectangleShape m_rect;
-		qpl::rgba color;
-		qpl::rgba outline_color;
-		qpl::rgba multiplied_color = qpl::rgba::white();
 	};
 
 	struct va_rectangle {
@@ -660,10 +647,6 @@ namespace qsf {
 		};
 
 		sf::ConvexShape shape;
-		qpl::rgba color;
-		qpl::rgba outline_color;
-		qpl::rgba multiplied_color;
-
 
 		QPLDLL polygon_proxy operator[](qpl::size index);
 		QPLDLL const_polygon_proxy operator[](qpl::size index) const;
@@ -676,14 +659,11 @@ namespace qsf {
 		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_outline_color(qpl::rgba color);
 		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
-		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 		QPLDLL void set_position(qpl::vector2f position);
 
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qpl::rgba get_outline_color() const;
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 
 		QPLDLL void move(qpl::vector2f delta);
 		QPLDLL void set_point(qpl::size index, qpl::vector2f position);
@@ -711,7 +691,6 @@ namespace qsf {
 		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_slope(qpl::f64 slope);
 		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
 		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_outline_color(qpl::rgba color);
 		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
@@ -721,7 +700,6 @@ namespace qsf {
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL qpl::f64 get_slope() const;
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qpl::rgba get_outline_color() const;
 		QPLDLL qpl::vector2f get_slope_dimension() const;
@@ -737,7 +715,6 @@ namespace qsf {
 		qpl::size slope_point_count = 20u;
 		qpl::rgba color;
 		qpl::rgba outline_color;
-		qpl::rgba multiplied_color;
 		qpl::vector2f slope_dim = { 10, 10 };
 		qpl::f32 outline_thickness = 0.0f;
 	};
@@ -750,8 +727,6 @@ namespace qsf {
 		QPLDLL void set_center(qpl::vector2f position);
 		QPLDLL void set_slope(qpl::f64 slope);
 		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
-		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 		QPLDLL void set_outline_thickness(qpl::f32 thickness);
 		QPLDLL void set_outline_color(qpl::rgba color);
 		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
@@ -763,7 +738,6 @@ namespace qsf {
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL qpl::f64 get_slope() const;
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 		QPLDLL qpl::f32 get_outline_thickness() const;
 		QPLDLL qpl::rgba get_outline_color() const;
 		QPLDLL qpl::vector2f get_slope_dimension() const;
@@ -780,9 +754,6 @@ namespace qsf {
 		mutable qpl::vector2f position;
 		qpl::f64 slope = 2.0;
 		qpl::size slope_point_count = 20u;
-		qpl::rgba color;
-		qpl::rgba outline_color;
-		qpl::rgba multiplied_color;
 		qpl::vector2f slope_dim = { 10, 10 };
 		qpl::f32 outline_thickness = 0.0f;
 		mutable bool internal_check = false;
@@ -809,7 +780,6 @@ namespace qsf {
 
 		QPLDLL bool operator==(const vpoint& other) const;
 		QPLDLL bool operator!=(const vpoint& other) const;
-		//QPLDLL vpoint& with_color(qpl::rgba color);
 	};
 	struct point {
 		qsf::vertex vertex;
@@ -1238,8 +1208,6 @@ namespace qsf {
 
 	struct sprite {
 		sf::Sprite m_sprite;
-		qpl::rgba color = qpl::rgba::white();
-		qpl::rgba multiplied_color = qpl::rgba::white();
 
 		sprite() {
 
@@ -1255,8 +1223,6 @@ namespace qsf {
 		QPLDLL void set_texture_rect(const sf::IntRect& rect);
 		QPLDLL void set_texture_rect(qpl::hitbox hitbox);
 		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
-		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_position_x(qpl::f32 x);
 		QPLDLL void set_position_y(qpl::f32 y);
@@ -1267,7 +1233,6 @@ namespace qsf {
 		QPLDLL void set_rotation(qpl::f32 rotation);
 
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_scale() const;
@@ -1305,7 +1270,7 @@ namespace qsf {
 		QPLDLL bool just_finished_appearing() const;
 		QPLDLL void draw(qsf::draw_object& draw) const;
 
-		qsf::rectangle overlay;
+		qpl::multiplied_color_extension<qsf::rectangle> overlay;
 		qpl::animation animation;
 		qpl::f64 slope = 1.0;
 	};
@@ -1328,7 +1293,6 @@ namespace qsf {
 		QPLDLL bool is_clear_with_window_enabled() const;
 
 		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_scale(qpl::vector2f scale);
 		QPLDLL void set_scale(qpl::f32 scale);
@@ -1336,7 +1300,6 @@ namespace qsf {
 		QPLDLL void set_rotation(qpl::f32 rotation);
 
 		QPLDLL qpl::rgba get_color() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_scale() const;
 		QPLDLL qpl::vector2f get_origin() const;
@@ -1981,21 +1944,6 @@ namespace qsf {
 			this->next_position = this->position;
 			this->currently_new_line = true;
 			this->current_line = 0u;
-		}
-
-		void set_multiplied_color(qpl::rgba color) {
-			for (auto& i : this->elements) {
-				if (i.is_sprite()) {
-					i.get_sprite().set_multiplied_color(color);
-				}
-				else if (i.is_text()) {
-					i.get_text().set_multiplied_color(color);
-				}
-			}
-
-		}
-		void set_multiplied_alpha(qpl::u8 alpha) {
-			this->set_multiplied_color(qpl::rgba::white().with_alpha(alpha));
 		}
 		void set_position(qpl::vector2f position) {
 			auto delta = position - this->position;
@@ -3003,8 +2951,6 @@ namespace qsf {
 			this->background.set_color(qpl::rgba::black());
 		}
 		QPLDLL qpl::vector2f get_position() const;
-		QPLDLL qpl::rgba get_final_text_color() const;
-		QPLDLL qpl::rgba get_final_background_color() const;
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_center(qpl::vector2f center);
@@ -3159,7 +3105,6 @@ namespace qsf {
 		qsf::text text;
 		qsf::vsmooth_rectangle smooth_layout;
 		mutable qsf::smooth_rectangle rectangle;
-		qpl::rgba multiplied_color;
 		qpl::vector2f hitbox_increase;
 		qpl::animation hover_animation;
 		qpl::rgba background_color = qpl::rgba::black();
@@ -3182,8 +3127,7 @@ namespace qsf {
 		QPLDLL void disable_simple_hitbox();
 		QPLDLL void set_hitbox_increase(qpl::vector2f delta);
 		QPLDLL void set_hitbox_increase(qpl::f32 delta);
-		QPLDLL void set_multiplied_color(qpl::rgba color);
-		QPLDLL void set_multiplied_alpha(qpl::u8 alpha);
+		QPLDLL void set_color(qpl::rgba color);
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_hitbox(qpl::hitbox hitbox);
@@ -3207,11 +3151,9 @@ namespace qsf {
 		QPLDLL void set_text_center(qpl::vector2f position);
 		QPLDLL void set_text_string(const std::string& string);
 		QPLDLL void set_text_string(const std::wstring& string);
-		QPLDLL void set_text_multiplied_color(qpl::rgba color);
 		QPLDLL void centerize_text();
 
 		QPLDLL qpl::vector2f get_hitbox_increase() const;
-		QPLDLL qpl::rgba get_multiplied_color() const;
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::vector2f get_center() const;

@@ -905,6 +905,9 @@ namespace qpl {
 				this->just_finish = this->just_finish_reverse = true;
 			}
 		}
+
+		this->progress_change_flag = (this->progress != this->progress_before);
+		this->progress_before = this->progress;
 	}
 	void qpl::animation::go_forwards() {
 		this->start();
@@ -921,6 +924,9 @@ namespace qpl {
 	}
 	bool qpl::animation::is_reversed() const {
 		return this->reversed;
+	}
+	bool qpl::animation::changed() const {
+		return this->progress_change_flag;
 	}
 	bool qpl::animation::just_finished() const {
 		return this->just_finish;

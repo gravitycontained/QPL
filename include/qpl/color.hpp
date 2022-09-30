@@ -509,7 +509,7 @@ namespace qpl {
 			}
 			else {
 				qpl::rgbN<qpl::f64, N> color = *this;
-				color.brighten(delta);
+				color.darken(delta);
 				*this = color;
 			}
 		}
@@ -765,6 +765,49 @@ namespace qpl {
 	QPLDLL qpl::rgba get_random_transparency_color();
 	QPLDLL qpl::rgb get_rainbow_color(qpl::f64 f);
 	QPLDLL qpl::rgb get_random_rainbow_color();
+
+
+
+	namespace detail {
+		template<typename C>
+		concept has_set_color_c = requires (C & x) {
+			x.set_color(qpl::rgba{});
+		};
+		template<typename C>
+		concept has_set_outline_color_c = requires (C & x) {
+			x.set_outline_color(qpl::rgba{});
+		};
+
+		struct outline_extension {
+			qpl::rgba original_outline_color = qpl::rgba::black();
+		};
+		template<typename T>
+		using color_extension_inheritance = qpl::conditional<qpl::if_true<has_set_outline_color_c<T>>, outline_extension, qpl::empty_type>;
+	}
+	template<typename T> requires detail::has_set_color_c<T>
+	struct multiplied_color_extension : T, detail::color_extension_inheritance<T> {
+		qpl::rgba original_color = qpl::rgba::white();
+		qpl::rgba multiplied_color = qpl::rgba::white();
+
+		void set_color(qpl::rgba color) {
+			this->original_color = color;
+			T::set_color(this->original_color.multiplied_color(this->multiplied_color));
+		}
+		void set_outline_color(qpl::rgba color) requires detail::has_set_outline_color_c<T> {
+			this->original_outline_color = color;
+			T::set_outline_color(this->original_outline_color.multiplied_color(this->multiplied_color));
+		}
+		void set_multiplied_color(qpl::rgba color) {
+			this->multiplied_color = color;
+			T::set_color(this->original_color.multiplied_color(this->multiplied_color));
+			if constexpr (detail::has_set_outline_color_c<T>) {
+				T::set_outline_color(this->original_outline_color.multiplied_color(this->multiplied_color));
+			}
+		}
+		void set_multiplied_alpha(qpl::u8 alpha) {
+			this->set_multiplied_color(this->multiplied_color.with_alpha(alpha));
+		}
+	};
 }
 
 

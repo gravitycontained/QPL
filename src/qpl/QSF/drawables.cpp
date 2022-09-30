@@ -94,6 +94,16 @@ namespace qsf {
 	void qsf::vertex_array::set_primitive_type(sf::PrimitiveType primitive_type) {
 		this->primitive_type = static_cast<qsf::primitive_type>(primitive_type);
 	}
+	void qsf::vertex_array::set_color(qpl::rgba color) {
+		for (auto& i : this->vertices) {
+			i.color = color;
+		}
+	}
+	void qsf::vertex_array::move(qpl::vector2f delta) {
+		for (auto& i : this->vertices) {
+			i.position += delta;
+		}
+	}
 
 	qpl::size qsf::vertex_array::size() const {
 		return this->vertices.size();
@@ -197,8 +207,7 @@ namespace qsf {
 			this->outline_color == other.outline_color &&
 			this->letter_spacing == other.letter_spacing &&
 			this->position == other.position &&
-			this->string == other.string &&
-			this->multiplied_color == other.multiplied_color;
+			this->string == other.string;
 	}
 	void qsf::vtext::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::text = *this;
@@ -334,15 +343,13 @@ namespace qsf {
 		this->m_text.setCharacterSize(character_size);
 	}
 	void qsf::text::set_color(qpl::rgba color) {
-		this->color = color;
-		this->m_text.setFillColor(this->color.multiplied_color(this->multiplied_color));
+		this->m_text.setFillColor(color);
 	}
 	void qsf::text::set_outline_thickness(qpl::f32 outline_thickness) {
 		this->m_text.setOutlineThickness(outline_thickness);
 	}
 	void qsf::text::set_outline_color(qpl::rgba color) {
-		this->outline_color = color;
-		this->m_text.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
+		this->m_text.setOutlineColor(color);
 	}
 	void qsf::text::set_rotation(qpl::f32 angle) {
 		this->m_text.setRotation(angle);
@@ -368,17 +375,6 @@ namespace qsf {
 	}
 	void qsf::text::set_string(const sf::String& string) {
 		this->m_text.setString(string);
-	}
-	void qsf::text::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-		this->m_text.setFillColor(this->color.multiplied_color(color));
-		this->m_text.setOutlineColor(this->outline_color.multiplied_color(color));
-	}
-	void qsf::text::set_multiplied_alpha(qpl::u8 alpha) {
-		this->set_multiplied_color(qpl::rgba::white().with_alpha(alpha));
-	}
-	qpl::rgba qsf::text::get_multiplied_color() const {
-		return this->multiplied_color;
 	}
 	void qsf::text::centerize() {
 		auto pos = this->m_text.getPosition();
@@ -683,7 +679,6 @@ namespace qsf {
 		return *this;
 	}
 	qsf::text& qsf::text::operator=(const qsf::vtext& text) {
-		this->multiplied_color = qpl::rgba::white();
 		this->set_character_size(text.character_size);
 		this->set_color(text.color);
 		this->set_letter_spacing(text.letter_spacing);
@@ -694,7 +689,6 @@ namespace qsf {
 		this->set_string(text.string);
 		this->m_font = text.font_name;
 		this->set_font(text.font_name);
-		this->set_multiplied_color(text.multiplied_color);
 		return *this;
 	}
 
@@ -746,9 +740,6 @@ namespace qsf {
 	void qsf::vrectangle::set_outline_color(qpl::rgba outline_color) {
 		this->outline_color = outline_color;
 	}
-	void qsf::vrectangle::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-	}
 	qpl::vector2f qsf::vrectangle::get_dimension() const {
 		return this->dimension;
 	}
@@ -769,9 +760,6 @@ namespace qsf {
 	}
 	qpl::rgba qsf::vrectangle::get_outline_color() const {
 		return this->color;
-	}
-	qpl::rgba qsf::vrectangle::get_multiplied_color() const {
-		return this->multiplied_color;
 	}
 	void qsf::vrectangle::draw(sf::RenderTarget& window, sf::RenderStates states) const {
 		qsf::detail::rectangle = *this;
@@ -824,22 +812,10 @@ namespace qsf {
 		this->m_rect.setOutlineThickness(outline_thickness);
 	}
 	void qsf::rectangle::set_color(qpl::rgba color) {
-		this->color = color;
-		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
+		this->m_rect.setFillColor(color);
 	}
 	void qsf::rectangle::set_outline_color(qpl::rgba color) {
-		this->outline_color = color;
-		this->m_rect.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
-	}
-	void qsf::rectangle::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
-		this->m_rect.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
-	}
-	void qsf::rectangle::set_multiplied_alpha(qpl::u8 alpha) {
-		this->multiplied_color.a = alpha;
-		this->m_rect.setFillColor(this->color.multiplied_color(this->multiplied_color));
-		this->m_rect.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
+		this->m_rect.setOutlineColor(color);
 	}
 	void qsf::rectangle::increase(qpl::f64 delta) {
 
@@ -943,16 +919,10 @@ namespace qsf {
 	}
 
 	qpl::rgba qsf::rectangle::get_color() const {
-		return this->color;
-	}
-	qpl::rgba qsf::rectangle::get_visible_color() const {
 		return this->m_rect.getFillColor();
 	}
 	qpl::rgba qsf::rectangle::get_outline_color() const {
-		return this->outline_color;
-	}
-	qpl::rgba qsf::rectangle::get_multiplied_color() const {
-		return this->multiplied_color;
+		return this->m_rect.getOutlineColor();
 	}
 	qpl::vector2f qsf::rectangle::get_position() const {
 		return this->m_rect.getPosition();
@@ -999,13 +969,11 @@ namespace qsf {
 		this->m_rect.move(delta);
 	}
 	qsf::rectangle& qsf::rectangle::operator=(const qsf::vrectangle& rectangle) {
-		this->multiplied_color = qpl::rgba::white();
 		this->set_color(rectangle.color);
 		this->set_position(rectangle.position);
 		this->set_dimension(rectangle.dimension);
 		this->set_outline_color(rectangle.outline_color);
 		this->set_outline_thickness(rectangle.outline_thickness);
-		this->set_multiplied_color(rectangle.multiplied_color);
 		return *this;
 	}
 
@@ -1211,20 +1179,10 @@ namespace qsf {
 		this->shape.setOutlineThickness(thickness);
 	}
 	void qsf::polygon::set_outline_color(qpl::rgba color) {
-		this->outline_color = color;
-		this->shape.setOutlineColor(color.multiplied_color(this->multiplied_color));
+		this->shape.setOutlineColor(color);
 	}
 	void qsf::polygon::set_color(qpl::rgba color) {
-		this->color = color;
-		this->shape.setFillColor(color.multiplied_color(this->multiplied_color));
-	}
-	void qsf::polygon::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-		this->shape.setFillColor(this->color.multiplied_color(this->multiplied_color));
-		this->shape.setOutlineColor(this->outline_color.multiplied_color(this->multiplied_color));
-	}
-	void qsf::polygon::set_multiplied_alpha(qpl::u8 alpha) {
-		this->set_multiplied_color(qpl::rgba::white().with_alpha(alpha));
+		this->shape.setFillColor(color);
 	}
 	void qsf::polygon::set_position(qpl::vector2f position) {
 		this->shape.setPosition(position);
@@ -1234,13 +1192,10 @@ namespace qsf {
 		return this->shape.getOutlineThickness();
 	}
 	qpl::rgba qsf::polygon::get_outline_color() const {
-		return this->outline_color;
+		return this->shape.getOutlineColor();
 	}
 	qpl::rgba qsf::polygon::get_color() const {
-		return this->color;
-	}
-	qpl::rgba qsf::polygon::get_multiplied_color() const {
-		return this->multiplied_color;
+		return this->shape.getFillColor();
 	}
 
 	void qsf::polygon::move(qpl::vector2f delta) {
@@ -1326,9 +1281,6 @@ namespace qsf {
 	void qsf::vsmooth_rectangle::set_color(qpl::rgba color) {
 		this->color = color;
 	}
-	void qsf::vsmooth_rectangle::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-	}
 	void qsf::vsmooth_rectangle::set_outline_color(qpl::rgba color) {
 		this->outline_color = color;
 	}
@@ -1355,9 +1307,6 @@ namespace qsf {
 	}
 	qpl::rgba qsf::vsmooth_rectangle::get_color() const {
 		return this->color;
-	}
-	qpl::rgba qsf::vsmooth_rectangle::get_multiplied_color() const {
-		return this->multiplied_color;
 	}
 	qpl::rgba qsf::vsmooth_rectangle::get_outline_color() const {
 		return this->outline_color;
@@ -1402,19 +1351,11 @@ namespace qsf {
 		this->internal_check = true;
 	}
 	void qsf::smooth_rectangle::set_color(qpl::rgba color) {
-		this->color = color;
-		this->internal_check = true;
-	}
-	void qsf::smooth_rectangle::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-		this->internal_check = true;
-	}
-	void qsf::smooth_rectangle::set_multiplied_alpha(qpl::u8 alpha) {
-		this->multiplied_color.a = alpha;
+		this->polygon.set_color(color);
 		this->internal_check = true;
 	}
 	void qsf::smooth_rectangle::set_outline_color(qpl::rgba color) {
-		this->outline_color = color;
+		this->polygon.set_outline_color(color);
 		this->internal_check = true;
 	}
 	void qsf::smooth_rectangle::set_outline_thickness(qpl::f32 thickness) {
@@ -1448,13 +1389,10 @@ namespace qsf {
 		return this->slope;
 	}
 	qpl::rgba qsf::smooth_rectangle::get_color() const {
-		return this->color;
-	}
-	qpl::rgba qsf::smooth_rectangle::get_multiplied_color() const {
-		return this->multiplied_color;
+		return this->polygon.get_color();
 	}
 	qpl::rgba qsf::smooth_rectangle::get_outline_color() const {
-		return this->outline_color;
+		return this->polygon.get_outline_color();
 	}
 	qpl::f32 qsf::smooth_rectangle::get_outline_thickness() const {
 		return this->outline_thickness;
@@ -1484,9 +1422,8 @@ namespace qsf {
 			rect.set_position(this->position);
 			rect.set_slope(this->slope);
 			rect.set_slope_point_count(this->slope_point_count);
-			rect.set_color(this->color);
-			rect.set_outline_color(this->outline_color);
-			rect.set_multiplied_color(this->multiplied_color);
+			rect.set_color(this->get_color());
+			rect.set_outline_color(this->get_outline_color());
 			rect.set_slope_dimension(this->slope_dim);
 			rect.set_outline_thickness(this->outline_thickness);
 
@@ -1501,8 +1438,8 @@ namespace qsf {
 		this->polygon.set_color(smooth_rectangle.color);
 		this->polygon.set_outline_color(smooth_rectangle.outline_color);
 		this->polygon.set_outline_thickness(smooth_rectangle.outline_thickness);
-		this->polygon.shape.setFillColor(smooth_rectangle.color.multiplied_color(smooth_rectangle.multiplied_color));
-		this->polygon.shape.setOutlineColor(smooth_rectangle.outline_color.multiplied_color(smooth_rectangle.multiplied_color));
+		this->polygon.shape.setFillColor(smooth_rectangle.color);
+		this->polygon.shape.setOutlineColor(smooth_rectangle.outline_color);
 
 		auto size = smooth_rectangle.slope_point_count;
 		this->polygon.resize(size * 4);
@@ -2537,16 +2474,7 @@ namespace qsf {
 		this->m_sprite.setTextureRect(rect);
 	}
 	void qsf::sprite::set_color(qpl::rgba color) {
-		this->color = color;
-		this->m_sprite.setColor(this->color.multiplied_color(this->multiplied_color));
-	}
-	void qsf::sprite::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-		this->m_sprite.setColor(this->color.multiplied_color(this->multiplied_color));
-	}
-	void qsf::sprite::set_multiplied_alpha(qpl::u8 alpha) {
-		this->multiplied_color.a = alpha;
-		this->m_sprite.setColor(this->color.multiplied_color(this->multiplied_color));
+		this->m_sprite.setColor(color);
 	}
 	void qsf::sprite::set_position(qpl::vector2f position) {
 		this->m_sprite.setPosition(position);
@@ -2576,10 +2504,7 @@ namespace qsf {
 		this->m_sprite.setRotation(rotation);
 	}
 	qpl::rgba qsf::sprite::get_color() const {
-		return this->color;
-	}
-	qpl::rgba qsf::sprite::get_multiplied_color() const {
-		return this->multiplied_color;
+		return this->m_sprite.getColor();
 	}
 	qpl::vector2f qsf::sprite::get_position() const {
 		return this->m_sprite.getPosition();
@@ -2637,7 +2562,6 @@ namespace qsf {
 	}
 	qsf::sprite& qsf::sprite::operator=(const sf::Sprite& sprite) {
 		this->m_sprite = sprite;
-		this->color = this->multiplied_color = qpl::rgba::white();
 		return *this;
 	}
 
@@ -2741,9 +2665,6 @@ namespace qsf {
 	void qsf::render_texture::set_color(qpl::rgba color) {
 		this->m_sprite.set_color(color);
 	}
-	void qsf::render_texture::set_multiplied_color(qpl::rgba color) {
-		this->m_sprite.set_multiplied_color(color);
-	}
 	void qsf::render_texture::set_position(qpl::vector2f position) {
 		this->m_sprite.set_position(position);
 	}
@@ -2761,9 +2682,6 @@ namespace qsf {
 	}
 	qpl::rgba qsf::render_texture::get_color() const {
 		return this->m_sprite.get_color();
-	}
-	qpl::rgba qsf::render_texture::get_multiplied_color() const {
-		return this->m_sprite.get_multiplied_color();
 	}
 	qpl::vector2f qsf::render_texture::get_position() const {
 		return this->m_sprite.get_position();
@@ -6525,9 +6443,7 @@ namespace qsf {
 		return *this;
 	}
 	void qsf::graph::draw(sf::RenderTarget& window, sf::RenderStates states) const {
-		if (this->background.get_visible_color().a) {
-			this->background.draw(window, states);
-		}
+		this->background.draw(window, states);
 
 		for (qpl::u32 i = 0u; i < this->y_lines.size(); ++i) {
 			this->y_lines[i].draw(window, states);
@@ -6561,12 +6477,6 @@ namespace qsf {
 
 	qpl::vector2f qsf::vbutton::get_position() const {
 		return this->background.position;
-	}
-	qpl::rgba qsf::vbutton::get_final_text_color() const {
-		return this->text.color.multiplied_alpha(this->text_alpha);
-	}
-	qpl::rgba qsf::vbutton::get_final_background_color() const {
-		return this->background.color.multiplied_alpha(this->background_alpha);
 	}
 	void qsf::vbutton::set_dimension(qpl::vector2f dimension) {
 		this->background.dimension = dimension;
@@ -6674,10 +6584,10 @@ namespace qsf {
 	}
 	qsf::button& qsf::button::operator=(const qsf::vbutton& button) {
 		this->background = button.background;
-		this->background.set_color(button.get_final_background_color());
+		this->background.set_color(button.background.get_color());
 
 		this->text = button.text;
-		this->text.set_color(button.get_final_text_color());
+		this->text.set_color(button.text.color);
 
 		this->text.set_center(this->background.center());
 		return *this;
@@ -6807,14 +6717,10 @@ namespace qsf {
 	void qsf::smooth_button::set_hitbox_increase(qpl::f32 delta) {
 		this->hitbox_increase = qpl::vec(delta, delta);
 	}
-	void qsf::smooth_button::set_multiplied_color(qpl::rgba color) {
-		this->multiplied_color = color;
-		this->text.set_multiplied_color(color);
-		this->smooth_layout.set_multiplied_color(color);
-		this->rectangle.polygon.set_multiplied_color(color);
-	}
-	void qsf::smooth_button::set_multiplied_alpha(qpl::u8 alpha) {
-		this->set_multiplied_color(this->multiplied_color.with_alpha(alpha));
+	void qsf::smooth_button::set_color(qpl::rgba color) {
+		this->text.set_color(color);
+		this->smooth_layout.set_color(color);
+		this->rectangle.polygon.set_color(color);
 	}
 	void qsf::smooth_button::set_dimension(qpl::vector2f dimension) {
 		this->smooth_layout.set_dimension(dimension);
@@ -6900,18 +6806,12 @@ namespace qsf {
 	void qsf::smooth_button::set_text_string(const std::wstring& string) {
 		this->text.set_string(string);
 	}
-	void qsf::smooth_button::set_text_multiplied_color(qpl::rgba color) {
-		this->text.set_multiplied_color(color);
-	}
 	void qsf::smooth_button::centerize_text() {
 		this->text.set_center(this->smooth_layout.get_center());
 	}
 
 	qpl::vector2f qsf::smooth_button::get_hitbox_increase() const {
 		return this->hitbox_increase;
-	}
-	qpl::rgba qsf::smooth_button::get_multiplied_color() const {
-		return this->multiplied_color;
 	}
 	qpl::vector2f qsf::smooth_button::get_dimension() const {
 		return this->smooth_layout.get_dimension();
