@@ -19,7 +19,7 @@ namespace qpl {
 		return result;
 	}
 	qpl::rgb qpl::get_rainbow_color(qpl::f64 f) {
-		const static std::vector<qpl::rgb> rainbow = { qpl::rgb::red(), qpl::rgb::yellow(), qpl::rgb::green(), qpl::rgb::cyan(), qpl::rgb::blue(), qpl::rgb::magenta(), qpl::rgb::red() };
+		constexpr auto rainbow = std::array{ qpl::rgb::red(), qpl::rgb::yellow(), qpl::rgb::green(), qpl::rgb::cyan(), qpl::rgb::blue(), qpl::rgb::magenta(), qpl::rgb::red() };
 		return qpl::rgb::interpolation(rainbow, f);
 	}
 	qpl::rgb qpl::get_random_rainbow_color() {

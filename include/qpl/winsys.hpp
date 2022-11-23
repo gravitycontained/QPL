@@ -319,6 +319,7 @@ namespace qpl {
 		qpl::background background;
 	};
 
+	QPLDLL std::ostream& operator<<(std::ostream& os, const qpl::cc& cc);
 	QPLDLL qpl::cc get_random_console_color();
 	QPLDLL qpl::foreground get_random_foreground();
 	QPLDLL qpl::background get_random_background();

@@ -51,6 +51,8 @@ namespace qpl {
 
             QPLDLL bool operator==(const path& other) const;
             QPLDLL bool file_content_equals(const path& other) const;
+            QPLDLL bool file_equals(const path& other) const;
+            QPLDLL bool file_equals_no_read(const path& other) const;
 
             QPLDLL static qpl::filesys::path current_path();
             QPLDLL void set_current_path();
@@ -60,18 +62,20 @@ namespace qpl {
             QPLDLL std::string string() const;
             QPLDLL operator std::string() const;
             QPLDLL bool empty() const;
+            QPLDLL void clear();
 
             QPLDLL void create() const;
             QPLDLL qpl::filesys::path make_file(std::string file_name) const;
             QPLDLL std::string read() const;
-            QPLDLL void write(const std::string& data);
+            QPLDLL void write(const std::string& data) const;
 
             QPLDLL std::filesystem::file_time_type last_write_time() const;
             QPLDLL qpl::u64 file_size() const;
             QPLDLL qpl::u64 file_size_recursive() const;
+            QPLDLL bool file_content_equals(const path& other);
+            QPLDLL bool has_root(const path& other) const;
 
             QPLDLL bool exists() const;
-            QPLDLL bool exists_system() const;
             QPLDLL bool is_file() const;
             QPLDLL bool is_directory() const;
 
@@ -152,10 +156,14 @@ namespace qpl {
             QPLDLL qpl::filesys::path get_last_branch() const;
             QPLDLL std::vector<std::string> get_branch_names() const;
 
+            QPLDLL qpl::filesys::path with_branch(qpl::size index, std::string branch_name) const;
             QPLDLL void set_branch(qpl::size index, std::string branch_name);
             QPLDLL qpl::filesys::path subpath(qpl::size off, qpl::size size = qpl::size_max) const;
-            QPLDLL void ensure_branches_exist();
+            QPLDLL void ensure_branches_exist() const;
             QPLDLL void ensure_directory_backslash();
+            QPLDLL void ensure_backslash();
+            QPLDLL qpl::filesys::path ensured_directory_backslash() const;
+            QPLDLL qpl::filesys::path ensured_backslash() const;
 
             QPLDLL bool is_root() const;
             QPLDLL path& go_root();
@@ -170,9 +178,13 @@ namespace qpl {
             QPLDLL path& cd(const std::string& directory_name);
             QPLDLL void append(const std::string& string);
             QPLDLL void append(char c);
+            QPLDLL path appended(const std::string& string) const;
+            QPLDLL path appended(char c) const;
 
             QPLDLL qpl::filesys::paths list_current_directory() const;
+            QPLDLL qpl::filesys::paths list_current_directory_include_self() const;
             QPLDLL qpl::filesys::paths list_current_directory_tree() const;
+            QPLDLL qpl::filesys::paths list_current_directory_tree_include_self() const;
             QPLDLL void print_current_directory() const;
             QPLDLL void print_tree() const;
 
@@ -284,15 +296,14 @@ namespace qpl {
             QPLDLL qpl::filesys::paths search_recursively_directories() const;
             QPLDLL qpl::filesys::paths search_recursively_files() const;
 
+            QPLDLL void update() const;
         private:
             QPLDLL void construct();
-            QPLDLL void check_update() const;
 
             std::string m_string;
             mutable bool m_is_file;
             mutable bool m_is_directory;
             mutable bool m_exists;
-            mutable bool m_update;
         };
 
         class paths {
@@ -551,6 +562,7 @@ namespace qpl {
         QPLDLL void cd(qpl::filesys::path& path, const qpl::filesys::path& target);
 
         QPLDLL void create(const qpl::filesys::path& path);
+        QPLDLL void create_file(const qpl::filesys::path& path, const std::string& file_content);
         QPLDLL bool last_write_time_equal(const qpl::filesys::path& path1, const qpl::filesys::path& path2);
 
 
@@ -637,6 +649,7 @@ namespace qpl {
 
 
         QPLDLL void write_data_file(const std::string& data, const std::string& path);
+        QPLDLL void write_text_file(const std::string& data, const std::string& path);
         QPLDLL qpl::filesys::path get_current_location();
 
         template<typename C>
@@ -682,27 +695,192 @@ namespace qpl {
     QPLDLL std::string read_file(const std::string& path);
     QPLDLL void write_to_file(const std::string& text, const std::string& path);
     QPLDLL void write_data_file(const std::string& data, const std::string& path);
+    QPLDLL void write_text_file(const std::string& data, const std::string& path);
 
 
     struct file_encrypter {
         qpl::filesys::paths paths;
         qpl::filesys::path common_branch;
         std::unordered_map<std::string, qpl::filesys::paths> part_paths;
-        std::string keyword_string_part = "AES_PART";
+        std::string keyword_string_part = "CIPHER_PART";
         std::string keyword_string_enrypted = "ENCRYPTED";
         std::string keyword_string_derypted = "DECRYPTED";
 
         void clear();
         void add(std::string path);
-        std::string encrypted_string(const std::string& key, qpl::aes::mode mode);
+
+        template<typename F>
+        std::string encrypted_string(const std::string& key, F&& encryption_function) {
+            if (this->paths.empty()) {
+                return "";
+            }
+            auto common_size = this->common_branch.branch_size() - 1;
+
+            qpl::save_state save_state;
+            save_state.save(this->common_branch.string());
+            save_state.save(this->paths.size());
+
+            for (auto& i : this->paths) {
+                save_state.save(i.string());
+                save_state.save(i.is_file());
+            }
+
+            for (auto& i : this->paths) {
+                if (i.is_file()) {
+                    save_state.save(i.read());
+                }
+            }
+
+            this->clear();
+            auto str = save_state.get_finalized_string();
+            str = encryption_function(str, key);
+            return str;
+        }
+        template<typename F>
+        qpl::filesys::paths encrypt(const std::string& key, std::string output_name, F&& encryption_function, qpl::filesys::path destination_path, qpl::size split_size = qpl::size_max) {
+            if (!destination_path.empty() && destination_path.string().back() != '/') {
+                destination_path.append("/");
+            }
+
+            auto str = this->encrypted_string(key, encryption_function);
+
+            qpl::filesys::path encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted);
+
+            qpl::size ctr = 0u;
+            while (encrypted_path.exists()) {
+                encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted, ctr);
+                ++ctr;
+            }
+            auto splits = qpl::split_string_every(str, split_size);
+            if (splits.size() > 1) {
+
+                auto log = std::log10(splits.size() - 1) + 1;
+                for (qpl::size i = 0u; i < splits.size(); ++i) {
+                    auto part_string = qpl::to_string(".", this->keyword_string_part, qpl::prepended_to_string_to_fit(qpl::to_string(i), '0', qpl::size_cast(log)));
+
+                    auto path = encrypted_path;
+                    path.append(part_string);
+
+                    while (path.exists()) {
+                        encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted, ctr);
+                        path = encrypted_path;
+                        path.append(part_string);
+                        ++ctr;
+                    }
+
+                    path.write(splits[i]);
+                }
+            }
+            else {
+                encrypted_path.write(str);
+            }
+
+            return this->paths;
+        }
         qpl::filesys::paths encrypt(const std::string& key, std::string output_name, qpl::aes::mode mode, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max);
+
+        template<typename F>
+        qpl::filesys::paths decrypt(const std::string& key, F&& decryption_function, qpl::filesys::path destination_path = "") const {
+            if (!destination_path.empty() && destination_path.string().back() != '/') {
+                destination_path.append("/");
+            }
+            qpl::filesys::paths tree;
+            for (auto& path : this->paths) {
+                auto string = path.read();
+                this->internal_decrypt(string, key, decryption_function, destination_path, tree);
+            }
+            for (auto& part : this->part_paths) {
+                std::string string;
+
+                const auto& paths = part.second;
+                std::vector<std::pair<qpl::filesys::path, qpl::size>> sorted_parts(paths.size());
+                for (qpl::size i = 0u; i < sorted_parts.size(); ++i) {
+                    auto n = qpl::size_cast(paths[i].get_file_extension().substr(this->keyword_string_part.length()));
+                    sorted_parts[i] = std::make_pair(paths[i], n);
+                }
+                qpl::sort(sorted_parts, [](const auto& a, const auto& b) {
+                    return a.second < b.second;
+                    });
+
+                auto p = sorted_parts.size() == 1u ? "part" : "parts";
+                for (auto& file : sorted_parts) {
+                    string += file.first.read();
+                }
+                this->internal_decrypt(string, key, decryption_function, destination_path, tree);
+            }
+
+            return tree;
+        }
         qpl::filesys::paths decrypt(const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path = "") const;
 
     private:
         qpl::size additions = 0u;
         bool adding_parts = false;
 
-        void internal_decrypt(const std::string& string, const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path, qpl::filesys::paths& tree) const;
+        template<typename F>
+        void internal_decrypt(const std::string & string, const std::string & key, F&& decryption_function, qpl::filesys::path destination_path, qpl::filesys::paths & tree) const {
+            auto str = decryption_function(string, key);
+
+            qpl::save_state load_state;
+            std::string s;
+            load_state.set_string(str);
+            load_state.load(s);
+            qpl::filesys::path common = s;
+
+            qpl::size size;
+            load_state.load(size);
+            qpl::filesys::paths loaded_paths;
+            loaded_paths.resize(size);
+
+            std::unordered_set<std::string> is_file_hash;
+            for (auto& i : loaded_paths) {
+                std::string path_str;
+                load_state.load(path_str);
+                bool is_file;
+                load_state.load(is_file);
+                if (is_file) {
+                    is_file_hash.insert(path_str);
+                }
+                i = path_str;
+            }
+
+            std::string branch_name;
+            auto split = qpl::split_string(common.get_full_name(), '.');
+
+            branch_name = common.get_full_name();
+            if (split.size() && split.back() == this->keyword_string_enrypted) {
+                split.pop_back();
+                branch_name = qpl::to_string_format("a.b", split);
+            }
+            branch_name += qpl::to_string('.', this->keyword_string_derypted);
+            auto original_branch_name = branch_name;
+
+            qpl::filesys::path decrypted_path = qpl::to_string(destination_path, branch_name, "/");
+
+            qpl::size ctr = 0u;
+            while (decrypted_path.exists()) {
+                branch_name = qpl::to_string(original_branch_name, ctr);
+                decrypted_path = qpl::to_string(destination_path, branch_name, "/");
+                ++ctr;
+            }
+
+            ctr = 0u;
+            for (auto& i : loaded_paths) {
+                decrypted_path = i;
+                decrypted_path.set_branch(common.branch_size() - 1, branch_name);
+                decrypted_path = qpl::to_string(destination_path, branch_name, "/", decrypted_path.subpath(common.branch_size() - 1));
+
+                decrypted_path.ensure_branches_exist();
+
+                bool is_file = is_file_hash.find(i) != is_file_hash.cend();
+                if (is_file) {
+                    std::string data_str;
+                    load_state.load(data_str);
+                    decrypted_path.write(data_str);
+                }
+                tree.push_back(decrypted_path);
+            }
+        }
     };
 
 }

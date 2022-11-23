@@ -2,10 +2,10 @@
 #define QPL_STRING_HPP
 #pragma once
 
+#include <qpl/defines.hpp>
 #include <qpl/algorithm.hpp>
 #include <qpl/qpldeclspec.hpp>
 #include <qpl/vardef.hpp>
-#include <qpl/winsys.hpp>
 #include <qpl/type_traits.hpp>
 #include <qpl/codec.hpp>
 #include <string_view>
@@ -21,12 +21,14 @@
 #include <bitset>
 #include <regex>
 
+#ifdef QPL_WINDOWS
+#include <qpl/winsys.hpp>
 
-#ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #include <Windows.h>
+
 #endif
 
 namespace qpl {
@@ -140,7 +142,7 @@ namespace qpl {
 
 		bool first = true;
 		auto add_to_stream = [&]<typename T>(T value) {
-			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
+			if constexpr (qpl::is_container<T>() && !qpl::is_long_string_type<T>()) {
 				stream << open;
 				bool first = true;
 				for (auto& i : value) {
@@ -193,9 +195,8 @@ namespace qpl {
 	std::string to_string(Args&&... args) {
 	
 		std::ostringstream stream;
-		
 		auto add_to_stream = [&]<typename T>(T value) {
-			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
+			if constexpr (qpl::is_container<T>() && !qpl::is_long_string_type<T>()) {
 				stream << '{';
 				bool first = true;
 				for (auto& i : value) {
@@ -207,7 +208,7 @@ namespace qpl {
 				}
 				stream << '}';
 			}
-			else if constexpr (qpl::is_tuple_c<T>) {
+			else if constexpr (qpl::is_tuple<T>()) {
 				stream << '{';
 				if constexpr (qpl::tuple_size<T>() > 1) {
 					auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
@@ -220,7 +221,7 @@ namespace qpl {
 			else if constexpr (qpl::is_pair<T>()) {
 				stream << '{' << qpl::to_string(value.first) << ", " << qpl::to_string(value.second) << '}';
 			}
-			else if constexpr (qpl::is_wstring_type_c<T>) {
+			else if constexpr (qpl::is_wstring_type<T>()) {
 				//stream << qpl::wstring_to_string(value); //todo
 			}
 			else {
@@ -230,6 +231,43 @@ namespace qpl {
 	
 		(add_to_stream(args), ...);
 	
+		return stream.str();
+	}
+
+	template<typename T, typename F> requires (qpl::is_container<T>() && !qpl::is_long_string_type<T>())
+	std::string to_string_specified(const T& value, F&& callable) {
+		std::ostringstream stream;
+		if constexpr (qpl::is_container<T>() && !qpl::is_long_string_type<T>()) {
+			stream << '{';
+			bool first = true;
+			for (auto& i : value) {
+				if (!first) {
+					stream << ", ";
+				}
+				stream << qpl::to_string(callable(i));
+				first = false;
+			}
+			stream << '}';
+		}
+		else if constexpr (qpl::is_tuple<T>()) {
+			stream << '{';
+			if constexpr (qpl::tuple_size<T>() > 1) {
+				auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+					((stream << qpl::to_string(std::get<Ints>(callable(value))) << ", "), ...);
+				};
+				unpack(std::make_index_sequence<qpl::tuple_size<T>() - 1>());
+			}
+			stream << qpl::to_string(qpl::tuple_value_back(callable(value))) << '}';
+		}
+		else if constexpr (qpl::is_pair<T>()) {
+			stream << '{' << qpl::to_string(callable(value.first)) << ", " << qpl::to_string(callable(value.second)) << '}';
+		}
+		else if constexpr (qpl::is_wstring_type<T>()) {
+			//stream << qpl::wstring_to_string(args); //todo
+		}
+		else {
+			stream << callable(value);
+		}
 		return stream.str();
 	}
 
@@ -634,6 +672,9 @@ namespace qpl {
 		qpl::u32 value;
 	};
 	struct ccolor : qpl::print_effect {
+		ccolor() : value(qpl::cc::def()) {
+
+		}
 		ccolor(qpl::cc value) : value(value) {
 
 		}
@@ -669,6 +710,9 @@ namespace qpl {
 		qpl::cc value;
 	};
 	struct ccolorln : qpl::print_effect {
+		ccolorln() : value(qpl::cc::def()) {
+
+		}
 		ccolorln(qpl::cc value) : value(value) {
 
 		}
@@ -704,6 +748,9 @@ namespace qpl {
 		qpl::cc value;
 	};
 	struct ccolor_permament : qpl::print_effect {
+		ccolor_permament() : value(qpl::cc::def()) {
+
+		}
 		ccolor_permament(qpl::cc value) : value(value) {
 
 		}
@@ -741,16 +788,22 @@ namespace qpl {
 
 	QPLDLL extern t_cclearln cclearln;
 	QPLDLL extern t_cclear cclear;
+
+	struct console_effect_state {
+		qpl::cc current_console_color = qpl::cc::def();
+		qpl::cc println_color = qpl::cc::def();
+		qpl::cc println_default_color = qpl::cc::def();
+		qpl::u32 next_print_space = 0u;
+		qpl::u32 println_space = 0u;
+		qpl::u32 println_default_space = 0u;
+		bool next_print_color = false;
+		bool next_println_space = false;
+		bool next_println_color = false;
+
+		QPLDLL bool is_default() const;
+	};
 	namespace detail {
-		QPLDLL extern qpl::cc current_console_color;
-		QPLDLL extern qpl::u32 next_print_space;
-		QPLDLL extern bool next_println_space;
-		QPLDLL extern qpl::u32 println_space;
-		QPLDLL extern qpl::u32 println_default_space;
-		QPLDLL extern bool next_print_color;
-		QPLDLL extern bool next_println_color;
-		QPLDLL extern qpl::cc println_color;
-		QPLDLL extern qpl::cc println_default_color;
+		QPLDLL extern qpl::console_effect_state console_effect_state;
 	}
 
 	template<typename C> requires qpl::is_container_c<C>
@@ -793,13 +846,72 @@ namespace qpl {
 		return str.str();
 	}
 
+#ifndef QPL_WINDOWS
+	template<typename T>
+	void set_console_color(T) {};
+#endif
+
 	template<typename T> requires (qpl::is_printable<T>())
 	inline void single_print(T&& value) {
-		if constexpr (qpl::is_cout_printable<T>()) {
-			qpl::ios_print(value);
+		if constexpr (qpl::is_derived<std::decay_t<T>, qpl::print_effect>()) {
+			if constexpr (qpl::is_same<std::decay_t<T>, cspace>()) {
+				qpl::detail::console_effect_state.next_print_space = value.value;
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, cspaceln>()) {
+				qpl::detail::console_effect_state.println_space = value.value;
+				qpl::detail::console_effect_state.next_println_space = true;
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, cspace_permament>()) {
+				qpl::detail::console_effect_state.println_default_space = value.value;
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, ccolor>()) {
+				qpl::detail::console_effect_state.next_print_color = true;
+				qpl::set_console_color(value.value);
+				qpl::detail::console_effect_state.current_console_color = value.value;
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, ccolorln>()) {
+				qpl::detail::console_effect_state.println_color = value.value;
+				qpl::detail::console_effect_state.next_println_color = true;
+				qpl::set_console_color(value.value);
+				qpl::detail::console_effect_state.current_console_color = value.value;
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, ccolor_permament>()) {
+				qpl::detail::console_effect_state.println_default_color = value.value;
+				qpl::detail::console_effect_state.println_color = value.value;
+				qpl::set_console_color(value.value);
+				qpl::detail::console_effect_state.current_console_color = value.value;
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclearln>()) {
+				qpl::ios_print(qpl::to_string("\r", qpl::to_string_repeat(' ', 40)));
+			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclear>()) {
+				qpl::clear_console();
+			}
+			return;
 		}
-		else if constexpr (qpl::is_wcout_printable<T>()) {
-			qpl::ios_print(value);
+		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::color>()) {
+			qpl::detail::console_effect_state.next_print_color = true;
+			qpl::detail::console_effect_state.current_console_color.foreground = static_cast<qpl::foreground>(value);
+			qpl::set_console_color(value);
+			return;
+		}
+		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::foreground>()) {
+			qpl::detail::console_effect_state.next_print_color = true;
+			qpl::detail::console_effect_state.current_console_color.foreground = value;
+			qpl::set_console_color(qpl::detail::console_effect_state.current_console_color);
+			return;
+		}
+		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::background>()) {
+			qpl::detail::console_effect_state.next_print_color = true;
+			qpl::detail::console_effect_state.current_console_color.background = value;
+			qpl::set_console_color(qpl::detail::console_effect_state.current_console_color);
+			return;
+		}
+		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::cc>()) {
+			qpl::detail::console_effect_state.next_print_color = true;
+			qpl::set_console_color(value);
+			qpl::detail::console_effect_state.current_console_color = value;
+			return;
 		}
 		else if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
 			bool first = true;
@@ -819,67 +931,12 @@ namespace qpl {
 		else if constexpr (qpl::is_pair<T>()) {
 			qpl::ios_print(qpl::to_string(value));
 		}
-		else if constexpr (qpl::is_derived<std::decay_t<T>, qpl::print_effect>()) {
-			if constexpr (qpl::is_same<std::decay_t<T>, cspace>()) {
-				qpl::detail::next_print_space = value.value;
+		else if constexpr (qpl::is_wcout_printable<T>() || qpl::is_cout_printable<T>()) {
+			if (qpl::detail::console_effect_state.is_default()) {
+				qpl::ios_print(value);
+				return;
 			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, cspaceln>()) {
-				qpl::detail::println_space = value.value;
-				qpl::detail::next_println_space = true;
-			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, cspace_permament>()) {
-				qpl::detail::println_default_space = value.value;
-			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, ccolor>()) {
-				qpl::detail::next_print_color = true;
-				qpl::set_console_color(value.value);
-				qpl::detail::current_console_color = value.value;
-			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, ccolorln>()) {
-				qpl::detail::println_color = value.value;
-				qpl::detail::next_println_color = true;
-				qpl::set_console_color(value.value);
-				qpl::detail::current_console_color = value.value;
-			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, ccolor_permament>()) {
-				qpl::detail::println_default_color = value.value;
-				qpl::detail::println_color = value.value;
-				qpl::set_console_color(value.value);
-				qpl::detail::current_console_color = value.value;
-			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclearln>()) {
-				qpl::ios_print(qpl::to_string("\r", qpl::to_string_repeat(' ', 40)));
-			}
-			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclear>()) {
-				qpl::clear_console();
-			}
-			return;
-		}
-		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::color>()) {
-			qpl::detail::next_print_color = true;
-			qpl::set_console_color(value);
-			qpl::detail::current_console_color.foreground = value;
-			return;
-		}
-		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::foreground>()) {
-			qpl::detail::next_print_color = true;
-			qpl::detail::current_console_color.foreground = value;
-			qpl::set_console_color(qpl::detail::current_console_color);
-			return;
-		}
-		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::background>()) {
-			qpl::detail::next_print_color = true;
-			qpl::detail::current_console_color.background = value;
-			qpl::set_console_color(qpl::detail::current_console_color);
-			return;
-		}
-		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::cc>()) {
-			qpl::detail::next_print_color = true;
-			qpl::set_console_color(value);
-			qpl::detail::current_console_color = value;
-			return;
-		}
-		else {
+
 			bool backslashn = false;
 			bool newln = false;
 			if constexpr (qpl::is_same<std::decay_t<T>, char>()) {
@@ -904,29 +961,29 @@ namespace qpl {
 				qpl::ios_print(value);
 			}
 			else {
-				if (qpl::detail::next_print_space) {
+				if (qpl::detail::console_effect_state.next_print_space) {
 					if constexpr (qpl::is_wstring_type<T>()) {
-						qpl::ios_print(qpl::wstr_spaced(value, qpl::detail::next_print_space));
+						qpl::ios_print(qpl::wstr_spaced(value, qpl::detail::console_effect_state.next_print_space));
 					}
 					else {
-						qpl::ios_print(qpl::str_spaced(value, qpl::detail::next_print_space));
+						qpl::ios_print(qpl::str_spaced(value, qpl::detail::console_effect_state.next_print_space));
 					}
-					qpl::detail::next_print_space = qpl::detail::println_space;
+					qpl::detail::console_effect_state.next_print_space = qpl::detail::console_effect_state.println_space;
 				}
 				else {
 					qpl::ios_print(value);
 				}
-				if (qpl::detail::next_print_color) {
-					qpl::set_console_color(qpl::detail::println_color);
+				if (qpl::detail::console_effect_state.next_print_color) {
+					qpl::set_console_color(qpl::detail::console_effect_state.println_color);
 				}
 			}
 			if (newln || backslashn) {
-				qpl::detail::println_color = qpl::detail::println_default_color;
-				qpl::detail::current_console_color = qpl::detail::println_color;
+				qpl::detail::console_effect_state.println_color = qpl::detail::console_effect_state.println_default_color;
+				qpl::detail::console_effect_state.current_console_color = qpl::detail::console_effect_state.println_color;
 			
-				qpl::detail::next_println_color = false;
-				qpl::detail::println_space = qpl::detail::println_default_space;
-				qpl::detail::next_println_space = false;
+				qpl::detail::console_effect_state.next_println_color = false;
+				qpl::detail::console_effect_state.println_space = qpl::detail::console_effect_state.println_default_space;
+				qpl::detail::console_effect_state.next_println_space = false;
 			}
 		}
 	}
@@ -991,6 +1048,27 @@ namespace qpl {
 		qpl::vprintln("value", a, length, insert, rotation);
 	}
 
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+	void print_lspaced(qpl::size space, Args&&... args) {
+		auto str = qpl::to_string(args...);
+		qpl::print(qpl::str_lspaced(str, space));
+	}
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+	void print_rspaced(qpl::size space, Args&&... args) {
+		auto str = qpl::to_string(args...);
+		qpl::print(qpl::str_rspaced(str, space));
+	}
+
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+	void println_lspaced(qpl::size space, Args&&... args) {
+		auto str = qpl::to_string(args...);
+		qpl::println(qpl::str_lspaced(str, space));
+	}
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+	void println_rspaced(qpl::size space, Args&&... args) {
+		auto str = qpl::to_string(args...);
+		qpl::println(qpl::str_rspaced(str, space));
+	}
 
 	template<typename T, typename U>
 	inline void print_diff_green_red(T&& first, U&& second) {
@@ -1086,7 +1164,7 @@ namespace qpl {
 	}
 
 	enum class base_format {
-		base64, base36u, base36l
+		base36l, base64, base36u,
 	};
 
 	namespace detail{
@@ -1342,25 +1420,27 @@ namespace qpl {
 
 
 
-	constexpr bool is_character_special(char c) {
+	constexpr bool is_character_special(qpl::char_type c) {
 		return qpl::detail::special_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
-	constexpr bool is_character_digit_alpha(char c) {
+	constexpr bool is_character_digit_alpha(qpl::char_type c) {
 		return !qpl::detail::special_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
-	constexpr bool is_character_digit(char c) {
+	constexpr bool is_character_digit(qpl::char_type c) {
 		return qpl::detail::digit_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
-	constexpr bool is_character_digit_or_dot(char c) {
+	constexpr bool is_character_digit_or_dot(qpl::char_type c) {
 		return c == '.' || qpl::detail::digit_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
-	constexpr bool is_character_alpha(char c) {
+	constexpr bool is_character_alpha(qpl::char_type c) {
 		return qpl::detail::alpha_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
-	constexpr bool is_character_whitespace(char c) {
+	constexpr bool is_character_whitespace(qpl::char_type c) {
 		return qpl::detail::white_space_table[qpl::size_cast(qpl::u8_cast(c))];
 	}
-
+	constexpr bool is_character_visible(qpl::char_type c) {
+		return (c >= 32 && c <= 126);
+	}	
 
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string base_string(T value, T base, const std::string& prefix = "", base_format base_format = base_format::base36l, bool prepend_zeroes = false, qpl::size prepend_size = qpl::size_max) {
@@ -2074,6 +2154,11 @@ namespace qpl {
 		return false;
 	}
 
+	//https://en.wikipedia.org/wiki/Levenshtein_distance
+	QPLDLL qpl::size string_levenshtein_distance(const std::string& a, const std::string& b);
+	QPLDLL bool string_starts_with_ignore_case(const std::string& a, const std::string& b);
+	QPLDLL std::vector<std::string> best_string_matches(const std::vector<std::string>& list, const std::string& search);
+	QPLDLL std::vector<qpl::size> best_string_matches_indices(const std::vector<std::string>& list, const std::string& search);
 
 
 	enum class operator_type {

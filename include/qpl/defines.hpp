@@ -19,4 +19,9 @@
 #define QPL_INTERN_STATIC_NO_GLEW
 #endif
 
+#ifdef _WIN32
+#define QPL_WINDOWS
+#endif
+
+
 #endif

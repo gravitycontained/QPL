@@ -374,12 +374,22 @@ namespace qpl {
 	}
 
 	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
-	qpl::container_subtype<C> random_element(const C& data) {
+	const qpl::container_subtype<C>& random_element(const C& data) {
 		auto size = data.size();
-		auto index = qpl::random_i(qpl::size{}, size - qpl::size{ 1 });
-		if (index < data.size()) {
-			return data[index];
+		if (size == 0u) {
+			throw qpl::exception("qpl::random_element( ", qpl::type_name<C>(), " ) : array is empty.");
 		}
+		auto index = qpl::random_i(qpl::size{}, size - qpl::size{ 1 });
+		return data[index];
+	}
+	template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>())
+	qpl::container_subtype<C>& random_element(C& data) {
+		auto size = data.size();
+		if (size == 0u) {
+			throw qpl::exception("qpl::random_element( ", qpl::type_name<C>(), " ) : array is empty.");
+		}
+		auto index = qpl::random_i(qpl::size{}, size - qpl::size{ 1 });
+		return data[index];
 	}
 
 	

@@ -878,7 +878,17 @@ namespace qpl {
 			copy %= u;
 			return copy;
 		}
-
+		constexpr auto list_possibilities_range() const {
+			return qpl::impl::possibilities(this->data);
+		}
+		template<typename T, qpl::size N>
+		constexpr static auto list_possibilities_range(const qpl::vectorN<T, N>& range) {
+			return range.list_possibilities_range();
+		}
+		template<typename T, qpl::size N>
+		constexpr static auto list_possibilities_range(const qpl::vectorN<T, N>& min, const qpl::vectorN<T, N>& max) {
+			return qpl::impl::possibilities(min.data, max.data);
+		}
 
 		constexpr vectorN operator-() const {
 			vectorN copy;
@@ -896,9 +906,14 @@ namespace qpl {
 		}
 
 		constexpr auto length() const {
-			return std::sqrt(this->dot(*this));
+			if (std::is_constant_evaluated()) {
+				return qpl::f64_cast(qpl::sqrt(this->dot(*this)));
+			}
+			else {
+				return qpl::f64_cast(std::sqrt(this->dot(*this)));
+			}
 		}
-		constexpr vectorN normalized() const {
+		constexpr auto normalized() const {
 			return *this / this->length();
 		}
 

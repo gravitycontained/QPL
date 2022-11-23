@@ -95,7 +95,6 @@ namespace qpl {
 	template<qpl::u64 bits, bool BOUNDARY_CHECK = detail::array_boundary_check>
 	class bitset {
 	public:
-
 		using uint_type = qpl::conditional<
 			qpl::if_true<(bits <= 64u)>, qpl::ubit<bits>,
 			qpl::default_type, qpl::u64>;
@@ -352,6 +351,7 @@ namespace qpl {
 			}
 		}
 
+
 		constexpr bitset() {
 			this->clear();
 		}
@@ -408,14 +408,17 @@ namespace qpl {
 			return result ^= other;
 		}
 
+		constexpr static auto last_bits_mask() {
+			return (uint_type{ 1 } << (bits % qpl::bits_in_type<uint_type>())) - 1;
+		}
 		constexpr void clear() {
 			if constexpr (is_array()) {
 				for (auto& i : this->data) {
-					i = 0u;
+					i = uint_type{ 0u };
 				}
 			}
 			else {
-				this->data = 0u;
+				this->data = uint_type{ 0u };
 			}
 		}
 		constexpr void fill(bool n) {
@@ -424,12 +427,13 @@ namespace qpl {
 			}
 			else {
 				if constexpr (is_array()) {
-					for (auto& i : this->data) {
-						i = 1u;
+					for (qpl::size i = 0u; i < this->data.size() - 1; ++i) {
+						this->data[i] = qpl::type_max<uint_type>();
 					}
+					this->data.back() = last_bits_mask();
 				}
 				else {
-					this->data = qpl::type_max<qpl::ubit<bits>>();
+					this->data = last_bits_mask();
 				}
 			}
 		}
@@ -451,6 +455,22 @@ namespace qpl {
 			return !(*this == other);
 		}
 
+		constexpr auto get_masked_data() const requires (!is_array()) {
+			return this->data & last_bits_mask();
+		}
+		constexpr qpl::size significant_bit() const {
+			if constexpr (is_array()) {
+				for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+					auto index = this->data.size() - i - 1;
+					if (this->data[index]) {
+						return qpl::significant_bit(this->data[index]) + (i * qpl::bits_in_type<uint_type>());
+					}
+				}
+			}
+			else {
+				return qpl::significant_bit(this->get_masked_data());
+			}
+		}
 		constexpr bool get(qpl::size index) const {
 			if constexpr (is_array()) {
 				return qpl::get_bit(this->data[index / 64u], index % 64u);
@@ -513,15 +533,18 @@ namespace qpl {
 		}
 		constexpr bool full() const {
 			if constexpr (is_array()) {
-				for (auto& i : this->data) {
-					if (i != qpl::u64_max) {
+				for (qpl::size i = 0u; i < this->data.size() - 1; ++i) {
+					if (this->data[i] != qpl::u64_max) {
 						return false;
 					}
+				}
+				if (this->data.back() != last_bits_mask()) {
+					return false;
 				}
 				return true;
 			}
 			else {
-				return this->data == ~holding_type{ 0 };
+				return this->data == last_bits_mask();
 			}
 		}
 
@@ -597,7 +620,6 @@ namespace qpl {
 		constexpr bitset_const_iterator cend() const {
 			return bitset_const_iterator(*this, this->size());
 		}
-
 
 
 		constexpr bitset_proxy operator[](qpl::size index) {

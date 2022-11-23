@@ -34,7 +34,7 @@ namespace qpl {
 	template<typename T>
 	std::vector<T> prime_factors(T value) {
 		if (qpl::is_prime(value)) {
-			return {};
+			return { value };
 		}
 		std::vector<T> result;
 
@@ -47,6 +47,68 @@ namespace qpl {
 			}
 		}
 		return result;
+	}
+	template<typename T, qpl::size N>
+	std::array<T, N> generate_primes() {
+		if (N == 1u) {
+			return { 2u };
+		}
+		else if (N == 2u) {
+			return { 2u, 3u };
+		}
+
+		std::array<T, N> primes;
+		primes[0u] = 2u;
+		primes[1u] = 3u;
+
+		qpl::size ctr = 2u;
+		qpl::size add = 2u;
+		for (qpl::size n = 5u; ctr < N; n += add) {
+			bool is_prime = true;
+			for (qpl::size p = 0u; p < ctr; ++p) {
+				if (n % primes[p] == 0) {
+					is_prime = false;
+					break;
+				}
+			}
+			if (is_prime) {
+				primes[ctr] = n;
+				++ctr;
+			}
+			add = 6u - add;
+		}
+		return primes;
+	}
+	template<typename T>
+	std::vector<T> generate_primes(qpl::size size) {
+		if (size == 1u) {
+			return { 2u };
+		}
+		else if (size == 2u) {
+			return { 2u, 3u };
+		}
+
+		std::vector<T> primes(size);
+		primes[0u] = 2u;
+		primes[1u] = 3u;
+
+		qpl::size ctr = 2u;
+		qpl::size add = 2u;
+		for (qpl::size n = 5u; ctr < size; n += add) {
+			bool is_prime = true;
+			for (qpl::size p = 0u; p < ctr; ++p) {
+				if (n % primes[p] == 0) {
+					is_prime = false;
+					break;
+				}
+			}
+			if (is_prime) {
+				primes[ctr] = n;
+				++ctr;
+			}
+			add = 6u - add;
+		}
+		return primes;
 	}
 
 	template<typename T>
@@ -62,6 +124,10 @@ namespace qpl {
 		return result;
 	}
 
+	template<typename T> requires (qpl::is_integer<T>())
+	constexpr T triangle_number(T n) {
+		return n * (n + T{ 1 }) / T{ 2 };
+	}
 
 	struct exponential_moving_average {
 		exponential_moving_average(qpl::f64 time_period = 5.0) {

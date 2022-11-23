@@ -59,11 +59,13 @@ namespace qpl {
 		memcpy(destination.data(), data.data(), destination.size());
 	}
 	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
-		constexpr inline void string_to_container_memory(const std::string_view& data, C& destination) {
+	constexpr inline void string_to_container_memory(const std::string_view& data, C& destination) {
 		if (data.empty()) {
 			return;
 		}
-		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
+		if constexpr (qpl::has_resize<C>()) {
+			destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
+		}
 		memcpy(destination.data(), data.data(), data.size());
 	}
 	template<typename C> requires (qpl::has_data<C>() && qpl::has_size<C>())
@@ -277,7 +279,6 @@ namespace qpl {
 			this->rotation_finished = false;
 		}
 
-
 		void add(T value) {
 			if (this->rotation_finished) {
 				this->data[this->index] = std::move(value);
@@ -432,7 +433,6 @@ namespace qpl {
 			}
 		}
 
-
 		constexpr static bool is_vector() {
 			return N == qpl::size{ 0u };
 		}
@@ -446,6 +446,12 @@ namespace qpl {
 			return this->data[index];
 		}
 
+		T& get_previous(qpl::size index) {
+			return this->get(this->used_size() - index - 1);
+		}
+		const T& get_previous(qpl::size index) const {
+			return this->get(this->used_size() - index - 1);
+		}
 		T& get(qpl::size index) {
 			if (this->rotation_finished) {
 				auto idx = (index + this->index) % this->used_size();
@@ -532,6 +538,9 @@ namespace qpl {
 				return this->index;
 			}
 		}
+		bool empty() const {
+			return this->used_size() == 0u;
+		}
 
 		private:
 		qpl::conditional<qpl::if_true<N == 0>, std::vector<T>, std::array<T, N>> data;
@@ -541,6 +550,13 @@ namespace qpl {
 
 	
 	namespace detail {
+#ifdef QPL_NO_BOUNDARY_CHECK
+		constexpr bool array_boundary_check = false;
+		constexpr bool vector_boundary_check = false;
+#elif defined  QPL_BOUNDARY_CHECK
+	constexpr bool array_boundary_check = true;
+	constexpr bool vector_boundary_check = true;
+#else
 #ifdef QPL_NO_ARRAY_BOUNDARY_CHECK
 		constexpr bool array_boundary_check = false;
 #else
@@ -551,10 +567,12 @@ namespace qpl {
 #else
 		constexpr bool vector_boundary_check = true;
 #endif
+#endif
+
 	}
 
 	template<typename T, qpl::size N, bool BOUNDARY_CHECK = detail::array_boundary_check>
-	struct array {
+	struct array : std::array<T, N> {
 	private:
 		constexpr void index_check(qpl::size index, bool at) const {
 			if (index >= this->size()) {
@@ -570,155 +588,39 @@ namespace qpl {
 		}
 
 	public:
-		using array_type = std::array<T, N>;
-
-		array_type memory;
-
-		constexpr array() : memory() {
-
-		}
-
-		constexpr array(const array& other) : memory() {
-			*this = other;
-		}
-		constexpr array(const std::array<T, N>& other) : memory() {
-			*this = other;
-		}
-		constexpr array(const std::initializer_list<T>& list) : memory() {
-			*this = list;
-		}
-		template<typename First, typename... Args>
-		constexpr array(First first, Args&&... args) : memory() {
-			this->memory = qpl::tuple_to_array<T>(std::make_tuple(first, args...));
-		}
-
-		constexpr array& operator=(const array& other) {
-			this->memory = other.memory;
-			return *this;
-		}
-		constexpr array& operator=(const std::array<T, N>& other) {
-			this->memory = other;
-			return *this;
-		}
-
-		constexpr array& operator=(const std::initializer_list<T>& list) {
-			for (qpl::size i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
-				this->memory[i] = *(list.begin() + i);
-			}
-			return *this;
-		}
-
-		constexpr operator std::array<T, N>() {
-			return this->memory;
-		}
-
-		constexpr void fill(const T& value) {
-			this->memory.fill(value);
+		constexpr auto& operator=(const std::array<T, N>& other) {
+			return std::array<T, N>::operator=(other);
 		}
 
 		constexpr T& operator[](qpl::size index) {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, false);
 			}
-			return this->memory[index];
+			return std::array<T, N>::operator[](index);
 		}
 		constexpr const T& operator[](qpl::size index) const {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, false);
 			}
-			return this->memory[index];
+			return std::array<T, N>::operator[](index);
 		}
 
 		constexpr T& at(qpl::size index) {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, true);
 			}
-			return this->memory.at(index);
+			return std::array<T, N>::at(index);
 		}
 		constexpr const T& at(qpl::size index) const {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, true);
 			}
-			return this->memory.at(index);
+			return std::array<T, N>::at(index);
 		}
-
-		constexpr auto data() {
-			return this->memory.data();
-		}
-		constexpr auto data() const {
-			return this->memory.data();
-		}
-
-
-		constexpr T& front() {
-			return this->memory.front();
-		}
-		constexpr const T& front() const {
-			return this->memory.front();
-		}
-		constexpr T& back() {
-			return this->memory.back();
-		}
-		constexpr const T& back() const {
-			return this->memory.back();
-		}
-
-		constexpr qpl::size size() const {
-			return this->memory.size();
-		}
-
-		constexpr auto begin() {
-			return this->memory.begin();
-		}
-		constexpr auto begin() const {
-			return this->memory.begin();
-		}
-		constexpr auto rbegin() {
-			return this->memory.rbegin();
-		}
-		constexpr auto rbegin() const {
-			return this->memory.rbegin();
-		}
-		constexpr auto cbegin() const {
-			return this->memory.cbegin();
-		}
-		constexpr auto crbegin() const {
-			return this->memory.crbegin();
-		}		
-
-		constexpr auto end() {
-			return this->memory.end();
-		}
-		constexpr auto end() const {
-			return this->memory.end();
-		}
-		constexpr auto rend() {
-			return this->memory.rend();
-		}
-		constexpr auto rend() const {
-			return this->memory.rend();
-		}
-		constexpr auto cend() const {
-			return this->memory.cend();
-		}
-		constexpr auto crend() const {
-			return this->memory.crend();
-		}
-
-		std::string string() const {
-			return qpl::container_to_string(this->memory);
-		}
-		template<typename T, qpl::size N>
-		friend std::ostream& operator<<(std::ostream& os, const array<T, N>& array);
 	};
 
-	template<typename T, qpl::size N>
-	std::ostream& operator<<(std::ostream& os, const qpl::array<T, N>& array) {
-		return (os << array.string());
-	}
-
 	template<typename T, bool BOUNDARY_CHECK = detail::vector_boundary_check>
-	struct vector {
+	struct vector : std::vector<T> {
 
 	private:
 		constexpr void index_check(qpl::size index, bool at) const {
@@ -741,191 +643,36 @@ namespace qpl {
 			}
 		}
 	public:
-
-		using vector_type = std::vector<T>;
-		vector_type memory;
-
-		constexpr vector() {
-
+		constexpr auto& operator=(const std::vector<T>& other) {
+			return std::vector<T>::operator=(other);
 		}
-
-		constexpr vector(const vector& other) : memory() {
-			*this = other;
-		}
-		constexpr vector(const std::vector<T>& other) : memory() {
-			*this = other;
-		}
-		constexpr vector(const std::initializer_list<T>& list) : memory() {
-			*this = list;
-		}
-		template<typename First, typename... Args>
-		constexpr vector(First first, Args&&... args) : memory() {
-			auto result = qpl::type_cast<T>(first, args...);
-			for (qpl::size i = 0u; i < qpl::min(this->size(), result.size()); ++i) {
-				this->memory[i] = result[i];
-			}
-		}
-
-		constexpr vector& operator=(const vector& other) {
-			this->memory = other.memory;
-			return *this;
-		}
-		constexpr vector& operator=(const std::vector<T>& other) {
-			this->memory = other;
-			return *this;
-		}
-		constexpr vector& operator=(const std::initializer_list<T>& list) {
-			for (qpl::size i = 0u; i < qpl::min(list.size(), this->size()); ++i) {
-				this->memory[i] = *(list.begin() + i);
-			}
-			return *this;
-		}
-
-		constexpr operator std::vector<T>() {
-			return this->memory;
-		}
-
-		constexpr void pop_back() {
-			this->memory.pop_back();
-		}
-		constexpr void push_back(const T& value) {
-			this->memory.push_back(value);
-		}
-		constexpr void emplace_back(T&& value) {
-			this->memory.emplace_back(std::forward(value));
-		}
-
-		constexpr void fill(const T& value) {
-			this->memory.fill(value);
-		}
-		constexpr void reserve(qpl::size reserve) {
-			this->memory.reserve(reserve);
-		}
-		constexpr void resize(qpl::size resize) {
-			this->memory.resize(resize);
-		}
-		constexpr void clear() {
-			this->memory.clear();
-		}
-		
 
 		constexpr T& operator[](qpl::size index) {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, false);
 			}
-			return this->memory[index];
+			return std::vector<T>::operator[](index);
 		}
 		constexpr const T& operator[](qpl::size index) const {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, false);
 			}
-			return this->memory[index];
+			return std::vector<T>::operator[](index);
 		}
 
 		constexpr T& at(qpl::size index) {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, true);
 			}
-			return this->memory.at(index);
+			return std::vector<T>::at(index);
 		}
 		constexpr const T& at(qpl::size index) const {
 			if constexpr (BOUNDARY_CHECK) {
 				this->index_check(index, true);
 			}
-			return this->memory.at(index);
+			return std::vector<T>::at(index);
 		}
-
-		constexpr auto data() {
-			return this->memory.data();
-		}
-		constexpr auto data() const {
-			return this->memory.data();
-		}
-
-
-		constexpr T& front() {
-			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(true);
-			}
-			return this->memory.front();
-		}
-		constexpr const T& front() const {
-			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(true);
-			}
-			return this->memory.front();
-		}
-		constexpr T& back() {
-			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(false);
-			}
-			return this->memory.back();
-		}
-		constexpr const T& back() const {
-			if constexpr (BOUNDARY_CHECK) {
-				this->front_check(false);
-			}
-			return this->memory.back();
-		}
-
-		constexpr qpl::size size() const {
-			return this->memory.size();
-		}
-		constexpr bool empty() const {
-			return this->memory.empty();
-		}
-
-		constexpr auto begin() {
-			return this->memory.begin();
-		}
-		constexpr auto begin() const {
-			return this->memory.begin();
-		}
-		constexpr auto rbegin() {
-			return this->memory.rbegin();
-		}
-		constexpr auto rbegin() const {
-			return this->memory.rbegin();
-		}
-		constexpr auto cbegin() const {
-			return this->memory.cbegin();
-		}
-		constexpr auto crbegin() const {
-			return this->memory.crbegin();
-		}
-
-		constexpr auto end() {
-			return this->memory.end();
-		}
-		constexpr auto end() const {
-			return this->memory.end();
-		}
-		constexpr auto rend() {
-			return this->memory.rend();
-		}
-		constexpr auto rend() const {
-			return this->memory.rend();
-		}
-		constexpr auto cend()const {
-			return this->memory.cend();
-		}
-		constexpr auto crend() const {
-			return this->memory.crend();
-		}
-
-		std::string string() const {
-			return qpl::container_to_string(this->memory);
-		}
-		template<typename T>
-		friend std::ostream& operator<<(std::ostream& os, const vector<T>& array);
 	};
-
-
-	template<typename T>
-	std::ostream& operator<<(std::ostream& os, const vector<T>& array) {
-		return (os << array.string());
-	}
-
 	struct save_state;
 
 	namespace impl {

@@ -27,6 +27,24 @@ namespace qpl {
        T get(qpl::size index) const {
            return qpl::string_cast<T>(this->strings[index]);
        }
+       auto begin() {
+           return this->strings.begin();
+       }
+       auto cbegin() const {
+           return this->strings.cbegin();
+       }
+       auto begin() const {
+           return this->strings.cbegin();
+       }
+       auto end() {
+           return this->strings.end();
+       }
+       auto cend() const {
+           return this->strings.cend();
+       }
+       auto end() const {
+           return this->strings.cend();
+       }
        template <typename T = std::wstring>
        T wget(qpl::size index) const {
            return qpl::string_cast<T>(this->wstrings[index]);

@@ -63,6 +63,19 @@ namespace qpl {
 	template<typename T, typename U, typename R = qpl::superior_arithmetic_type<T, U>>
 	constexpr R pow(T a, U b) {
 		return b == U{} ? R{ 1 } : static_cast<R>(a * qpl::pow(a, b - T{ 1 }));
+	}	
+	namespace detail {
+		template<typename T> requires(qpl::is_floating_point<T>())
+		constexpr double sqrt_helper(T x, T a, T b) {
+			return a == b ? a : qpl::detail::sqrt_helper(x, T{ 0.5 } * (a + x / a), a);
+		}
+	}
+	template<typename T> requires(qpl::is_arithmetic<T>())
+	constexpr auto sqrt(T x) {
+		using f_type = qpl::conditional<qpl::if_true<qpl::is_floating_point<T>()>, T, qpl::f64>;
+		return x >= 0 && x < std::numeric_limits<double>::infinity()
+			? qpl::type_cast<T>(qpl::detail::sqrt_helper<f_type>(qpl::type_cast<f_type>(x), qpl::type_cast<f_type>(x), f_type{ 0.0 }))
+			: std::numeric_limits<double>::quiet_NaN();
 	}
 	template<typename T>
 	constexpr T square(T value) {
@@ -908,19 +921,28 @@ namespace qpl {
 	}
 
 	template<typename C, typename F> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
-	constexpr void sort(C& container, F compare) {
+	constexpr void sort_sub_containers(C& container, F compare) {
 		if constexpr (qpl::is_sorted_container<C>()) {
 			return;
 		}
 		else if constexpr (qpl::is_container<qpl::container_subtype<C>>()) {
 			if constexpr (qpl::is_long_string_type<qpl::container_subtype<C>>()) {
-				std::sort(qpl::begin(container), qpl::end(container));
+				std::sort(qpl::begin(container), qpl::end(container), compare);
 			}
 			else {
 				for (auto& i : container) {
-					qpl::sort(i, compare);
+					qpl::sort_sub_containers(i, compare);
 				}
 			}
+		}
+		else {
+			std::sort(qpl::begin(container), qpl::end(container), compare);
+		}
+	}
+	template<typename C, typename F> requires (qpl::is_container<C>() && qpl::is_sortable<C>())
+	constexpr void sort(C& container, F compare) {
+		if constexpr (qpl::is_sorted_container<C>()) {
+			return;
 		}
 		else {
 			std::sort(qpl::begin(container), qpl::end(container), compare);
@@ -1526,7 +1548,15 @@ namespace qpl {
 			}
 			for (auto& i : container) {
 				if (!(i == value)) {
-					qpl::combine(result, i);
+					if constexpr (qpl::has_emplace_back<C>()) {
+						result.emplace_back(i);
+					}
+					else if constexpr (qpl::has_push_back<C>()) {
+						result.push_back(i);
+					}
+					else {
+						qpl::combine(result, i);
+					}
 				}
 			}
 	
@@ -1559,7 +1589,7 @@ namespace qpl {
 			std::swap(result, container);
 		}
 	}
-	
+
 	template<typename C, typename T> requires (qpl::is_container<C>() && !qpl::is_container<T>())
 	constexpr C removed_multiples(const C& container, T&& value) {
 		auto result = container;
@@ -1610,93 +1640,6 @@ namespace qpl {
 			}
 			return result;
 		}
-	}
-
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr void remove_sorted(C& target, const C2& list) {
-		auto sorted = qpl::sorted(list);
-		auto l = qpl::make_span(sorted);
-
-		C result;
-		qpl::size count = 0u;
-		for (auto& i : target) {
-			if (qpl::find_sorted(l, i)) {
-				qpl::span_pop_front(l, 1);
-			}
-			else {
-				qpl::combine(result, i);
-			}
-		}
-		std::swap(target, result);
-	}
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr void remove(C& target, const C2& list) {
-		if constexpr (qpl::is_sortable<C2>() && qpl::is_sortable<C>()) {
-			auto sorted = qpl::sorted(list);
-			auto l = qpl::make_span(sorted);
-			auto t = qpl::sorted(target);
-
-			C result;
-			qpl::size count = 0u;
-			for (auto& i : t) {
-				if (qpl::find_sorted(l, i)) {
-					qpl::span_pop_front(l, 1);
-				}
-				else {
-					qpl::combine(result, i);
-				}
-			}
-			std::swap(target, result);
-		}
-		else {
-			C result = target;
-			for (auto& i : list) {
-				qpl::remove(result, i);
-			}
-			std::swap(target, result);
-		}
-	}
-
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr void remove_sorted_multiples(C& target, const C2& list) {
-		C result;
-		qpl::size count = 0u;
-		for (auto& i : target) {
-			if (!qpl::find_sorted(list, i)) {
-				qpl::combine(result, i);
-			}
-		}
-		std::swap(target, result);
-	}
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr void remove_multiples(C& target, const C2& list) {
-		C result;
-		qpl::size count = 0u;
-		for (auto& i : target) {
-			if (!qpl::find(list, i)) {
-				qpl::combine(result, i);
-			}
-		}
-		std::swap(target, result);
-	}
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr C removed(const C& a, const C2& b) {
-		auto result = a;
-		qpl::remove(result, b);
-		return result;
-	}
-
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr C removed_multiples(const C& a, const C2& b) {
-		auto result = a;
-		qpl::remove_multiples(result, b);
-		return result;
-	}
-	template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
-	constexpr C removed_sorted_multiples(const C& a, const C2& b) {
-		auto result = a;
-		qpl::remove_sorted_multiples(result, b);
-		return result;
 	}
 
 	template<typename R, typename C> requires (qpl::is_container<C>())
@@ -1831,8 +1774,6 @@ namespace qpl {
 	void reserve(C& container, Sizes... sizes) {
 		qpl::impl::reserve(container, std::make_tuple(sizes...));
 	}
-
-
 
 	namespace impl {
 		template<typename T, qpl::size N>
@@ -2167,7 +2108,7 @@ namespace qpl {
 
 	template<typename T>
 	constexpr T rotate_left(T val, qpl::size rotation) {
-		return (rotation >= qpl::bits_in_type<T>() ? rotate_left(val, rotation % qpl::bits_in_type<T>()) : ((val << rotation) | (val >> (qpl::bits_in_type<T>() - rotation))));
+		return (rotation >= qpl::bits_in_type<T>() ? rotate_left(val, rotation % qpl::bits_in_type<T>()) : ((val >> (qpl::bits_in_type<T>() - rotation)) | (val << rotation)));
 	}
 	template<typename T>
 	constexpr T rotate_right(T val, qpl::size rotation) {

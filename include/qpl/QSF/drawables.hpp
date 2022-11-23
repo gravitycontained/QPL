@@ -2871,6 +2871,7 @@ namespace qsf {
 		QPLDLL void update(const event_info& event_info);
 		QPLDLL void copy_visible_range(const vgraph& other);
 		QPLDLL void set_visible_range(qpl::size begin, qpl::size end);
+		QPLDLL void set_visible_range_max();
 
 		QPLDLL void set_font(std::string name);
 		QPLDLL std::string get_font() const;
@@ -3195,6 +3196,107 @@ namespace qsf {
 			*this = other;
 		}
 
+		template<typename U>
+		slider(const slider<U>& other) {
+			*this = other;
+		}
+
+		slider<T>& operator=(const slider<T>& other) {
+			this->background = other.background;
+			this->knob = other.knob;
+			this->position = other.position;
+			this->knob_visible = other.knob_visible;
+			this->background_visible = other.background_visible;
+			this->knob_hover_effect = other.knob_hover_effect;
+			this->background_hover_effect = other.background_hover_effect;
+			this->knob_hover_color = other.knob_hover_color;
+			this->knob_hover_outline_thickness = other.knob_hover_outline_thickness;
+			this->knob_hover_outline_color = other.knob_hover_outline_color;
+			this->hitbox_increase = other.hitbox_increase;
+			this->background_hover_color = other.background_hover_color;
+			this->background_hover_outline_thickness = other.background_hover_outline_thickness;
+			this->background_hover_outline_color = other.background_hover_outline_color;
+			this->start = other.start;
+			this->end = other.end;
+			this->dummy = other.dummy;
+			this->value_before = other.value_before;
+			this->background_color = other.background_color;
+			this->background_outline_thickness = other.background_outline_thickness;
+			this->background_outline_color = other.background_outline_color;
+			this->knob_color = other.knob_color;
+			this->knob_outline_thickness = other.knob_outline_thickness;
+			this->knob_outline_color = other.knob_outline_color;
+			this->smooth_input_key = other.smooth_input_key;
+			this->smooth_input_multiply = other.smooth_input_multiply;
+			this->click_knob_pos_x = other.click_knob_pos_x;
+			this->click_pos_x = other.click_pos_x;
+			this->range_pixel_width = other.range_pixel_width;
+			this->hovering_over_background = other.hovering_over_background;
+			this->click_on_background_to_skip = other.click_on_background_to_skip;
+			this->input_smooth_values = other.input_smooth_values;
+			this->value_changed = other.value_changed;
+			this->value_modified = other.value_modified;
+			this->range_set = other.range_set;
+			this->allow_change = other.allow_change;
+			this->allow_drag = other.allow_drag;
+			this->dragging = other.dragging;
+			this->released = other.released;
+			this->hovering_over_knob = other.hovering_over_knob;
+			this->ptr = &this->dummy;
+			this->string_function = other.string_function;
+			this->text = other.text;
+
+			return *this;
+		}
+		template<typename U>
+		slider<T>& operator=(const slider<U>& other) {
+			this->background = other.background;
+			this->knob = other.knob;
+			this->position = other.position;
+			this->knob_visible = other.knob_visible;
+			this->background_visible = other.background_visible;
+			this->knob_hover_effect = other.knob_hover_effect;
+			this->background_hover_effect = other.background_hover_effect;
+			this->knob_hover_color = other.knob_hover_color;
+			this->knob_hover_outline_thickness = other.knob_hover_outline_thickness;
+			this->knob_hover_outline_color = other.knob_hover_outline_color;
+			this->hitbox_increase = other.hitbox_increase;
+			this->background_hover_color = other.background_hover_color;
+			this->background_hover_outline_thickness = other.background_hover_outline_thickness;
+			this->background_hover_outline_color = other.background_hover_outline_color;
+			this->start = static_cast<T>(other.start);
+			this->end = static_cast<T>(other.end);
+			this->dummy = static_cast<T>(other.dummy);
+			this->value_before = static_cast<T>(other.value_before);
+			this->background_color = other.background_color;
+			this->background_outline_thickness = other.background_outline_thickness;
+			this->background_outline_color = other.background_outline_color;
+			this->knob_color = other.knob_color;
+			this->knob_outline_thickness = other.knob_outline_thickness;
+			this->knob_outline_color = other.knob_outline_color;
+			this->smooth_input_key = other.smooth_input_key;
+			this->smooth_input_multiply = other.smooth_input_multiply;
+			this->click_knob_pos_x = other.click_knob_pos_x;
+			this->click_pos_x = other.click_pos_x;
+			this->range_pixel_width = other.range_pixel_width;
+			this->hovering_over_background = other.hovering_over_background;
+			this->click_on_background_to_skip = other.click_on_background_to_skip;
+			this->input_smooth_values = other.input_smooth_values;
+			this->value_changed = other.value_changed;
+			this->value_modified = other.value_modified;
+			this->range_set = other.range_set;
+			this->allow_change = other.allow_change;
+			this->allow_drag = other.allow_drag;
+			this->dragging = other.dragging;
+			this->released = other.released;
+			this->hovering_over_knob = other.hovering_over_knob;
+			this->ptr = &this->dummy;
+			this->string_function = other.string_function;
+			this->text = other.text;
+
+			return *this;
+		}
+
 		qpl::f64 get_progress() const {
 			if (this->end == this->start) return 0.0;
 			return qpl::clamp_0_1(qpl::f64_cast(*this->ptr - this->start) / qpl::f64_cast(this->end - this->start));
@@ -3220,16 +3322,29 @@ namespace qsf {
 		std::pair<T, T> get_range() const {
 			return std::make_pair(this->start, this->end);
 		}
+
+		void update_text_string() {
+			if (!this->text.get_font().empty()) {
+				if (this->string_function) {
+					this->text.set_string(qpl::to_string(this->text_string, " ", this->string_function(this->get_value())));
+				}
+				else {
+					this->text.set_string(qpl::to_string(this->text_string, " ", this->get_value()));
+				}
+			}
+		}
 		void set_range(T start, T end) {
 			this->start = start;
 			this->end = end;
 			this->range_set = true;
+			this->update_text_string();
 		}
 		void set_range(T start, T end, T value) {
 			this->start = start;
 			this->end = end;
 			this->dummy = qpl::clamp(this->start, value, this->end);
 			this->range_set = true;
+			this->update_text_string();
 		}
 		template<typename P> requires (std::is_pointer_v<P>)
 		void set_range(T start, T end, P ptr) {
@@ -3237,6 +3352,7 @@ namespace qsf {
 			this->end = end;
 			this->range_set = true;
 			this->set_pointer(ptr);
+			this->update_text_string();
 		}
 		qpl::vector2f get_position() const {
 			return this->position;
@@ -3248,6 +3364,11 @@ namespace qsf {
 			auto y_extra = this->background.get_dimension().y - this->knob.get_dimension().y;
 			this->knob.set_position(position + qpl::vector2f(0, y_extra / 2));
 			this->set_knob_position();
+
+			if (!this->text.get_font().empty()) {
+				this->text.set_position(this->background.get_hitbox().middle_left());
+				this->text.centerize_y();
+			}
 		}
 		void set_center(qpl::vector2f position) {
 			this->set_position(position - this->get_dimension() / 2);
@@ -3320,6 +3441,23 @@ namespace qsf {
 		}
 		bool was_released() const {
 			return this->released;
+		}
+
+		void set_text_font(std::string font) {
+			this->text.set_font(font);
+		}
+		void set_text_string(std::string string) {
+			this->text_string = string;
+			this->text.set_string(this->text_string);
+		}
+		void set_text_character_size(qpl::u32 character_size) {
+			this->text.set_character_size(character_size);
+		}
+		void set_text_color(qpl::rgb color) {
+			this->text.set_color(color);
+		}
+		void set_text_string_function(const std::function<std::string(T)>& function) {
+			this->string_function = function;
 		}
 
 		void set_knob_color(qpl::rgba color) {
@@ -3423,7 +3561,6 @@ namespace qsf {
 			return this->background_hover_outline_color;
 		}
 
-		
 		void set_hitbox_increase(qpl::f32 increase) {
 			this->hitbox_increase = increase;
 		}
@@ -3482,52 +3619,6 @@ namespace qsf {
 		void set_hover_increase(qpl::f32 value) {
 			this->knob_hover_outline_thickness = value;
 			this->background_hover_outline_thickness = value;
-		}
-
-		slider<T>& operator=(const slider<T>& other) {
-			this->background = other.background;
-			this->knob = other.knob;
-			this->position = other.position;
-			this->knob_visible = other.knob_visible;
-			this->background_visible = other.background_visible;
-			this->knob_hover_effect = other.knob_hover_effect;
-			this->background_hover_effect = other.background_hover_effect;
-			this->knob_hover_color = other.knob_hover_color;
-			this->knob_hover_outline_thickness = other.knob_hover_outline_thickness;
-			this->knob_hover_outline_color = other.knob_hover_outline_color;
-			this->hitbox_increase = other.hitbox_increase;
-			this->background_hover_color = other.background_hover_color;
-			this->background_hover_outline_thickness = other.background_hover_outline_thickness;
-			this->background_hover_outline_color = other.background_hover_outline_color;
-			this->start = other.start;
-			this->end = other.end;
-			this->dummy = other.dummy;
-			this->value_before = other.value_before;
-			this->background_color = other.background_color;
-			this->background_outline_thickness = other.background_outline_thickness;
-			this->background_outline_color = other.background_outline_color;
-			this->knob_color = other.knob_color;
-			this->knob_outline_thickness = other.knob_outline_thickness;
-			this->knob_outline_color = other.knob_outline_color;
-			this->smooth_input_key = other.smooth_input_key;
-			this->smooth_input_multiply = other.smooth_input_multiply;
-			this->click_knob_pos_x = other.click_knob_pos_x;
-			this->click_pos_x = other.click_pos_x;
-			this->range_pixel_width = other.range_pixel_width;
-			this->hovering_over_background = other.hovering_over_background;
-			this->click_on_background_to_skip = other.click_on_background_to_skip;
-			this->input_smooth_values = other.input_smooth_values;
-			this->value_changed = other.value_changed;
-			this->value_modified = other.value_modified;
-			this->range_set = other.range_set;
-			this->allow_change = other.allow_change;
-			this->allow_drag = other.allow_drag;
-			this->dragging = other.dragging;
-			this->released = other.released;
-			this->hovering_over_knob = other.hovering_over_knob;
-			this->ptr = &this->dummy;
-
-			return *this;
 		}
 
 		void update(const qsf::event_info& event) {
@@ -3628,11 +3719,15 @@ namespace qsf {
 				this->released = true;
 				this->dragging = false;
 			}
+			if (this->value_changed) {
+				this->update_text_string();
+			}
 		}
 
 		void draw(qsf::draw_object& object) const {
 			if (this->background_visible) object.draw(this->background);
 			if (this->knob_visible) object.draw(this->knob);
+			if (!this->text.get_font().empty()) object.draw(this->text);
 		}
 
 		qsf::rectangle background;
@@ -3645,13 +3740,13 @@ namespace qsf {
 		bool background_hover_effect = true;
 
 		qpl::rgba knob_hover_color = qpl::rgba::unset();
-		qpl::f32 knob_hover_outline_thickness = 4.0f;
+		qpl::f32 knob_hover_outline_thickness = 2.0f;
 		qpl::rgba knob_hover_outline_color = qpl::rgba::unset();
 
 		qpl::f32 hitbox_increase = 5.0;
 
 		qpl::rgba background_hover_color = qpl::rgba::unset();
-		qpl::f32 background_hover_outline_thickness = 4.0f;
+		qpl::f32 background_hover_outline_thickness = 2.0f;
 		qpl::rgba background_hover_outline_color = qpl::rgba::unset();
 
 		T start = T{ 0 };
@@ -3676,6 +3771,9 @@ namespace qsf {
 		qpl::f32 click_pos_x = 0.0f;
 		qpl::f32 range_pixel_width = 0.0f;
 
+		qsf::text text;
+		std::string text_string;
+		std::function<std::string(T)> string_function;
 
 		bool hovering_over_background = false;
 		bool click_on_background_to_skip = true;
@@ -3688,6 +3786,76 @@ namespace qsf {
 		bool dragging = false;
 		bool released = false;
 		bool hovering_over_knob = false;
+	};
+
+	struct check_box {
+		qsf::rectangle background;
+		qsf::text text;
+		bool active_value = false;
+		bool value_modified = false;
+
+		check_box() {
+			this->background.set_dimension({ 30, 30 });
+			this->background.set_color(qpl::rgb(100, 100, 100));
+			this->background.set_outline_color(qpl::rgb::white());
+			this->background.set_outline_thickness(3.0f);
+			this->text.set_color(qpl::rgb::white());
+			this->text.set_character_size(30);
+		}
+
+		void set_font(const std::string& font) {
+			this->text.set_font(font);
+			this->text.set_string("x");
+		}
+		void set_font(const sf::Font& font) {
+			this->text.set_font(font);
+			this->text.set_string("x");
+		}
+		void centerize_text() {
+			this->text.set_center(this->background.get_center());
+		}
+		void set_dimension(qpl::vector2f dimension) {
+			this->background.set_dimension(dimension);
+			this->centerize_text();
+		}
+		void set_character_size(qpl::u32 size) {
+			this->text.set_character_size(size);
+			this->centerize_text();
+		}
+		void set_center(qpl::vector2f position) {
+			this->background.set_center(position);
+			this->centerize_text();
+		}
+		void set_position(qpl::vector2f position) {
+			this->background.set_position(position);
+			this->centerize_text();
+		}
+		void set_value(bool value) {
+			this->active_value = value;
+		}
+		void update(const qsf::event_info& event) {
+			this->value_modified = false;
+			if (this->background.get_hitbox().contains(event.mouse_position()) && event.left_mouse_clicked()) {
+				this->active_value = !this->active_value;
+				this->value_modified = true;
+			}
+		}
+		bool value_was_modified() const {
+			return this->value_modified;
+		}
+		bool is_clicked() const {
+			return this->value_was_modified();
+		}
+		bool get_value() const {
+			return this->active_value;
+		}
+
+		void draw(qsf::draw_object& draw) const {
+			draw.draw(this->background);
+			if (this->active_value) {
+				draw.draw(this->text);
+			}
+		}
 	};
 
 	struct border_graphic {

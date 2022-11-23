@@ -47,20 +47,43 @@ namespace qsf {
 		void set_scale(T scale) {
 			this->scale = qpl::vec(scale, scale);
 		}
+		void enable_smooth_zoom() {
+			this->use_smooth_zoom = true;
+		}
+		void disable_smooth_zoom() {
+			this->use_smooth_zoom = false;
+		}
+		void set_smooth_zoom_time(qpl::f64 delta) {
+			this->smooth_zoom_duration = delta;
+			this->smooth_zoom_animation.set_duration(this->smooth_zoom_duration);
+		}
+		void zoom_in(qpl::vector2f mouse) {
+			auto mouse_relative = mouse - this->hitbox.position;
+			this->scale *= 1 / (1 + this->zoom_delta);
+			this->dimension *= 1 / (1 + this->zoom_delta);
+
+			this->position += (mouse_relative * this->zoom_delta) * (this->scale);
+
+			if (this->dragging) {
+				this->click_position = this->position;
+				this->click_mouse_position = mouse_relative;
+			}
+		}
+		void zoom_out(qpl::vector2f mouse) {
+			auto mouse_relative = mouse - this->hitbox.position;
+			this->scale *= (1 + this->zoom_delta);
+			this->dimension *= (1 + this->zoom_delta);
+
+
+			this->position += (mouse_relative * (1 / (1 + this->zoom_delta) - 1)) * (this->scale);
+
+			if (this->dragging) {
+				this->click_position = this->position;
+				this->click_mouse_position = mouse_relative;
+			}
+		}
 		void set_position(qpl::vector2<T> position) {
 			this->position = position;
-
-			if (this->power_of_two) {
-				if (this->scale.x >= 1) {
-					this->position = qpl::vector2i(this->position) / qpl::vector2i(this->scale) * qpl::vector2i(this->scale);
-				}
-				else {
-					this->position = qpl::vector2i(this->position / this->scale) * this->scale;
-				}
-			}
-			else if (this->integer_step) {
-				this->position = qpl::vector2i(this->position);
-			}
 		}
 		void update(const qsf::event_info& event) {
 			if (!this->hitbox_set) {
@@ -87,83 +110,13 @@ namespace qsf {
 				if (this->allow_dragging && this->dragging && event.mouse_moved()) {
 					auto delta = (this->click_mouse_position - mouse_relative);
 					this->position = this->click_position + delta * this->scale;
-
-					if (this->integer_step) {
-						this->position = qpl::vector2i(this->position);
-					}
 				}
 
 				if (event.scrolled_down()) {
-					if (this->power_of_two) {
-						this->scale *= 2;
-						this->dimension *= 2;
-						this->position += (mouse_relative / -2) * (this->scale);
-						if (this->scale.x >= 1) {
-							this->position = qpl::vector2i(this->position) / qpl::vector2i(this->scale) * qpl::vector2i(this->scale);
-						}
-						else {
-							this->position = qpl::vector2i(this->position / this->scale) * this->scale;
-						}
-					}
-					else {
-						this->scale *= (1 + this->zoom_delta);
-						this->dimension *= (1 + this->zoom_delta);
-
-						if (this->integer_step) {
-							auto s = this->scale.x;
-							if (s > 2) {
-								s = qpl::u32_cast(s + 0.5);
-								this->scale = { s, s };
-							}
-						}
-
-						this->position += (mouse_relative * (1 / (1 + this->zoom_delta) - 1)) * (this->scale);
-
-						if (this->integer_step) {
-							this->position = qpl::vector2i(this->position);
-						}
-						if (this->dragging) {
-							this->click_position = this->position;
-							this->click_mouse_position = event.mouse_position() - this->hitbox.position;
-						}
-					}
+					this->zoom_out(event.mouse_position());
 				}
 				if (event.scrolled_up()) {
-					if (this->power_of_two) {
-						this->scale /= 2;
-						this->dimension /= 2;
-						this->position += (mouse_relative) * (this->scale);
-						if (this->scale.x >= 1) {
-							this->position = qpl::vector2i(this->position) / qpl::vector2i(this->scale) * qpl::vector2i(this->scale);
-						}
-						else {
-							this->position = qpl::vector2i(this->position / this->scale) * this->scale;
-						}
-					}
-					else {
-						this->scale *= 1 / (1 + this->zoom_delta);
-						this->dimension *= 1 / (1 + this->zoom_delta);
-
-
-						if (this->integer_step) {
-							auto s = this->scale.x;
-							if (s > 2) {
-								s = qpl::u32_cast(s + 0.5);
-								this->scale = { s, s };
-							}
-						}
-
-
-						this->position += (mouse_relative * this->zoom_delta) * (this->scale);
-
-						if (this->integer_step) {
-							this->position = qpl::vector2i(this->position);
-						}
-						if (this->dragging) {
-							this->click_position = this->position;
-							this->click_mouse_position = event.mouse_position() - this->hitbox.position;
-						}
-					}
+					this->zoom_in(event.mouse_position());
 				}
 			}
 
@@ -197,14 +150,15 @@ namespace qsf {
 
 		bool ignore_input = false;
 		T rotation = 0;
-		T zoom_delta = 0.4;
+		T zoom_delta = 0.2;
 		bool hitbox_set = false;
 		bool hovering = false;
 		bool dragging = false;
-		bool integer_step = false;
-		bool power_of_two = false;
 		bool allow_dragging = true;
 		bool enabled = true;
+		bool use_smooth_zoom = true;
+		qpl::f64 smooth_zoom_duration = 0.1;
+		qpl::animation smooth_zoom_animation;
 	};
 
 	using view_rectangle = view_rectangle_t<qpl::f64>;

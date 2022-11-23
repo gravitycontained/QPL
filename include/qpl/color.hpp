@@ -494,6 +494,7 @@ namespace qpl {
 			copy.brighten(delta);
 			return copy;
 		}
+
 		constexpr void darken(delta_type delta) {
 			if constexpr (is_floating_point()) {
 				if constexpr (has_alpha()) {
@@ -518,6 +519,7 @@ namespace qpl {
 			copy.darken(delta);
 			return copy;
 		}
+
 		constexpr void light(delta_type delta) {
 			if (delta < 0) {
 				this->darken(-delta);
@@ -531,6 +533,7 @@ namespace qpl {
 			copy.light(delta);
 			return copy;
 		}
+
 		constexpr void intensify(delta_type delta) {
 			if constexpr (is_floating_point()) {
 				if constexpr (has_alpha()) {
@@ -567,21 +570,21 @@ namespace qpl {
 			copy.intensify(delta);
 			return copy;
 		}
-		constexpr void grayify(delta_type delta) {
 
+		constexpr void grayify(delta_type delta) {
 			if constexpr (is_floating_point()) {
 				if constexpr (has_alpha()) {
 					auto acopy = this->a;
 					delta = qpl::clamp_0_1(delta);
-					auto sum = this->sum();
-					auto grayified = qpl::rgbN<T, N>(sum, sum, sum) / 3.0f;
+					auto scale = this->sum();
+					auto grayified = qpl::rgbN<T, N>(scale, scale, scale) / 3.0f;
 					*this = grayified * delta + *this * (1 - delta);
 					this->a = acopy;
 				}
 				else {
 					delta = qpl::clamp_0_1(delta);
-					auto sum = this->sum();
-					auto grayified = qpl::rgbN<T, N>(sum, sum, sum) / 3.0f;
+					auto scale = this->sum();
+					auto grayified = qpl::rgbN<T, N>(scale, scale, scale) / 3.0f;
 					*this = grayified * delta + *this * (1 - delta);
 				}
 			}
@@ -597,6 +600,7 @@ namespace qpl {
 			copy.grayify(delta);
 			return copy;
 		}
+
 		constexpr void saturate(delta_type delta) {
 			if (delta < 0) {
 				this->grayify(-delta);
@@ -610,6 +614,51 @@ namespace qpl {
 			copy.saturate(delta);
 			return copy;
 		}
+
+		constexpr void grayify_perceived(delta_type delta) {
+			if constexpr (is_floating_point()) {
+				if constexpr (has_alpha()) {
+					auto acopy = this->a;
+					delta = qpl::clamp_0_1(delta);
+					auto scale = this->get_perceived_brightness();
+					auto grayified = qpl::rgbN<qpl::f64, N>(scale, scale, scale);
+					*this = grayified * delta + *this * (1 - delta);
+					this->a = acopy;
+				}
+				else {
+					delta = qpl::clamp_0_1(delta);
+					auto scale = this->get_perceived_brightness();
+					auto grayified = qpl::rgbN<qpl::f64, N>(scale, scale, scale);
+					*this = grayified * delta + *this * (1 - delta);
+				}
+			}
+			else {
+				qpl::rgbN<qpl::f64, N> color = *this;
+				color.grayify_perceived(delta);
+				*this = color;
+			}
+
+		}
+		constexpr qpl::rgbN<T, N> grayified_perceived(delta_type delta) const {
+			auto copy = *this;
+			copy.grayify_perceived(delta);
+			return copy;
+		}
+
+		constexpr void saturate_perceived(delta_type delta) {
+			if (delta < 0) {
+				this->grayify_perceived(-delta);
+			}
+			else {
+				this->intensify(delta);
+			}
+		}
+		constexpr qpl::rgbN<T, N> saturated_perceived(delta_type delta) const {
+			auto copy = *this;
+			copy.saturate_perceived(delta);
+			return copy;
+		}
+
 		constexpr void interpolate(const qpl::rgbN<T, N>& other, delta_type delta) {
 			*this = *this * (1.0 - delta) + (other * delta);
 		}
@@ -630,22 +679,177 @@ namespace qpl {
 			return copy;
 		}
 
-		constexpr qpl::rgbN<T, N> with_alpha(T alpha) const requires (N >= 4) {
-			auto copy = *this;
-			copy.data[3] = alpha;
-			return copy;
+		constexpr auto with_alpha(T alpha) const {
+			if constexpr (N >= 4) {
+				auto copy = *this;
+				copy.data[3] = alpha;
+				return copy;
+			}
+			else {
+				qpl::rgbN<T, 4> copy = *this;
+				return copy.with_alpha(alpha);
+			}
 		}
 		constexpr qpl::rgbN<T, N> multiplied_color(const qpl::rgbN<T, N>& other) const {
 			auto copy = *this;
 			copy = copy * qpl::rgbN<qpl::f32, N>(other);
-			//copy = qpl::rgbN<qpl::f32, N>(copy) * qpl::rgbN<qpl::f32, N>(other);
 			return copy;
 		}
 		
-		constexpr qpl::rgbN<T, N> multiplied_alpha(T alpha) const requires (N >= 4) {
+		constexpr auto multiplied_alpha(T alpha) const {
+			if constexpr (N >= 4) {
+				auto copy = *this;
+				copy.data[3] = static_cast<T>(copy.data[3] * (alpha / qpl::f64_cast(max_channel())));
+				return copy;
+			}
+			else {
+				qpl::rgbN<T, 4> copy = *this;
+				return copy.multiplied_alpha(alpha);
+			}
+		}
+
+		constexpr qpl::f64 get_perceived_brightness() const {
+			if constexpr (qpl::is_same<T, qpl::f64>() && N == 3) {
+				return qpl::vectorN<T, 3>(this->data).dot(qpl::vector3d(0.2126, 0.7152, 0.0722));
+			}
+			else {
+				return qpl::rgbN<qpl::f64, 3>(*this).get_perceived_brightness();
+			}
+		}
+		constexpr qpl::f64 get_hue() const requires (N >= 3) {
+			auto min = this->min();
+			auto max = this->max();
+			auto diff = max - min;
+			if (!diff) {
+				return 0.0;
+			}
+
+			if (this->r == max && this->b == min) {
+				return ((this->g - min) / qpl::f64_cast(diff)) / 6.0;
+			}
+			else if (this->g == max && this->b == min) {
+				return (1.0 - ((this->r - min) / qpl::f64_cast(diff)) + 1.0) / 6.0;
+			}
+			else if (this->r == min && this->g == max) {
+				return ((this->b - min) / qpl::f64_cast(diff) + 2.0) / 6.0;
+			}
+			else if (this->r == min && this->b == max) {
+				return (1.0 - ((this->g - min) / qpl::f64_cast(diff)) + 3.0) / 6.0;
+			}
+			else if (this->g == min && this->b == max) {
+				return ((this->r - min) / qpl::f64_cast(diff) + 4.0) / 6.0;
+			}
+			else if (this->r == max && this->g == min) {
+				return (1.0 - ((this->b - min) / qpl::f64_cast(diff)) + 5.0) / 6.0;
+			}
+			return 0.0;
+		}
+
+		constexpr void set_hue(qpl::f64 hue)  requires (N >= 3) {
+			auto min = this->min();
+			auto max = this->max();
+			auto diff = max - min;
+			if (!diff) {
+				return;
+			}
+
+			hue = std::fmod(qpl::clamp_0_1(hue), 1.0);
+			auto segment = qpl::u32_cast(hue * 6.0) % 6;
+			auto strength = (hue * 6.0) - segment;
+			if (segment % 2 == 1u) {
+				strength = 1.0 - strength;
+			}
+
+			T channel;
+			if constexpr (is_floating_point()) {
+				channel = static_cast<T>(strength * diff) + min;
+			}
+			else {
+				channel = static_cast<T>(std::round(strength * diff)) + min;
+			}
+			switch (segment) {
+			case 0u:
+				this->r = max;
+				this->g = channel;
+				this->b = min;
+				break;
+			case 1u:
+				this->r = channel;
+				this->g = max;
+				this->b = min;
+				break;
+			case 2u:
+				this->r = min;
+				this->g = max;
+				this->b = channel;
+				break;
+			case 3u:
+				this->r = min;
+				this->g = channel;
+				this->b = max;
+				break;
+			case 4u:
+				this->r = channel;
+				this->g = min;
+				this->b = max;
+				break;
+			case 5u:
+				this->r = max;
+				this->g = min;
+				this->b = channel;
+				break;
+			}
+		}
+		constexpr auto with_hue(qpl::f64 hue) const requires (N >= 3) {
 			auto copy = *this;
-			copy.data[3] = static_cast<T>(copy.data[3] * (alpha / qpl::f64_cast(max_channel())));
+			copy.set_hue(hue);
 			return copy;
+		}
+
+		constexpr void add_hue(qpl::f64 delta_hue) requires (N >= 3) {
+			this->set_hue(std::fmod(this->get_hue() + delta_hue, 1.0));
+		}
+		constexpr auto with_added_hue(qpl::f64 delta_hue) const requires (N >= 3) {
+			auto copy = *this;
+			copy.add_hue(delta_hue);
+			return copy;
+		}
+
+		constexpr qpl::f64 get_intensity() const requires (N >= 3) {
+			auto min = this->min();
+			auto max = this->max();
+			auto diff = max - min;
+
+			return qpl::f64_cast(diff) / max_channel();
+		}
+
+		constexpr qpl::f64 get_perceived_difference(const qpl::rgbN<T, N>& other) const requires (N >= 3) {
+			auto h1 = this->get_hue();
+			auto h2 = other.get_hue();
+
+			bool swapped = false;
+			if (h1 >= h2) {
+				swapped = true;
+				std::swap(h1, h2);
+			}
+
+			auto delta_h1 = qpl::abs(h1 - h2);
+			if (h1 < 0.25 || h2 > 0.75) {
+
+				auto delta_h2 = qpl::abs((h1 + 1.0) - h2);
+				if (delta_h2 < delta_h1) {
+					h1 += 1.0;
+				}
+			}
+			if (swapped) {
+				std::swap(h1, h2);
+			}
+			constexpr auto weights = qpl::vec(1.5, 1.0, 1.7).normalized();
+
+			auto vec1 = qpl::vec3d(h1, this->get_intensity(), this->get_perceived_brightness()) * weights;
+			auto vec2 = qpl::vec3d(h2, other.get_intensity(), other.get_perceived_brightness()) * weights;
+
+			return (vec2 - vec1).length();
 		}
 
 		constexpr static auto red() {
@@ -700,7 +904,8 @@ namespace qpl {
 			return result;
 		}
 
-		[[nodiscard]] constexpr static qpl::rgbN<T, N> interpolation(const std::vector<qpl::rgbN<T, N>>& colors, delta_type strength) {
+		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>() && qpl::has_square_brackets_read<C>())
+		[[nodiscard]] constexpr static qpl::rgbN<T, N> interpolation(const C& colors, delta_type strength) {
 			strength = qpl::clamp(0.0, strength, 1.0);
 			if (strength == 1.0) {
 				return colors.back();
@@ -711,8 +916,8 @@ namespace qpl {
 
 			return colors[index].interpolated(colors[index + 1], left_over);
 		}
-		template<typename U, qpl::size M>
-		[[nodiscard]] constexpr static qpl::rgbN<T, N> interpolation(const std::vector<qpl::rgbN<U, M>>& colors, delta_type strength) {
+		template<typename U, qpl::size M, typename C> requires (qpl::is_container<C>() && qpl::has_size<C>() && qpl::has_square_brackets_read<C>())
+		[[nodiscard]] constexpr static qpl::rgbN<T, N> interpolation(const C& colors, delta_type strength) {
 			return interpolation(qpl::type_cast<qpl::rgbN<T, N>>(colors), strength);
 		}
 		constexpr std::string string() const {
@@ -908,12 +1113,13 @@ namespace qpl::vk {
 #endif
 
 
-//namespace std {
-	//template <>
-	//struct hash<qpl::rgba> {
-	//	qpl::u32 operator()(const qpl::rgba& k) const {
-	//		return k.uint();
-	//	}
-	//};
-//}
+namespace std {
+	template <typename T, qpl::size N>
+	struct hash<qpl::rgbN<T, N>> {
+		qpl::u64 operator()(const qpl::rgbN<T, N>& k) const {
+			std::hash<std::array<T, N>> hash;
+			return hash(k.data);
+		}
+	};
+}
 #endif

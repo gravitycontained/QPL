@@ -713,7 +713,9 @@ namespace qpl {
 		return result;
 	}
 
-
+	std::ostream& qpl::operator<<(std::ostream& os, const qpl::cc& cc) {
+		return os;
+	}
 	qpl::cc qpl::get_random_console_color() {
 		return qpl::cc::random();
 	}

@@ -44,11 +44,21 @@ namespace qpl {
 		QPLDLL bool operator>(const qpl::time& other) const;
 		QPLDLL bool operator>=(const qpl::time& other) const;
 
-		QPLDLL std::string string_non_zero() const;
-		QPLDLL std::string string() const;
-		QPLDLL std::string string_until_sec() const;
-		QPLDLL std::string string_until_ms() const;
-		QPLDLL std::string string_full() const;
+		QPLDLL std::string nsecs_string() const;
+		QPLDLL std::string usecs_string() const;
+		QPLDLL std::string msecs_string() const;
+		QPLDLL std::string secs_string() const;
+		QPLDLL std::string mins_string() const;
+		QPLDLL std::string hours_string() const;
+		QPLDLL std::string days_string() const;
+		QPLDLL std::string years_string() const;
+
+		QPLDLL std::string string_non_zero(std::string parantheses = "[]") const;
+		QPLDLL std::string string(std::string parantheses = "[]") const;
+		QPLDLL std::string string_short(std::string parantheses = "[]", qpl::size segments = 2u) const;
+		QPLDLL std::string string_until_sec(std::string parantheses = "[]") const;
+		QPLDLL std::string string_until_ms(std::string parantheses = "[]") const;
+		QPLDLL std::string string_full(std::string parantheses = "[]") const;
 		QPLDLL static time clock_time();
 		QPLDLL qpl::f64 frequency() const;
 
@@ -275,7 +285,13 @@ namespace qpl {
 	}
 	template<typename T>
 	std::string get_time_string(T duration, std::string format = "%Y-%m-%d-%H-%M-%S") {
-		auto time = qpl::to_time_t(duration);
+		std::time_t time;
+		if constexpr (qpl::is_same<T, std::time_t>()) {
+			time = duration;
+		}
+		else {
+			time = qpl::to_time_t(duration);
+		}
 		
 #pragma warning( push )
 #pragma warning( disable : 4996)

@@ -203,7 +203,6 @@ namespace qpl {
 		stream << qpl::appended_to_string_to_fit(a, insert, size);
 		stream << qpl::prepended_to_string_to_fit(b, insert, length - size);
 		auto str_size = stream.str().length();
-		//stream << " sizes = " << size << " ( added " << (qpl::appended_to_string_to_fit(a, insert, size).length() - a.length()) << " characters)" << " - " << length - size << " ( added " << (qpl::prepended_to_string_to_fit(b, insert, length - size).length() - b.length()) << " characters) " << str_size;
 		return stream.str();
 	}
 
@@ -232,16 +231,21 @@ namespace qpl {
 
 	t_cclearln qpl::cclearln;
 	t_cclear qpl::cclear;
+
+	bool qpl::console_effect_state::is_default() const {
+		return this->current_console_color == qpl::cc::def()
+				&& this->println_color == qpl::cc::def()
+				&& this->println_default_color == qpl::cc::def()
+				&& this->next_print_space == 0u
+				&& this->println_space == 0u
+				&& this->println_default_space == 0u
+				&& this->next_print_color == false
+				&& this->next_println_space == false
+				&& this->next_println_color == false;
+	}
+
 	namespace detail {
-		qpl::cc qpl::detail::current_console_color = qpl::cc::def();
-		qpl::u32 qpl::detail::next_print_space = 0u;
-		bool qpl::detail::next_println_space = false;
-		qpl::u32 qpl::detail::println_space = 0u;
-		qpl::u32 qpl::detail::println_default_space = 0u;
-		bool qpl::detail::next_print_color = false;
-		bool qpl::detail::next_println_color = false;
-		qpl::cc qpl::detail::println_color = qpl::cc::def();
-		qpl::cc qpl::detail::println_default_color = qpl::cc::def();
+		qpl::console_effect_state console_effect_state;
 	}
 
 	std::string qpl::hex_string(const std::string& string) {
@@ -261,7 +265,7 @@ namespace qpl {
 	std::string qpl::binary_string(const std::string& string) {
 		std::ostringstream stream;
 		for (auto& i : string) {
-			stream << qpl::prepended_to_string_to_fit(qpl::binary_string(i), "0", 8);
+			stream << qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u8_cast(i)), "0", 8);
 		}
 		return stream.str();
 	}
@@ -1264,7 +1268,78 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	qpl::size qpl::string_levenshtein_distance(const std::string& a, const std::string& b) {
+		std::vector<std::vector<qpl::size>> matrix(a.length() + 1, std::vector<qpl::size>(b.length() + 1, 0));
 
+		qpl::size cost{};
+		for (qpl::size i = 0u; i <= a.length(); i++) {
+			matrix[i][0] = i;
+		}
+		for (qpl::size j = 0; j <= b.length(); j++) {
+			matrix[0][j] = j;
+		}
+		for (qpl::size i = 1; i <= a.length(); i++) {
+			for (qpl::size j = 1; j <= b.length(); j++) {
+				if (a[i - 1] == b[j - 1]) {
+					cost = 0;
+				}
+				else {
+					cost = 1;
+				}
+				matrix[i][j] = std::min(matrix[i - 1][j] + 1, std::min(matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost));
+
+				if ((i > 1) && (j > 1) && (a[i - 1] == b[j - 2]) && (a[i - 2] == b[j - 1])) {
+					matrix[i][j] = std::min(matrix[i][j], matrix[i - 2][j - 2] + cost);
+				}
+			}
+		}
+		return matrix[a.length()][b.length()];
+	}
+	bool qpl::string_starts_with_ignore_case(const std::string& a, const std::string& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < b.length(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	std::vector<qpl::size> qpl::best_string_matches_indices(const std::vector<std::string>& list, const std::string& search) {
+		std::vector<qpl::size> result;
+		std::vector<std::pair<qpl::size, qpl::size>> score(list.size());
+		for (qpl::size i = 0u; i < score.size(); ++i) {
+			score[i] = std::make_pair(qpl::string_levenshtein_distance(list[i], search), i);
+		}
+
+		qpl::sort(score, [](auto a, auto b) { return a.first < b.first; });
+
+		qpl::size best_score = score[0].first;
+		for (qpl::size i = 0u; i < score.size(); ++i) {
+			if (score[i].first == best_score) {
+				result.push_back(score[i].second);
+			}
+		}
+		return result;
+	}
+	std::vector<std::string> qpl::best_string_matches(const std::vector<std::string>& list, const std::string& search) {
+		std::vector<std::string> result;
+		std::vector<std::pair<qpl::size, std::string>> score(list.size());
+		for (qpl::size i = 0u; i < score.size(); ++i) {
+			score[i] = std::make_pair(qpl::string_levenshtein_distance(list[i], search), list[i]);
+		}
+
+		qpl::sort(score, [](auto a, auto b) { return a.first < b.first; });
+
+		qpl::size best_score = score[0].first;
+		for (qpl::size i = 0u; i < score.size(); ++i) {
+			if (score[i].first == best_score) {
+				result.push_back(score[i].second);
+			}
+		}
+		return result;
+	}
 	bool qpl::is_string_floating_point(std::string string) {
 		std::istringstream iss(string);
 		qpl::f64 f;

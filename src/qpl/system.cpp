@@ -1,4 +1,4 @@
-﻿#ifdef QPL_USE_BOOST
+#ifdef QPL_USE_BOOST
 #include <boost/filesystem.hpp>
 #include <boost/asio.hpp>
 #include <boost/process.hpp>

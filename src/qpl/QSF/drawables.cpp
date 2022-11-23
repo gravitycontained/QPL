@@ -364,8 +364,8 @@ namespace qsf {
 		this->m_text.setPosition(position);
 	}
 	void qsf::text::set_center(qpl::vector2f position) {
-		this->set_position(position);
 		this->centerize();
+		this->set_position(position);
 	}
 	void qsf::text::set_string(const std::string& string) {
 		this->m_text.setString(string);
@@ -5642,6 +5642,10 @@ namespace qsf {
 		this->index_end = end;
 		this->check_x_axis();
 		this->display_last_n_entries = 0u;
+	}
+	void qsf::vgraph::set_visible_range_max() {
+		this->index_start = 0u;
+		this->index_end = qpl::size_max;
 	}
 	void qsf::vgraph::set_font(std::string name) {
 		this->font = name;

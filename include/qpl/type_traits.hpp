@@ -1093,15 +1093,12 @@ namespace qpl {
 		qpl::default_error>;
 
 
-
 	template<typename T, typename U>
 	constexpr bool equals_type(U&& value = U{}) {
 		return std::is_same_v<std::decay_t<U>, std::decay_t<T>>;
 	}
 
-
 	namespace impl {
-
 		template<typename C>
 		auto container_deepest_subtype() {
 			if constexpr (!qpl::is_container<C>()) {
@@ -1188,11 +1185,19 @@ namespace qpl {
 
 	template<typename T>
 	concept has_push_back_c = requires(T& x) {
-		x.push_back(qpl::container_subtype<T>{});
+		x.push_back(qpl::declval < qpl::container_subtype<T>>());
 	};
 	template<typename T>
 	constexpr bool has_push_back() {
 		return has_push_back_c<T>;
+	}
+	template<typename T>
+	concept has_emplace_back_c = requires(T & x) {
+		x.emplace_back(std::move(qpl::declval<qpl::container_subtype<T>>()));
+	};
+	template<typename T>
+	constexpr bool has_emplace_back() {
+		return has_emplace_back_c<T>;
 	}
 	template<typename T>
 	concept has_pop_back_c = requires(T& x) {
@@ -1226,7 +1231,6 @@ namespace qpl {
 	constexpr bool has_insert() {
 		return has_insert_c<T>;
 	}
-
 
 	template<typename T>
 	concept can_grow_c = has_push_back_c<T> || has_insert_c<T>;
@@ -1344,8 +1348,6 @@ namespace qpl {
 	constexpr bool is_greater_equal_comparable() {
 		return is_greater_equal_comparable_c<T, U>;
 	};
-
-
 
 	namespace impl {
 		template<typename T, typename F = void>
@@ -2161,6 +2163,16 @@ namespace qpl {
 	template<typename F>
 	constexpr bool is_method() {
 		return std::is_member_function_pointer_v<F>;
+	}
+
+	template<typename F>
+	concept is_callable_c = requires(F f) {
+		std::function{ f };
+	};
+
+	template<typename F>
+	constexpr bool is_callable() {
+		return is_callable_c<F>;
 	}
 
 	template<typename... Args>

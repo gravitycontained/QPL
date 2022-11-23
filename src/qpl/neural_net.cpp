@@ -73,8 +73,7 @@ namespace qpl {
 
 	void neuron::show_expected_output(qpl::f64 excpeced_output) {
 		qpl::f64 wrong = excpeced_output - this->m_output;
-		//this->m_gradient = wrong;
-		this->m_gradient = wrong * neuron::transfer_func_derivative(this->m_output); //für XOR! böse zeile
+		this->m_gradient = wrong * neuron::transfer_func_derivative(this->m_output);
 	}
 
 	void neuron::learn_from_next_layer(const std::vector<neuron>& next_layer) {
@@ -82,8 +81,7 @@ namespace qpl {
 		for (std::size_t i = 0; i < next_layer.size() - 1; ++i) {
 			sum += this->m_connections[i].get_weight() * next_layer[i].m_gradient;
 		}
-		//this->m_gradient = sum;
-		this->m_gradient = sum * neuron::transfer_func_derivative(this->m_output); //für XOR! böse zeile
+		this->m_gradient = sum * neuron::transfer_func_derivative(this->m_output);
 	}
 	void neuron::teach_previous_layer(std::vector<neuron>& previous_layer, double eta, double alpha) {
 		for (std::size_t i = 0; i < previous_layer.size(); ++i) {

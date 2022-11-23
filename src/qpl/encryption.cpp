@@ -76,13 +76,6 @@ namespace qpl {
 		qpl::detail::calculate_sbox_inv();
 	}
 
-	qpl::u8 qpl::detail::galois_field_mul(qpl::u8 x, qpl::u8 y) {
-		return (((y & 1) * x) ^
-			((y >> 1 & 1) * qpl::detail::aes_tables::mul2[x]) ^
-			((y >> 2 & 1) * qpl::detail::aes_tables::mul2[qpl::detail::aes_tables::mul2[x]]) ^
-			((y >> 3 & 1) * qpl::detail::aes_tables::mul2[qpl::detail::aes_tables::mul2[qpl::detail::aes_tables::mul2[x]]]) ^
-			((y >> 4 & 1) * qpl::detail::aes_tables::mul2[qpl::detail::aes_tables::mul2[qpl::detail::aes_tables::mul2[qpl::detail::aes_tables::mul2[x]]]]));
-	}
 	void qpl::aes::construct() {
 		this->m_constructed = true;
 		this->set_mode(mode::_128);
@@ -130,7 +123,9 @@ namespace qpl {
 					input_block[c] = last_block[c] ^ message[i * this->m_state.size() + c];
 				}
 			}
+
 			this->set_state(input_block);
+
 			this->cipher();
 
 			result.append(reinterpret_cast<const char*>(this->m_state.data()), this->m_state.size());
@@ -157,6 +152,7 @@ namespace qpl {
 					}
 				}
 			}
+
 			this->set_state(input_block);
 			this->cipher();
 			result.append(reinterpret_cast<const char*>(this->m_state.data()), this->m_state.size());
@@ -504,7 +500,7 @@ namespace qpl {
 			auto index2 = columns * 4 + 2;
 			auto index3 = columns * 4 + 3;
 
-			std::array<u8, 4u> temp;
+			std::array<qpl::u8, 4u> temp;
 			temp[0] = qpl::detail::aes_tables::mul2[this->m_state[index0]] ^ qpl::detail::aes_tables::mul3[this->m_state[index1]] ^ qpl::detail::aes_tables::mul1[this->m_state[index2]] ^ qpl::detail::aes_tables::mul1[this->m_state[index3]];
 			temp[1] = qpl::detail::aes_tables::mul1[this->m_state[index0]] ^ qpl::detail::aes_tables::mul2[this->m_state[index1]] ^ qpl::detail::aes_tables::mul3[this->m_state[index2]] ^ qpl::detail::aes_tables::mul1[this->m_state[index3]];
 			temp[2] = qpl::detail::aes_tables::mul1[this->m_state[index0]] ^ qpl::detail::aes_tables::mul1[this->m_state[index1]] ^ qpl::detail::aes_tables::mul2[this->m_state[index2]] ^ qpl::detail::aes_tables::mul3[this->m_state[index3]];
@@ -524,12 +520,12 @@ namespace qpl {
 			auto index2 = columns * 4 + 2;
 			auto index3 = columns * 4 + 3;
 
-			qpl::u8 temp[4];
-			temp[0] = qpl::detail::galois_field_mul(this->m_state[index0], 0xeu) ^ qpl::detail::galois_field_mul(this->m_state[index1], 0xbu) ^ qpl::detail::galois_field_mul(this->m_state[index2], 0xdu) ^ qpl::detail::galois_field_mul(this->m_state[index3], 0x9u);
-			temp[1] = qpl::detail::galois_field_mul(this->m_state[index0], 0x9u) ^ qpl::detail::galois_field_mul(this->m_state[index1], 0xeu) ^ qpl::detail::galois_field_mul(this->m_state[index2], 0xbu) ^ qpl::detail::galois_field_mul(this->m_state[index3], 0xdu);
-			temp[2] = qpl::detail::galois_field_mul(this->m_state[index0], 0xdu) ^ qpl::detail::galois_field_mul(this->m_state[index1], 0x9u) ^ qpl::detail::galois_field_mul(this->m_state[index2], 0xeu) ^ qpl::detail::galois_field_mul(this->m_state[index3], 0xbu);
-			temp[3] = qpl::detail::galois_field_mul(this->m_state[index0], 0xbu) ^ qpl::detail::galois_field_mul(this->m_state[index1], 0xdu) ^ qpl::detail::galois_field_mul(this->m_state[index2], 0x9u) ^ qpl::detail::galois_field_mul(this->m_state[index3], 0xeu);
-			
+			std::array<qpl::u8, 4u> temp;
+			temp[0] = qpl::detail::aes_tables::mul14[this->m_state[index0]] ^ qpl::detail::aes_tables::mul11[this->m_state[index1]] ^ qpl::detail::aes_tables::mul13[this->m_state[index2]] ^ qpl::detail::aes_tables::mul9 [this->m_state[index3]];
+			temp[1] = qpl::detail::aes_tables::mul9 [this->m_state[index0]] ^ qpl::detail::aes_tables::mul14[this->m_state[index1]] ^ qpl::detail::aes_tables::mul11[this->m_state[index2]] ^ qpl::detail::aes_tables::mul13[this->m_state[index3]];
+			temp[2] = qpl::detail::aes_tables::mul13[this->m_state[index0]] ^ qpl::detail::aes_tables::mul9 [this->m_state[index1]] ^ qpl::detail::aes_tables::mul14[this->m_state[index2]] ^ qpl::detail::aes_tables::mul11[this->m_state[index3]];
+			temp[3] = qpl::detail::aes_tables::mul11[this->m_state[index0]] ^ qpl::detail::aes_tables::mul13[this->m_state[index1]] ^ qpl::detail::aes_tables::mul9 [this->m_state[index2]] ^ qpl::detail::aes_tables::mul14[this->m_state[index3]];
+
 			for (qpl::u32 i = 0u; i < 4u; ++i) {
 				this->m_state[columns * 4u + i] = temp[i];
 			}
@@ -864,4 +860,30 @@ namespace qpl {
 		return "";
 	}
 
+
+#ifdef QPL_CIPHER
+	qpl::cipherN<cipher_config{ 4, 1, 64, 64 } > qpl::detail::cipher512_quick;
+	qpl::cipherN<cipher_config{ 4, 3, 64, 64 } > qpl::detail::cipher512;
+	qpl::cipherN<cipher_config{ 4, 12, 64, 64 } > qpl::detail::cipher512_save;
+
+
+	std::string qpl::encrypt512_quick(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512_quick.encrypt(message, key);
+	}
+	std::string qpl::decrypt512_quick(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512_quick.decrypt(message, key);
+	}
+	std::string qpl::encrypt512(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512.encrypt(message, key);
+	}
+	std::string qpl::decrypt512(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512.decrypt(message, key);
+	}
+	std::string qpl::encrypt512_save(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512_save.encrypt(message, key);
+	}
+	std::string qpl::decrypt512_save(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512_save.decrypt(message, key);
+	}
+#endif
 }
