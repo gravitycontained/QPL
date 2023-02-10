@@ -214,7 +214,7 @@ namespace qpl {
 		static bool key_holding(qpl::i32 key, args... more) {
 			return qpl::window::key_holding(key) && (qpl::window::key_holding(more) && ...);
 		}
-	private:
+	
 		QPLDLL static void reset_events();
 		QPLDLL static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		QPLDLL static void char_callback(GLFWwindow* window, qpl::u32 code);

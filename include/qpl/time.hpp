@@ -17,6 +17,12 @@
 #include <functional>
 
 
+#ifdef QPL_INTERN_SFML_USE
+namespace qsf {
+	struct event_info;
+}
+#endif
+
 namespace qpl {
 	class time {
 	public:
@@ -104,7 +110,7 @@ namespace qpl {
 		constexpr static qpl::u64 nsecs_in_hour = mins_in_hour * nsecs_in_min;
 		constexpr static qpl::u64 nsecs_in_day  = hours_in_day * nsecs_in_hour;
 		constexpr static qpl::u64 nsecs_in_year = days_in_year * nsecs_in_day;
-	private:
+	
 		QPLDLL void set(qpl::u64 ns);
 
 		qpl::u64 m_ns;
@@ -174,7 +180,7 @@ namespace qpl {
 		QPLDLL bool has_elapsed(qpl::time duration) const;
 		QPLDLL bool has_elapsed_reset(qpl::f64 seconds);
 		QPLDLL bool has_elapsed_reset(qpl::time duration);
-	private:
+	
 		QPLDLL void measure() const;
 		QPLDLL void init(bool running);
 
@@ -216,7 +222,7 @@ namespace qpl {
 		QPLDLL bool has_elapsed(qpl::time duration) const;
 		QPLDLL bool has_elapsed_reset(qpl::f64 seconds);
 		QPLDLL bool has_elapsed_reset(qpl::time duration);
-	private:
+	
 
 		qpl::time m_begin;
 	};
@@ -311,6 +317,20 @@ namespace qpl {
 	QPLDLL std::string get_current_time_string_ymdhmsms_compact();
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
 
+	template <typename C> requires (qpl::is_container<C>())
+	std::chrono::system_clock::time_point data_ymdhms_to_timepoint(const C& values) {
+		std::tm tm = {
+			/* tm_sec  */ qpl::i32_cast(values.at(5)),
+			/* tm_min  */ qpl::i32_cast(values.at(4)),
+			/* tm_hour */ qpl::i32_cast(values.at(3)),
+			/* tm_mday */ qpl::i32_cast(values.at(2)),
+			/* tm_mon  */ qpl::i32_cast(values.at(1) - 1),
+			/* tm_year */ qpl::i32_cast(values.at(0) - 1900),
+		};
+		//tm.tm_isdst = -1; // local time zone
+		return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+	}
+
 	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed);
 	QPLDLL qpl::time get_remaining_time(qpl::f64 progress, qpl::clock timer);
 
@@ -381,6 +401,9 @@ namespace qpl {
 		QPLDLL void reset_and_start_reverse();
 		QPLDLL void set_duration(qpl::f64 duration);
 		QPLDLL void update(qpl::f64 frame_time);
+#ifdef QPL_INTERN_SFML_USE
+		QPLDLL void update(const qsf::event_info& event);
+#endif
 		QPLDLL bool is_running() const;
 		QPLDLL bool is_reversed() const;
 		QPLDLL bool changed() const;

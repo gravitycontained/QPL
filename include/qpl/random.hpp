@@ -191,7 +191,7 @@ namespace qpl {
 		T generate(qpl::random_engine<bits>& engine) const {
 			return engine.generate(*this);
 		}
-	private:
+	
 		type m_dist;
 	};
 

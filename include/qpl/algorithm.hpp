@@ -813,7 +813,6 @@ namespace qpl {
 				return &qpl::tuple_value<N>(this->tuple);
 			}
 
-		private:
 			Tuple& tuple;
 		};
 
@@ -894,6 +893,61 @@ namespace qpl {
 	template<qpl::i64 Start, typename T, typename F> requires (qpl::is_tuple<T>() && qpl::impl::tuple_range_valid<qpl::tuple_size<T>(), Start, 0, 1>())
 	constexpr void tuple_iterate_control(T tuple, F function) {
 		qpl::tuple_iterate_control<Start, 0, 1>(tuple, function);
+	}
+
+	template<typename T, typename F>
+	void iterate_struct_members(T& value, F function) {
+		if constexpr (qpl::is_container<T>()) {
+			for (auto& i : value) {
+				iterate_struct_members(i, function);
+			}
+		}
+		else if constexpr (qpl::is_pair<T>()) {
+			iterate_struct_members(value.first, function);
+			iterate_struct_members(value.second, function);
+		}
+		else if constexpr (qpl::is_tuple<T>()) {
+			qpl::tuple_iterate(value, [&](auto& v) {
+				iterate_struct_members(v, function);
+				});
+		}
+		else if constexpr (std::is_class_v<T>) {
+			auto tuple = qpl::get_struct_members_tuple(value);
+			qpl::tuple_iterate(tuple, [&](auto& v) {
+				iterate_struct_members(v, function);
+				});
+		}
+		else {
+			function(value);
+		}
+	}
+
+	template<typename T, typename F1, typename F2>
+	void iterate_struct_members(T& value, F1 value_function, F2 container_function) {
+		if constexpr (qpl::is_container<T>()) {
+			container_function(value);
+			for (auto& i : value) {
+				iterate_struct_members(i, value_function, container_function);
+			}
+		}
+		else if constexpr (qpl::is_pair<T>()) {
+			iterate_struct_members(value.first, value_function, container_function);
+			iterate_struct_members(value.second, value_function, container_function);
+		}
+		else if constexpr (qpl::is_tuple<T>()) {
+			qpl::tuple_iterate(value, [&](auto& v) {
+				iterate_struct_members(v, value_function, container_function);
+			});
+		}
+		else if constexpr (std::is_class_v<T>) {
+			auto tuple = qpl::get_struct_members_tuple(value);
+			qpl::tuple_iterate(tuple, [&](auto& v) {
+				iterate_struct_members(v, value_function, container_function);
+			});
+		}
+		else {
+			value_function(value);
+		}
 	}
 
 	template<typename C>
@@ -2053,6 +2107,11 @@ namespace qpl {
 		}
 	}
 
+	template<typename T>
+	constexpr T distance(T a, T b) {
+		return static_cast<T>(a > b ? a - b : b - a);
+	}
+
 	template<typename F, typename T>
 	constexpr F mod_abs(F n, T m) {
 		return (m + (n % m)) % m;
@@ -2377,10 +2436,10 @@ namespace qpl {
 	template<typename F>
 	constexpr F double_curve_slope(F progress, F slope = 2.0) {
 		if (progress < F{ 0.5 }) {
-			return qpl::curve_slope(progress * 2, slope) / 2;
+			return qpl::curve_slope(progress * 2, 1.0 / slope) / 2;
 		}
 		else {
-			return (qpl::curve_slope((progress - F{ 0.5 }) * 2, 1 / slope) / 2) + F{ 0.5 };
+			return (qpl::curve_slope((progress - F{ 0.5 }) * 2, slope) / 2) + F{ 0.5 };
 		}
 	}
 	template<typename F>
@@ -2512,7 +2571,7 @@ namespace qpl {
 		return exp * std::pow(qpl::e, -0.5 * std::pow(x, 2));
 	}
 	template<typename F>
-	constexpr F normal_distribution(F x, F d = F{ 1 }, F u = F{ 0.0 }) {
+	constexpr F normal_distribution(F x, F d, F u = F{ 0.0 }) {
 		auto exp = 1.0 / (d * std::pow(2 * qpl::pi, 0.5));
 		return exp * std::pow(qpl::e, -0.5 * std::pow((x - u) / d, 2));
 	}
@@ -2564,6 +2623,7 @@ namespace qpl {
 		}
 		return result;
 	}
+
 }
 
 #endif

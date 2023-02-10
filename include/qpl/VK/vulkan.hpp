@@ -85,7 +85,7 @@ namespace qpl {
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy();
 
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -122,7 +122,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::instance& instance);
 			QPLDLL void destroy(const qpl::vk::instance& instance);
 
-		private:
+		
 			QPLDLL void construct();
 			bool m_created;
 		};
@@ -139,7 +139,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::instance& instance);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::instance& instance);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -165,7 +165,7 @@ namespace qpl {
 			QPLDLL void print_physical_devices() const;
 			QPLDLL queue_family_indices get_queue_family_indices(const qpl::vk::surface& surface) const;
 
-		private:
+		
 			QPLDLL void construct();
 			bool m_created;
 			std::multimap<qpl::u32, VkPhysicalDevice> m_physical_devices;
@@ -184,7 +184,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::physical_device& physical_device, const qpl::vk::surface& surface);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy();
-		private:
+		
 			QPLDLL void construct();
 			bool m_created;
 		};
@@ -205,7 +205,7 @@ namespace qpl {
 
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy();
-		private:
+		
 			QPLDLL void construct();
 			bool m_created;
 		};
@@ -232,7 +232,7 @@ namespace qpl {
 			QPLDLL void enable_vsync();
 			QPLDLL void disable_vsync();
 			QPLDLL bool is_vsync_enabled() const;
-		private:
+		
 			QPLDLL void contruct();
 
 			bool m_created;
@@ -253,7 +253,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::physical_device& physical_device, const qpl::vk::swapchain& swapchain, VkImageUsageFlagBits usage_flag, VkFormat format);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -274,7 +274,7 @@ namespace qpl {
 			QPLDLL void create(qpl::vk::logical_device& logical_device, const qpl::vk::swapchain& swapchain);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -292,7 +292,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -311,7 +311,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::physical_device& physical_device, const qpl::vk::swapchain& swapchain);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -334,7 +334,7 @@ namespace qpl {
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
 			QPLDLL void set_binding(qpl::u32 binding);
 			QPLDLL qpl::u32 get_binding() const;
-		private:
+		
 
 			QPLDLL void construct();
 
@@ -364,7 +364,7 @@ namespace qpl {
 			);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -383,7 +383,7 @@ namespace qpl {
 				const qpl::vk::logical_device& logical_device);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -402,7 +402,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::physical_device& physical_device, const qpl::vk::swapchain& swapchain);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -421,7 +421,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::physical_device& physical_device, const qpl::vk::swapchain& swapchain);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -443,7 +443,7 @@ namespace qpl {
 				const qpl::vk::depth_resources& depth_resources);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -469,7 +469,7 @@ namespace qpl {
 			QPLDLL void set_path(std::string_view path);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -488,7 +488,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::texture& texture);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -531,7 +531,7 @@ namespace qpl {
 			QPLDLL qpl::vk::vertex_binding get_vertex_binding() const;
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -569,7 +569,7 @@ namespace qpl {
 			QPLDLL qpl::size capacity() const;
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -660,7 +660,7 @@ namespace qpl {
 			QPLDLL void update_uniform_buffer_object(const qpl::vk::logical_device& logical_device, qpl::u32 current_image);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device, const qpl::vk::swapchain& swapchain);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -679,7 +679,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::swapchain& swapchain);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -704,7 +704,7 @@ namespace qpl {
 			);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -754,7 +754,7 @@ namespace qpl {
 				);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device, const qpl::vk::command_pool& command_pool);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -770,7 +770,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -787,7 +787,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_created;
@@ -819,7 +819,7 @@ namespace qpl {
 			QPLDLL void create(const qpl::vk::logical_device& logical_device, const qpl::vk::swapchain& swapchain);
 			QPLDLL bool is_created() const;
 			QPLDLL void destroy(const qpl::vk::logical_device& logical_device);
-		private:
+		
 			QPLDLL void construct();
 
 			qpl::u32 m_frame;
@@ -865,7 +865,7 @@ namespace qpl {
 			QPLDLL bool operator!() const;
 
 			QPLDLL std::string name() const;
-		private:
+		
 			std::string scene_name;
 			vulkan* const ptr;
 		};
@@ -910,7 +910,7 @@ namespace qpl {
 			QPLDLL bool operator!() const;
 
 			QPLDLL std::string name() const;
-		private:
+		
 			std::string uniform_buffers_name;
 			vulkan* const ptr;
 		};
@@ -930,7 +930,7 @@ namespace qpl {
 			QPLDLL bool operator!() const;
 
 			QPLDLL std::string name() const;
-		private:
+		
 			std::string vertex_buffer_name;
 			vulkan* const ptr;
 		};
@@ -950,7 +950,7 @@ namespace qpl {
 			QPLDLL bool operator!() const;
 
 			QPLDLL std::string name() const;
-		private:
+		
 			std::string index_buffer_name;
 			vulkan* const ptr;
 		};
@@ -969,7 +969,7 @@ namespace qpl {
 			QPLDLL bool operator!() const;
 
 			QPLDLL std::string name() const;
-		private:
+		
 			std::string descriptor_sets_name;
 			vulkan* const ptr;
 		};
@@ -1100,7 +1100,7 @@ namespace qpl {
 			qpl::vk::sync_objects sync_objects;
 
 
-		private:
+		
 			QPLDLL void construct();
 
 			bool m_print_stuff;
@@ -1168,7 +1168,7 @@ namespace qpl {
 
 
 
-		//private:
+		//
 			QPLDLL void construct();
 
 			qpl::vk::vulkan vulkan;

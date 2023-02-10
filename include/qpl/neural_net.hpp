@@ -25,7 +25,7 @@ namespace qpl {
 		QPLDLL void add_weight(qpl::f64 deltaweight);
 
 		friend class neuron;
-	private:
+	
 		qpl::f64 m_weight = 0.0;
 		qpl::f64 m_delta_weight = 0.0;
 	};
@@ -55,7 +55,7 @@ namespace qpl {
 
 		QPLDLL void load_from_stream(std::stringstream& stream);
 		QPLDLL std::string info_string() const;
-	private:
+	
 		qpl::f64 m_gradient = 0.0;
 		qpl::f64 m_output = 0.0;
 		qpl::u32 m_index = 0u;
@@ -120,7 +120,7 @@ namespace qpl {
 		qpl::f64 eta = 0.15;
 		qpl::f64 alpha = 0.5;
 
-	private:
+	
 		QPLDLL void init();
 
 		std::vector<neuron>& input_layer();
@@ -145,7 +145,7 @@ namespace qpl {
 			QPLDLL void set_delta_weight(double dweight);
 			QPLDLL double get_delta_weight() const;
 			QPLDLL void add_weight(double deltaweight);
-		private:
+		
 			double m_weight;
 			double m_delta_weight;
 		};
@@ -172,7 +172,7 @@ namespace qpl {
 			QPLDLL void show_excpected_output(double excpeced_output);
 			QPLDLL void learn_from_next_layer(const std::vector<neuron>& next_layer);
 			QPLDLL void teach_previous_layer(std::vector<neuron>& previous_layer, qpl::f64 eta, qpl::f64 alpha);
-		private:
+		
 
 			double m_gradient = 0.0;
 			double m_output = 0.0;
@@ -237,7 +237,7 @@ namespace qpl {
 
 			qpl::f64 eta = 0.15;
 			qpl::f64 alpha = 0.5;
-		private:
+		
 			QPLDLL void init();
 
 			std::vector<neuron>& input_layer();

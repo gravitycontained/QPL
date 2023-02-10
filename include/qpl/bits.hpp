@@ -144,7 +144,6 @@ namespace qpl {
 			uint_type operator^(uint_type value) const {
 				return this->get() ^ value;
 			}
-		private:
 			bitset* ptr;
 			qpl::u32 begin;
 			qpl::u32 end;
@@ -175,7 +174,7 @@ namespace qpl {
 			uint_type operator^(uint_type value) const {
 				return this->get() ^ value;
 			}
-		private:
+
 			const bitset* ptr;
 			qpl::u32 begin;
 			qpl::u32 end;
@@ -221,7 +220,7 @@ namespace qpl {
 			bool operator^(bool value) const {
 				return this->ptr->get(this->index) ^ value;
 			}
-		private:
+
 			bitset* ptr;
 			qpl::size index;
 		};
@@ -249,7 +248,7 @@ namespace qpl {
 			bool operator^(bool value) const {
 				return this->ptr->get(this->index) ^ value;
 			}
-		private:
+
 			const bitset* ptr;
 			qpl::size index;
 		};
@@ -286,7 +285,6 @@ namespace qpl {
 				return bitset_const_proxy(*ptr, index);
 			}
 
-		private:
 			bitset* ptr;
 			qpl::size index;
 		};
@@ -318,7 +316,6 @@ namespace qpl {
 				return bitset_const_proxy(*ptr, index);
 			}
 
-		private:
 			const bitset* const ptr;
 			qpl::size index;
 		};

@@ -53,6 +53,7 @@ freely, subject to the following restrictions:
 #include <qpl/memory.hpp>
 #include <qpl/obfuscate.hpp>
 #include <qpl/neural_net.hpp>
+#include <qpl/path_finding.hpp>
 #include <qpl/perlin_noise.hpp>
 #include <qpl/pictures.hpp>
 #include <qpl/random.hpp>
@@ -76,8 +77,9 @@ freely, subject to the following restrictions:
 #include <qpl/QSF/framework.hpp>
 #include <qpl/QSF/resources.hpp>
 #include <qpl/QSF/socket.hpp>
+#include <qpl/QSF/ui_controls.hpp>
 #include <qpl/QSF/utility.hpp>
-#include <qpl/QSF/view.hpp>
+#include <qpl/QSF/view_control.hpp>
 
 #include <qpl/QGL/attributes.hpp>
 #include <qpl/QGL/glew.hpp>
@@ -88,8 +90,9 @@ freely, subject to the following restrictions:
 #endif
 
 #ifdef _WIN32
-#include <qpl/winsys.hpp>
 #include <qpl/winsock.hpp>
+#include <qpl/winsys.hpp>
+#include <qpl/winsys_utils.hpp>
 #endif
 
 #endif

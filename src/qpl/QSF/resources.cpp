@@ -33,7 +33,7 @@ namespace qsf {
 		}
 	}
 	void qsf::load_shader(sf::Shader& shader, const std::string& path) {
-		auto split = qpl::split_string(path, '.');
+		auto split = qpl::string_split(path, '.');
 		if (split.size()) {
 			auto back = split.back();
 			if (qpl::string_equals_ignore_case(back, "frag")) {

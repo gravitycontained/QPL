@@ -271,6 +271,21 @@ namespace qpl {
 		return stream.str();
 	}
 
+	namespace detail {
+		template<typename T>
+		void struct_content_info_string(const T& value, std::string& string) {
+			qpl::iterate_struct_members(value, [&](auto& n) {
+				string += qpl::to_string(qpl::type_name(n), " : ", n, '\n');
+			});
+		}
+	}
+	template<typename... T>
+	std::string struct_content_info_string(const T&... values) {
+		std::string result;
+		(qpl::detail::struct_content_info_string(values, result), ...);
+		return result;
+	}
+
 
 	template<typename T> requires qpl::is_wcout_printable_c<T>
 	std::wstring to_wstring(const T& first) {
@@ -286,7 +301,7 @@ namespace qpl {
 
 
 	template<typename T> requires (qpl::is_printable<T>())
-		void ios_print(T&& value) {
+	void ios_print(T&& value) {
 		if (qpl::detail::utf_enabled) {
 			if constexpr (qpl::is_wstring_type<T>()) {
 				std::wcout << value;
@@ -357,34 +372,24 @@ namespace qpl {
 	QPLDLL std::string to_string(const std::string& first);
 	QPLDLL std::wstring to_wstring(const std::wstring& first);
 
-	QPLDLL std::string str_spaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
-	QPLDLL std::wstring wstr_spaced(const std::wstring& string, qpl::size length = 10u, wchar_t prepend = ' ');
-	QPLDLL std::string str_rspaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
-	QPLDLL std::wstring wstr_rspaced(const std::wstring& string, qpl::size length = 10u, wchar_t prepend = ' ');
-	QPLDLL std::string str_lspaced(const std::string& string, qpl::size length = 10u, char prepend = ' ');
-	QPLDLL std::wstring wstr_lspaced(const std::wstring& string, qpl::size length = 10u, wchar_t prepend = ' ');
-	template<typename T>
-	std::string str_spaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
-		return qpl::str_spaced(qpl::to_string(n), length, prepend);
-	}	
-	template<typename T>
-	std::wstring wstr_spaced(const T& n, qpl::size length = 10u, wchar_t prepend = ' ') {
-		return qpl::wstr_spaced(qpl::to_wstring(n), length, prepend);
+	constexpr qpl::size string_count_all(const std::wstring_view& string, const std::wstring_view& sequence) {
+		qpl::size ctr = 0u;
+		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
+			if (string.substr(i, sequence.length()) == sequence) {
+				++ctr;
+			}
+		}
+		return ctr;
 	}
-	template<typename T>
-	std::string str_rspaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
-		return qpl::str_rspaced(qpl::to_string(n), length, prepend);
+	constexpr qpl::size string_count_all(const std::string_view& string, const std::string_view& sequence) {
+		qpl::size ctr = 0u;
+		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
+			if (string.substr(i, sequence.length()) == sequence) {
+				++ctr;
+			}
+		}
+		return ctr;
 	}
-	template<typename T>
-	std::wstring wstr_rspaced(const T& n, qpl::size length = 10u, wchar_t prepend = ' ') {
-		return qpl::wstr_rspaced(qpl::to_wstring(n), length, prepend);
-	}
-	template<typename T>
-	std::string str_lspaced(const T& n, qpl::size length = 10u, char prepend = ' ') {
-		return qpl::str_lspaced(qpl::to_string(n), length, prepend);
-	}
-
-
 	constexpr bool string_contains(std::string_view string, char c) {
 		for (qpl::u32 i = 0; i < string.length(); ++i) {
 			if (string[i] == c) {
@@ -394,7 +399,15 @@ namespace qpl {
 		return false;
 	}
 	constexpr bool string_contains(const std::string_view& string, const std::string_view& sequence) {
-		for (qpl::i32 i = 0; i < qpl::i32_cast(string.length() - sequence.length()); ++i) {
+		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
+			if (string.substr(i, sequence.length()) == sequence) {
+				return true;
+			}
+		}
+		return false;
+	}
+	constexpr bool string_contains(const std::wstring_view& string, const std::wstring_view& sequence) {
+		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
 			if (string.substr(i, sequence.length()) == sequence) {
 				return true;
 			}
@@ -402,8 +415,28 @@ namespace qpl {
 		return false;
 	}
 
-	QPLDLL bool string_equals_ignore_case(const std::string& a, const std::string& b);
-	QPLDLL bool string_equals_ignore_case(const std::wstring& a, const std::wstring& b);
+	constexpr bool string_equals_ignore_case(const std::string_view& a, const std::string_view& b) {
+		if (a.size() != b.size()) {
+			return false;
+		}
+		for (qpl::u32 i = 0u; i < a.size(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	constexpr bool string_equals_ignore_case(const std::wstring_view& a, const std::wstring_view& b) {
+		if (a.size() != b.size()) {
+			return false;
+		}
+		for (qpl::u32 i = 0u; i < a.size(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 
 	template<typename... Args>
@@ -513,6 +546,14 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	template<typename T>
+	std::wstring to_wstring_repeat(T&& value, qpl::size repeat) {
+		std::wostringstream stream;
+		for (auto i = qpl::size{}; i < repeat; ++i) {
+			stream << qpl::to_wstring(value);
+		}
+		return stream.str();
+	}
 
 	template<typename... Args>
 	auto to_auto_string(Args... args) {
@@ -527,37 +568,6 @@ namespace qpl {
 	template<typename... Args>
 	auto to_auto_stringln(Args&&... args) {
 		return qpl::to_auto_string(args..., '\n');
-	}
-
-
-	template<typename T>
-	auto auto_str_spaced(const T& n, qpl::size length = 10u) {
-		if constexpr (qpl::is_wstring_type<T>()) {
-			return qpl::wstr_spaced(n, length, L' ');
-		}
-		else {
-			return qpl::str_spaced(n, length, ' ');
-		}
-	}
-
-	template<typename T>
-	auto auto_str_lspaced(const T& n, qpl::size length = 10u) {
-		if constexpr (qpl::is_wstring_type<T>()) {
-			return qpl::wstr_lspaced(n, length, L' ');
-		}
-		else {
-			return qpl::str_lspaced(n, length, ' ');
-		}
-	}
-
-	template<typename T>
-	auto auto_str_rspaced(const T& n, qpl::size length = 10u) {
-		if constexpr (qpl::is_wstring_type<T>()) {
-			return qpl::wstr_rspaced(n, length, L' ');
-		}
-		else {
-			return qpl::str_rspaced(n, length, ' ');
-		}
 	}
 
 	template<typename... Args>
@@ -594,29 +604,86 @@ namespace qpl {
 	}
 
 	QPLDLL inline std::string string_to_fit(const std::string& string, char append, qpl::size length);
-	QPLDLL std::string appended_to_string_to_fit(const std::string& string, char append, qpl::size length);
-	template<typename T>
-	std::string appended_to_string_to_fit(const T& value, char append, qpl::size length) {
-		return qpl::appended_to_string_to_fit(qpl::to_string(value), append, length);
+
+	namespace detail {
+		QPLDLL std::string appended_to_string_to_fit(const std::string_view& string, char append, qpl::size length);
+		QPLDLL std::string appended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, char append, qpl::size length);
+		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
+
+		QPLDLL std::string appended_to_fit(qpl::size prepended_length, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::wstring appended_to_fit(qpl::size prepended_length, const std::wstring_view& prepend, qpl::size length);
+		QPLDLL std::string prepended_to_fit(qpl::size appended_length, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_fit(qpl::size appended_length, const std::wstring_view& prepend, qpl::size length);
+
+		QPLDLL std::string prepended_to_string_to_fit(const std::string_view& string, char prepend, qpl::size length);
+		QPLDLL std::string prepended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, char prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
 	}
 
-	QPLDLL std::string appended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length);
-	template<typename T>
-	std::string appended_to_string_to_fit(const T& value, const std::string_view& prepend, qpl::size length) {
-		return qpl::appended_to_string_to_fit(qpl::to_string(value), prepend, length);
+	template<typename T, typename U> requires (qpl::is_wstring_type<T>())
+	auto appended_to_string_to_fit(const T& value, const U& append, qpl::size length) {
+		return qpl::detail::appended_to_string_to_fit(std::wstring_view{ qpl::to_wstring(value) }, append, length);
+	}
+	template<typename T, typename U> requires (qpl::is_standard_string_type<T>())
+	auto appended_to_string_to_fit(const T& value, const U& append, qpl::size length) {
+		return qpl::detail::appended_to_string_to_fit(std::string_view{ qpl::to_string(value) }, append, length);
+	}
+	template<typename T, typename U> requires (!qpl::is_string_type<T>())
+	auto appended_to_string_to_fit(const T& value, const U& append, qpl::size length) {
+		return qpl::appended_to_string_to_fit(qpl::to_auto_string(value), append, length);
 	}
 
-	QPLDLL std::string prepended_to_string_to_fit(const std::string& string, char prepend, qpl::size length);
-	template<typename T>
-	std::string prepended_to_string_to_fit(const T& value, char prepend, qpl::size length) {
-		return qpl::prepended_to_string_to_fit(qpl::to_string(value), prepend, length);
+	template<typename T> requires (qpl::is_wstring_type<T>())
+	auto appended_to_fit(qpl::size prepended_length, const T& value, qpl::size length) {
+		return qpl::detail::appended_to_fit(prepended_length, std::wstring_view{ qpl::to_wstring(value) }, length);
+	}
+	template<typename T> requires (qpl::is_standard_string_type<T>())
+	auto appended_to_fit(qpl::size prepended_length, const T& value, qpl::size length) {
+		return qpl::detail::appended_to_fit(prepended_length, std::string_view{ qpl::to_string(value) }, length);
+	}
+	template<typename T> requires (!qpl::is_string_type<T>())
+	auto appended_to_fit(qpl::size prepended_length, const T& value, qpl::size length) {
+		return qpl::appended_to_fit(prepended_length, qpl::to_auto_string(value), length);
 	}
 
-	QPLDLL std::string prepended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length);
-	template<typename T>
-	std::string prepended_to_string_to_fit(const T& value, const std::string_view& prepend, qpl::size length) {
-		return qpl::prepended_to_string_to_fit(qpl::to_string(value), prepend, length);
+	template<typename T, typename U> requires (qpl::is_wstring_type<T>())
+	auto prepended_to_string_to_fit(const T& value, const U& prepend, qpl::size length) {
+		return qpl::detail::prepended_to_string_to_fit(std::wstring_view{ qpl::to_wstring(value) }, prepend, length);
 	}
+	template<typename T, typename U> requires (qpl::is_standard_string_type<T>())
+	auto prepended_to_string_to_fit(const T& value, const U& prepend, qpl::size length) {
+		return qpl::detail::prepended_to_string_to_fit(std::string_view{ qpl::to_string(value) }, prepend, length);
+	}
+	template<typename T, typename U> requires (!qpl::is_string_type<T>())
+	auto prepended_to_string_to_fit(const T& value, const U& prepend, qpl::size length) {
+		return qpl::prepended_to_string_to_fit(qpl::to_auto_string(value), prepend, length);
+	}
+
+	template<typename T>
+	auto str_lspaced(const T& value, qpl::size length) {
+		if constexpr (qpl::is_wstring_type<T>()) {
+			return qpl::appended_to_string_to_fit(value, L' ', length);
+		}
+		else {
+			return qpl::appended_to_string_to_fit(value, ' ', length);
+		}
+	}
+	template<typename T>
+	auto str_rspaced(const T& value, qpl::size length) {
+		if constexpr (qpl::is_wstring_type<T>()) {
+			return qpl::prepended_to_string_to_fit(value, L' ', length);
+		}
+		else {
+			return qpl::prepended_to_string_to_fit(value, ' ', length);
+		}
+	}
+	template<typename T>
+	auto str_spaced(const T& value, qpl::size length) {
+		return qpl::str_lspaced(value, length);
+	}
+
 
 	QPLDLL std::string two_strings_fixed_insert(const std::string& a, const std::string& b, const std::string_view& insert, qpl::size length, qpl::u32 rotation = 0u);
 	template<typename T, typename U>
@@ -630,11 +697,6 @@ namespace qpl {
 	}
 	template<>
 	QPLDLL std::string console_space(qpl::size n, const std::string& string);
-
-
-	QPLDLL inline std::wstring wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length);
-	QPLDLL std::wstring appended_to_wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length);
-	QPLDLL std::wstring prepended_to_wstring_to_fit(const std::wstring& string, wchar_t prepend, qpl::size length);
 
 	struct print_effect {
 		
@@ -913,24 +975,6 @@ namespace qpl {
 			qpl::detail::console_effect_state.current_console_color = value;
 			return;
 		}
-		else if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
-			bool first = true;
-			qpl::ios_print('{');
-			for (auto& i : value) {
-				if (!first) {
-					qpl::ios_print(", ");
-				}
-				first = false;
-				qpl::single_print(i);
-			}
-			qpl::ios_print('}');
-		}
-		else if constexpr (qpl::is_tuple<T>()) {
-			qpl::ios_print(qpl::to_string(value));
-		}
-		else if constexpr (qpl::is_pair<T>()) {
-			qpl::ios_print(qpl::to_string(value));
-		}
 		else if constexpr (qpl::is_wcout_printable<T>() || qpl::is_cout_printable<T>()) {
 			if (qpl::detail::console_effect_state.is_default()) {
 				qpl::ios_print(value);
@@ -956,18 +1000,13 @@ namespace qpl {
 					}
 				}
 			}
-			
+
 			if (backslashn) {
 				qpl::ios_print(value);
 			}
 			else {
 				if (qpl::detail::console_effect_state.next_print_space) {
-					if constexpr (qpl::is_wstring_type<T>()) {
-						qpl::ios_print(qpl::wstr_spaced(value, qpl::detail::console_effect_state.next_print_space));
-					}
-					else {
-						qpl::ios_print(qpl::str_spaced(value, qpl::detail::console_effect_state.next_print_space));
-					}
+					qpl::ios_print(qpl::str_spaced(value, qpl::detail::console_effect_state.next_print_space));
 					qpl::detail::console_effect_state.next_print_space = qpl::detail::console_effect_state.println_space;
 				}
 				else {
@@ -980,11 +1019,29 @@ namespace qpl {
 			if (newln || backslashn) {
 				qpl::detail::console_effect_state.println_color = qpl::detail::console_effect_state.println_default_color;
 				qpl::detail::console_effect_state.current_console_color = qpl::detail::console_effect_state.println_color;
-			
+
 				qpl::detail::console_effect_state.next_println_color = false;
 				qpl::detail::console_effect_state.println_space = qpl::detail::console_effect_state.println_default_space;
 				qpl::detail::console_effect_state.next_println_space = false;
 			}
+		}
+		else if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_long_string_type<T>()) {
+			bool first = true;
+			qpl::ios_print('{');
+			for (auto& i : value) {
+				if (!first) {
+					qpl::ios_print(", ");
+				}
+				first = false;
+				qpl::single_print(qpl::to_auto_string(i));
+			}
+			qpl::ios_print('}');
+		}
+		else if constexpr (qpl::is_tuple<T>()) {
+			qpl::ios_print(qpl::to_auto_string(value));
+		}
+		else if constexpr (qpl::is_pair<T>()) {
+			qpl::ios_print(qpl::to_auto_string(value));
 		}
 	}
 
@@ -1162,6 +1219,7 @@ namespace qpl {
 	inline void println_container(const C& data) {
 		qpl::println(qpl::container_to_string(data));
 	}
+
 
 	enum class base_format {
 		base36l, base64, base36u,
@@ -1640,12 +1698,12 @@ namespace qpl {
 	std::string hex_string(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, prepend_zeroes);
 	}
-	QPLDLL std::string hex_string(const std::string& string);
-	QPLDLL std::string from_hex_string(const std::string& string);
+	QPLDLL std::string hex_string(const std::string_view& string);
+	QPLDLL std::string from_hex_string(const std::string_view& string);
 
 	template<typename T> requires (qpl::is_integer<T>())
-	std::string hex_string_full(T value, qpl::size prepended_size = qpl::size_max, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
-		return qpl::base_string(value, T{ 16 }, prefix, base_format, true, prepended_size);
+	std::string hex_string_full(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
+		return qpl::base_string(value, T{ 16 }, prefix, base_format, true);
 	}
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string binary_string(T value, base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
@@ -1770,7 +1828,6 @@ namespace qpl {
 		QPLDLL std::string string() const;
 		QPLDLL qpl::size entries_per_line() const;
 		QPLDLL qpl::size length_of_entry(qpl::size n) const;
-	private:
 
 		std::vector<strform_content> m_lines;
 	};
@@ -1850,7 +1907,6 @@ namespace qpl {
 		QPLDLL std::wstring string() const;
 		QPLDLL qpl::size entries_per_line() const;
 		QPLDLL qpl::size length_of_entry(qpl::size n) const;
-	private:
 
 		std::vector<wstrform_content> m_lines;
 	};
@@ -1883,8 +1939,60 @@ namespace qpl {
 
 	QPLDLL std::string string_remove_whitespace(const std::string& string);
 
-	QPLDLL qpl::size string_find(const std::string& string, const std::string& search, bool ignore_case = false);
-	QPLDLL std::vector<qpl::size> string_find_all(const std::string& string, const std::string& search, bool ignore_case = false);
+	constexpr qpl::size string_find(const std::string_view& string, char search, bool ignore_case = false) {
+		for (qpl::size i = 0u; i < string.length(); ++i) {
+			auto substr = string[i];
+
+			bool match = (ignore_case ? substr == search : std::tolower(substr) == std::tolower(search));
+			if (match) {
+				return i;
+			}
+		}
+		return string.length();
+	}
+	constexpr qpl::size string_find(const std::string_view& string, const std::string_view& search, bool ignore_case = false) {
+		if (search.empty() || (search.length() > string.length())) {
+			return string.length();
+		}
+		
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				return i;
+			}
+		}
+		return string.length();
+	}
+	constexpr qpl::size string_find(const std::wstring_view& string, wchar_t search, bool ignore_case = false) {
+		for (qpl::size i = 0u; i < string.length(); ++i) {
+			auto substr = string[i];
+
+			bool match = (ignore_case ? substr == search : std::tolower(substr) == std::tolower(search));
+			if (match) {
+				return i;
+			}
+		}
+		return string.length();
+	}
+	constexpr qpl::size string_find(const std::wstring_view& string, const std::wstring_view& search, bool ignore_case = false) {
+		if (search.empty() || (search.length() > string.length())) {
+			return string.length();
+		}
+
+		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
+			auto substr = string.substr(i, search.length());
+
+			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
+			if (match) {
+				return i;
+			}
+		}
+		return string.length();
+	}
+	QPLDLL std::vector<qpl::size> string_find_all(const std::string_view& string, const std::string_view& search, bool ignore_case = false);
+	QPLDLL std::vector<qpl::size> string_find_all(const std::wstring_view& string, const std::wstring_view& search, bool ignore_case = false);
 
 	QPLDLL std::wstring string_replace(const std::wstring& string, const std::wstring& search, const std::wstring& replace, bool ignore_case = false);
 	QPLDLL std::wstring string_replace_all(const std::wstring& string, const std::wstring& search, const std::wstring& replace, bool ignore_case = false);
@@ -1895,42 +2003,48 @@ namespace qpl {
 	QPLDLL qpl::size string_find(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
 	QPLDLL std::vector<qpl::size> string_find_all(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
 
+	QPLDLL std::string string_extract(std::string& string, char by_what);
+	QPLDLL std::string string_extract(std::string& string, std::string by_what);
 
-	QPLDLL std::vector<std::string> split_string(const std::string& string, char by_what);
-	QPLDLL std::vector<std::string> split_string_whitespace(const std::string& string);
-	QPLDLL std::vector<std::string> split_string(const std::string& string, const std::string& expression);
-	QPLDLL std::vector<std::string> split_string(const std::string& string);
-	QPLDLL std::vector<std::string> split_string_allow_empty(const std::string& string, char by_what);
-	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, char by_what);
-	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, wchar_t by_what);
-	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string, const std::wstring& expression);
-	QPLDLL std::vector<std::wstring> split_string(const std::wstring& string);
-	QPLDLL std::vector<std::string> split_string_words(const std::string& string);
-	QPLDLL std::vector<std::wstring> split_string_allow_empty(const std::wstring& string, wchar_t by_what);
-	QPLDLL std::vector<std::string> split_string_digit_alpha(const std::string& string);
+	QPLDLL std::vector<std::string> string_split(const std::string_view& string, char seperated_by_what);
+	QPLDLL std::vector<std::string> string_split_whitespace(const std::string_view& string);
+	QPLDLL std::vector<std::string> string_split(const std::string& string, const std::string& expression);
+	QPLDLL std::vector<std::string> string_split(const std::string_view& string);
+	QPLDLL std::vector<std::string> string_split_allow_empty(const std::string_view& string, char by_what);
+	QPLDLL std::vector<std::wstring> string_split(const std::wstring_view& string, char by_what);
+	QPLDLL std::vector<std::wstring> string_split(const std::wstring_view& string, wchar_t by_what);
+	QPLDLL std::vector<std::wstring> string_split(const std::wstring& string, const std::wstring& expression);
+	QPLDLL std::vector<std::wstring> string_split(const std::wstring_view& string);
+	QPLDLL std::vector<std::string> string_split_words(const std::string_view& string);
+	QPLDLL std::vector<std::wstring> string_split_allow_empty(const std::wstring_view& string, wchar_t by_what);
+	QPLDLL std::vector<std::string> string_split_digit_alpha(const std::string_view& string);
 
-	template<typename T>
-	constexpr auto split_string(const std::string& string, char by_what) {
-		return qpl::type_cast<T>(qpl::split_string(string, by_what));
-	}
-	template<typename T>
-	constexpr auto split_string_whitespace(const std::string& string) {
-		return qpl::type_cast<T>(qpl::split_string_whitespace(string));
-	}
-	template<typename T>
-	constexpr auto split_string(const std::string& string, const std::string& expression) {
-		return qpl::type_cast<T>(qpl::split_string(string, expression));
-	}
-	template<typename T>
-	constexpr auto split_string(const std::string& string) {
-		return qpl::type_cast<T>(qpl::split_string(string));
-	}
+	QPLDLL std::vector<std::wstring> string_split_whitespace(const std::wstring_view& string);
+	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quote = L'\'');
+	QPLDLL std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string);
 
 	template<typename T>
-	constexpr auto split_string_words(const std::string& string) {
-		return qpl::type_cast<T>(qpl::split_string_words(string));
+	constexpr auto string_split(const std::string& string, char by_what) {
+		return qpl::type_cast<T>(qpl::string_split(string, by_what));
 	}
-	QPLDLL std::vector<std::string> split_string_every(const std::string& string, qpl::size n);
+	template<typename T>
+	constexpr auto string_split_whitespace(const std::string& string) {
+		return qpl::type_cast<T>(qpl::string_split_whitespace(string));
+	}
+	template<typename T>
+	constexpr auto string_split(const std::string& string, const std::string& expression) {
+		return qpl::type_cast<T>(qpl::string_split(string, expression));
+	}
+	template<typename T>
+	constexpr auto string_split(const std::string& string) {
+		return qpl::type_cast<T>(qpl::string_split(string));
+	}
+
+	template<typename T>
+	constexpr auto string_split_words(const std::string& string) {
+		return qpl::type_cast<T>(qpl::string_split_words(string));
+	}
+	QPLDLL std::vector<std::string> string_split_every(const std::string& string, qpl::size n);
 	QPLDLL std::string combine_strings(const std::vector<std::string>& strings);
 
 	template<typename... T> requires(sizeof...(T) > 1)
@@ -2045,7 +2159,7 @@ namespace qpl {
 
 
 	template<typename T>
-	std::vector<T> split_string_numbers(const std::string& string) {
+	std::vector<T> string_split_numbers(const std::string& string) {
 		std::vector<T> result;
 
 		if constexpr (qpl::is_floating_point<T>()) {
@@ -2065,12 +2179,12 @@ namespace qpl {
 			}
 		}
 		else {
-			static_assert("split_string_numbers<T>: T is not arithmetic");
+			static_assert("string_split_numbers<T>: T is not arithmetic");
 		}
 		return result;
 	}
 	template<typename T>
-	std::vector<T> split_string_numbers(const std::wstring& string) {
+	std::vector<T> string_split_numbers(const std::wstring& string) {
 		std::vector<T> result;
 
 		if constexpr (qpl::is_floating_point<T>()) {
@@ -2573,13 +2687,19 @@ namespace qpl {
 	struct collection_string {
 		std::string string;
 		std::vector<std::pair<qpl::size, qpl::size>> sizes;
+		mutable qpl::size index = 0u;
 
 		QPLDLL void set_string(const std::string& string);
+		QPLDLL bool set_string_and_read(const std::string& string);
 		QPLDLL bool read_info();
+		QPLDLL std::string get_next_string() const;
+		QPLDLL std::string_view get_next_string_sv() const;
 		QPLDLL std::string get_string() const;
 		QPLDLL std::string_view get_string_sv() const;
 		QPLDLL std::string get_string(qpl::size index) const;
 		QPLDLL std::string_view get_string_sv(qpl::size index) const;
+		QPLDLL std::string get_finalized_string();
+		QPLDLL std::string_view get_finalized_string_sv();
 		QPLDLL void add_string(const std::string& string);
 		QPLDLL void finalize();
 		QPLDLL qpl::size size() const;

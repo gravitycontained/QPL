@@ -13,10 +13,13 @@
 namespace qsf {
 	struct socket {
 		QPLDLL void set_address(sf::IpAddress address, qpl::u32 port);
-		QPLDLL void set_address_connect(sf::IpAddress address, qpl::u32 port);
+		QPLDLL void connect(sf::IpAddress address, qpl::u32 port);
 		QPLDLL void connect();
 		QPLDLL void connect_until_connected();
 		QPLDLL void send(std::string data);
+		QPLDLL void send_and_check_sent_size(std::string data);
+		QPLDLL bool listen(qpl::u32 port, sf::IpAddress address = sf::IpAddress::Any);
+		QPLDLL bool accept(socket& other);
 		QPLDLL std::string receive();
 		QPLDLL void disable_blocking();
 		QPLDLL void enable_blocking();

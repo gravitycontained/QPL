@@ -693,7 +693,7 @@ namespace qgl {
 		template<qpl::u8 info_flag2, typename... Ts> requires(qgl::detail::is_valid_va_attributes<Ts...>())
 		friend struct vertex_array_flag_type;
 
-	private:
+	
 		mutable GLuint id = 0u;
 		mutable GLuint vertexVBO = 0u;
 		mutable GLuint indexVBO = 0u;

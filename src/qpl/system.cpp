@@ -129,6 +129,28 @@ namespace qpl {
         std::getline(std::cin, result);
         return result;
     }
+    std::string get_multiline_input() {
+        std::string result;
+        std::string line;
+        while (std::getline(std::cin, line)) {
+            result += line + '\n';
+            if (line.empty()) {
+                break;
+            }
+        }
+        return result;
+    }
+    std::wstring get_multiline_input_wstring() {
+        std::wstring result;
+        std::wstring line;
+        while (std::getline(std::wcin, line)) {
+            result += line + L'\n';
+            if (line.empty()) {
+                break;
+            }
+        }
+        return result;
+    }
     std::wstring get_input_wstring() {
         std::wstring result;
         std::getline(std::wcin, result);

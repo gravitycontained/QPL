@@ -4,60 +4,7 @@
 #include <cwctype>
 
 namespace qpl {
-	std::string qpl::str_spaced(const std::string& string, qpl::size length, char prepend) {
-		return qpl::str_lspaced(string, length, prepend);
-	}
-	std::wstring qpl::wstr_spaced(const std::wstring& string, qpl::size length, wchar_t prepend) {
-		return qpl::wstr_lspaced(string, length, prepend);
-	}
-	std::string qpl::str_rspaced(const std::string& string, qpl::size length, char prepend) {
-		return qpl::prepended_to_string_to_fit(string, prepend, length);
-	}
-	std::wstring qpl::wstr_rspaced(const std::wstring& string, qpl::size length, wchar_t prepend) {
-		return qpl::prepended_to_wstring_to_fit(string, prepend, length);
-	}
-	std::string qpl::str_lspaced(const std::string& string, qpl::size length, char prepend) {
-		return qpl::appended_to_string_to_fit(string, prepend, length);
-	}
-	std::wstring qpl::wstr_lspaced(const std::wstring& string, qpl::size length, wchar_t prepend) {
-		return qpl::appended_to_wstring_to_fit(string, prepend, length);
-	}
 
-	bool qpl::string_equals_ignore_case(const std::string& a, const std::string& b) {
-		if (a.size() != b.size()) {
-			return false;
-		}
-		for (qpl::u32 i = 0u; i < a.size(); ++i) {
-			if (std::tolower(a[i]) != std::tolower(b[i])) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	bool qpl::string_equals_ignore_case(const std::wstring& a, const std::wstring& b) {
-		if (a.size() != b.size()) {
-			return false;
-		}
-		for (qpl::u32 i = 0u; i < a.size(); ++i) {
-			if (std::tolower(a[i]) != std::tolower(b[i])) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-
-	std::wstring qpl::string_to_wstring(const std::string& s) {
-		int len;
-		int slength = (int)s.length() + 1;
-		len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-		wchar_t* buf = new wchar_t[len];
-		MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-		std::wstring r(buf);
-		delete[] buf;
-		return r;
-	}
 	std::wstring qpl::string_to_wstring(std::string_view s) {
 		return qpl::string_to_wstring(std::string{ s });
 	}
@@ -74,17 +21,19 @@ namespace qpl {
 	}
 	
 
-	std::string qpl::wstring_to_string(const std::wstring& s) {
-		int len;
-		int slength = (int)s.length() + 1;
-		len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
-		char* buf = new char[len];
-		WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, buf, len, 0, 0);
-		std::string r(buf);
-		delete[] buf;
-		return r;
+	std::string qpl::wstring_to_string(const std::wstring& str) {
+		int size_needed = WideCharToMultiByte(CP_ACP, 0, str.c_str(), (int)str.size(), 0, 0, 0, 0);
+		std::string result(size_needed, 0);
+		WideCharToMultiByte(CP_ACP, 0, &str[0], (int)str.size(), &result[0], size_needed, 0, 0);
+		return result;
 	}
 
+	std::wstring qpl::string_to_wstring(const std::string& str) {
+		int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+		std::wstring result(size_needed, 0);
+		MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &result[0], size_needed);
+		return result;
+	}
 	std::string qpl::wstring_to_string(std::wstring_view s) {
 		return qpl::wstring_to_string(std::wstring{ s });
 	}
@@ -135,64 +84,215 @@ namespace qpl {
 	std::string qpl::string_to_fit(const std::string& string, char append, qpl::size length) {
 		return std::string(string.length() >= length ? 0ull : length - string.length(), append);
 	}
-	std::string qpl::appended_to_string_to_fit(const std::string& string, char append, qpl::size length) {
-		if (string.length() >= length) {
-			return string;
-		}
-		return string + std::string(length - string.length(), append);
-	}
-	std::string qpl::appended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length) {
-		if (string.length() >= length) {
-			return string;
-		}
 
-		auto multiple = ((string.length() - 1) / prepend.length() + 1) * prepend.length();
-		auto left = multiple - string.length();
-		auto full = length < multiple ? 0u : ((length - multiple) / prepend.length());
-		auto right = length < multiple ? 0u : (length % prepend.length());
-
-		std::ostringstream stream;
-		stream << string;
-		
-
-		if (left) {
-			stream << prepend.substr(prepend.length() - left, length - string.length());
+	namespace detail {
+		std::string  qpl::detail::appended_to_string_to_fit(const std::string_view& string, char append, qpl::size length) {
+			if (string.length() >= length) {
+				return std::string{ string };
+			}
+			auto result = std::string{ string };
+			result += std::string(length - string.length(), append);;
+			return result;
 		}
-		for (qpl::u32 i = 0u; i < full; ++i) {
-			stream << prepend;
-		}
-		if (right) {
-			stream << prepend.substr(0, right);
-		}
+		std::string  qpl::detail::appended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length) {
+			if (string.length() >= length) {
+				return std::string{ string };
+			}
 
-		return stream.str();
-	}
+			auto multiple = ((string.length() - 1) / prepend.length() + 1) * prepend.length();
+			auto left = multiple - string.length();
+			auto full = length < multiple ? 0u : ((length - multiple) / prepend.length());
+			auto right = length < multiple ? 0u : (length % prepend.length());
+
+			std::ostringstream stream;
+			stream << string;
 
 
-	std::string qpl::prepended_to_string_to_fit(const std::string& string, char prepend, qpl::size length) {
-		if (string.length() >= length) {
-			return string;
+			if (left) {
+				stream << prepend.substr(prepend.length() - left, length - string.length());
+			}
+			for (qpl::u32 i = 0u; i < full; ++i) {
+				stream << prepend;
+			}
+			if (right) {
+				stream << prepend.substr(0, right);
+			}
+
+			return stream.str();
 		}
-		return std::string(length - string.length(), prepend) + string;
-	}
-	std::string qpl::prepended_to_string_to_fit(const std::string& string, const std::string_view& prepend, qpl::size length) {
-		if (string.length() >= length) {
-			return string;
+		std::wstring qpl::detail::appended_to_string_to_fit(const std::wstring_view& string, char append, qpl::size length) {
+			if (string.length() >= length) {
+				return std::wstring{ string };
+			}
+			auto result = std::wstring{ string };
+			result += std::wstring(length - string.length(), append);;
+			return result;
+		}
+		std::wstring qpl::detail::appended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length) {
+			if (string.length() >= length) {
+				return std::wstring{ string };
+			}
+
+			auto multiple = ((string.length() - 1) / prepend.length() + 1) * prepend.length();
+			auto left = multiple - string.length();
+			auto full = length < multiple ? 0u : ((length - multiple) / prepend.length());
+			auto right = length < multiple ? 0u : (length % prepend.length());
+
+			std::wostringstream stream;
+			stream << string;
+
+
+			if (left) {
+				stream << prepend.substr(prepend.length() - left, length - string.length());
+			}
+			for (qpl::u32 i = 0u; i < full; ++i) {
+				stream << prepend;
+			}
+			if (right) {
+				stream << prepend.substr(0, right);
+			}
+
+			return stream.str();
 		}
 
-		auto mod = (length - string.length()) % prepend.length();
-		auto div = (length - string.length()) / prepend.length();
+		std::string  qpl::detail::appended_to_fit(qpl::size prepended_length, const std::string_view& prepend, qpl::size length) {
+			if (prepended_length >= length) {
+				return "";
+			}
 
-		std::ostringstream stream;
-		for (qpl::u32 i = 0u; i < div; ++i) {
-			stream << prepend;
+			auto multiple = ((prepended_length - 1) / prepend.length() + 1) * prepend.length();
+			auto left = multiple - prepended_length;
+			auto full = length < multiple ? 0u : ((length - multiple) / prepend.length());
+			auto right = length < multiple ? 0u : (length % prepend.length());
+
+			std::ostringstream stream;
+
+			if (left) {
+				stream << prepend.substr(prepend.length() - left, length - prepended_length);
+			}
+			for (qpl::u32 i = 0u; i < full; ++i) {
+				stream << prepend;
+			}
+			if (right) {
+				stream << prepend.substr(0, right);
+			}
+
+			return stream.str();
 		}
-		if (mod) {
-			stream << prepend.substr(0, mod);
+		std::string  qpl::detail::prepended_to_fit(qpl::size appended_length, const std::string_view& prepend, qpl::size length) {
+			if (appended_length >= length) {
+				return "";
+			}
+
+			auto mod = (length - appended_length) % prepend.length();
+			auto div = (length - appended_length) / prepend.length();
+
+			std::ostringstream stream;
+			for (qpl::u32 i = 0u; i < div; ++i) {
+				stream << prepend;
+			}
+			if (mod) {
+				stream << prepend.substr(0, mod);
+			}
+			return stream.str();
+		}
+		std::wstring qpl::detail::appended_to_fit(qpl::size prepended_length, const std::wstring_view& prepend, qpl::size length) {
+			if (prepended_length >= length) {
+				return L"";
+			}
+
+			auto multiple = ((prepended_length - 1) / prepend.length() + 1) * prepend.length();
+			auto left = multiple - prepended_length;
+			auto full = length < multiple ? 0u : ((length - multiple) / prepend.length());
+			auto right = length < multiple ? 0u : (length % prepend.length());
+
+			std::wostringstream stream;
+
+			if (left) {
+				stream << prepend.substr(prepend.length() - left, length - prepended_length);
+			}
+			for (qpl::u32 i = 0u; i < full; ++i) {
+				stream << prepend;
+			}
+			if (right) {
+				stream << prepend.substr(0, right);
+			}
+
+			return stream.str();
+		}
+		std::wstring qpl::detail::prepended_to_fit(qpl::size appended_length, const std::wstring_view& prepend, qpl::size length) {
+			if (appended_length >= length) {
+				return L"";
+			}
+
+			auto mod = (length - appended_length) % prepend.length();
+			auto div = (length - appended_length) / prepend.length();
+
+			std::wostringstream stream;
+			for (qpl::u32 i = 0u; i < div; ++i) {
+				stream << prepend;
+			}
+			if (mod) {
+				stream << prepend.substr(0, mod);
+			}
+			return stream.str();
 		}
 
-		stream << string;
-		return stream.str();
+		std::string  qpl::detail::prepended_to_string_to_fit(const std::string_view& string, char prepend, qpl::size length) {
+			if (string.length() >= length) {
+				return std::string{ string };
+			}
+			auto result = std::string(length - string.length(), prepend);
+			result += string;
+			return result;
+		}
+		std::string  qpl::detail::prepended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length) {
+			if (string.length() >= length) {
+				return std::string{ string };
+			}
+
+			auto mod = (length - string.length()) % prepend.length();
+			auto div = (length - string.length()) / prepend.length();
+
+			std::ostringstream stream;
+			for (qpl::u32 i = 0u; i < div; ++i) {
+				stream << prepend;
+			}
+			if (mod) {
+				stream << prepend.substr(0, mod);
+			}
+
+			stream << string;
+			return stream.str();
+		}
+		std::wstring qpl::detail::prepended_to_string_to_fit(const std::wstring_view& string, char prepend, qpl::size length) {
+			if (string.length() >= length) {
+				return std::wstring{ string };
+			}
+			auto result = std::wstring(length - string.length(), prepend);
+			result += string;
+			return result;
+		}
+		std::wstring qpl::detail::prepended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length) {
+			if (string.length() >= length) {
+				return std::wstring{ string };
+			}
+
+			auto mod = (length - string.length()) % prepend.length();
+			auto div = (length - string.length()) / prepend.length();
+
+			std::wostringstream stream;
+			for (qpl::u32 i = 0u; i < div; ++i) {
+				stream << prepend;
+			}
+			if (mod) {
+				stream << prepend.substr(0, mod);
+			}
+
+			stream << string;
+			return stream.str();
+		}
+
 	}
 
 	std::string qpl::two_strings_fixed_insert(const std::string& a, const std::string& b, const std::string_view& insert, qpl::size length, qpl::u32 rotation) {
@@ -209,21 +309,6 @@ namespace qpl {
 	template<>
 	std::string qpl::console_space(qpl::size n, const std::string& string) {
 		return qpl::prepended_to_string_to_fit(string, ' ', n);
-	}
-	std::wstring qpl::wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length) {
-		return std::wstring(string.length() >= length ? 0ull : length - string.length(), append);
-	}
-	std::wstring qpl::appended_to_wstring_to_fit(const std::wstring& string, wchar_t append, qpl::size length) {
-		if (string.length() >= length) {
-			return string;
-		}
-		return string + std::wstring(length - string.length(), append);
-	}
-	std::wstring qpl::prepended_to_wstring_to_fit(const std::wstring& string, wchar_t prepend, qpl::size length) {
-		if (string.length() >= length) {
-			return string;
-		}
-		return std::wstring(length - string.length(), prepend) + string;
 	}
 	std::ostream& qpl::operator<<(std::ostream& os, print_effect effect) {
 		return os;
@@ -248,14 +333,14 @@ namespace qpl {
 		qpl::console_effect_state console_effect_state;
 	}
 
-	std::string qpl::hex_string(const std::string& string) {
+	std::string qpl::hex_string(const std::string_view& string) {
 		std::ostringstream stream;
 		for (auto& i : string) {
 			stream << qpl::prepended_to_string_to_fit(qpl::hex_string(qpl::u8_cast(i), ""), "0", 2);
 		}
 		return stream.str();
 	}
-	std::string qpl::from_hex_string(const std::string& string) {
+	std::string qpl::from_hex_string(const std::string_view& string) {
 		std::ostringstream stream;
 		for (qpl::size i = 0u; i < string.length(); i += 2u) {
 			stream << qpl::char_cast(qpl::from_base_string(string.substr(i, 2u), 16));
@@ -730,22 +815,23 @@ namespace qpl {
 		}
 		return result;
 	}
-
-	qpl::size qpl::string_find(const std::string& string, const std::string& search, bool ignore_case) {
+	std::vector<qpl::size> qpl::string_find_all(const std::string_view& string, const std::string_view& search, bool ignore_case) {
 		if (search.empty()) {
-			return 0u;
+			return {};
 		}
+		std::vector<qpl::size> result;
 		for (qpl::size i = 0u; i < string.length() - search.length() + 1; ++i) {
 			auto substr = string.substr(i, search.length());
 
 			bool match = (ignore_case ? substr == search : qpl::string_equals_ignore_case(substr, search));
 			if (match) {
-				return i;
+				result.push_back(i);
+				i += (search.length() - 1);
 			}
 		}
-		return string.length();
+		return result;
 	}
-	std::vector<qpl::size> qpl::string_find_all(const std::string& string, const std::string& search, bool ignore_case) {
+	std::vector<qpl::size> qpl::string_find_all(const std::wstring_view& string, const std::wstring_view& search, bool ignore_case) {
 		if (search.empty()) {
 			return {};
 		}
@@ -876,14 +962,58 @@ namespace qpl {
 	}
 
 
-	std::vector<std::string> qpl::split_string(const std::string& string, char by_what) {
+	std::string qpl::string_extract(std::string& string, char seperated_by_what) {
+		std::string found = "";
+		qpl::size begin = qpl::size_max;
+		qpl::size end = qpl::size_max;
+		for (qpl::size i = 0u; i < string.length(); ++i) {
+			if (string[i] == seperated_by_what) {
+				if (begin == qpl::size_max) {
+					begin = i;
+				}
+				else {
+					end = i + 1;
+					break;
+				}
+			}
+		}
+		if (begin != qpl::size_max && end != qpl::size_max) {
+			found = string.substr(begin + 1, end - begin - 2);
+			string = qpl::string_remove(string, string.substr(begin, end - begin));
+		}
+		return found;
+	}
+	std::string qpl::string_extract(std::string& string, std::string seperated_by_what) {
+		std::string found = "";
+		qpl::size begin = qpl::size_max;
+		qpl::size end = qpl::size_max;
+		for (qpl::size i = 0u; i < string.length() - seperated_by_what.length(); ++i) {
+
+			auto next = string.substr(i, seperated_by_what.length());
+			if (next == seperated_by_what) {
+				if (begin == qpl::size_max) {
+					begin = i;
+				}
+				else {
+					end = i + seperated_by_what.length();
+					break;
+				}
+			}
+		}
+		if (begin != qpl::size_max && end != qpl::size_max) {
+			found = string.substr(begin + seperated_by_what.length(), end - begin - (seperated_by_what.length() * 2));
+			string = qpl::string_remove(string, string.substr(begin, end - begin));
+		}
+		return found;
+	}
+	std::vector<std::string> qpl::string_split(const std::string_view& string, char by_what) {
 		std::vector<std::string> result;
 
 		qpl::size before = 0;
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (string[i] == by_what) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && string[i] == by_what) {
@@ -896,18 +1026,18 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::string{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split_string_whitespace(const std::string& string) {
+	std::vector<std::string> qpl::string_split_whitespace(const std::string_view& string) {
 		std::vector<std::string> result;
 
 		qpl::size before = 0;
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (qpl::is_character_white_space(string[i])) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && qpl::is_character_white_space(string[i])) {
@@ -920,11 +1050,98 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::string{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split_string(const std::string& string, const std::string& expression) {
+
+	std::vector<std::wstring> qpl::string_split_whitespace(const std::wstring_view& string) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (std::iswspace(string[i])) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				while (i < string.length() && std::iswspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
+
+	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quotes) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == quotes) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				qpl::size begin = i;
+				while (i < string.length() && string[i] != quotes) {
+					++i;
+				}
+				result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+				++i;
+				before = i;
+			}
+			else if (std::iswspace(string[i])) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				while (i < string.length() && std::iswspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before < string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
+	std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string) {
+		std::vector<std::pair<std::wstring, qpl::size>> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (std::iswspace(string[i])) {
+				if (i - before) {
+					result.push_back(std::make_pair(std::wstring{ string.substr(before, i - before) }, before));
+				}
+				++i;
+				while (i < string.length() && std::iswspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(std::make_pair(std::wstring{ string.substr(before) }, before));
+		}
+		return result;
+	}
+	std::vector<std::string> qpl::string_split(const std::string& string, const std::string& expression) {
 		std::vector<std::string> result;
 		std::smatch smatch;
 		std::regex reg = std::regex{ "[^" + expression + "]+" };
@@ -935,14 +1152,14 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split_string(const std::string& string) {
+	std::vector<std::string> qpl::string_split(const std::string_view& string) {
 		std::vector<std::string> result;
 
 		qpl::size before = 0u;
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (std::isspace(string[i])) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && std::isspace(string[i])) {
@@ -955,18 +1172,18 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::string{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split_string_allow_empty(const std::string& string, char by_what) {
+	std::vector<std::string> qpl::string_split_allow_empty(const std::string_view& string, char by_what) {
 		std::vector<std::string> result;
 
 		qpl::size before = 0;
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (string[i] == by_what) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && string[i] == by_what) {
@@ -980,18 +1197,18 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::string{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split_string(const std::wstring& string, char by_what) {
+	std::vector<std::wstring> qpl::string_split(const std::wstring_view& string, char by_what) {
 		std::vector<std::wstring> result;
 
 		qpl::size before = 0;
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (string[i] == by_what) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && string[i] == by_what) {
@@ -1004,18 +1221,18 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::wstring{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split_string(const std::wstring& string, wchar_t by_what) {
+	std::vector<std::wstring> qpl::string_split(const std::wstring_view& string, wchar_t by_what) {
 		std::vector<std::wstring> result;
 
 		qpl::size before = 0;
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (string[i] == by_what) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && string[i] == by_what) {
@@ -1028,11 +1245,11 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::wstring{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split_string(const std::wstring& string, const std::wstring& expression) {
+	std::vector<std::wstring> qpl::string_split(const std::wstring& string, const std::wstring& expression) {
 		std::vector<std::wstring> result;
 		std::wsmatch smatch;
 		std::wregex reg = std::wregex{ L"[^" + expression + L"]+" };
@@ -1043,7 +1260,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split_string(const std::wstring& string) {
+	std::vector<std::wstring> qpl::string_split(const std::wstring_view& string) {
 		if (string.empty()) {
 			return {};
 		}
@@ -1053,7 +1270,7 @@ namespace qpl {
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (std::isspace(string[i])) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && std::iswspace(string[i])) {
@@ -1066,13 +1283,12 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::wstring{ string.substr(before) });
 		}
 		return result;
 	}
 
-
-	std::vector<std::string> qpl::split_string_words(const std::string& string) {
+	std::vector<std::string> qpl::string_split_words(const std::string_view& string) {
 		if (string.empty()) {
 			return {};
 		}
@@ -1082,7 +1298,7 @@ namespace qpl {
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (qpl::is_character_special(string[i])) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && qpl::is_character_special(string[i])) {
@@ -1095,11 +1311,11 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::string{ string.substr(before) });
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::split_string_allow_empty(const std::wstring& string, wchar_t by_what) {
+	std::vector<std::wstring> qpl::string_split_allow_empty(const std::wstring_view& string, wchar_t by_what) {
 		if (string.empty()) {
 			return {};
 		}
@@ -1113,7 +1329,7 @@ namespace qpl {
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (string[i] == by_what) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
 				}
 				++i;
 				while (i < string.length() && string[i] == by_what) {
@@ -1127,14 +1343,14 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::wstring{ string.substr(before) });
 		}
 		if (string.back() == by_what) {
 			result.push_back(L"");
 		}
 		return result;
 	}
-	std::vector<std::string> qpl::split_string_digit_alpha(const std::string& string) {
+	std::vector<std::string> qpl::string_split_digit_alpha(const std::string_view& string) {
 		if (string.empty()) {
 			return {};
 		}
@@ -1145,7 +1361,7 @@ namespace qpl {
 		for (qpl::size i = 0u; i < string.length(); ) {
 			if (alpha && !qpl::is_character_alpha(string[i])) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				while (i < string.length() && (!qpl::is_character_alpha(string[i]) && !qpl::is_character_digit_or_dot(string[i]))) {
 					++i;
@@ -1156,7 +1372,7 @@ namespace qpl {
 			}
 			else if (!alpha && !qpl::is_character_digit_or_dot(string[i])) {
 				if (i - before) {
-					result.push_back(string.substr(before, i - before));
+					result.emplace_back(std::string{ string.substr(before, i - before) });
 				}
 				while (i < string.length() && (!qpl::is_character_alpha(string[i]) && !qpl::is_character_digit_or_dot(string[i]))) {
 					++i;
@@ -1170,12 +1386,12 @@ namespace qpl {
 			}
 		}
 		if (before != string.length()) {
-			result.push_back(string.substr(before));
+			result.emplace_back(std::string{ string.substr(before) });
 		}
 		return result;
 	}
 
-	std::vector<std::string> qpl::split_string_every(const std::string& string, qpl::size n) {
+	std::vector<std::string> qpl::string_split_every(const std::string& string, qpl::size n) {
 		if (string.empty()) {
 			return {};
 		}
@@ -1468,9 +1684,13 @@ namespace qpl {
 
 		return result;
 	}
-
 	void qpl::collection_string::set_string(const std::string& string) {
 		this->string = string;
+		this->index = 0u;
+	}
+	bool qpl::collection_string::set_string_and_read(const std::string& string) {
+		this->set_string(string);
+		return this->read_info();
 	}
 	bool qpl::collection_string::read_info() {
 		if (this->string.length() < qpl::bytes_in_type<qpl::u32>()) {
@@ -1478,6 +1698,7 @@ namespace qpl {
 		}
 		qpl::size position = 0;
 		qpl::u32 size_size;
+		this->index = 0u;
 		memcpy(&size_size, this->string.data() + position, qpl::bytes_in_type<qpl::u32>());
 		position += qpl::bytes_in_type<qpl::u32>();
 
@@ -1496,6 +1717,12 @@ namespace qpl {
 		}
 		return true;
 	}
+	std::string qpl::collection_string::get_next_string() const {
+		return this->get_string(this->index++);
+	}
+	std::string_view qpl::collection_string::get_next_string_sv() const {
+		return this->get_string_sv(this->index++);
+	}
 	std::string qpl::collection_string::get_string() const {
 		return this->string;
 	}
@@ -1513,6 +1740,14 @@ namespace qpl {
 			throw std::exception(qpl::to_string("qpl::string_collection::get_string_sv(", index, "): size is only ", this->sizes.size()).c_str());
 		}
 		return std::string_view(this->string.begin() + this->sizes[index].first, this->string.begin() + this->sizes[index].second);
+	}
+	std::string qpl::collection_string::get_finalized_string() {
+		this->finalize();
+		return this->get_string();
+	}
+	std::string_view qpl::collection_string::get_finalized_string_sv() {
+		this->finalize();
+		return this->get_string_sv();
 	}
 	void qpl::collection_string::add_string(const std::string& string) {
 		auto back = this->string.length();

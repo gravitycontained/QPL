@@ -542,7 +542,7 @@ namespace qpl {
 			return this->used_size() == 0u;
 		}
 
-		private:
+		
 		qpl::conditional<qpl::if_true<N == 0>, std::vector<T>, std::array<T, N>> data;
 		qpl::size index = 0u;
 		bool rotation_finished = false;
@@ -573,7 +573,7 @@ namespace qpl {
 
 	template<typename T, qpl::size N, bool BOUNDARY_CHECK = detail::array_boundary_check>
 	struct array : std::array<T, N> {
-	private:
+	
 		constexpr void index_check(qpl::size index, bool at) const {
 			if (index >= this->size()) {
 				std::ostringstream stream;
@@ -622,7 +622,7 @@ namespace qpl {
 	template<typename T, bool BOUNDARY_CHECK = detail::vector_boundary_check>
 	struct vector : std::vector<T> {
 
-	private:
+	
 		constexpr void index_check(qpl::size index, bool at) const {
 			if (index >= this->size()) {
 				std::ostringstream stream;
@@ -674,15 +674,16 @@ namespace qpl {
 		}
 	};
 	struct save_state;
+	struct load_state;
 
 	namespace impl {
 		template<typename T>
-		concept has_save = requires(const T a) {
-			{ a.save() } -> std::same_as<std::string>;
+		concept has_save = requires(const T a, save_state & state) {
+			a.save(state);
 		};
 
 		template<typename T>
-		concept has_load = requires(T a, save_state state) {
+		concept has_load = requires(T a, load_state& state) {
 			a.load(state);
 		};
 	}
@@ -721,14 +722,10 @@ namespace qpl {
 		QPLDLL void clear();
 		QPLDLL void file_save(std::string path);
 		QPLDLL void file_save(std::string path, const std::array<qpl::u64, 4>& key);
-		QPLDLL void file_load(std::string path);
-		QPLDLL void file_load(std::string path, const std::array<qpl::u64, 4>& key);
-		QPLDLL void set_string(const std::string& str);
 		QPLDLL void finalize_string();
 		QPLDLL std::string get_string() const;
 		QPLDLL std::string get_finalized_string();
 		QPLDLL std::string get_next_string();
-		QPLDLL save_state get_next_save_state();
 
 		template<typename T>
 		void save_single(const T& data) {
@@ -737,19 +734,25 @@ namespace qpl {
 			}
 			else if constexpr (qpl::has_save<T>()) {
 				if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
-					auto str = qpl::stack_memory_to_string(data.size());
-					this->collection_string.add_string(str);
+					this->save_single(data.size());
 					for (auto& i : data) {
 						this->save_single(i);
 					}
 				}
 				else {
-					this->collection_string.add_string(data.save());
+					data.save(*this);
 				}
 			}
 			else if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
-				auto str = qpl::heap_memory_to_string(data);
-				this->collection_string.add_string(str);
+				if constexpr (qpl::is_std_array_type<T>()) {
+					auto str = qpl::heap_memory_to_string(data);
+					this->collection_string.add_string(str);
+				}
+				else {
+					this->save_single(data.size());
+					auto str = qpl::heap_memory_to_string(data);
+					this->collection_string.add_string(str);
+				}
 			}
 			else {
 				auto str = qpl::stack_memory_to_string(data);
@@ -760,23 +763,46 @@ namespace qpl {
 		void save(const Ts&... data) {
 			(this->save_single(data), ...);
 		}
+	};
+
+
+	struct load_state {
+		qpl::collection_string collection_string;
+		qpl::size ctr = 0u;
+
+		load_state() {
+
+		}
+		template<typename... Ts>
+		load_state(const Ts&... loads) {
+			this->load(loads...);
+		}
+
+		QPLDLL void clear();
+		QPLDLL void file_load(std::string path);
+		QPLDLL void file_load(std::string path, const std::array<qpl::u64, 4>& key);
+		QPLDLL void set_string(const std::string& str);
+
 		template<typename T>
 		void load_single(T& data) {
 			if (this->ctr >= this->collection_string.size()) {
 				throw qpl::exception("save_state: trying to load resource #", this->ctr, " but size is only ", this->collection_string.size());
 			}
-			if constexpr (qpl::has_load<T>()) {
+			if constexpr (qpl::is_standard_string_type<T>()) {
+				data = this->collection_string.get_string(this->ctr);
+				++this->ctr;
+			}
+			else if constexpr (qpl::has_load<T>()) {
 				if constexpr (qpl::is_container<T>() && qpl::has_size<T>()) {
 					qpl::size size;
-					qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), size);
+					this->load_single(size);
 					data.resize(size);
-					++ctr;
 					for (auto& i : data) {
 						this->load_single(i);
 					}
 				}
 				else {
-					data.load(this->get_next_save_state());
+					data.load(*this);
 				}
 			}
 			else if constexpr (qpl::has_data<T>() && qpl::has_size<T>()) {
@@ -784,6 +810,9 @@ namespace qpl {
 					qpl::string_to_stack_memory(this->collection_string.get_string(this->ctr), data);
 				}
 				else {
+					qpl::size size;
+					this->load_single(size);
+					data.resize(size);
 					qpl::string_to_heap_memory(this->collection_string.get_string(this->ctr), data);
 				}
 				++this->ctr;
@@ -800,6 +829,57 @@ namespace qpl {
 	};
 
 
+	namespace detail {
+		template<typename T>
+		void serialize_to_string(const T& value, qpl::collection_string& collection) {
+			qpl::iterate_struct_members(value, 
+			[&](auto& n) {
+				auto str = qpl::stack_memory_to_string(n);
+				collection.add_string(str);
+			}, 
+			[&](auto& n) {
+				if constexpr (qpl::has_resize<qpl::decay<decltype(n)>>()) {
+					qpl::size size = n.size();
+					auto str = qpl::stack_memory_to_string(size);
+					collection.add_string(str);
+				}
+			});
+		}
+		template<typename T>
+		void serialize_from_string(T& value, qpl::collection_string& collection) {
+			qpl::iterate_struct_members(value, 
+			[&](auto& n) {
+				qpl::string_to_stack_memory(collection.get_next_string(), n);
+			}, 
+			[&](auto& n) {
+				if constexpr (qpl::has_resize<decltype(n)>()) {
+					qpl::size size;
+					qpl::string_to_stack_memory(collection.get_next_string(), size);
+					n.resize(size);
+				}
+			});
+		}
+	}
+
+	template<typename ... Ts>
+	std::string struct_content_to_string(const Ts&... values) {
+		qpl::collection_string collection;
+		(qpl::detail::serialize_to_string(values, collection), ...);
+		return collection.get_finalized_string();
+
+		qpl::save_state save;
+	}
+	template<typename ... Ts>
+	void struct_content_from_string(std::string string, Ts&... values) {
+		qpl::collection_string collection;
+		auto result = collection.set_string_and_read(string);
+		if (result) {
+			(qpl::detail::serialize_from_string(values, collection), ...);
+		}
+		else {
+			qpl::println("qpl::serialize_from_string : error reading serialized string!");
+		}
+	}
 }
 
 

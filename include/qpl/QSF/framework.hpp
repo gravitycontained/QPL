@@ -14,12 +14,16 @@
 #include <qpl/QSF/event_info.hpp>
 #include <qpl/QSF/drawables.hpp>
 #include <qpl/QSF/resources.hpp>
+#include <qpl/QSF/view.hpp>
 #include <qpl/color.hpp>
 #include <qpl/vector.hpp>
 #include <qpl/time.hpp>
 #include <qpl/camera.hpp>
 
 namespace qsf {
+
+	template<typename T>
+	struct view_control_t;
 
 	enum class cull_face : qpl::u8 {
 		back,
@@ -97,6 +101,9 @@ namespace qsf {
 		QPLDLL void enable_update_if_no_focus();
 		QPLDLL void disable_update_if_no_focus();
 		QPLDLL bool is_update_if_no_focus_enabled() const;
+		QPLDLL void enable_call_resize_call_on_init();
+		QPLDLL void disable_call_resize_call_on_init();
+		QPLDLL bool is_call_resize_call_on_init() const;
 		QPLDLL bool has_focus() const;
 		QPLDLL bool has_gained_focus() const;
 		QPLDLL bool has_lost_focus() const;
@@ -147,6 +154,7 @@ namespace qsf {
 		QPLDLL void set_title(const std::string& title);
 		QPLDLL void set_dimension(qpl::vector2u dimension);
 		QPLDLL void set_style(qpl::u32 style);
+		QPLDLL void set_antialiasing_level(qpl::u32 level);
 		QPLDLL void hide_cursor();
 		QPLDLL void set_window_position(qpl::vector2u position);
 		QPLDLL qpl::vector2u get_window_position() const;
@@ -181,6 +189,7 @@ namespace qsf {
 		bool gained_focus = false;
 		bool use_gl = false;
 		bool use_vsync = false;
+		bool call_resize_call_on_init = true;
 	};
 
 	
@@ -230,13 +239,18 @@ namespace qsf {
 #endif
 
 		template<typename T>
-		void set_view(const qsf::view_rectangle_t<T>& view) {
+		void set_view(const qsf::view_control_t<T>& view) {
 			this->render_states.transform = view.get_render_states().transform;
 		}
 		QPLDLL void reset_view();
 
 		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void final_draw(const T& drawable, sf::RenderStates states) {
+
+			if constexpr (qsf::has_view<T>()) {
+				drawable.view.apply_to(states);
+			}
+
 			if constexpr (qsf::is_render_texture<T>()) {
 #if defined QPL_INTERN_GLEW_USE
 				if (this->use_gl && !this->states_pushed) {
@@ -322,7 +336,7 @@ namespace qsf {
 		}
 
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
-		void draw(const T& drawable, qsf::view_rectangle_t<V> view) {
+		void draw(const T& drawable, qsf::view_control_t<V> view) {
 			if (!view.enabled) {
 				this->draw(drawable);
 				return;
@@ -353,7 +367,7 @@ namespace qsf {
 		template<typename T> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw_into(const std::string& name, const T& drawable) {
 			if constexpr (qsf::has_any_draw<T>()) {
-			this->get_render(name).draw(drawable, this->render_states);
+				this->get_render(name).draw(drawable, this->render_states);
 			}
 			else {
 				for (auto& i : drawable) {
@@ -373,7 +387,7 @@ namespace qsf {
 			}
 		}
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
-		void draw_into(const std::string& name, const T& drawable, qsf::view_rectangle_t<V> view) {
+		void draw_into(const std::string& name, const T& drawable, qsf::view_control_t<V> view) {
 			if (!view.enabled) {
 				this->draw_into(name, drawable);
 				return;
@@ -443,39 +457,67 @@ namespace qsf {
 			}
 		}
 
-		template<typename T> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
-		void update(T& updatable) {
-			if constexpr (qsf::has_update<T>()) {
-				updatable.update(this->event());
+
+		template<typename T, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))
+		void final_update(T& updatable, Args&&... args) {
+
+			if constexpr (qsf::has_view<T>()) {
+				if (updatable.view.is_default_view()) {
+					updatable.update(this->event(), args...);
+				}
+				else {
+					auto before = this->event().m_mouse_position;
+					auto before_delta = this->event().m_delta_mouse_position;
+					this->event().apply_view(updatable.view);
+
+					updatable.update(this->event(), args...);
+
+					this->event().m_mouse_position = before;
+					this->event().m_delta_mouse_position = before_delta;
+				}
+			}
+			else {
+				updatable.update(this->event(), args...);
+			}
+		}
+
+		template<typename T, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))
+		void update(T& updatable, Args&&... args) {
+			if constexpr (qsf::has_update<T, Args...>()) {
+				this->final_update(updatable, args...);
 			}
 			else {
 				for (auto& i : updatable) {
-					this->update(i);
+					this->update(i, args...);
 				}
 			}
 		}
 
-		template<typename T, typename V> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
-		void update(T& updatable, const qsf::view_rectangle_t<V>& view) {
+		template<typename T, typename V, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))
+		void update(T& updatable, const qsf::view_control_t<V>& view, Args&&... args) {
 			if (!view.enabled) {
-				this->update(updatable);
+				this->update(updatable, args...);
 				return;
 			}
 			
 			auto before = this->event().m_mouse_position;
-		
-			this->event().m_mouse_position = this->event().m_mouse_position * view.scale + view.position;
-		
-			if constexpr (qsf::has_update<T>()) {
-				updatable.update(this->event());
+			auto before_delta = this->event().m_delta_mouse_position;
+
+			this->event().m_mouse_position = view.transform_point(this->event().m_mouse_position);
+			this->event().m_delta_mouse_position = view.transform_point_no_offset(this->event().m_delta_mouse_position);
+
+			if constexpr (qsf::has_update<T, Args...>()) {
+				this->final_update(updatable, args...);
 			}
 			else {
 				for (auto& i : updatable) {
-					this->update(i);
+					this->update(i, args...);
 				}
 			}
 			this->event().m_mouse_position = before;
+			this->event().m_delta_mouse_position = before_delta;
 		}
+
 		QPLDLL void create();
 		QPLDLL bool is_open() const;
 		QPLDLL void update_close_window();
@@ -538,6 +580,9 @@ namespace qsf {
 		QPLDLL void allow_display();
 		QPLDLL void disallow_display();
 		QPLDLL bool is_display_allowed() const;
+		QPLDLL void enable_call_resize_call_on_init();
+		QPLDLL void disable_call_resize_call_on_init();
+		QPLDLL bool is_call_resize_call_on_init() const;
 		QPLDLL bool has_focus() const;
 		QPLDLL bool has_gained_focus() const;
 		QPLDLL bool has_lost_focus() const;
@@ -567,6 +612,7 @@ namespace qsf {
 		bool is_allow_display = true;
 		bool use_gl = false;
 		bool states_pushed = false;
+		bool call_resize_call_on_init = true;
 	};
 }
 

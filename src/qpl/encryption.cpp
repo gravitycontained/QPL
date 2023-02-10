@@ -862,11 +862,18 @@ namespace qpl {
 
 
 #ifdef QPL_CIPHER
+	qpl::cipherN<cipher_config{ 4, 1, 64, 64, false } > qpl::detail::cipher512_ultra_quick;
 	qpl::cipherN<cipher_config{ 4, 1, 64, 64 } > qpl::detail::cipher512_quick;
 	qpl::cipherN<cipher_config{ 4, 3, 64, 64 } > qpl::detail::cipher512;
 	qpl::cipherN<cipher_config{ 4, 12, 64, 64 } > qpl::detail::cipher512_save;
 
 
+	std::string qpl::encrypt512_ultra_quick(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512_ultra_quick.encrypt(message, key);
+	}
+	std::string qpl::decrypt512_ultra_quick(const std::string& message, const std::string& key) {
+		return qpl::detail::cipher512_ultra_quick.decrypt(message, key);
+	}
 	std::string qpl::encrypt512_quick(const std::string& message, const std::string& key) {
 		return qpl::detail::cipher512_quick.encrypt(message, key);
 	}

@@ -43,7 +43,7 @@ namespace qpl {
 				return this->get_value();
 			}
 
-		private:
+		
 			dynamic_integer* proxy;
 			qpl::size index;
 		};
@@ -2292,7 +2292,7 @@ namespace qpl {
 				return this->get_value();
 			}
 
-		private:
+		
 			holding_type* memory;
 			qpl::size index;
 		};
@@ -5754,7 +5754,7 @@ namespace qpl {
 				return this->get_value();
 			}
 
-		private:
+		
 			holding_type* memory;
 			qpl::size index;
 		};

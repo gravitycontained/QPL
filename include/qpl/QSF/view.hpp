@@ -6,163 +6,135 @@
 #if defined QPL_INTERN_SFML_USE
 
 #include <qpl/qpldeclspec.hpp>
-#include <qpl/vardef.hpp>
 #include <qpl/vector.hpp>
-#include <qpl/QSF/event_info.hpp>
-#include <qpl/QSF/drawables.hpp>
-#include <SFML/Graphics/RenderStates.hpp>
+#include <qpl/type_traits.hpp>
+#include <SFML/Graphics.hpp>
 
 namespace qsf {
 
-	struct base_state;
+	template<bool opengl>
+	struct draw_object_t;
+	using draw_object = draw_object_t<false>;
+	using draw_object_gl = draw_object_t<true>;
 
 	template<typename T>
-	struct view_rectangle_t {
-		sf::Mouse::Button drag_mouse_button = sf::Mouse::Left;
+	struct view_t {
+		qpl::vector2<T> position = { T{0}, T{0} };
+		qpl::vector2<T> scale = { T{1}, T{1} };
+		T rotation = T{ 0 };
 
-		void set_hitbox(qpl::vector2<T> position, qpl::vector2<T> dimension) {
-			this->set_hitbox(qpl::hitbox{ position, dimension });
+		sf::Transform get_transform() const {
+			sf::Transform transform;
+			transform.rotate(qpl::f32_cast(this->rotation)).scale(1 / qpl::vector2f(this->scale)).translate(-qpl::vector2f(this->position));
+			//transform.rotate(qpl::f32_cast(this->rotation)).scale(qpl::vector2f(this->scale)).translate(qpl::vector2f(this->position));
+			return transform;
 		}
-		void set_hitbox(const qsf::base_state& state) {
-			this->set_hitbox(qpl::hitbox{ {0,0}, state.dimension()});
-		}
-		void set_hitbox(qpl::hitbox hitbox) {
-			this->hitbox = hitbox;
-			this->dimension = hitbox.dimension * this->scale;
-			this->hitbox_set = true;
-		}
-		void reset() {
-			this->position = { 0,0 };
-			this->scale = { 1,1 };
-		}
-		void move(qpl::vector2<T> delta) {
-			this->positiom.move(delta);
-		}
-		void move(T dx, T dy) {
-			this->position.move(qpl::vec(dx, dy));
-		}
-		void set_scale(qpl::vector2<T> scale) {
-			this->scale = scale;
-		}
-		void set_scale(T scale) {
-			this->scale = qpl::vec(scale, scale);
-		}
-		void enable_smooth_zoom() {
-			this->use_smooth_zoom = true;
-		}
-		void disable_smooth_zoom() {
-			this->use_smooth_zoom = false;
-		}
-		void set_smooth_zoom_time(qpl::f64 delta) {
-			this->smooth_zoom_duration = delta;
-			this->smooth_zoom_animation.set_duration(this->smooth_zoom_duration);
-		}
-		void zoom_in(qpl::vector2f mouse) {
-			auto mouse_relative = mouse - this->hitbox.position;
-			this->scale *= 1 / (1 + this->zoom_delta);
-			this->dimension *= 1 / (1 + this->zoom_delta);
-
-			this->position += (mouse_relative * this->zoom_delta) * (this->scale);
-
-			if (this->dragging) {
-				this->click_position = this->position;
-				this->click_mouse_position = mouse_relative;
-			}
-		}
-		void zoom_out(qpl::vector2f mouse) {
-			auto mouse_relative = mouse - this->hitbox.position;
-			this->scale *= (1 + this->zoom_delta);
-			this->dimension *= (1 + this->zoom_delta);
-
-
-			this->position += (mouse_relative * (1 / (1 + this->zoom_delta) - 1)) * (this->scale);
-
-			if (this->dragging) {
-				this->click_position = this->position;
-				this->click_mouse_position = mouse_relative;
-			}
-		}
-		void set_position(qpl::vector2<T> position) {
-			this->position = position;
-		}
-		void update(const qsf::event_info& event) {
-			if (!this->hitbox_set) {
-				qpl::println("update: hitbox of view_rectangle was not set");
-				return;
-			}
-
-			this->mouse_position = this->position + event.mouse_position() * this->scale;
-
-			this->hovering = this->hitbox.contains(event.mouse_position());
-
-			if (!this->allow_dragging) {
-				this->dragging = false;
-			}
-			if (this->hovering) {
-				auto mouse_relative = event.mouse_position() - this->hitbox.position;
-
-				if (event.mouse_button_clicked(this->drag_mouse_button)) {
-					this->dragging = true;
-					this->click_position = this->position;
-					this->click_mouse_position = mouse_relative;
-				}
-
-				if (this->allow_dragging && this->dragging && event.mouse_moved()) {
-					auto delta = (this->click_mouse_position - mouse_relative);
-					this->position = this->click_position + delta * this->scale;
-				}
-
-				if (event.scrolled_down()) {
-					this->zoom_out(event.mouse_position());
-				}
-				if (event.scrolled_up()) {
-					this->zoom_in(event.mouse_position());
-				}
-			}
-
-			if (this->allow_dragging && event.mouse_button_released(this->drag_mouse_button)) {
-				this->dragging = false;
-				this->click_position = this->position;
-				this->click_mouse_position = event.mouse_position() - this->hitbox.position;
-			}
-		}
-		qpl::vector2<T> position_at_mouse() const {
-			return this->mouse_position;
-		}
-
-		bool empty() const {
-			return this->hitbox_set == false;
+		sf::Transform get_transform_no_offset() const {
+			sf::Transform transform;
+			transform.rotate(qpl::f32_cast(this->rotation)).scale(1 / qpl::vector2f(this->scale));
+			//transform.rotate(qpl::f32_cast(this->rotation)).scale(qpl::vector2f(this->scale));
+			return transform;
 		}
 		sf::RenderStates get_render_states() const {
 			sf::RenderStates states;
-			states.transform.scale(qpl::vector2f(qpl::vector2f(1, 1) / this->scale)).translate(-qpl::vector2f(this->position)).rotate(qpl::f32_cast(this->rotation));
+			states.transform = this->get_transform();
 			return states;
 		}
+		qpl::vec2f transform_point(qpl::vec2f position) const {
+			auto transform = this->get_transform().getInverse();
+			//auto transform = this->get_transform();
+			return transform.transformPoint(position);
+		}
+		qpl::vec2f transform_point_no_offset(qpl::vec2f position) const {
+			auto transform = this->get_transform_no_offset().getInverse();
+			//auto transform = this->get_transform_no_offset();
+			return transform.transformPoint(position);
+		}
+		qpl::hitbox transform_hitbox(qpl::hitbox hitbox) const {
+			hitbox.position = this->transform_point(hitbox.position);
+			hitbox.dimension = this->transform_point_no_offset(hitbox.dimension);
+			return hitbox;
+		}
 
-		qpl::hitbox hitbox;
-		qpl::vector2<T> position = { 0,0 };
-		qpl::vector2<T> dimension;
-		qpl::vector2<T> scale = { 1, 1 };
-		qpl::vector2<T> mouse_position;
-
-		qpl::vector2<T> click_position;
-		qpl::vector2<T> click_mouse_position;
-
-		bool ignore_input = false;
-		T rotation = 0;
-		T zoom_delta = 0.2;
-		bool hitbox_set = false;
-		bool hovering = false;
-		bool dragging = false;
-		bool allow_dragging = true;
-		bool enabled = true;
-		bool use_smooth_zoom = true;
-		qpl::f64 smooth_zoom_duration = 0.1;
-		qpl::animation smooth_zoom_animation;
+		constexpr void reset() {
+			this->position = { T{0}, T{0} };
+			this->scale = { T{1}, T{1} };
+			this->rotation = T{ 0 };
+		}
+		constexpr void set_rotation(T rotation) {
+			this->rotation = rotation;
+		}
+		constexpr void move(qpl::vector2<T> delta) {
+			this->position.move(delta);
+		}
+		constexpr void set_position(qpl::vector2<T> position) {
+			this->position = position;
+		}
+		constexpr void set_scale(qpl::vector2<T> scale) {
+			this->scale = scale;
+		}
+		constexpr bool is_default_view() const {
+			return 
+				this->position == qpl::vector2<T>{ T{0}, T{0} } &&
+				this->scale == qpl::vector2<T>{ T{1}, T{1} } &&
+				this->rotation == T{ 0 };
+		}
+		constexpr T get_rotation() const {
+			return this->rotation;
+		}
+		constexpr qpl::vector2<T> get_position() const {
+			return this->position;
+		}
+		constexpr qpl::vector2<T> get_scale() const {
+			return this->scale;
+		}
+		//constexpr void apply_to(sf::RenderStates& states) const {
+		//	this->apply_to(states.transform);
+		//}
+		//constexpr void apply_to(sf::Transform& transform) const {
+		//	transform.combine(this->get_transform().getInverse());
+		//	//transform.combine(this->get_transform());
+		//}
+		constexpr void apply_to(sf::RenderStates& states) const {
+			this->apply_to(states.transform);
+		}
+		constexpr void apply_to(sf::Transform& transform) const {
+			transform.combine(this->get_transform().getInverse());
+		}
 	};
 
-	using view_rectangle = view_rectangle_t<qpl::f64>;
+	using view = qsf::view_t<qpl::f32>;
 
+	template<typename T>
+	struct view_extension : T {
+		qsf::view view;
+	};
+
+	namespace detail {
+		template<typename T>
+		constexpr auto view_signature(qsf::view_t<T>) {
+			return std::true_type{};
+		}
+		template<typename T>
+		constexpr auto view_signature(T) {
+			return std::false_type{};
+		}
+	}
+	template<typename T>
+	constexpr bool is_view() {
+		return decltype(qsf::detail::view_signature(qpl::declval<T>())){};
+	}
+
+	template<typename T>
+	concept has_view_c = requires (T x) {
+		{ x.view };
+		requires qsf::is_view<decltype(T::view)>();
+	};
+
+	template<typename T>
+	constexpr bool has_view() {
+		return has_view_c<T>;
+	}
 }
 
 #endif
