@@ -110,7 +110,7 @@ namespace qpl {
 			return this->m_clamp;
 		}
 
-	private:
+	
 		void init() {
 			this->m_prog = 0.0;
 			this->disable_clamp();
@@ -238,7 +238,7 @@ namespace qpl {
 				this->m_d.data[i] = qpl::random(this->m_min.data[i], this->m_max.data[i]);
 			}
 		}
-	private:
+	
 		void init() {
 			this->m_prog = 0.0;
 			this->disable_clamp();

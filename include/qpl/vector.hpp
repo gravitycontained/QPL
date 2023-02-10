@@ -16,12 +16,13 @@
 #include <qpl/algorithm.hpp>
 #include <qpl/vardef.hpp>
 #include <qpl/defines.hpp>
-#include <qpl/string.hpp>
 #include <initializer_list>
 #include <iostream>
 #include <cmath>
 #include <array>
 #include <tuple>
+#include <string>
+#include <sstream>
 
 namespace qpl {
 
@@ -905,6 +906,16 @@ namespace qpl {
 			return copy;
 		}
 
+		constexpr auto reversed() const {
+			vectorN copy;
+			for (qpl::size i = 0u; i < this->size(); ++i) {
+				copy[this->size() - i - 1] = this->data[i];
+			}
+			return copy;
+		}
+		constexpr void reverse() {
+			*this = this->reversed();
+		}
 		constexpr auto length() const {
 			if (std::is_constant_evaluated()) {
 				return qpl::f64_cast(qpl::sqrt(this->dot(*this)));
@@ -915,6 +926,43 @@ namespace qpl {
 		}
 		constexpr auto normalized() const {
 			return *this / this->length();
+		}
+		constexpr auto angle() const requires (N == 2) {
+			auto atan = qpl::f64_cast(std::atan2(qpl::f64_cast(this->y), -qpl::f64_cast(this->x)));
+			if (atan < 0) atan = 2 * qpl::pi + atan;
+			return atan;
+		}
+		constexpr void set_rotation(qpl::f64 angle) requires (N == 2) {
+			auto x = std::cos(angle);
+			auto y = std::sin(angle);
+			*this = vectorN(x, y) * this->length();
+		}
+		constexpr void set_rotation_around(vectorN center, qpl::f64 angle) requires (N == 2) {
+			auto x = std::cos(angle);
+			auto y = std::sin(angle);
+			auto diff = *this - center;
+			*this = center + vectorN(x, y) * diff.length();
+		}
+		constexpr void rotate(qpl::f64 delta_angle) requires (N == 2) {
+			this->set_rotation(this->angle() + delta_angle);
+		}
+		constexpr void rotate_around(vectorN center, qpl::f64 delta_angle) requires (N == 2) {
+			auto diff = *this - center;
+			auto angle = diff.angle() + delta_angle;
+
+			auto x = std::cos(angle);
+			auto y = std::sin(angle);
+			*this = center + vectorN(x, y) * diff.length();
+		}
+		constexpr auto rotated(qpl::f64 delta_angle) const requires (N == 2) {
+			auto copy = *this;
+			copy.rotate(delta_angle);
+			return copy;
+		}
+		constexpr auto rotated_around(vectorN center, qpl::f64 delta_angle) const requires (N == 2) {
+			auto copy = *this;
+			copy.rotate_around(center, delta_angle);
+			return copy;
 		}
 
 		template<typename U> requires (qpl::is_arithmetic<U>())
@@ -979,14 +1027,55 @@ namespace qpl {
 			return *std::max_element(vec.data.begin(), vec.data.end());
 		}
 
-		template<typename T, qpl::size N>
+		template<typename T, typename U, qpl::size N>
+		[[nodiscard]] constexpr static auto max_values(const vectorN<T, N>& a, const vectorN<U, N>& b) {
+			using R = qpl::superior_arithmetic_type<T, U>;
+			vectorN<R, N> result;
+			for (qpl::size i = 0u; i < a.size(); ++i) {
+				result[i] = std::max(static_cast<R>(a[i]), static_cast<R>(b[i]));
+			}
+			return result;
+		}
+		template<typename T, typename U, qpl::size N>
+		[[nodiscard]] constexpr static auto min_values(const vectorN<T, N>& a, const vectorN<U, N>& b) {
+			using R = qpl::superior_arithmetic_type<T, U>;
+			vectorN<R, N> result;
+			for (qpl::size i = 0u; i < a.size(); ++i) {
+				result[i] = std::min(static_cast<R>(a[i]), static_cast<R>(b[i]));
+			}
+			return result;
+		}
+
 		constexpr void clamp(T min, T max) {
 			for (auto& i : this->data) {
 				i = qpl::clamp(min, i, max);
 			}
 		}
-		template<typename T, qpl::size N>
 		constexpr auto clamped(T min, T max) const {
+			qpl::vectorN<T, N> result = *this;
+			result.clamp(min, max);
+			return result;
+		}
+		template<typename T, qpl::size N>
+		constexpr void clamp(vectorN<T, N> max) {
+			for (qpl::size i = 0u; i < this->size(); ++i) {
+				this->data[i] = qpl::clamp(T{ 0 }, this->data[i], max[i]);
+			}
+		}
+		template<typename T, qpl::size N>
+		constexpr auto clamped(vectorN<T, N> max) const {
+			qpl::vectorN<T, N> result = *this;
+			result.clamp(max);
+			return result;
+		}
+		template<typename T, qpl::size N>
+		constexpr void clamp(vectorN<T, N> min, vectorN<T, N> max) {
+			for (qpl::size i = 0u; i < this->size(); ++i) {
+				this->data[i] = qpl::clamp(min[i], this->data[i], max[i]);
+			}
+		}
+		template<typename T, qpl::size N>
+		constexpr auto clamped(vectorN<T, N> min, vectorN<T, N> max) const {
 			qpl::vectorN<T, N> result = *this;
 			result.clamp(min, max);
 			return result;
@@ -1104,6 +1193,7 @@ namespace qpl {
 	using vector2i = qpl::vector2<qpl::i32>;
 	using vector2u = qpl::vector2<qpl::u32>;
 	using vector2s = qpl::vector2<qpl::size>;
+	using vector2is = qpl::vector2<qpl::isize>;
 
 	template<typename T = qpl::f32>
 	using vector3 = qpl::vectorN<T, 3>;
@@ -1112,6 +1202,7 @@ namespace qpl {
 	using vector3i = qpl::vector3<qpl::i32>;
 	using vector3u = qpl::vector3<qpl::u32>;
 	using vector3s = qpl::vector3<qpl::size>;
+	using vector3is = qpl::vector3<qpl::isize>;
 
 	template<typename T = qpl::f32>
 	using vector4 = qpl::vectorN<T, 4>;
@@ -1120,6 +1211,7 @@ namespace qpl {
 	using vector4i = qpl::vector4<qpl::i32>;
 	using vector4u = qpl::vector4<qpl::u32>;
 	using vector4s = qpl::vector4<qpl::size>;
+	using vector4is = qpl::vector4<qpl::isize>;
 
 	template<typename T = qpl::f32>
 	using vector5 = qpl::vectorN<T, 5>;
@@ -1128,6 +1220,7 @@ namespace qpl {
 	using vector5i = qpl::vector5<qpl::i32>;
 	using vector5u = qpl::vector5<qpl::u32>;
 	using vector5s = qpl::vector5<qpl::size>;
+	using vector5is = qpl::vector5<qpl::isize>;
 
 	template<typename T = qpl::f32>
 	using vector6 = qpl::vectorN<T, 6>;
@@ -1136,6 +1229,7 @@ namespace qpl {
 	using vector6i = qpl::vector6<qpl::i32>;
 	using vector6u = qpl::vector6<qpl::u32>;
 	using vector6s = qpl::vector6<qpl::size>;
+	using vector6is = qpl::vector6<qpl::isize>;
 
 	using vec2  = qpl::vector2f;
 	using vec2f = qpl::vector2f;
@@ -1143,6 +1237,7 @@ namespace qpl {
 	using vec2i = qpl::vector2i;
 	using vec2u = qpl::vector2u;
 	using vec2s = qpl::vector2s;
+	using vec2is = qpl::vector2is;
 
 	using vec3  = qpl::vector3f;
 	using vec3f = qpl::vector3f;
@@ -1150,6 +1245,7 @@ namespace qpl {
 	using vec3i = qpl::vector3i;
 	using vec3u = qpl::vector3u;
 	using vec3s = qpl::vector3s;
+	using vec3is = qpl::vector3is;
 
 	using vec4  = qpl::vector4f;
 	using vec4f = qpl::vector4f;
@@ -1157,6 +1253,7 @@ namespace qpl {
 	using vec4i = qpl::vector4i;
 	using vec4u = qpl::vector4u;
 	using vec4s = qpl::vector4s;
+	using vec4is = qpl::vector4is;
 
 	using vec5  = qpl::vector5f;
 	using vec5f = qpl::vector5f;
@@ -1164,6 +1261,7 @@ namespace qpl {
 	using vec5i = qpl::vector5i;
 	using vec5u = qpl::vector5u;
 	using vec5s = qpl::vector5s;
+	using vec5is = qpl::vector5is;
 
 	using vec6  = qpl::vector6f;
 	using vec6f = qpl::vector6f;
@@ -1171,6 +1269,7 @@ namespace qpl {
 	using vec6i = qpl::vector6i;
 	using vec6u = qpl::vector6u;
 	using vec6s = qpl::vector6s;
+	using vec6is = qpl::vector6is;
 
 	template<typename T, qpl::size N>
 	struct texN : qpl::vectorN<T, N> {};
@@ -1692,7 +1791,11 @@ namespace qpl {
 		return qpl::rotate_towards(vec, angle, qpl::vec(0, 0, 1));
 	}
 
-
+	constexpr auto vec_square4 = std::array{ qpl::vec(0, 0), qpl::vec(1, 0), qpl::vec(1, 1), qpl::vec(0, 1) };
+	constexpr auto vec_diagonals4 = std::array{ std::array{ qpl::vec(-1, -1), qpl::vec(1, -1), qpl::vec(1, 1), qpl::vec(-1, 1) } };
+	constexpr auto vec_cross4 = std::array{ qpl::vec(1, 0), qpl::vec(0, 1), qpl::vec(-1, 0), qpl::vec(0, -1) };
+	constexpr auto vec_cross9 = std::array{ qpl::vec(-1, 0), qpl::vec(1, 0), qpl::vec(0, -1), qpl::vec(0, 1), qpl::vec(-1, -1), qpl::vec(1, -1), qpl::vec(1, 1), qpl::vec(-1, 1)};
+	constexpr auto vec_box8 = std::array{ qpl::vec(0.0, 0.0), qpl::vec(0.5, 0.0), qpl::vec(1.0, 0.0), qpl::vec(1.0, 0.5), qpl::vec(1.0, 1.0), qpl::vec(0.5, 1.0), qpl::vec(0.0, 1.0), qpl::vec(0.0, 0.5) };
 
 	template<qpl::size N, typename T>
 	std::ostream& operator<<(std::ostream& os, const qpl::matrixN<T, N>& mat) {
@@ -1773,7 +1876,11 @@ namespace qpl {
 
 		}
 		std::string string() const {
-			return qpl::to_string("[", this->a.string(), ", ", this->b.string(), "]");
+			std::ostringstream stream;
+			stream << '[';
+			stream << this->a.string() << ", " << this->b.string();
+			stream << ']';
+			return stream.str();
 		}
 		maths_float_type length() const {
 			auto diff = this->b - this->a;
@@ -1850,84 +1957,154 @@ namespace qpl {
 	};
 	using straight_line = straight_line_t<qpl::f32>;
 
+	enum class box_side {
+		top_left = 0,
+		top_center = 1,
+		top_right = 2,
+		right_top = 2,
+		right_center = 3,
+		right_bottom = 4,
+		bottom_right = 4,
+		bottom_center = 5,
+		bottom_left = 6,
+		left_bottom = 6,
+		left_center = 7,
+		left_top = 0,
+		size = 8
+	};
+
 	template<typename T>
 	struct hitbox_t {
-		hitbox_t() {
+		constexpr hitbox_t() {
 			this->position = this->dimension = qpl::vector2<T>(0, 0);
 		}
-		hitbox_t(qpl::vector2<T> position, qpl::vector2<T> dimension) {
+		constexpr hitbox_t(qpl::vector2<T> position, qpl::vector2<T> dimension) {
 			this->position = position;
 			this->dimension = dimension;
 		}
 
-		void set_dimension(qpl::vector2<T> dimension) {
+		constexpr void set_width(T width) {
+			this->dimension.x = width;
+		}
+		constexpr void set_height(T height) {
+			this->dimension.y = height;
+		}
+		constexpr void set_dimension(qpl::vector2<T> dimension) {
 			this->dimension = dimension;
 		}
-		void set_position(qpl::vector2<T> position) {
+		constexpr void set_position(qpl::vector2<T> position) {
 			this->position = position;
 		}
-		void set_center(qpl::vector2<T> position) {
+		constexpr void set_center(qpl::vector2<T> position) {
 			this->position = position - this->dimension / 2;
 		}
 
 
-		qpl::vector2<T> get_center() const {
+		constexpr qpl::vector2<T> get_center() const {
 			return this->position + this->dimension / 2;
 		}
-		qpl::vector2<T> get_dimension() const {
+		constexpr qpl::vector2<T> get_dimension() const {
 			return this->dimension;
 		}
-		qpl::vector2<T> get_position() const {
+		constexpr qpl::vector2<T> get_position() const {
 			return this->position;
 		}
-
-		std::string string() const {
-			return qpl::to_string('[', this->position.string(), ", ", this->dimension.string(), ']');
+		constexpr T get_width() const {
+			return this->dimension.x;
+		}
+		constexpr T get_height() const {
+			return this->dimension.y;
 		}
 
-		void increase(T delta) {
+		constexpr std::string string() const {
+			std::ostringstream stream;
+			stream << '[';
+			stream << this->position.string() << ", " << this->dimension.string();
+			stream << ']';
+			return stream.str();
+		}
+
+		constexpr void increase(T delta) {
 			this->position -= qpl::vector2<T>(delta, delta);
 			this->dimension += qpl::vector2<T>(delta, delta) * 2;
 		}
-		void increase(qpl::vector2<T> delta) {
+		constexpr void increase(qpl::vector2<T> delta) {
 			this->position -= delta;
 			this->dimension += delta * 2;
 		}
-		void increase_x(T delta) {
+		constexpr void increase_x(T delta) {
 			this->position.x -= delta;
 			this->dimension.x += delta * 2;
 		}
-		void increase_y(T delta) {
+		constexpr void increase_y(T delta) {
 			this->position.y -= delta;
 			this->dimension.y += delta * 2;
 		}
-		qpl::hitbox_t<T> increased(T delta) const {
+		constexpr qpl::hitbox_t<T> increased(T delta) const {
 			auto copy = *this;
 			copy.increase(delta);
 			return copy;
 		}
-		qpl::hitbox_t<T> increased(qpl::vector2<T> delta) const {
+		constexpr qpl::hitbox_t<T> increased(qpl::vector2<T> delta) const {
 			auto copy = *this;
 			copy.increase(delta);
 			return copy;
 		}
-		qpl::hitbox_t<T> increased_y(T delta) const {
+		constexpr qpl::hitbox_t<T> increased_y(T delta) const {
 			auto copy = *this;
 			copy.increase_y(delta);
 			return copy;
 		}
-		qpl::hitbox_t<T> increased_x(T delta) const {
+		constexpr qpl::hitbox_t<T> increased_x(T delta) const {
 			auto copy = *this;
 			copy.increase_x(delta);
 			return copy;
 		}
-		bool contains(qpl::vector2f position) const {
+
+		constexpr void decrease(T delta) {
+			this->position += qpl::vector2<T>(delta, delta);
+			this->dimension -= qpl::vector2<T>(delta, delta) * 2;
+		}
+		constexpr void decrease(qpl::vector2<T> delta) {
+			this->position += delta;
+			this->dimension -= delta * 2;
+		}
+		constexpr void decrease_x(T delta) {
+			this->position.x += delta;
+			this->dimension.x -= delta * 2;
+		}
+		constexpr void decrease_y(T delta) {
+			this->position.y += delta;
+			this->dimension.y -= delta * 2;
+		}
+		constexpr qpl::hitbox_t<T> decreased(T delta) const {
+			auto copy = *this;
+			copy.decrease(delta);
+			return copy;
+		}
+		constexpr qpl::hitbox_t<T> decreased(qpl::vector2<T> delta) const {
+			auto copy = *this;
+			copy.decrease(delta);
+			return copy;
+		}
+		constexpr qpl::hitbox_t<T> decreased_y(T delta) const {
+			auto copy = *this;
+			copy.decrease_y(delta);
+			return copy;
+		}
+		constexpr qpl::hitbox_t<T> decreased_x(T delta) const {
+			auto copy = *this;
+			copy.decrease_x(delta);
+			return copy;
+		}
+
+		constexpr bool contains(qpl::vector2f position) const {
 			return (position.x > this->position.x && position.x < (this->position.x + this->dimension.x) &&
 				position.y > this->position.y && position.y < (this->position.y + this->dimension.y));
 		}
 
 		template<typename U>
-		bool collides(qpl::straight_line_t<U> line) const {
+		constexpr bool collides(qpl::straight_line_t<U> line) const {
 
 			auto x1 = this->get_position().x;
 			auto x2 = this->get_position().x + this->get_dimension().x;
@@ -1938,7 +2115,7 @@ namespace qpl {
 		}
 
 		template<typename U>
-		bool collides(qpl::straight_line_t<U> line, T increase) const {
+		constexpr bool collides(qpl::straight_line_t<U> line, T increase) const {
 
 			auto x1 = this->get_position().x - increase;
 			auto x2 = this->get_position().x + this->get_dimension().x + increase;
@@ -1948,7 +2125,7 @@ namespace qpl {
 			return this->collides(x1, x2, y1, y2, line);
 		}
 		template<typename U>
-		bool collides(const qpl::hitbox_t<U>& hitbox) const {
+		constexpr bool collides(const qpl::hitbox_t<U>& hitbox) const {
 			auto a1 = this->position;
 			auto a2 = this->position + this->dimension;
 			auto b1 = hitbox.position;
@@ -1981,7 +2158,7 @@ namespace qpl {
 		}
 
 		template<typename U>
-		bool corners_collide_with(const qpl::hitbox_t<U>& hitbox) const {
+		constexpr bool corners_collide_with(const qpl::hitbox_t<U>& hitbox) const {
 			auto p1 = this->position;
 			auto p2 = this->position + this->dimension.just_x();
 			auto p3 = this->position + this->dimension.just_y();
@@ -1990,87 +2167,184 @@ namespace qpl {
 		}
 
 		template<typename U>
-		void move(qpl::vector2<U> delta) {
+		constexpr void move(qpl::vector2<U> delta) {
 			this->position += qpl::vector2<T>(delta);
 		}
 		template<typename U> requires (qpl::is_arithmetic<U>())
-		void move(U x, U y) {
+		constexpr void move(U x, U y) {
 			this->position += qpl::vector2<T>(x, y);
 		}
 
 		template<typename U>
-		void extend_left(U delta) {
+		constexpr void extend_left(U delta) {
 			this->position -= qpl::vector2<T>(delta, T{ 0 });
 			this->dimension += qpl::vector2<T>(delta, T{ 0 });
 		}
 		template<typename U>
-		qpl::hitbox_t<T> extended_left(U delta) const {
+		constexpr qpl::hitbox_t<T> extended_left(U delta) const {
 			auto copy = *this;
 			copy.extend_left(delta);
 			return copy;
 		}
 		template<typename U>
-		void extend_right(U delta) {
+		constexpr void extend_right(U delta) {
 			this->dimension += qpl::vector2<T>(delta, T{ 0 });
 		}
 		template<typename U>
-		qpl::hitbox_t<T> extended_right(U delta) const {
+		constexpr qpl::hitbox_t<T> extended_right(U delta) const {
 			auto copy = *this;
 			copy.extend_right(delta);
 			return copy;
 		}
 
 		template<typename U>
-		void extend_up(U delta) {
+		constexpr void extend_up(U delta) {
 			this->position -= qpl::vector2<T>(T{ 0 }, delta);
 			this->dimension += qpl::vector2<T>(T{ 0 }, delta);
 		}
 		template<typename U>
-		qpl::hitbox_t<T> extended_up(U delta) const {
+		constexpr qpl::hitbox_t<T> extended_up(U delta) const {
 			auto copy = *this;
 			copy.extend_up(delta);
 			return copy;
 		}
 		template<typename U>
-		void extend_down(U delta) {
+		constexpr void extend_down(U delta) {
 			this->dimension += qpl::vector2<T>(T{ 0 }, delta);
 		}
 		template<typename U>
-		qpl::hitbox_t<T> extended_down(U delta) const {
+		constexpr qpl::hitbox_t<T> extended_down(U delta) const {
 			auto copy = *this;
 			copy.extend_down(delta);
 			return copy;
 		}
 
-		qpl::vector2<T> bottom_right() const {
-			return this->position + this->dimension;
+		constexpr qpl::vector2<T> get_top_left() const {
+			return this->get_side(qpl::box_side::top_left);
 		}
-		qpl::vector2<T> bottom_left() const {
-			return this->position + this->dimension.just_y();
+		constexpr qpl::vector2<T> get_top_center() const {
+			return this->get_side(qpl::box_side::top_center);
 		}
-		qpl::vector2<T> top_left() const {
-			return this->position;
+		constexpr qpl::vector2<T> get_top_right() const {
+			return this->get_side(qpl::box_side::top_right);
 		}
-		qpl::vector2<T> top_right() const {
-			return this->position + this->dimension.just_x();
+		constexpr qpl::vector2<T> get_right_top() const {
+			return this->get_side(qpl::box_side::right_top);
 		}
-		qpl::vector2<T> middle_left() const {
-			return this->position + qpl::vec(0, this->dimension.y / 2);
+		constexpr qpl::vector2<T> get_right_center() const {
+			return this->get_side(qpl::box_side::right_center);
 		}
-		qpl::vector2<T> middle_top() const {
-			return this->position + qpl::vec(this->dimension.x / 2, 0);
+		constexpr qpl::vector2<T> get_right_bottom() const {
+			return this->get_side(qpl::box_side::right_bottom);
 		}
-		qpl::vector2<T> middle_bottom() const {
-			return this->position + qpl::vec(this->dimension.x / 2, this->dimension.y);
+		constexpr qpl::vector2<T> get_bottom_left() const {
+			return this->get_side(qpl::box_side::bottom_left);
 		}
-		qpl::vector2<T> middle_right() const {
-			return this->position + qpl::vec(this->dimension.x, this->dimension.y / 2);
+		constexpr qpl::vector2<T> get_bottom_center() const {
+			return this->get_side(qpl::box_side::bottom_center);
+		}
+		constexpr qpl::vector2<T> get_bottom_right() const {
+			return this->get_side(qpl::box_side::bottom_right);
+		}
+		constexpr qpl::vector2<T> get_left_top() const {
+			return this->get_side(qpl::box_side::left_top);
+		}
+		constexpr qpl::vector2<T> get_left_center() const {
+			return this->get_side(qpl::box_side::left_center);
+		}
+		constexpr qpl::vector2<T> get_left_bottom() const {
+			return this->get_side(qpl::box_side::left_bottom);
+		}
+
+		constexpr void set_top_left(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::top_left, position);
+		}
+		constexpr void set_top_center(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::top_center, position);
+		}
+		constexpr void set_top_right(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::top_right, position);
+		}
+		constexpr void set_right_top(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::right_top, position);
+		}
+		constexpr void set_right_center(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::right_center, position);
+		}
+		constexpr void set_right_bottom(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::right_bottom, position);
+		}
+		constexpr void set_bottom_left(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::bottom_left, position);
+		}
+		constexpr void set_bottom_center(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::bottom_center, position);
+		}
+		constexpr void set_bottom_right(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::bottom_right, position);
+		}
+		constexpr void set_left_top(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::left_top, position);
+		}
+		constexpr void set_left_center(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::left_center, position);
+		}
+		constexpr void set_left_bottom(qpl::vector2<T> position) {
+			this->set_side(qpl::box_side::left_bottom, position);
+		}
+
+		//4 side corners
+		constexpr qpl::vector2<T> get_side_corner_left(qpl::size side) const {
+			switch (side) {
+			case 0u: return this->get_side(qpl::box_side::top_left);
+			case 1u: return this->get_side(qpl::box_side::right_top);
+			case 2u: return this->get_side(qpl::box_side::bottom_left);
+			case 3u: return this->get_side(qpl::box_side::left_top);
+			}
+			return {};
+		}
+		//4 side corners
+		constexpr void set_side_corner_left(qpl::size side, qpl::vector2<T> position) {
+			switch (side) {
+			case 0u: this->set_side(qpl::box_side::top_left, position);	 break;
+			case 1u: this->set_side(qpl::box_side::right_top, position);	 break;
+			case 2u: this->set_side(qpl::box_side::bottom_left, position); break;
+			case 3u: this->set_side(qpl::box_side::left_top, position);	 break;
+			}
+		}
+
+		//4 side corners
+		constexpr void set_side_corner(qpl::size side, qpl::vector2<T> position) {
+			this->set_side(side * 2, position);
+		}
+		//4 side corners
+		constexpr qpl::vector2<T> get_side_corner(qpl::size side) const {
+			return this->get_side(side * 2);
+		}
+		//4 side centers
+		constexpr void set_side_center(qpl::size side, qpl::vector2<T> position) {
+			this->set_side_center(side * 2 + 1, position);
+		}
+
+		//8 sides
+		constexpr qpl::vector2<T> get_side(qpl::size side) const {
+			return this->position + qpl::vec_box8.at(side) * this->dimension;
+		}
+		//8 sides
+		constexpr void set_side(qpl::size side, qpl::vector2<T> position) {
+			this->set_position(position - qpl::vec_box8.at(side) * this->dimension);
+		}
+
+		constexpr qpl::vector2<T> get_side(qpl::box_side side) const {
+			return this->get_side(qpl::size_cast(side));
+		}
+		constexpr void set_side(qpl::box_side side, qpl::vector2<T> position) {
+			this->set_side(qpl::size_cast(side), position);
 		}
 
 		qpl::vector2<T> dimension;
 		qpl::vector2<T> position;
 
-		private:
 
 		template<typename U>
 		bool collides(T x1, T x2, T y1, T y2, qpl::straight_line_t<U> line) const {

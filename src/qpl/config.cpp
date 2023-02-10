@@ -40,8 +40,8 @@ namespace qpl {
             qpl::system_pause();
         }
     
-        auto content = qpl::winsys::read_utf_file(file_name);
-        auto lines = qpl::split_string(content, L'\n');
+        auto content = qpl::winsys::read_utf8_file(file_name);
+        auto lines = qpl::string_split(content, L'\n');
     
         for (auto& line : lines) {
             this->whole_wstring += line + L"\n";

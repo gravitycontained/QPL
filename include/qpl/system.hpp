@@ -53,6 +53,8 @@ namespace qpl {
 
     QPLDLL void hide_input(bool enable);
     QPLDLL std::string get_input();
+    QPLDLL std::string get_multiline_input();
+    QPLDLL std::wstring get_multiline_input_wstring();
     QPLDLL std::wstring get_input_wstring();
     QPLDLL void wait_for_enter();
 

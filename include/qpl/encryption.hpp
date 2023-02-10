@@ -273,7 +273,7 @@ namespace qpl {
 
 		QPLDLL bool is_constructed() const;
 		QPLDLL void construct();
-	private:
+	
 		QPLDLL void error_if_not_constructed() const;
 		QPLDLL void check_constructed();
 
@@ -362,6 +362,55 @@ namespace qpl {
 	QPLDLL std::string encrypt(const std::string& message, const std::string& key);
 	QPLDLL std::string decrypt(const std::string& message, const std::string& key, bool remove_null_terminations = false);
 
+	QPLDLL void aes_128_encrypt_keep_size(std::string& string, const std::string& key);
+	QPLDLL std::string aes_128_encrypted_keep_size(std::string string, const std::string& key);
+	QPLDLL void aes_128_decrypt_keep_size(std::string& string, const std::string& key);
+	QPLDLL std::string aes_128_decrypted_keep_size(std::string string, const std::string& key);
+
+	QPLDLL void aes_192_encrypt_keep_size(std::string& string, const std::string& key);
+	QPLDLL std::string aes_192_encrypted_keep_size(std::string string, const std::string& key);
+	QPLDLL void aes_192_decrypt_keep_size(std::string& string, const std::string& key);
+	QPLDLL std::string aes_192_decrypted_keep_size(std::string string, const std::string& key);
+
+	QPLDLL void aes_256_encrypt_keep_size(std::string& string, const std::string& key);
+	QPLDLL std::string aes_256_encrypted_keep_size(std::string string, const std::string& key);
+	QPLDLL void aes_256_decrypt_keep_size(std::string& string, const std::string& key);
+	QPLDLL std::string aes_256_decrypted_keep_size(std::string string, const std::string& key);
+
+	QPLDLL void encrypt_keep_size(std::string& string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+	QPLDLL std::string encrypted_keep_size(std::string string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+	QPLDLL void decrypt_keep_size(std::string& string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+	QPLDLL std::string decrypted_keep_size(std::string string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
+
+	template<typename T, qpl::size N>
+	std::string encrypted_keep_size(const std::string& message, const std::array<T, N>& key, qpl::aes::mode mode = qpl::aes::mode::_256) {
+		constexpr auto bit_size = qpl::bits_in_type<T>() * N;
+		std::string s;
+		qpl::container_memory_to_string(key, s);
+		return qpl::encrypted_keep_size(message, s, mode);
+	}
+	template<typename T, qpl::size N>
+	void encrypt_keep_size(std::string& message, const std::array<T, N>& key, qpl::aes::mode mode = qpl::aes::mode::_256) {
+		constexpr auto bit_size = qpl::bits_in_type<T>() * N;
+		std::string s;
+		qpl::container_memory_to_string(key, s);
+		qpl::encrypt_keep_size(message, s, mode);
+	}
+	template<typename T, qpl::size N>
+	std::string decrypted_keep_size(const std::string& message, const std::array<T, N>& key, qpl::aes::mode mode = qpl::aes::mode::_256) {
+		constexpr auto bit_size = qpl::bits_in_type<T>() * N;
+		std::string s;
+		qpl::container_memory_to_string(key, s);
+		return qpl::decrypted_keep_size(message, s, mode);
+	}
+	template<typename T, qpl::size N>
+	void decrypt_keep_size(std::string& message, const std::array<T, N>& key, qpl::aes::mode mode = qpl::aes::mode::_256) {
+		constexpr auto bit_size = qpl::bits_in_type<T>() * N;
+		std::string s;
+		qpl::container_memory_to_string(key, s);
+		qpl::decrypt_keep_size(message, s, mode);
+	}
+
 	template<typename T, qpl::size N>
 	std::string encrypt(const std::string& message, const std::array<T, N>& key) {
 		constexpr auto bit_size = qpl::bits_in_type<T>() * N;
@@ -392,26 +441,6 @@ namespace qpl {
 			return qpl::aes_256_decrypted(message, s, remove_null_terminations);
 		}
 	}
-	QPLDLL void aes_128_encrypt_keep_size(std::string& string, const std::string& key);
-	QPLDLL std::string aes_128_encrypted_keep_size(std::string string, const std::string& key);
-	QPLDLL void aes_128_decrypt_keep_size(std::string& string, const std::string& key);
-	QPLDLL std::string aes_128_decrypted_keep_size(std::string string, const std::string& key);
-
-	QPLDLL void aes_192_encrypt_keep_size(std::string& string, const std::string& key);
-	QPLDLL std::string aes_192_encrypted_keep_size(std::string string, const std::string& key);
-	QPLDLL void aes_192_decrypt_keep_size(std::string& string, const std::string& key);
-	QPLDLL std::string aes_192_decrypted_keep_size(std::string string, const std::string& key);
-
-	QPLDLL void aes_256_encrypt_keep_size(std::string& string, const std::string& key);
-	QPLDLL std::string aes_256_encrypted_keep_size(std::string string, const std::string& key);
-	QPLDLL void aes_256_decrypt_keep_size(std::string& string, const std::string& key);
-	QPLDLL std::string aes_256_decrypted_keep_size(std::string string, const std::string& key);
-
-	QPLDLL void encrypt_keep_size(std::string& string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
-	QPLDLL std::string encrypted_keep_size(std::string string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
-	QPLDLL void decrypt_keep_size(std::string& string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
-	QPLDLL std::string decrypted_keep_size(std::string string, const std::string& key, qpl::aes::mode mode = qpl::aes::mode::_256);
-
 #ifdef QPL_CIPHER
 	namespace detail {
 		constexpr std::array<std::array<qpl::u8, 256u>, 256u> galois_mul = {
@@ -752,7 +781,7 @@ namespace qpl {
 		constexpr bool check_if_mds(const std::array<T, MS>& M) {
 			constexpr auto N = qpl::size_cast(qpl::sqrt(MS));
 
-			std::array<T, S* S> submatrix;
+			std::array<T, S * S> submatrix;
 			for (qpl::size y = 0u; y < N - S; ++y) {
 				for (qpl::size x = 0u; x < N - S; ++x) {
 
@@ -793,6 +822,9 @@ namespace qpl {
 		qpl::size cipher_rounds = 3u;
 		qpl::size key_size = N * N;
 		qpl::size table_size = 16u;
+		bool bidirectional = true;
+		bool shuffle_bytes = true;
+		bool sub_bytes = true;
 	};
 
 	template<cipher_config config>
@@ -802,10 +834,10 @@ namespace qpl {
 		std::array<std::array<qpl::u8, 256u>, config.table_size> sbox;
 		std::array<std::array<qpl::u8, 256u>, config.table_size> sbox_inverse;
 
-		std::array<std::array<qpl::u8, config.N* config.N>, config.table_size> mds;
-		std::array<std::array<qpl::u8, config.N* config.N>, config.table_size> mds_inverse;
+		std::array<std::array<qpl::u8, config.N * config.N>, config.table_size> mds;
+		std::array<std::array<qpl::u8, config.N * config.N>, config.table_size> mds_inverse;
 
-		std::array<std::array<matrix_type, config.N* config.N>, config.table_size> shuffle;
+		std::array<std::array<matrix_type, config.N * config.N>, config.table_size> shuffle;
 
 		void seed_state(const std::string_view& key, qpl::random_engine<64u>& engine) const {
 
@@ -949,8 +981,11 @@ namespace qpl {
 		constexpr static auto table_size = config.table_size;
 		constexpr static auto state_size = N * N;
 		constexpr static auto round_key_size = state_size * cipher_rounds;
+		constexpr static auto bidirectional = config.bidirectional;
+		constexpr static auto shuffle_bytes = config.shuffle_bytes;
+		constexpr static auto sub_bytes = config.sub_bytes;
 
-	private:
+	
 		std::vector<qpl::u8> input;
 		std::vector<qpl::u8> output;
 		std::array<qpl::u8, N * N> state;
@@ -1035,8 +1070,26 @@ namespace qpl {
 						auto index = mx * this->N + c;
 						auto mds_index = my * this->N + mx;
 
-						auto value = sbox[copy[shuffle[index]]];
-						col[my] ^= detail::galois_mul[mds[mds_index]][value];
+						if constexpr (this->shuffle_bytes) {
+							if constexpr (this->sub_bytes) {
+								auto value = sbox[copy[shuffle[index]]];
+								col[my] ^= detail::galois_mul[mds[mds_index]][value];
+							}
+							else {
+								auto value = copy[shuffle[index]];
+								col[my] ^= detail::galois_mul[mds[mds_index]][value];
+							}
+						}
+						else {
+							if constexpr (this->sub_bytes) {
+								auto value = sbox[copy[index]];
+								col[my] ^= detail::galois_mul[mds[mds_index]][value];
+							}
+							else {
+								auto value = copy[index];
+								col[my] ^= detail::galois_mul[mds[mds_index]][value];
+							}
+						}
 					}
 				}
 				for (qpl::size i = 0u; i < this->N; ++i) {
@@ -1068,8 +1121,27 @@ namespace qpl {
 					}
 				}
 				for (qpl::size i = 0u; i < this->N; ++i) {
-					auto index = i * this->N + c;
-					this->state[shuffle[index]] = sbox[col[i]];
+
+					if constexpr (this->shuffle_bytes) {
+						if constexpr (this->sub_bytes) {
+							auto index = i * this->N + c;
+							this->state[shuffle[index]] = sbox[col[i]];
+						}
+						else {
+							auto index = i * this->N + c;
+							this->state[shuffle[index]] = col[i];
+						}
+					}
+					else {
+						if constexpr (this->sub_bytes) {
+							auto index = i * this->N + c;
+							this->state[index] = sbox[col[i]];
+						}
+						else {
+							auto index = i * this->N + c;
+							this->state[index] = col[i];
+						}
+					}
 				}
 			}
 		}
@@ -1171,15 +1243,19 @@ namespace qpl {
 				this->shuffle_state_byte();
 			}
 
-			this->state_byte = 0u;
-			this->add_reverse_state_rotation();
+			if constexpr (this->bidirectional) {
+				this->state_byte = 0u;
+				this->add_reverse_state_rotation();
+			}
 		}
 		void decipher() {
 			this->state.fill(0u);
 			this->last_state.fill(0u);
 
-			this->state_byte = 0u;
-			this->sub_reverse_state_rotation();
+			if constexpr (this->bidirectional) {
+				this->state_byte = 0u;
+				this->sub_reverse_state_rotation();
+			}
 			this->state_byte = 0u;
 
 			this->shuffle_state_byte();
@@ -1358,10 +1434,14 @@ namespace qpl {
 	lookup_table<config> cipherN<config>::table;
 
 	namespace detail {
+		QPLDLL extern cipherN<cipher_config{ 4, 1, 64, 64, false } > cipher512_ultra_quick;
 		QPLDLL extern cipherN<cipher_config{ 4, 1, 64, 64 } > cipher512_quick;
 		QPLDLL extern cipherN<cipher_config{ 4, 3, 64, 64 } > cipher512;
 		QPLDLL extern cipherN<cipher_config{ 4, 12, 64, 64 } > cipher512_save;
 	}
+
+	QPLDLL std::string encrypt512_ultra_quick(const std::string& message, const std::string& key);
+	QPLDLL std::string decrypt512_ultra_quick(const std::string& message, const std::string& key);
 
 	QPLDLL std::string encrypt512_quick(const std::string& message, const std::string& key);
 	QPLDLL std::string decrypt512_quick(const std::string& message, const std::string& key);

@@ -3,7 +3,6 @@
 #if defined QPL_INTERN_SFML_USE
 
 namespace qsf {
-
 	bool qsf::event_info::key_single_pressed(sf::Keyboard::Key key) const {
 		return this->m_keys_single_pressed.find(key) != this->m_keys_single_pressed.cend();
 	}
@@ -152,6 +151,16 @@ namespace qsf {
 	bool qsf::event_info::holding_key() const {
 		return this->m_holding_key;
 	}
+	bool qsf::event_info::left_mouse_fast_clicked() const {
+		return this->m_left_mouse_fast_click;
+	}
+	bool qsf::event_info::right_mouse_fast_clicked() const {
+		return this->m_right_mouse_fast_click;
+	}
+	bool qsf::event_info::middle_mouse_fast_clicked() const {
+		return this->m_middle_mouse_fast_click;
+	}
+
 	bool qsf::event_info::left_mouse_double_clicked() const {
 		return this->m_left_mouse_double_click;
 	}
@@ -201,6 +210,9 @@ namespace qsf {
 		this->m_left_mouse_double_click = false;
 		this->m_right_mouse_double_click = false;
 		this->m_middle_mouse_double_click = false;
+		this->m_left_mouse_fast_click = false;
+		this->m_right_mouse_fast_click = false;
+		this->m_middle_mouse_fast_click = false;
 
 		this->m_keys_pressed.clear();
 		this->m_keys_released.clear();
@@ -224,10 +236,11 @@ namespace qsf {
 			this->m_mouse_clicked = true;
 			this->m_mouse_holding = true;
 			if (event.mouseButton.button == sf::Mouse::Left) {
+				this->m_left_mouse_click_release_clock.reset();
 				this->m_left_mouse_clicked = true;
 				this->m_holding_left_mouse = true;
 				if (this->m_left_mouse_clock.is_running()) {
-					if (this->m_left_mouse_clock.elapsed_f() < this->m_fast_click_duration) {
+					if (this->m_left_mouse_clock.elapsed_f() < this->m_fast_double_click_duration) {
 						this->m_left_mouse_double_click = true;
 						++this->m_left_mouse_fast_click_ctr;
 						this->m_left_mouse_clock.reset();
@@ -243,10 +256,11 @@ namespace qsf {
 				}
 			}
 			else if (event.mouseButton.button == sf::Mouse::Right) {
+				this->m_right_mouse_click_release_clock.reset();
 				this->m_right_mouse_clicked = true;
 				this->m_holding_right_mouse = true;
 				if (this->m_right_mouse_clock.is_running()) {
-					if (this->m_right_mouse_clock.elapsed_f() < this->m_fast_click_duration) {
+					if (this->m_right_mouse_clock.elapsed_f() < this->m_fast_double_click_duration) {
 						this->m_right_mouse_double_click = true;
 						++this->m_right_mouse_fast_click_ctr;
 						this->m_right_mouse_clock.reset();
@@ -262,10 +276,11 @@ namespace qsf {
 				}
 			}
 			else if (event.mouseButton.button == sf::Mouse::Middle) {
+				this->m_middle_mouse_click_release_clock.reset();
 				this->m_middle_mouse_clicked = true;
 				this->m_holding_middle_mouse = true;
 				if (this->m_middle_mouse_clock.is_running()) {
-					if (this->m_middle_mouse_clock.elapsed_f() < this->m_fast_click_duration) {
+					if (this->m_middle_mouse_clock.elapsed_f() < this->m_fast_double_click_duration) {
 						this->m_middle_mouse_double_click = true;
 						++this->m_middle_mouse_fast_click_ctr;
 						this->m_middle_mouse_clock.reset();
@@ -285,14 +300,23 @@ namespace qsf {
 			this->m_mouse_released = true;
 			this->m_mouse_holding = false;
 			if (event.mouseButton.button == sf::Mouse::Left) {
+				if (this->m_left_mouse_click_release_clock.elapsed_f() < this->m_fast_click_duration) {
+					this->m_left_mouse_fast_click = true;
+				}
 				this->m_left_mouse_released = true;
 				this->m_holding_left_mouse = false;
 			}
 			else if (event.mouseButton.button == sf::Mouse::Right) {
+				if (this->m_right_mouse_click_release_clock.elapsed_f() < this->m_fast_click_duration) {
+					this->m_right_mouse_fast_click = true;
+				}
 				this->m_right_mouse_released = true;
 				this->m_holding_right_mouse = false;
 			}
 			else if (event.mouseButton.button == sf::Mouse::Middle) {
+				if (this->m_middle_mouse_click_release_clock.elapsed_f() < this->m_fast_click_duration) {
+					this->m_middle_mouse_fast_click = true;
+				}
 				this->m_middle_mouse_released = true;
 				this->m_holding_middle_mouse = false;
 			}
@@ -339,6 +363,12 @@ namespace qsf {
 	}
 	qpl::f64 qsf::event_info::get_fast_click_duration() const {
 		return this->m_fast_click_duration;
+	}
+	void qsf::event_info::set_fast_double_click_duration(qpl::f64 duration) {
+		this->m_fast_double_click_duration = duration;
+	}
+	qpl::f64 qsf::event_info::get_fast_double_click_duration() const {
+		return this->m_fast_double_click_duration;
 	}
 
 	qpl::vector2u qsf::event_info::screen_dimension() const {

@@ -3,6 +3,7 @@
 #if defined QPL_INTERN_SFML_USE
 
 #include <qpl/QSF/framework.hpp>
+#include <qpl/QSF/ui_controls.hpp>
 
 namespace qsf {
 	namespace detail {
@@ -26,7 +27,7 @@ namespace qsf {
 			}
 			void call_on_resize() override {
 				this->text.set_center(this->center() - qpl::vec(0, 200));
-				this->button.set_center(this->text.get_visible_hitbox().middle_bottom().moved(0, 200));
+				this->button.set_center(this->text.get_visible_hitbox().get_bottom_center().moved(0, 200));
 				this->button.centerize_text();
 			}
 			void updating() override {

@@ -16,12 +16,14 @@
 #include <vector>
 #include <iostream>
 #include <unordered_map>
-#include <qpl/qpldeclspec.hpp>
-#include <qpl/type_traits.hpp>
-#include <qpl/pictures.hpp>
 #include <string_view>
 #include <span>
 #include <string>
+
+#include <qpl/qpldeclspec.hpp>
+#include <qpl/type_traits.hpp>
+#include <qpl/pictures.hpp>
+#include <qpl/vector.hpp>
 
 namespace qpl {
 	namespace winsys {
@@ -170,11 +172,26 @@ namespace qpl {
 		QPLDLL bool add_to_watchlist(std::wstring window_name);
 		QPLDLL watch_list& get_watchlist();
 
-		QPLDLL point get_mouse_position();
+		QPLDLL qpl::vec2i get_mouse_position();
 		QPLDLL bool mouse_left_clicked();
+
+		namespace impl {
+			QPLDLL extern std::unordered_map<int, bool> key_map;
+		}
+		QPLDLL bool key_pressed(int key);
+		QPLDLL bool key_released(int key);
+		QPLDLL bool key_holding(int key);
+		QPLDLL void click_left_mouse(qpl::vec2 pos);
+		QPLDLL void click_left_mouse();
 
 		QPLDLL void set_cursor_hand();
 		QPLDLL void set_cursor_normal();
+
+		QPLDLL void hide_console();
+		QPLDLL void show_console();
+		QPLDLL void set_program_launch_on_startup(std::string program_path);
+		QPLDLL void set_program_launch_on_startup(std::wstring program_path);
+
 
 		QPLDLL qpl::pixels get_screen_pixels(qpl::winsys::rect rectangle);
 		QPLDLL qpl::pixels get_screen_pixels();
@@ -185,18 +202,21 @@ namespace qpl {
 		QPLDLL void init_monitor_captures();
 		QPLDLL void scan_monitor_captures();
 		QPLDLL void screen_shot_monitors();
+		QPLDLL std::wstring get_user_name();
 
 		QPLDLL qpl::size monitor_capture_size();
 		QPLDLL void enable_utf();
+		QPLDLL void enable_utf16();
 		QPLDLL void disable_utf();
 
-		QPLDLL std::wstring read_utf_file(const std::wstring& path);
-		QPLDLL std::wstring read_utf_file(const std::string& path);
+		QPLDLL std::wstring read_utf8_file(const std::wstring& path);
+		QPLDLL std::wstring read_utf8_file(const std::string& path);
+
+		QPLDLL void execute_batch(const std::string& path, const std::string& command);
+		QPLDLL void execute_batch_command(const std::string& command);
 	}
 	QPLDLL void screen_shot(const std::string& file_name);
 	QPLDLL void screen_shot(const std::string& file_name, qpl::winsys::rect rectangle);
-	QPLDLL void screen_shot_stream(const std::string& file_name);
-
 
 	QPLDLL qpl::winsys::point get_screen_dimension();
 	QPLDLL void clear_console();
@@ -272,7 +292,6 @@ namespace qpl {
 		cc() {
 			this->foreground = qpl::foreground::white;
 			this->background = qpl::background::black;
-
 		}
 		cc(const cc& other) {
 			*this = other;
@@ -331,6 +350,7 @@ namespace qpl {
 	QPLDLL void set_console_color(qpl::background background);
 	QPLDLL void set_console_color(qpl::cc color);
 	QPLDLL void set_console_color_default();
+
 
 	struct shared_memory {
 		HANDLE hMapFile;

@@ -5,7 +5,7 @@ namespace qpl {
 
 
 	void qpl::date_ms::set(std::string string) {
-		auto nums = qpl::split_string_numbers<qpl::u16>(string);
+		auto nums = qpl::string_split_numbers<qpl::u16>(string);
 
 		this->years = qpl::u16_cast(nums[0]);
 		this->months = qpl::u8_cast(nums[1]);
@@ -18,12 +18,12 @@ namespace qpl {
 	std::string qpl::date_ms::string() const {
 		std::ostringstream stream;
 		stream << qpl::i32_cast(this->years) << "-";
-		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->months), '0', 2) << "-";
-		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->days), '0', 2) << " ";
-		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->hours), '0', 2) << ":";
-		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->minutes), '0', 2) << ":";
-		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->seconds), '0', 2) << ":";
-		stream << qpl::prepended_to_string_to_fit(qpl::i32_cast(this->milliseconds), '0', 3);
+		stream << qpl::prepended_to_string_to_fit(qpl::to_string(qpl::i32_cast(this->months)), '0', 2) << "-";
+		stream << qpl::prepended_to_string_to_fit(qpl::to_string(qpl::i32_cast(this->days)), '0', 2) << " ";
+		stream << qpl::prepended_to_string_to_fit(qpl::to_string(qpl::i32_cast(this->hours)), '0', 2) << ":";
+		stream << qpl::prepended_to_string_to_fit(qpl::to_string(qpl::i32_cast(this->minutes)), '0', 2) << ":";
+		stream << qpl::prepended_to_string_to_fit(qpl::to_string(qpl::i32_cast(this->seconds)), '0', 2) << ":";
+		stream << qpl::prepended_to_string_to_fit(qpl::to_string(qpl::i32_cast(this->milliseconds)), '0', 3);
 		return stream.str();
 	}
 	date_ms qpl::get_current_time() {

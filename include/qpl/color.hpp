@@ -196,7 +196,7 @@ namespace qpl {
 			}
 			else {
 				for (qpl::size i = 0u; i < std::min(N, M); ++i) {
-					this->data[i] = static_cast<T>(qpl::clamp<qpl::f64>(0, other[i] * delta, max_channel()));
+					this->data[i] = static_cast<T>(qpl::clamp<qpl::f64>(0, std::round(other[i] * delta), max_channel()));
 				}
 			}
 			return *this;
@@ -212,7 +212,7 @@ namespace qpl {
 			}
 			else {
 				for (qpl::size i = 0u; i < std::min(N, M); ++i) {
-					this->data[i] = static_cast<T>(qpl::clamp<qpl::f64>(0, other[i], max_channel()));
+					this->data[i] = static_cast<T>(qpl::clamp<qpl::f64>(0, std::round(other[i]), max_channel()));
 				}
 			}
 			return *this;
@@ -220,8 +220,16 @@ namespace qpl {
 		template<typename U>
 		constexpr qpl::rgbN<T, N>& operator=(const std::initializer_list<U>& list) {
 			this->clear_black();
-			for (qpl::size i = 0u; i < qpl::min(list.size(), this->data.size()); ++i) {
-				this->data[i] = static_cast<T>(*(list.begin() + i));
+
+			if constexpr (is_floating_point()) {
+				for (qpl::size i = 0u; i < qpl::min(list.size(), this->data.size()); ++i) {
+					this->data[i] = static_cast<T>(*(list.begin() + i));
+				}
+			}
+			else {
+				for (qpl::size i = 0u; i < qpl::min(list.size(), this->data.size()); ++i) {
+					this->data[i] = static_cast<T>(std::round(*(list.begin() + i)));
+				}
 			}
 			return *this;
 		}
@@ -233,7 +241,7 @@ namespace qpl {
 			constexpr auto size = std::min(N, std::tuple_size_v<Tuple>);
 			qpl::constexpr_iterate<size>([&](auto i) {
 				this->data[i] = static_cast<T>(std::get<i>(tuple));
-			});
+				});
 			return *this;
 		}
 
@@ -267,16 +275,16 @@ namespace qpl {
 			constexpr qpl::f64 delta = 255 / qpl::f64_cast(max_channel());
 
 			if constexpr (N == 1) {
-				return sf::Color(static_cast<sf::Uint8>(this->r * delta), 0, 0);
+				return sf::Color(static_cast<sf::Uint8>(std::round(this->r * delta)), 0, 0);
 			}
 			else if constexpr (N == 2) {
-				return  sf::Color(static_cast<sf::Uint8>(this->r * delta), static_cast<sf::Uint8>(this->g * delta), 0);
+				return sf::Color(static_cast<sf::Uint8>(std::round(this->r * delta)), static_cast<sf::Uint8>(std::round(this->g * delta)), 0);
 			}
 			else if constexpr (N == 3) {
-				return sf::Color(static_cast<sf::Uint8>(this->r * delta), static_cast<sf::Uint8>(this->g * delta), static_cast<sf::Uint8>(this->b * delta));
+				return sf::Color(static_cast<sf::Uint8>(std::round(this->r * delta)), static_cast<sf::Uint8>(std::round(this->g * delta)), static_cast<sf::Uint8>(std::round(this->b * delta)));
 			}
 			else {
-				return sf::Color(static_cast<sf::Uint8>(this->r * delta), static_cast<sf::Uint8>(this->g * delta), static_cast<sf::Uint8>(this->b * delta), static_cast<sf::Uint8>(this->a * delta));
+				return sf::Color(static_cast<sf::Uint8>(std::round(this->r * delta)), static_cast<sf::Uint8>(std::round(this->g * delta)), static_cast<sf::Uint8>(std::round(this->b * delta)), static_cast<sf::Uint8>(std::round(this->a * delta)));
 			}
 		}
 #endif
@@ -294,16 +302,16 @@ namespace qpl {
 			return this->data.size();
 		}
 
-		constexpr auto operator[](qpl::size index) {
+		constexpr auto& operator[](qpl::size index) {
 			return this->data[index];
 		}
-		constexpr const auto operator[](qpl::size index) const {
+		constexpr const auto& operator[](qpl::size index) const {
 			return this->data[index];
 		}
-		constexpr auto at(qpl::size index) {
+		constexpr auto& at(qpl::size index) {
 			return this->data[index];
 		}
-		constexpr const auto at(qpl::size index) const {
+		constexpr const auto& at(qpl::size index) const {
 			return this->data[index];
 		}
 		constexpr auto begin() {
@@ -344,13 +352,28 @@ namespace qpl {
 		}
 
 		constexpr auto min() const {
-			return *std::min_element(this->data.cbegin(), this->data.cend());
+			if constexpr (N >= 4) {
+				return *std::min_element(this->data.cbegin(), this->data.cend() - 1);
+			}
+			else {
+				return *std::min_element(this->data.cbegin(), this->data.cend());
+			}
 		}
 		constexpr auto max() const {
-			return *std::max_element(this->data.cbegin(), this->data.cend());
+			if constexpr (N >= 4) {
+				return *std::max_element(this->data.cbegin(), this->data.cend() - 1);
+			}
+			else {
+				return *std::max_element(this->data.cbegin(), this->data.cend());
+			}
 		}
 		constexpr auto sum() const {
-			return std::accumulate(this->data.cbegin(), this->data.cend(), T{ 0 });
+			if constexpr (N >= 4) {
+				return std::accumulate(this->data.cbegin(), this->data.cend() - 1, T{ 0 });
+			}
+			else {
+				return std::accumulate(this->data.cbegin(), this->data.cend(), T{ 0 });
+			}
 		}
 
 		template<typename U> requires (qpl::is_arithmetic<U>())
@@ -906,7 +929,7 @@ namespace qpl {
 
 		template<typename C> requires (qpl::is_container<C>() && qpl::has_size<C>() && qpl::has_square_brackets_read<C>())
 		[[nodiscard]] constexpr static qpl::rgbN<T, N> interpolation(const C& colors, delta_type strength) {
-			strength = qpl::clamp(0.0, strength, 1.0);
+			strength = qpl::clamp<delta_type>(delta_type{ 0.0 }, strength, delta_type{ 1.0 });
 			if (strength == 1.0) {
 				return colors.back();
 			}
@@ -924,11 +947,16 @@ namespace qpl {
 			bool first = true;
 			std::ostringstream stream;
 			stream << '(';
-			for (auto& i : this->data) {
+			for (qpl::size i = 0u; i < this->data.size(); ++i) {
+				if constexpr (N == 4) {
+					if (i == 3 && this->data[i] == max_channel()) {
+						break;
+					}
+				}
 				if (!first) {
 					stream << ", ";
 				}
-				stream << static_cast<visible_type>(i);
+				stream << static_cast<visible_type>(this->data[i]);
 				first = false;
 			}
 			stream << ')';
@@ -994,6 +1022,26 @@ namespace qpl {
 		qpl::rgba original_color = qpl::rgba::white();
 		qpl::rgba multiplied_color = qpl::rgba::white();
 
+		multiplied_color_extension() {
+
+		}
+		template<typename T> requires detail::has_set_color_c<T>
+		multiplied_color_extension(const T& value) {
+			T::operator=(value);
+		}
+		template<typename U> requires (std::is_convertible_v<U, T>)
+		multiplied_color_extension(const U& value) {
+			T::operator=(value);
+		}
+		multiplied_color_extension& operator=(const T& value) {
+			T::operator=(value);
+			return *this;
+		}
+		template<typename U> requires (std::is_convertible_v<U, T>)
+		multiplied_color_extension& operator=(const U& value) {
+			T::operator=(value);
+			return *this;
+		}
 		void set_color(qpl::rgba color) {
 			this->original_color = color;
 			T::set_color(this->original_color.multiplied_color(this->multiplied_color));
@@ -1090,7 +1138,7 @@ namespace qpl::vk {
 		const static qpl::frgb purple;
 		const static qpl::frgb amaranth;
 		const static qpl::frgb turquoise;
-	private:
+
 		glm::vec3 m_rgb;
 	};
 

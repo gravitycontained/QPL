@@ -13,12 +13,15 @@
 #include <regex>
 
 #include <TlHelp32.h>
+#include <Lmcons.h>
 #include <tchar.h>
 #include <stdio.h>
 #include <psapi.h>
 
 #include <io.h>
 #include <fcntl.h>
+
+#include <qpl/filesys.hpp>
 
 #pragma comment(lib, "psapi")
 
@@ -446,10 +449,10 @@ namespace qpl {
 			return qpl::winsys::impl::w_list;
 		}
 
-		point qpl::winsys::get_mouse_position() {
+		qpl::vec2i qpl::winsys::get_mouse_position() {
 			POINT p;
 			GetCursorPos(&p);
-			return { p.x, p.y };
+			return qpl::vec2i{ p.x, p.y };
 		}
 		bool qpl::winsys::mouse_left_clicked() {
 			static bool before = false;
@@ -463,11 +466,94 @@ namespace qpl {
 				return false;
 			}
 		}
+		std::unordered_map<int, bool> qpl::winsys::impl::key_map;
+
+		bool qpl::winsys::key_pressed(int key) {
+			auto holding_before = qpl::winsys::impl::key_map.find(key) != qpl::winsys::impl::key_map.cend();
+			if (holding_before) {
+				holding_before = qpl::winsys::impl::key_map[key];
+			}
+
+			auto keyState = GetKeyState(key);
+			bool toggled = keyState & 1;
+			bool down = keyState & 0x8000;
+
+			qpl::winsys::impl::key_map[key] = down;
+			return down && !holding_before;
+		}
+		bool qpl::winsys::key_released(int key) {
+			auto holding_before = qpl::winsys::impl::key_map.find(key) != qpl::winsys::impl::key_map.cend();
+			if (holding_before) {
+				holding_before = qpl::winsys::impl::key_map[key];
+			}
+
+			auto keyState = GetKeyState(key);
+			bool toggled = keyState & 1;
+			bool down = keyState & 0x8000;
+
+			qpl::winsys::impl::key_map[key] = down;
+			return !down && holding_before;
+		}
+		bool qpl::winsys::key_holding(int key) {
+			auto keyState = GetKeyState(key);
+			bool down = keyState & 0x8000;
+			qpl::winsys::impl::key_map[key] = down;
+			return down;
+		}
+		void qpl::winsys::click_left_mouse(qpl::vec2 pos) {
+			INPUT Inputs[3] = { 0 };
+		
+			Inputs[0].type = INPUT_MOUSE;
+			Inputs[0].mi.dx = static_cast<LONG>(pos.x);
+			Inputs[0].mi.dy = static_cast<LONG>(pos.y);
+			Inputs[0].mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+		
+			Inputs[1].type = INPUT_MOUSE;
+			Inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+		
+			Inputs[2].type = INPUT_MOUSE;
+			Inputs[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+		
+			SendInput(3, Inputs, sizeof(INPUT));
+		}
+		void qpl::winsys::click_left_mouse() {
+			INPUT Input = { 0 };
+			// left down 
+			Input.type = INPUT_MOUSE;
+			Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+			SendInput(1, &Input, sizeof(INPUT));
+
+			// left up
+			ZeroMemory(&Input, sizeof(INPUT));
+			Input.type = INPUT_MOUSE;
+			Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+			SendInput(1, &Input, sizeof(INPUT));
+		}
 		void qpl::winsys::set_cursor_hand() {
 			SetCursor(LoadCursor(NULL, IDC_HAND));
 		}
 		void qpl::winsys::set_cursor_normal() {
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
+		}
+		void qpl::winsys::hide_console() {
+			ShowWindow(GetConsoleWindow(), SW_HIDE);
+		}
+
+		void qpl::winsys::show_console() {
+			ShowWindow(GetConsoleWindow(), SW_SHOW);
+		}
+		void qpl::winsys::set_program_launch_on_startup(std::wstring program_path) {
+			auto name = qpl::string_split(program_path, L'/').back();
+			name = qpl::string_split(name, L'.').front();
+
+			program_path = qpl::string_replace_all(program_path, L"/", L"\\");
+
+			HKEY hkey = NULL;
+			LONG create_status = RegCreateKey(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", &hkey); 
+			LONG status = RegSetValueEx(hkey, name.c_str(), 0, REG_SZ, (BYTE*)program_path.c_str(), static_cast<DWORD>((program_path.size() + 1) * sizeof(wchar_t)));
+		}
+		void qpl::winsys::set_program_launch_on_startup(std::string program_path) {
+			qpl::winsys::set_program_launch_on_startup(qpl::string_to_wstring(program_path));
 		}
 
 
@@ -567,6 +653,12 @@ namespace qpl {
 
 		return { desktop.right, desktop.bottom };
 	}
+	std::wstring qpl::winsys::get_user_name() {
+		wchar_t username[UNLEN + 1];
+		DWORD username_len = UNLEN + 1;
+		GetUserName(username, &username_len);
+		return std::wstring(username, username_len);
+	}
 	void qpl::screen_shot(const std::string& file_name) {
 		auto screen = qpl::winsys::get_screen_pixels();
 		screen.generate_bmp(file_name);
@@ -574,9 +666,6 @@ namespace qpl {
 	void qpl::screen_shot(const std::string& file_name, qpl::winsys::rect rectangle) {
 		auto screen = qpl::winsys::get_screen_pixels(rectangle);
 		screen.generate_bmp(file_name);
-	}
-	void qpl::screen_shot_stream(const std::string& file_name) {
-
 	}
 	void qpl::clear_console() {
 		system("cls");
@@ -605,7 +694,10 @@ namespace qpl {
 		SetClipboardData(CF_UNICODETEXT, hClipboardData);
 		CloseClipboard();
 	}
-
+	void qpl::winsys::enable_utf16() {
+		_setmode(_fileno(stdout), _O_U16TEXT);
+		qpl::detail::utf_enabled = true;
+	}
 	void qpl::winsys::enable_utf() {
 		fflush(stdout);
 #if defined _MSC_VER
@@ -650,16 +742,16 @@ namespace qpl {
 	void qpl::winsys::disable_utf() {
 		qpl::detail::utf_enabled = false;
 	}
-	std::wstring qpl::winsys::read_utf_file(const std::wstring& file) {
+	std::wstring qpl::winsys::read_utf8_file(const std::wstring& file) {
 		std::wstring buffer;
 		FILE* f;
 		auto error = _wfopen_s(&f, file.c_str(), L"rtS, ccs=UTF-8");
 		if (error) {
-			throw qpl::exception("qpl::winsys::read_utf_file(): can't open / find file \"", file, "\"");
+			throw qpl::exception("qpl::winsys::read_utf8_file(): can't open / find file \"", file, "\"");
 		}
 
 		if (f == NULL) {
-			throw qpl::exception("qpl::winsys::read_utf_file(): can't open / find file \"", file, "\"");
+			throw qpl::exception("qpl::winsys::read_utf8_file(): can't open / find file \"", file, "\"");
 		}
 		struct _stat fileinfo;
 		_wstat(file.c_str(), &fileinfo);
@@ -676,8 +768,16 @@ namespace qpl {
 
 		return buffer;
 	}
-	std::wstring qpl::winsys::read_utf_file(const std::string& file) {
-		return qpl::winsys::read_utf_file(qpl::string_to_wstring(file));
+	std::wstring qpl::winsys::read_utf8_file(const std::string& file) {
+		return qpl::winsys::read_utf8_file(qpl::string_to_wstring(file));
+	}
+	void qpl::winsys::execute_batch(const std::string& path, const std::string& command) {
+		qpl::filesys::create_file(path, command);
+		std::system(path.c_str());
+		qpl::filesys::remove(path);
+	}
+	void qpl::winsys::execute_batch_command(const std::string& command) {
+		std::system(command.c_str());
 	}
 
 	std::ostream& qpl::operator<<(std::ostream& os, color color) {
@@ -755,6 +855,7 @@ namespace qpl {
 	void qpl::set_console_color_default() {
 		qpl::set_console_color(qpl::color::white, qpl::color::black);
 	}
+
 	void* qpl::shared_memory::get() {
 		if (this->is_array()) {
 			return reinterpret_cast<char*>(this->ptr) + qpl::bytes_in_type<qpl::size>();

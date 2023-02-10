@@ -7,23 +7,23 @@
 
 #include <qpl/qpldeclspec.hpp>
 #include <SFML/Graphics.hpp>
+#include <qpl/QSF/view.hpp>
 #include <qpl/vector.hpp>
 #include <qpl/time.hpp>
 #include <set>
 
 namespace qsf {
-
-
 	struct event_info;
 
-	template<typename C>
-	concept has_update_c = requires (C x, const event_info & event) {
-		x.update(event);
+	template<typename C, typename ... Args>
+	concept has_update_c = requires (C x, const event_info& event, Args... args) {
+		x.update(event, args...);
 	};
-	template<typename C>
+	template<typename C, typename ... Args>
 	constexpr bool has_update() {
-		return has_update_c<C>;
+		return has_update_c<C, Args...>;
 	}
+
 
 	struct event_info {
 		QPLDLL bool key_single_pressed(sf::Keyboard::Key key) const;
@@ -66,6 +66,10 @@ namespace qsf {
 		QPLDLL bool holding_middle_mouse() const;
 		QPLDLL bool holding_key() const;
 
+		QPLDLL bool left_mouse_fast_clicked() const;
+		QPLDLL bool right_mouse_fast_clicked() const;
+		QPLDLL bool middle_mouse_fast_clicked() const;
+
 		QPLDLL bool left_mouse_double_clicked() const;
 		QPLDLL bool right_mouse_double_clicked() const;
 		QPLDLL bool middle_mouse_double_clicked() const;
@@ -77,6 +81,8 @@ namespace qsf {
 		QPLDLL void update(const sf::Event& event);
 		QPLDLL void set_fast_click_duration(qpl::f64 duration);
 		QPLDLL qpl::f64 get_fast_click_duration() const;
+		QPLDLL void set_fast_double_click_duration(qpl::f64 duration);
+		QPLDLL qpl::f64 get_fast_double_click_duration() const;
 
 		QPLDLL qpl::vector2u screen_dimension() const;
 		QPLDLL qpl::time frame_time() const;
@@ -88,6 +94,12 @@ namespace qsf {
 		QPLDLL qpl::vector2i mouse_position_desktop() const;
 
 		QPLDLL void reset_delta_mouse();
+
+		template<typename T>
+		void apply_view(const qsf::view_t<T>& view) const {
+			auto transform = view.get_transform();
+			this->m_mouse_position = transform.transformPoint(this->m_mouse_position);
+		}
 
 		QPLDLL bool text_entered(char c) const;
 		QPLDLL bool text_entered(wchar_t c) const;
@@ -101,14 +113,31 @@ namespace qsf {
 		QPLDLL std::string all_text_entered_str() const;
 
 
-		template<typename T> requires (qsf::has_update<T>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>>()))
-		void update(T& updatable) const {
-			if constexpr (qsf::has_update<T>()) {
-				updatable.update(*this);
+		template<typename T, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))
+		void update(T& updatable, Args&&... args) const {
+			if constexpr (qsf::has_update<T, Args...>()) {
+				if constexpr (qsf::has_view<T>()) {
+					if (updatable.view.is_default_view()) {
+						updatable.update(*this, args...);
+					}
+					else {
+						auto before = this->m_mouse_position;
+						auto before_delta = this->m_delta_mouse_position;
+						this->apply_view(updatable.view);
+
+						updatable.update(*this, args...);
+
+						this->m_mouse_position = before;
+						this->m_delta_mouse_position = before_delta;
+					}
+				}
+				else {
+					updatable.update(*this, args...);
+				}
 			}
 			else {
 				for (auto& i : updatable) {
-					this->update(i);
+					this->update(i, args...);
 				}
 			}
 		}
@@ -140,13 +169,16 @@ namespace qsf {
 		bool m_left_mouse_double_click = false;
 		bool m_right_mouse_double_click = false;
 		bool m_middle_mouse_double_click = false;
+		bool m_left_mouse_fast_click = false;
+		bool m_right_mouse_fast_click = false;
+		bool m_middle_mouse_fast_click = false;
 
 		std::wstring m_text_entered;
 		std::wostringstream m_text_entered_stream;
 
 		qpl::vector2i m_resized_size;
-		qpl::vector2f m_mouse_position;
-		qpl::vector2f m_delta_mouse_position;
+		mutable qpl::vector2f m_mouse_position;
+		mutable qpl::vector2f m_delta_mouse_position;
 		qpl::vector2i m_mouse_position_screen;
 		qpl::vector2i m_mouse_position_screen_before;
 		qpl::vector2i m_mouse_position_desktop;
@@ -159,6 +191,10 @@ namespace qsf {
 		qpl::time m_frame_time = 0;
 		qpl::vector2u m_screen_dimension = qpl::vec(0u, 0u);
 
+		qpl::small_clock m_left_mouse_click_release_clock;
+		qpl::small_clock m_right_mouse_click_release_clock;
+		qpl::small_clock m_middle_mouse_click_release_clock;
+
 		qpl::halted_clock m_left_mouse_clock;
 		qpl::halted_clock m_right_mouse_clock;
 		qpl::halted_clock m_middle_mouse_clock;
@@ -166,7 +202,8 @@ namespace qsf {
 		qpl::size m_right_mouse_fast_click_ctr = 1u;
 		qpl::size m_middle_mouse_fast_click_ctr = 1u;
 
-		qpl::f64 m_fast_click_duration = 0.2;
+		qpl::f64 m_fast_double_click_duration = 0.2;
+		qpl::f64 m_fast_click_duration = 0.15;
 	};
 
 }

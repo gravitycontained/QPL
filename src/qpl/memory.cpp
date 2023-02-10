@@ -42,29 +42,6 @@ namespace qpl {
         str = qpl::encrypt(str, key);
         qpl::filesys::write_data_file(str, path);
     }
-    void qpl::save_state::file_load(std::string path) {
-        this->ctr = 0u;
-        auto str = qpl::filesys::read_file(path);
-        this->collection_string.set_string(str);
-        if (!this->collection_string.read_info()) {
-            throw qpl::exception("save_state: \"", path, "\" failed to load.");
-        }
-    }
-    void qpl::save_state::file_load(std::string path, const std::array<qpl::u64, 4>& key) {
-        this->ctr = 0u;
-        auto str = qpl::filesys::read_file(path);
-        str = qpl::decrypt(str, key);
-        this->collection_string.set_string(str);
-        if (!this->collection_string.read_info()) {
-            throw qpl::exception("save_state: \"", path, "\" failed to load.");
-        }
-    }
-    void qpl::save_state::set_string(const std::string& str) {
-        this->collection_string.set_string(str);
-        if (!this->collection_string.read_info()) {
-            throw qpl::exception("save_state::set_string: failed to load.");
-        }
-    }
     void qpl::save_state::finalize_string() {
         this->collection_string.finalize();
     }
@@ -78,9 +55,32 @@ namespace qpl {
     std::string qpl::save_state::get_next_string() {
         return this->collection_string.get_string(this->ctr++);
     }
-    save_state qpl::save_state::get_next_save_state() {
-        qpl::save_state state;
-        state.set_string(this->collection_string.get_string(this->ctr++));
-        return state;
+
+    void qpl::load_state::clear() {
+        this->collection_string.clear();
+        this->ctr = 0u;
+    }
+    void qpl::load_state::file_load(std::string path) {
+        this->ctr = 0u;
+        auto str = qpl::filesys::read_file(path);
+        this->collection_string.set_string(str);
+        if (!this->collection_string.read_info()) {
+            throw qpl::exception("save_state: \"", path, "\" failed to load.");
+        }
+    }
+    void qpl::load_state::file_load(std::string path, const std::array<qpl::u64, 4>& key) {
+        this->ctr = 0u;
+        auto str = qpl::filesys::read_file(path);
+        str = qpl::decrypt(str, key);
+        this->collection_string.set_string(str);
+        if (!this->collection_string.read_info()) {
+            throw qpl::exception("save_state: \"", path, "\" failed to load.");
+        }
+    }
+    void qpl::load_state::set_string(const std::string& str) {
+        this->collection_string.set_string(str);
+        if (!this->collection_string.read_info()) {
+            throw qpl::exception("save_state::set_string: failed to load.");
+        }
     }
 }

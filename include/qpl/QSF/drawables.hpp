@@ -81,9 +81,9 @@ namespace qsf {
 			this->window = nullptr;
 			this->states = states;
 		}
-
+		
 		template<typename T> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
-		void draw(const T& object) {
+		void final_draw(const T& object) {
 			if constexpr (qsf::has_any_draw<T>()) {
 				if constexpr (qsf::is_render_texture<T>()) {
 					if (this->window) {
@@ -122,8 +122,25 @@ namespace qsf {
 				}
 			}
 		}
+
+		template<typename T> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
+		void draw(const T& object) {
+			if constexpr (qsf::has_view<T>()) {
+				auto before = this->states.transform;
+				object.view.apply_to(this->states);
+				this->final_draw(object);
+				this->states.transform = before;
+			}
+			else {
+				this->final_draw(object);
+			}
+		}
 		template<typename T> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
 		void draw(const T& object, sf::RenderStates states) {
+
+			if constexpr (qsf::has_view<T>()) {
+				object.view.apply_to(states);
+			}
 			if constexpr (qsf::has_any_draw<T>()) {
 				if constexpr (qsf::is_render_texture<T>()) {
 					if (this->window) {
@@ -168,7 +185,7 @@ namespace qsf {
 	};
 	using draw_object = draw_object_t<false>;
 	using draw_object_gl = draw_object_t<true>;
-	
+
 
 	struct vtext;
 	struct text;
@@ -178,6 +195,8 @@ namespace qsf {
 	struct rectangles;
 	struct vsmooth_rectangle;
 	struct smooth_rectangle;
+	struct vsmooth_corner;
+	struct smooth_corner;
 	struct vpoint;
 	struct point;
 	struct vpoints;
@@ -196,12 +215,8 @@ namespace qsf {
 	struct thick_lines;
 	struct vgraph;
 	struct graph;
-	struct vbutton;
-	struct button;
 
 	struct event_info;
-
-
 
 	QPLDLL qpl::hitbox get_text_hitbox(const sf::Text& text, bool ignore_outline = true);
 	QPLDLL qpl::hitbox get_text_hitbox(const qsf::text& text, bool ignore_outline = true);
@@ -218,6 +233,7 @@ namespace qsf {
 		QPLDLL extern qsf::rectangle rectangle;
 		QPLDLL extern qsf::rectangles rectangles;
 		QPLDLL extern qsf::smooth_rectangle smooth_rectangle;
+		QPLDLL extern qsf::smooth_corner smooth_corner;
 		QPLDLL extern qsf::point point;
 		QPLDLL extern qsf::points points;
 		QPLDLL extern qsf::circle circle;
@@ -227,9 +243,9 @@ namespace qsf {
 		QPLDLL extern qsf::thick_line thick_line;
 		QPLDLL extern qsf::thick_lines thick_lines;
 		QPLDLL extern qsf::graph graph;
-		QPLDLL extern qsf::button button;
 	}
 	QPLDLL extern qsf::vgraph drawing_graph;
+
 
 	struct vertex {
 		vertex() {
@@ -417,8 +433,6 @@ namespace qsf {
 		std::string m_font;
 		sf::Text m_text;
 
-	private:
-
 		QPLDLL qpl::f32 get_letter_kerning(qpl::wchar_type c) const;
 		QPLDLL qpl::f32 get_letter_advance(qpl::wchar_type c) const;
 		QPLDLL qpl::f32 get_letter_advance_and_spacing(qpl::wchar_type c) const;
@@ -527,7 +541,6 @@ namespace qsf {
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
-	private:
 		sf::RectangleShape m_rect;
 	};
 
@@ -561,8 +574,6 @@ namespace qsf {
 		qpl::hitbox hitbox;
 
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-
-	private:
 		QPLDLL void apply_hitbox();
 	};
 
@@ -677,6 +688,9 @@ namespace qsf {
 	};
 
 	struct vsmooth_rectangle {
+		vsmooth_rectangle() {
+			this->round_corners.fill(true);
+		}
 
 		QPLDLL void move(qpl::vector2f delta);
 
@@ -695,8 +709,10 @@ namespace qsf {
 		QPLDLL void set_outline_color(qpl::rgba color);
 		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
 		QPLDLL void set_slope_point_count(qpl::size point_count);
+		QPLDLL void set_round_corners(qpl::bitset<4u> round_corners);
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::hitbox get_hitbox() const;
 		QPLDLL qpl::vector2f get_center() const;
 		QPLDLL qpl::f64 get_slope() const;
 		QPLDLL qpl::rgba get_color() const;
@@ -704,11 +720,12 @@ namespace qsf {
 		QPLDLL qpl::rgba get_outline_color() const;
 		QPLDLL qpl::vector2f get_slope_dimension() const;
 		QPLDLL qpl::size get_slope_point_count() const;
+		QPLDLL qpl::bitset<4u> get_round_corners() const;
 		QPLDLL bool contains(qpl::vector2f point) const;
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 		
 		friend smooth_rectangle;
-	private:
+
 		qpl::vector2f dimension;
 		qpl::vector2f position;
 		qpl::f64 slope = 2.0;
@@ -717,10 +734,14 @@ namespace qsf {
 		qpl::rgba outline_color;
 		qpl::vector2f slope_dim = { 10, 10 };
 		qpl::f32 outline_thickness = 0.0f;
+		qpl::bitset<4u> round_corners;
 	};
 	struct smooth_rectangle {
 		mutable qsf::polygon polygon;
 
+		smooth_rectangle() {
+			this->round_corners.fill(true);
+		}
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_hitbox(qpl::hitbox hitbox);
@@ -732,6 +753,7 @@ namespace qsf {
 		QPLDLL void set_slope_dimension(qpl::vector2f dimension);
 		QPLDLL void set_slope_dimension(qpl::f32 dimension);
 		QPLDLL void set_slope_point_count(qpl::size point_count);
+		QPLDLL void set_round_corners(qpl::bitset<4u> round_corners);
 		QPLDLL qpl::vector2f get_dimension() const;
 		QPLDLL qpl::vector2f get_position() const;
 		QPLDLL qpl::hitbox get_hitbox() const;
@@ -742,6 +764,7 @@ namespace qsf {
 		QPLDLL qpl::rgba get_outline_color() const;
 		QPLDLL qpl::vector2f get_slope_dimension() const;
 		QPLDLL qpl::size get_slope_point_count() const;
+		QPLDLL qpl::bitset<4u> get_round_corners() const;
 
 		QPLDLL void check_create() const;
 		QPLDLL void move(qpl::vector2f delta);
@@ -749,13 +772,83 @@ namespace qsf {
 		QPLDLL const qsf::smooth_rectangle& operator=(const qsf::vsmooth_rectangle& smooth_rectangle) const;
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
-	private:
 		mutable qpl::vector2f dimension;
 		mutable qpl::vector2f position;
 		qpl::f64 slope = 2.0;
 		qpl::size slope_point_count = 20u;
 		qpl::vector2f slope_dim = { 10, 10 };
 		qpl::f32 outline_thickness = 0.0f;
+		qpl::bitset<4u> round_corners;
+		mutable bool internal_check = false;
+	};
+
+
+	struct vsmooth_corner {
+		QPLDLL void move(qpl::vector2f delta);
+
+		QPLDLL void invert();
+		QPLDLL void set_rotation(qpl::f64 rotation);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_hitbox(qpl::hitbox hitbox);
+		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_slope(qpl::f64 slope);
+		QPLDLL void set_color(qpl::rgba color);
+		QPLDLL void set_slope_point_count(qpl::size point_count);
+		QPLDLL qpl::f64 get_rotation() const;
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL qpl::hitbox get_hitbox() const;
+		QPLDLL qpl::f64 get_slope() const;
+		QPLDLL qpl::rgba get_color() const;
+		QPLDLL qpl::size get_slope_point_count() const;
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		friend smooth_corner;
+
+		qpl::vector2f dimension;
+		qpl::vector2f position;
+		qpl::f64 slope = 2.0;
+		qpl::size slope_point_count = 30u;
+		qpl::rgba color;
+		qpl::f64 rotation = 0.0;
+	};
+	struct smooth_corner {
+		mutable qsf::vertex_array polygon;
+		
+		smooth_corner() {
+			this->polygon.set_primitive_type(sf::PrimitiveType::TriangleFan);
+		}
+		QPLDLL void invert();
+		QPLDLL void set_rotation(qpl::f64 rotation);
+		QPLDLL void set_position(qpl::vector2f position);
+		QPLDLL void set_dimension(qpl::vector2f dimension);
+		QPLDLL void set_hitbox(qpl::hitbox hitbox);
+		QPLDLL void set_center(qpl::vector2f position);
+		QPLDLL void set_slope(qpl::f64 slope);
+		QPLDLL void set_color(qpl::rgba color);
+		QPLDLL void set_slope_point_count(qpl::size point_count);
+		QPLDLL qpl::f64 get_rotation() const;
+		QPLDLL qpl::vector2f get_dimension() const;
+		QPLDLL qpl::vector2f get_position() const;
+		QPLDLL qpl::hitbox get_hitbox() const;
+		QPLDLL qpl::vector2f get_center() const;
+		QPLDLL qpl::f64 get_slope() const;
+		QPLDLL qpl::rgba get_color() const;
+		QPLDLL qpl::size get_slope_point_count() const;
+
+		QPLDLL void check_create() const;
+		QPLDLL void move(qpl::vector2f delta);
+		QPLDLL const qsf::smooth_corner& operator=(const qsf::vsmooth_corner& smooth_corner) const;
+		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
+
+		mutable qpl::vector2f dimension;
+		mutable qpl::vector2f position;
+		qpl::f64 slope = 2.0;
+		qpl::size slope_point_count = 30u;
+		qpl::f64 rotation = 0.0;
+		qpl::rgb color;
 		mutable bool internal_check = false;
 	};
 
@@ -874,6 +967,7 @@ namespace qsf {
 			this->radius = radius;
 		}
 
+		QPLDLL bool contains(qpl::vector2f position) const;
 		QPLDLL void set_position(qpl::vector2f center);
 		QPLDLL void set_radius(qpl::f32 radius);
 		QPLDLL void set_color(qpl::rgba color);
@@ -905,6 +999,7 @@ namespace qsf {
 		QPLDLL qsf::circle& operator=(const qsf::vcircle& circle);
 		QPLDLL qsf::circle& operator=(const qsf::circle& circle);
 
+		QPLDLL bool contains(qpl::vector2f position) const;
 		QPLDLL void centerize_origin();
 		QPLDLL void set_radius(qpl::f32 radius);
 		QPLDLL qpl::f32 get_radius() const;
@@ -973,6 +1068,7 @@ namespace qsf {
 		QPLDLL const qsf::circle& back() const;
 
 		QPLDLL void add_circle(const qsf::vcircle& circle);
+		QPLDLL void add_circle(const qsf::circle& circle);
 		QPLDLL void add_circle(qsf::vpoint point, qpl::f32 radius, qpl::rgba color);
 		QPLDLL void add_circle(qpl::vector2f position, qpl::f32 radius, qpl::rgba color);
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
@@ -1363,9 +1459,6 @@ namespace qsf {
 			}
 		}
 
-
-
-	private:
 		QPLDLL void apply() const;
 
 		mutable sf::RenderTexture m_texture;
@@ -1992,7 +2085,6 @@ namespace qsf {
 		void draw(qsf::draw_object& draw) const {
 			draw.draw(this->elements);
 		}
-	private:
 		void add_state() {
 			this->states.push_back(this->states.back());
 		}
@@ -2016,159 +2108,6 @@ namespace qsf {
 			}
 		}
 
-	};
-
-	struct text_field {
-
-		struct line {
-			qsf::text text;
-			std::vector<qpl::hitbox> character_hitboxes;
-			std::vector<qpl::hitbox> character_mouse_hitboxes;
-			qpl::hitbox line_hitbox;
-			qpl::hitbox line_mouse_hitbox;
-			bool mouse_hitboxes_changed = false;
-			bool layout_changed = false;
-
-			QPLDLL void apply(qsf::vtext layout);
-			QPLDLL void calculate_hitboxes();
-			QPLDLL void calculate_mouse_hitboxes(qpl::f32 max_line_width, qpl::f32 extended_line_width);
-			QPLDLL void move(qpl::vector2f delta);
-			QPLDLL void move(qpl::f32 x, qpl::f32 y);
-			QPLDLL std::wstring wstring() const;
-			QPLDLL void draw(qsf::draw_object& draw) const;
-		};
-
-		text_field();
-
-		QPLDLL void set_font(std::string font);
-		QPLDLL void set_text_character_size(qpl::u32 character_size);
-		QPLDLL void set_text_style(qpl::u32 style);
-		QPLDLL void set_text_outline_thickness(qpl::f32 outline_thickness);
-		QPLDLL void set_text_outline_color(qpl::rgba outline_color);
-		QPLDLL void set_text_color(qpl::rgba color);
-
-		QPLDLL qpl::hitbox get_text_hitbox() const;
-
-		QPLDLL void set_background_color(qpl::rgba color);
-		QPLDLL void set_background_increase(qpl::vector2f increase);
-		QPLDLL void set_background_increase(qpl::f32 increase);
-		QPLDLL void set_background_outline_thickness(qpl::f32 thickness);
-		QPLDLL void set_background_outline_color(qpl::rgba color);
-		QPLDLL qpl::rgba get_background_color() const;
-		QPLDLL qpl::rgba get_background_outline_color() const;
-		QPLDLL qpl::f32 get_background_outline_thickness() const;
-		QPLDLL qpl::vector2f get_background_increase() const;
-
-
-		QPLDLL void set_position(qpl::vector2f position);
-		QPLDLL void set_dimension(qpl::vector2f dimension);
-
-		QPLDLL void set_string(std::wstring string);
-		QPLDLL void set_string(std::string string);
-
-		QPLDLL qpl::f32 get_line_spacing() const;
-		QPLDLL bool is_hovering() const;
-
-		QPLDLL bool just_edited_text() const;
-		QPLDLL bool just_copied_text() const;
-		QPLDLL bool just_pasted_text() const;
-		QPLDLL bool just_entered_text() const;
-		QPLDLL bool just_finished_text() const;
-		QPLDLL bool has_focus() const;
-
-		QPLDLL std::wstring wstring() const;
-		QPLDLL std::string string() const;
-
-		QPLDLL void new_line(qpl::size y = qpl::size_max);
-		QPLDLL qsf::text_field::line& get_line_at_cursor();
-		QPLDLL const qsf::text_field::line& get_line_at_cursor() const;
-
-		QPLDLL std::wstring get_selection_wstring() const;
-		QPLDLL std::string get_selection_string() const;
-		QPLDLL void add_string_at_cursor(std::wstring string);
-
-		QPLDLL void enable_focus();
-		QPLDLL void disable_focus();
-
-		QPLDLL void enable_one_line_limit();
-		QPLDLL void disable_one_line_limit();
-
-		QPLDLL void set_string_stack_size(qpl::size size);
-		QPLDLL qpl::size get_string_stack_size() const;
-
-		QPLDLL void delete_at_cursor();
-		QPLDLL void delete_selection_string(bool update_cursor_position = true);
-		QPLDLL void delete_selection_range();
-		QPLDLL void move_cursor_up();
-		QPLDLL void move_cursor_down();
-		QPLDLL void move_cursor_left();
-		QPLDLL void move_cursor_right();
-		QPLDLL void update_cursor();
-		QPLDLL void update_mouse_events(const qsf::event_info& event);
-
-		QPLDLL void update(const qsf::event_info& event);
-		QPLDLL void draw(qsf::draw_object& draw) const;
-	private:
-
-		QPLDLL std::pair<qpl::vector2s, qpl::vector2s> get_sorted_selection_range() const;
-		QPLDLL void internal_update() const;
-		QPLDLL void internal_update_text() const;
-		QPLDLL void internal_update_cursor();
-		QPLDLL void set_cursor_dimension() const;
-		QPLDLL void set_cursor_position();
-		QPLDLL void make_selection_rectangles() const;
-		QPLDLL void make_selection_rectangles(qpl::size& count, qpl::size y, qpl::size x1, qpl::size x2 = qpl::size_max) const;
-		QPLDLL void find_closest_cursor_position();
-
-		qsf::vtext text_layout;
-		mutable qpl::hitbox hitbox;
-		mutable qpl::vector<line> lines;
-		mutable qsf::smooth_rectangle background;
-		mutable qsf::rectangle cursor;
-		mutable std::vector<qsf::rectangle> selection_rectangles;
-		mutable std::wstring whole_string;
-
-
-		qpl::circular_array<std::pair<std::wstring, qpl::vector2s>> string_stack;
-
-		qpl::vector2s cursor_position = qpl::vec(0u, 0u);
-		qpl::vector2s selection_a = qpl::vec(0u, 0u);
-		qpl::vector2s selection_b = qpl::vec(0u, 0u);
-		qpl::vector2f background_increase = qpl::vec(6.0f, 6.0f);
-		qpl::vector2f click_mouse_position = qpl::vec(0, 0);
-		qpl::vector2f hovering_increase = qpl::vec(5, 5);
-
-		qpl::small_clock selection_drag_timer;
-		qpl::small_clock selection_start_drag_timer;
-		qpl::small_clock cursor_interval_timer;
-		qpl::f64 selection_drag_timer_duration = 0.15;
-		qpl::f64 selection_start_drag_timer_duration = 0.15;
-
-		qpl::rgba selection_color = qpl::rgba(0, 120, 215, 100);
-
-		qpl::size string_stack_position = 0u;
-		qpl::f64 cursor_interval_duration = 1.0;
-		qpl::f64 cursor_blink_duration = 0.5;
-		qpl::f32 cursor_x_offset = 0.3f;
-		qpl::f32 cursor_width_percentage = 0.1f;
-
-		mutable bool text_mouse_hitboxes_changed = false;
-		mutable bool text_layout_changed = false;
-		mutable bool update_required = false;
-		mutable bool whole_string_changed = true;
-		mutable bool cursor_position_changed = false;
-		bool hovering = false;
-		bool dragging = false;
-		bool dragging_selection = false;
-		bool edited_text = false;
-		bool copied_text = false;
-		bool pasted_text = false;
-		bool entered_text = false;
-		bool focus = false;
-		bool one_line_limit = false;
-		bool finished_text = false;
-		bool control_z = false;
-		bool control_y = false;
 	};
 
 	struct tile_map {
@@ -2320,7 +2259,7 @@ namespace qsf {
 	namespace detail {
 		template<typename T>
 		concept has_light_c = requires(const T x) {
-			{x.light() } -> std::convertible_to<qpl::f64>;
+			{ x.light() } -> std::convertible_to<qpl::f64>;
 		};
 
 		template<typename T>
@@ -2330,7 +2269,6 @@ namespace qsf {
 	}
 
 	struct small_tile_map {
-
 
 		qsf::vertex_array vertices;
 		qpl::vector2f position;
@@ -2941,921 +2879,6 @@ namespace qsf {
 		qsf::rectangle cursor_graph_background;
 
 		qsf::rectangle background;
-	};
-
-	template<typename T>
-	struct view_rectangle_t;
-
-	struct vbutton {
-
-		vbutton() {
-			this->background.set_color(qpl::rgba::black());
-		}
-		QPLDLL qpl::vector2f get_position() const;
-		QPLDLL void set_dimension(qpl::vector2f dimension);
-		QPLDLL void set_position(qpl::vector2f position);
-		QPLDLL void set_center(qpl::vector2f center);
-		QPLDLL void set_background_color(qpl::rgba color);
-		QPLDLL void set_hover_background_color(qpl::rgba color);
-		QPLDLL void set_text_color(qpl::rgba color);
-		QPLDLL void set_hover_text_color(qpl::rgba color);
-		QPLDLL void set_text_font(std::string font);
-		QPLDLL void set_text_character_size(qpl::u32 character_size);
-		QPLDLL void set_text_style(qpl::u32 character_style);
-		QPLDLL void set_text(std::string text);
-		QPLDLL void centerize_text();
-		QPLDLL bool is_hovering() const;
-		QPLDLL bool is_clicked() const;
-		QPLDLL void update(const event_info& event_info);
-		QPLDLL void set_text_alpha(qpl::u8 alpha);
-		QPLDLL void set_background_alpha(qpl::u8 alpha);
-
-		template<typename T>
-		void update(const event_info& event_info, qsf::view_rectangle_t<T> view) {
-
-			auto pos = view.mouse_position;
-
-			auto new_hovering = this->background.contains(pos);
-			if (new_hovering != this->hovering) {
-				if (new_hovering) {
-					if (this->hover_background_color.is_unset()) {
-						this->background.set_color(this->background_color.inverted());
-					}
-					else {
-						this->background.set_color(this->hover_background_color);
-					}
-					if (this->hover_text_color.is_unset()) {
-						this->text.set_color(this->text_color.inverted());
-					}
-					else {
-						this->text.set_color(this->hover_text_color);
-					}
-				}
-				else {
-					this->background.set_color(this->background_color);
-					this->text.set_color(this->text_color);
-				}
-			}
-
-			this->hovering = new_hovering;
-
-			this->clicked = this->hovering && event_info.left_mouse_clicked();
-		}
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL qsf::vbutton& operator=(const qsf::vbutton& button);
-
-		qpl::rgba text_color;
-		qpl::rgba hover_text_color = qpl::rgba::unset();
-		qpl::rgba hover_background_color = qpl::rgba::unset();
-		qpl::rgba background_color;
-		qsf::vtext text;
-		qsf::vrectangle background;
-		bool hovering = false;
-		bool clicked = false;
-		bool outline_on_hover = true;
-		bool invert_on_hover = true;
-		qpl::u8 text_alpha = 255;
-		qpl::u8 background_alpha = 255;
-	};
-
-	struct button {
-
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-		QPLDLL qsf::button& operator=(const qsf::vbutton& button);
-
-
-		button() {
-			this->background.set_color(qpl::rgba::black());
-		}
-
-		QPLDLL void set_dimension(qpl::vector2f dimension);
-		QPLDLL void set_position(qpl::vector2f position);
-		QPLDLL void set_center(qpl::vector2f center);
-		QPLDLL void set_background_color(qpl::rgba color);
-		QPLDLL void set_hover_background_color(qpl::rgba color);
-		QPLDLL void set_text_color(qpl::rgba color);
-		QPLDLL void set_text_font(std::string font);
-		QPLDLL void set_text_character_size(qpl::u32 character_size);
-		QPLDLL void set_text_style(qpl::u32 character_style);
-		QPLDLL void set_text_string(std::string text);
-		QPLDLL void set_text_string(std::wstring text);
-
-		QPLDLL qpl::vector2f get_dimension() const;
-		QPLDLL qpl::vector2f get_position() const;
-		QPLDLL qpl::vector2f get_center() const;
-		QPLDLL qpl::rgba get_background_color() const;
-		QPLDLL qpl::rgba get_hover_background_color() const;
-		QPLDLL qpl::rgba get_text_color() const;
-		QPLDLL std::string get_text_font() const;
-		QPLDLL qpl::u32 get_text_character_size() const;
-		QPLDLL qpl::u32 get_text_style() const;
-		QPLDLL std::string get_text_string() const;
-		QPLDLL std::wstring get_text_wstring() const;
-		QPLDLL void centerize_text();
-		QPLDLL bool is_hovering() const;
-		QPLDLL bool is_clicked() const;
-		QPLDLL void update(const event_info& event_info);
-		QPLDLL void update(const event_info& event_info, bool& hovering);
-
-		template<typename T>
-		void update(const event_info& event_info, qsf::view_rectangle_t<T> view) {
-
-			auto pos = view.mouse_position;
-
-			auto new_hovering = this->background.contains(pos);
-			if (new_hovering != this->hovering) {
-				if (this->invert_on_hover) {
-					if (new_hovering) {
-						this->background.set_color(this->background_color.inverted());
-						this->text.set_color(this->text_color.inverted());
-					}
-					else {
-						this->background.set_color(this->background_color);
-						this->text.set_color(this->text_color);
-					}
-				}
-				else {
-					if (new_hovering) {
-						this->background.set_color(this->hover_background_color);
-					}
-					else {
-						this->background.set_color(this->background_color);
-					}
-				}
-			}
-
-			this->hovering = new_hovering;
-
-			this->clicked = this->hovering && event_info.left_mouse_clicked();
-		}
-
-		bool outline_on_hover = true;
-		bool invert_on_hover = true;
-		qpl::rgba text_color = qpl::rgba::white();
-		qpl::rgba hover_background_color = qpl::rgba::white();
-		qpl::rgba background_color = qpl::rgba::black();
-		qsf::text text;
-		qsf::rectangle background;
-		bool hovering = false;
-		bool clicked = false;
-	};
-
-
-	struct smooth_button {
-		qsf::text text;
-		qsf::vsmooth_rectangle smooth_layout;
-		mutable qsf::smooth_rectangle rectangle;
-		qpl::vector2f hitbox_increase;
-		qpl::animation hover_animation;
-		qpl::rgba background_color = qpl::rgba::black();
-		qpl::rgba background_outline_color = qpl::rgba::black();
-		qpl::rgba text_color = qpl::rgba::white();
-		mutable bool layout_changed = false;
-		bool simple_hitbox = false;
-		bool hovering = false;
-		bool clicked = false;
-		bool use_basic_hover_animation = true;
-		bool hover_before = false;
-
-		smooth_button() {
-			this->set_background_color(qpl::rgba::black());
-			this->hover_animation.set_duration(0.1);
-			this->enable_simple_hitbox();
-		}
-
-		QPLDLL void enable_simple_hitbox();
-		QPLDLL void disable_simple_hitbox();
-		QPLDLL void set_hitbox_increase(qpl::vector2f delta);
-		QPLDLL void set_hitbox_increase(qpl::f32 delta);
-		QPLDLL void set_color(qpl::rgba color);
-		QPLDLL void set_dimension(qpl::vector2f dimension);
-		QPLDLL void set_position(qpl::vector2f position);
-		QPLDLL void set_hitbox(qpl::hitbox hitbox);
-		QPLDLL void set_center(qpl::vector2f position);
-		QPLDLL void set_slope(qpl::f64 slope);
-		QPLDLL void set_background_color(qpl::rgba color);
-		QPLDLL void set_background_outline_thickness(qpl::f32 thickness);
-		QPLDLL void set_background_outline_color(qpl::rgba color);
-		QPLDLL void set_background_slope_dimension(qpl::vector2f dimension);
-		QPLDLL void set_background_slope_point_count(qpl::size point_count);
-		QPLDLL void set_text_font(const sf::Font& font);
-		QPLDLL void set_text_font(const std::string& font_name);
-		QPLDLL void set_text_style(qpl::u32 style);
-		QPLDLL void set_text_character_size(qpl::u32 character_size);
-		QPLDLL void set_text_color(qpl::rgba color);
-		QPLDLL void set_text_outline_thickness(qpl::f32 outline_thickness);
-		QPLDLL void set_text_outline_color(qpl::rgba color);
-		QPLDLL void set_text_rotation(qpl::f32 angle);
-		QPLDLL void set_text_letter_spacing(qpl::f32 spacing);
-		QPLDLL void set_text_position(qpl::vector2f position);
-		QPLDLL void set_text_center(qpl::vector2f position);
-		QPLDLL void set_text_string(const std::string& string);
-		QPLDLL void set_text_string(const std::wstring& string);
-		QPLDLL void centerize_text();
-
-		QPLDLL qpl::vector2f get_hitbox_increase() const;
-		QPLDLL qpl::vector2f get_dimension() const;
-		QPLDLL qpl::vector2f get_position() const;
-		QPLDLL qpl::vector2f get_center() const;
-		QPLDLL qpl::f64 get_slope() const;
-		QPLDLL qpl::rgba get_background_color() const;
-		QPLDLL qpl::f32 get_background_outline_thickness() const;
-		QPLDLL qpl::rgba get_background_outline_color() const;
-		QPLDLL qpl::vector2f get_slope_dimension() const;
-		QPLDLL qpl::size get_slope_point_count() const;
-		QPLDLL std::string get_text_font() const;
-		QPLDLL qpl::u32 get_text_style() const;
-		QPLDLL qpl::u32 get_text_character_size() const;
-		QPLDLL qpl::rgba get_text_color() const;
-		QPLDLL qpl::f32 get_text_outline_thickness() const;
-		QPLDLL qpl::rgba get_text_outline_color() const;
-		QPLDLL qpl::f32 get_text_letter_spacing() const;
-		QPLDLL qpl::vector2f get_text_position() const;
-		QPLDLL qpl::vector2f get_text_center() const;
-		QPLDLL std::string get_text_string() const;
-		QPLDLL std::wstring get_text_wstring() const;
-		QPLDLL bool is_hovering() const;
-		QPLDLL bool is_clicked() const;
-
-		QPLDLL void update(const qsf::event_info& event);
-
-		QPLDLL void create_check() const;
-		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
-	};
-
-
-	template<typename T>
-	class slider {
-	public:
-		slider() {
-			this->ptr = &this->dummy;
-			this->set_colors(qpl::rgba::grey_shade(50), qpl::rgba::white());
-		}
-		slider(const slider<T>& other) {
-			*this = other;
-		}
-
-		template<typename U>
-		slider(const slider<U>& other) {
-			*this = other;
-		}
-
-		slider<T>& operator=(const slider<T>& other) {
-			this->background = other.background;
-			this->knob = other.knob;
-			this->position = other.position;
-			this->knob_visible = other.knob_visible;
-			this->background_visible = other.background_visible;
-			this->knob_hover_effect = other.knob_hover_effect;
-			this->background_hover_effect = other.background_hover_effect;
-			this->knob_hover_color = other.knob_hover_color;
-			this->knob_hover_outline_thickness = other.knob_hover_outline_thickness;
-			this->knob_hover_outline_color = other.knob_hover_outline_color;
-			this->hitbox_increase = other.hitbox_increase;
-			this->background_hover_color = other.background_hover_color;
-			this->background_hover_outline_thickness = other.background_hover_outline_thickness;
-			this->background_hover_outline_color = other.background_hover_outline_color;
-			this->start = other.start;
-			this->end = other.end;
-			this->dummy = other.dummy;
-			this->value_before = other.value_before;
-			this->background_color = other.background_color;
-			this->background_outline_thickness = other.background_outline_thickness;
-			this->background_outline_color = other.background_outline_color;
-			this->knob_color = other.knob_color;
-			this->knob_outline_thickness = other.knob_outline_thickness;
-			this->knob_outline_color = other.knob_outline_color;
-			this->smooth_input_key = other.smooth_input_key;
-			this->smooth_input_multiply = other.smooth_input_multiply;
-			this->click_knob_pos_x = other.click_knob_pos_x;
-			this->click_pos_x = other.click_pos_x;
-			this->range_pixel_width = other.range_pixel_width;
-			this->hovering_over_background = other.hovering_over_background;
-			this->click_on_background_to_skip = other.click_on_background_to_skip;
-			this->input_smooth_values = other.input_smooth_values;
-			this->value_changed = other.value_changed;
-			this->value_modified = other.value_modified;
-			this->range_set = other.range_set;
-			this->allow_change = other.allow_change;
-			this->allow_drag = other.allow_drag;
-			this->dragging = other.dragging;
-			this->released = other.released;
-			this->hovering_over_knob = other.hovering_over_knob;
-			this->ptr = &this->dummy;
-			this->string_function = other.string_function;
-			this->text = other.text;
-
-			return *this;
-		}
-		template<typename U>
-		slider<T>& operator=(const slider<U>& other) {
-			this->background = other.background;
-			this->knob = other.knob;
-			this->position = other.position;
-			this->knob_visible = other.knob_visible;
-			this->background_visible = other.background_visible;
-			this->knob_hover_effect = other.knob_hover_effect;
-			this->background_hover_effect = other.background_hover_effect;
-			this->knob_hover_color = other.knob_hover_color;
-			this->knob_hover_outline_thickness = other.knob_hover_outline_thickness;
-			this->knob_hover_outline_color = other.knob_hover_outline_color;
-			this->hitbox_increase = other.hitbox_increase;
-			this->background_hover_color = other.background_hover_color;
-			this->background_hover_outline_thickness = other.background_hover_outline_thickness;
-			this->background_hover_outline_color = other.background_hover_outline_color;
-			this->start = static_cast<T>(other.start);
-			this->end = static_cast<T>(other.end);
-			this->dummy = static_cast<T>(other.dummy);
-			this->value_before = static_cast<T>(other.value_before);
-			this->background_color = other.background_color;
-			this->background_outline_thickness = other.background_outline_thickness;
-			this->background_outline_color = other.background_outline_color;
-			this->knob_color = other.knob_color;
-			this->knob_outline_thickness = other.knob_outline_thickness;
-			this->knob_outline_color = other.knob_outline_color;
-			this->smooth_input_key = other.smooth_input_key;
-			this->smooth_input_multiply = other.smooth_input_multiply;
-			this->click_knob_pos_x = other.click_knob_pos_x;
-			this->click_pos_x = other.click_pos_x;
-			this->range_pixel_width = other.range_pixel_width;
-			this->hovering_over_background = other.hovering_over_background;
-			this->click_on_background_to_skip = other.click_on_background_to_skip;
-			this->input_smooth_values = other.input_smooth_values;
-			this->value_changed = other.value_changed;
-			this->value_modified = other.value_modified;
-			this->range_set = other.range_set;
-			this->allow_change = other.allow_change;
-			this->allow_drag = other.allow_drag;
-			this->dragging = other.dragging;
-			this->released = other.released;
-			this->hovering_over_knob = other.hovering_over_knob;
-			this->ptr = &this->dummy;
-			this->string_function = other.string_function;
-			this->text = other.text;
-
-			return *this;
-		}
-
-		qpl::f64 get_progress() const {
-			if (this->end == this->start) return 0.0;
-			return qpl::clamp_0_1(qpl::f64_cast(*this->ptr - this->start) / qpl::f64_cast(this->end - this->start));
-		}
-		T get_value() const {
-			return *this->ptr;
-		}
-		void set_value(T value) {
-			*this->ptr = value;
-		}
-		void set_pointer(T* value) {
-			this->ptr = value;
-			if (this->range_set) {
-				*this->ptr = qpl::clamp(this->start, *this->ptr, this->end);
-			}
-		}
-		void set_knob_position() {
-			auto progress = qpl::f32_cast(this->get_progress());
-			auto pos = this->knob.get_position();
-			pos.x = this->position.x + this->range_pixel_width * progress;
-			this->knob.set_position(pos);
-		}
-		std::pair<T, T> get_range() const {
-			return std::make_pair(this->start, this->end);
-		}
-
-		void update_text_string() {
-			if (!this->text.get_font().empty()) {
-				if (this->string_function) {
-					this->text.set_string(qpl::to_string(this->text_string, " ", this->string_function(this->get_value())));
-				}
-				else {
-					this->text.set_string(qpl::to_string(this->text_string, " ", this->get_value()));
-				}
-			}
-		}
-		void set_range(T start, T end) {
-			this->start = start;
-			this->end = end;
-			this->range_set = true;
-			this->update_text_string();
-		}
-		void set_range(T start, T end, T value) {
-			this->start = start;
-			this->end = end;
-			this->dummy = qpl::clamp(this->start, value, this->end);
-			this->range_set = true;
-			this->update_text_string();
-		}
-		template<typename P> requires (std::is_pointer_v<P>)
-		void set_range(T start, T end, P ptr) {
-			this->start = start;
-			this->end = end;
-			this->range_set = true;
-			this->set_pointer(ptr);
-			this->update_text_string();
-		}
-		qpl::vector2f get_position() const {
-			return this->position;
-		}
-		void set_position(qpl::vector2f position) {
-			this->position = position;
-			this->background.set_position(position);
-
-			auto y_extra = this->background.get_dimension().y - this->knob.get_dimension().y;
-			this->knob.set_position(position + qpl::vector2f(0, y_extra / 2));
-			this->set_knob_position();
-
-			if (!this->text.get_font().empty()) {
-				this->text.set_position(this->background.get_hitbox().middle_left());
-				this->text.centerize_y();
-			}
-		}
-		void set_center(qpl::vector2f position) {
-			this->set_position(position - this->get_dimension() / 2);
-		}
-		qpl::vector2f get_dimension() const {
-			return this->background.get_dimension();
-		}
-		qpl::hitbox get_hitbox() const {
-			return this->background.get_hitbox();
-		}
-		qpl::vector2f get_knob_dimension() const {
-			return this->knob.get_dimension();
-		}
-		qpl::vector2f get_knob_position() const {
-			return this->knob.get_position();
-		}
-		void set_knob_dimension(qpl::vector2f dimension) {
-			this->knob.set_dimension(dimension);
-			this->range_pixel_width = this->background.get_dimension().x - this->knob.get_dimension().x;
-		}
-		void set_knob_width(qpl::f32 width)  {
-			auto dim = this->knob.get_dimension();
-			this->knob.set_dimension(qpl::vector2f(width, dim.y));
-			this->range_pixel_width = this->background.get_dimension().x - width;
-		}
-		qpl::f32 get_knob_width() const {
-			return this->knob.get_dimension().x;
-		}
-		qpl::hitbox get_knob_hitbox() const {
-			return this->knob.get_hitbox();
-		}
-		void set_dimensions(qpl::vector2f slider_dimension, qpl::vector2f knob_dimension) {
-			this->background.set_dimension(slider_dimension);
-			this->knob.set_dimension(knob_dimension);
-			this->range_pixel_width = this->background.get_dimension().x - this->knob.get_dimension().x;
-		}
-		void set_dimension(qpl::vector2f dimension) {
-			this->set_dimensions(dimension, sf::Vector2f(dimension.y, dimension.y));
-		}
-		void set_colors(qpl::rgba background_color, qpl::rgba knob_color) {
-			this->background.set_color(background_color);
-			this->background_color = background_color;
-			this->background_hover_color = background_color;
-			this->background_hover_outline_color = background_color;
-
-			this->knob.set_color(knob_color);
-			this->knob_hover_color = knob_color;
-			this->knob_hover_outline_color = knob_color;
-			this->knob_color = knob_color;
-		}
-		void set_alpha(qpl::u8 alpha) {
-			this->background.set_color(this->background.get_color().with_alpha(alpha));
-			this->background_color = this->background_color.with_alpha(alpha);
-			this->background_hover_color = this->background_hover_color.with_alpha(alpha);
-			this->background_hover_outline_color = this->background_hover_outline_color.with_alpha(alpha);
-
-			this->knob.set_color(this->knob.get_color().with_alpha(alpha));
-			this->knob_hover_color = this->knob_hover_color.with_alpha(alpha);
-			this->knob_hover_outline_color = this->knob_hover_outline_color.with_alpha(alpha);
-			this->knob_color = this->knob_color.with_alpha(alpha);
-		}
-		bool value_has_changed() const {
-			return this->value_changed;
-		}
-		bool value_was_modified() const {
-			return this->value_modified;
-		}
-		bool is_dragging() const {
-			return this->dragging;
-		}
-		bool was_released() const {
-			return this->released;
-		}
-
-		void set_text_font(std::string font) {
-			this->text.set_font(font);
-		}
-		void set_text_string(std::string string) {
-			this->text_string = string;
-			this->text.set_string(this->text_string);
-		}
-		void set_text_character_size(qpl::u32 character_size) {
-			this->text.set_character_size(character_size);
-		}
-		void set_text_color(qpl::rgb color) {
-			this->text.set_color(color);
-		}
-		void set_text_string_function(const std::function<std::string(T)>& function) {
-			this->string_function = function;
-		}
-
-		void set_knob_color(qpl::rgba color) {
-			this->knob_color = color;
-			this->knob_hover_color = color;
-			this->knob_hover_outline_color = color;
-			this->knob.set_color(color);
-		}
-		qpl::rgba get_knob_color() const {
-			return this->knob_color;
-		}
-		void set_knob_outline_thickness(qpl::f32 thickness) {
-			this->knob_outline_thickness = thickness;
-			this->knob.set_outline_thickness(thickness);
-		}
-		qpl::f32 get_knob_outline_thickness() const {
-			return this->knob_outline_thickness;
-		}
-		void set_knob_outline_color(qpl::rgba color) {
-			this->knob_outline_color = color;
-			this->knob.set_outline_color(color);
-		}
-		qpl::rgba get_knob_outline_color() const {
-			return this->knob_outline_color;
-		}
-
-		void set_knob_hover_color(qpl::rgba color) {
-			this->knob_hover_color = color;
-		}
-		qpl::rgba get_knob_hover_color() const {
-			return this->knob_hover_color;
-		}
-		void set_knob_hover_outline_thickness(qpl::f32 thickness) {
-			this->knob_hover_outline_thickness = thickness;
-			if (this->is_hovering_over_knob()) {
-				this->knob.set_outline_thickness(thickness);
-			}
-		}
-		qpl::f32 get_knob_hover_outline_thickness() const {
-			return this->knob_hover_outline_thickness;
-		}
-		void set_knob_hover_outline_color(qpl::rgba color) {
-			this->knob_hover_outline_color = color;
-			if (this->is_hovering_over_knob()) {
-				this->knob.set_outline_color(color);
-			}
-		}
-		qpl::rgba get_knob_hover_outline_color() const {
-			return this->knob_hover_outline_color;
-		}
-
-		void set_background_color(qpl::rgba color) {
-			this->background_color = color;
-			this->background_hover_color = color;
-			this->background_hover_outline_color = color;
-			this->background.set_color(color);
-		}
-		qpl::rgba get_background_color() const {
-			return this->background_color;
-		}
-		void set_background_outline_thickness(qpl::f32 thickness) {
-			this->background_outline_thickness = thickness;
-			this->background.set_outline_thickness(thickness);
-		}
-		qpl::f32 get_background_outline_thickness() const {
-			return this->background_outline_thickness;
-		}
-		void set_background_outline_color(qpl::rgba color) {
-			this->background_outline_color = color;
-			this->background_outline_thickness.set_outline_color(color);
-		}
-		qpl::rgba get_background_outline_color() const {
-			return this->background_outline_color;
-		}
-
-		void set_background_hover_color(qpl::rgba color) {
-			this->background_hover_color = color;
-			if (this->is_hovering_over_background()) {
-				this->background.set_color(color);
-			}
-		}
-		qpl::rgba get_background_hover_color() const {
-			return this->background_hover_color;
-		}
-		void set_background_hover_outline_thickness(qpl::f32 thickness) {
-			this->background_hover_outline_thickness = thickness;
-			if (this->is_hovering_over_background()) {
-				this->background.set_outline_thickness(thickness);
-			}
-		}
-		qpl::f32 get_background_hover_outline_thickness() const {
-			return this->background_hover_outline_thickness;
-		}
-		void set_background_hover_outline_color(qpl::rgba color) {
-			this->background_hover_outline_color = color;
-			if (this->is_hovering_over_background()) {
-				this->background.set_outline_color(color);
-			}
-		}
-		qpl::rgba get_background_hover_outline_color() const {
-			return this->background_hover_outline_color;
-		}
-
-		void set_hitbox_increase(qpl::f32 increase) {
-			this->hitbox_increase = increase;
-		}
-		qpl::f32 get_hitbox_increase() const {
-			return this->hitbox_increase;
-		}
-
-		void enable_smooth_input() {
-			this->input_smooth_values = true;
-		}
-		void enable_smooth_input(sf::Keyboard::Key key) {
-			this->input_smooth_values = true;
-			this->smooth_input_key = key;
-		}
-		void disable_smooth_input() {
-			this->input_smooth_values = false;
-		}
-		bool is_smooth_input_enabled() const {
-			return this->input_smooth_values;
-		}
-		void set_smooth_input_multiply(qpl::f64 factor) {
-			this->smooth_input_multiply = factor;
-		}
-		qpl::f64 get_smooth_input_multiply() const {
-			return this->smooth_input_multiply;
-		}
-
-		void allow_click_on_background_to_skip() {
-			this->click_on_background_to_skip = true;
-		}
-		void disallow_click_on_background_to_skip() {
-			this->click_on_background_to_skip = false;
-		}
-		void is_click_on_background_to_skip_allowed() const {
-			return this->click_on_background_to_skip;
-		}
-
-		bool is_hovering_over_background() const {
-			return this->hovering_over_background;
-		}
-		bool is_hovering_over_knob() const {
-			return this->hovering_over_knob;
-		}
-
-		void disallow_dragging() {
-			this->allow_drag = false;
-			this->dragging = false;
-		}
-		void allow_dragging() {
-			this->allow_drag = true;
-		}
-		bool dragging_allowed() const {
-			return this->allow_drag;
-		}
-
-		void set_hover_increase(qpl::f32 value) {
-			this->knob_hover_outline_thickness = value;
-			this->background_hover_outline_thickness = value;
-		}
-
-		void update(const qsf::event_info& event) {
-			auto pos = event.mouse_position();
-			this->hovering_over_background = false;
-			auto y_is = qpl::max(this->knob.get_dimension().y, this->background.get_dimension().y);
-			this->hovering_over_background = this->background.contains(pos, qpl::vector2f(this->hitbox_increase, this->hitbox_increase + (y_is - this->background.get_dimension().y) / 2));
-
-			this->value_modified = false;
-			this->hovering_over_knob = this->knob.contains(pos, { this->hitbox_increase });
-
-			if (this->background_hover_effect && this->hovering_over_background && !this->dragging) {
-				this->background.set_color(this->background_hover_color);
-				this->background.set_outline_color(this->background_hover_outline_color);
-				this->background.set_outline_thickness(this->background_hover_outline_thickness);
-			}
-			else {
-				this->background.set_color(this->background_color);
-				this->background.set_outline_color(this->background_outline_color);
-				this->background.set_outline_thickness(this->background_outline_thickness);
-			}
-
-			if (this->hovering_over_knob) {
-				if (this->knob_hover_effect) {
-					this->knob.set_color(this->knob_hover_color);
-					this->knob.set_outline_color(this->knob_hover_outline_color);
-					this->knob.set_outline_thickness(this->knob_hover_outline_thickness);
-				}
-				if (!this->dragging && event.left_mouse_clicked() && this->allow_drag) {
-					this->dragging = true;
-					this->click_pos_x = qpl::clamp(this->position.x, qpl::f32_cast(pos.x), this->position.x + this->range_pixel_width);
-					this->click_knob_pos_x = pos.x - this->knob.get_position().x;
-				}
-			}
-			else {
-				if (this->click_on_background_to_skip && event.left_mouse_clicked() && this->allow_drag && this->hovering_over_background && (this->end != this->start)) {
-
-					this->click_pos_x = qpl::clamp(this->position.x, qpl::f32_cast(pos.x), this->position.x + this->range_pixel_width);
-					this->click_knob_pos_x = this->knob.get_dimension().x / 2;
-					auto diff = (pos.x - this->position.x - this->click_knob_pos_x);
-					auto progress = qpl::clamp_0_1(diff / this->range_pixel_width);
-
-					if constexpr (qpl::is_integer<T>()) {
-						*this->ptr = qpl::clamp(this->start, this->start + static_cast<T>((this->end - this->start) * progress + 0.5), this->end);
-					}
-					else {
-						*this->ptr = qpl::clamp(this->start, this->start + static_cast<T>((this->end - this->start) * progress), this->end);
-					}
-					if (*this->ptr != this->value_before) {
-						this->value_modified = true;
-					}
-					this->dragging = true;
-				}
-
-				if (this->knob_hover_effect && !this->dragging) {
-					this->knob.set_color(this->knob_color);
-					this->knob.set_outline_color(this->knob_outline_color);
-					this->knob.set_outline_thickness(this->knob_outline_thickness);
-				}
-			}
-
-			if (this->input_smooth_values && event.key_single_pressed(this->smooth_input_key)) {
-				this->click_pos_x = qpl::clamp(this->position.x, qpl::f32_cast(pos.x), this->position.x + this->range_pixel_width);
-			}
-
-			if (!this->value_modified && this->dragging && this->allow_change && (this->end != this->start)) {
-				qpl::f64 diff;
-				if (this->input_smooth_values && event.key_holding(this->smooth_input_key)) {
-					diff = ((pos.x - this->click_pos_x) * this->smooth_input_multiply) + (this->click_pos_x - this->position.x - this->click_knob_pos_x);
-				}
-				else {
-					diff = (pos.x - this->position.x - this->click_knob_pos_x);
-				}
-
-				auto progress = qpl::clamp_0_1(diff / this->range_pixel_width);
-
-				if constexpr (qpl::is_integer<T>()) {
-					*this->ptr = qpl::clamp(this->start, this->start + static_cast<T>((this->end - this->start) * progress + 0.5), this->end);
-				}
-				else {
-					*this->ptr = qpl::clamp(this->start, this->start + static_cast<T>((this->end - this->start) * progress), this->end);
-				}
-				if (*this->ptr != this->value_before) {
-					this->value_modified = true;
-				}
-			}
-
-
-			this->value_changed = false;
-			if (this->value_before != *this->ptr) {
-				this->set_knob_position();
-				this->value_changed = true;
-			}
-			this->value_before = *this->ptr;
-
-			this->released = false;
-			if (event.left_mouse_released() && this->dragging) {
-				this->released = true;
-				this->dragging = false;
-			}
-			if (this->value_changed) {
-				this->update_text_string();
-			}
-		}
-
-		void draw(qsf::draw_object& object) const {
-			if (this->background_visible) object.draw(this->background);
-			if (this->knob_visible) object.draw(this->knob);
-			if (!this->text.get_font().empty()) object.draw(this->text);
-		}
-
-		qsf::rectangle background;
-		qsf::rectangle knob;
-
-		qpl::vector2f position;
-		bool knob_visible = true;
-		bool background_visible = true;
-		bool knob_hover_effect = true;
-		bool background_hover_effect = true;
-
-		qpl::rgba knob_hover_color = qpl::rgba::unset();
-		qpl::f32 knob_hover_outline_thickness = 2.0f;
-		qpl::rgba knob_hover_outline_color = qpl::rgba::unset();
-
-		qpl::f32 hitbox_increase = 5.0;
-
-		qpl::rgba background_hover_color = qpl::rgba::unset();
-		qpl::f32 background_hover_outline_thickness = 2.0f;
-		qpl::rgba background_hover_outline_color = qpl::rgba::unset();
-
-		T start = T{ 0 };
-		T end = T{ 1 };
-		T dummy = T{ 1 };
-		T value_before = qpl::type_max<T>();
-
-		T* ptr = nullptr;
-
-		qpl::rgba background_color = qpl::rgba::unset();
-		qpl::f32 background_outline_thickness = 0.0f;
-		qpl::rgba background_outline_color = qpl::rgba::unset();
-
-		qpl::rgba knob_color = qpl::rgba::unset();
-		qpl::f32 knob_outline_thickness = 0.0f;
-		qpl::rgba knob_outline_color = qpl::rgba::unset();
-
-		sf::Keyboard::Key smooth_input_key = sf::Keyboard::LShift;
-		qpl::f64 smooth_input_multiply = 0.1;
-
-		qpl::f32 click_knob_pos_x = 0.0f;
-		qpl::f32 click_pos_x = 0.0f;
-		qpl::f32 range_pixel_width = 0.0f;
-
-		qsf::text text;
-		std::string text_string;
-		std::function<std::string(T)> string_function;
-
-		bool hovering_over_background = false;
-		bool click_on_background_to_skip = true;
-		bool input_smooth_values = true;
-		bool value_changed = false;
-		bool value_modified = false;
-		bool range_set = false;
-		bool allow_change = true;
-		bool allow_drag = true;
-		bool dragging = false;
-		bool released = false;
-		bool hovering_over_knob = false;
-	};
-
-	struct check_box {
-		qsf::rectangle background;
-		qsf::text text;
-		bool active_value = false;
-		bool value_modified = false;
-
-		check_box() {
-			this->background.set_dimension({ 30, 30 });
-			this->background.set_color(qpl::rgb(100, 100, 100));
-			this->background.set_outline_color(qpl::rgb::white());
-			this->background.set_outline_thickness(3.0f);
-			this->text.set_color(qpl::rgb::white());
-			this->text.set_character_size(30);
-		}
-
-		void set_font(const std::string& font) {
-			this->text.set_font(font);
-			this->text.set_string("x");
-		}
-		void set_font(const sf::Font& font) {
-			this->text.set_font(font);
-			this->text.set_string("x");
-		}
-		void centerize_text() {
-			this->text.set_center(this->background.get_center());
-		}
-		void set_dimension(qpl::vector2f dimension) {
-			this->background.set_dimension(dimension);
-			this->centerize_text();
-		}
-		void set_character_size(qpl::u32 size) {
-			this->text.set_character_size(size);
-			this->centerize_text();
-		}
-		void set_center(qpl::vector2f position) {
-			this->background.set_center(position);
-			this->centerize_text();
-		}
-		void set_position(qpl::vector2f position) {
-			this->background.set_position(position);
-			this->centerize_text();
-		}
-		void set_value(bool value) {
-			this->active_value = value;
-		}
-		void update(const qsf::event_info& event) {
-			this->value_modified = false;
-			if (this->background.get_hitbox().contains(event.mouse_position()) && event.left_mouse_clicked()) {
-				this->active_value = !this->active_value;
-				this->value_modified = true;
-			}
-		}
-		bool value_was_modified() const {
-			return this->value_modified;
-		}
-		bool is_clicked() const {
-			return this->value_was_modified();
-		}
-		bool get_value() const {
-			return this->active_value;
-		}
-
-		void draw(qsf::draw_object& draw) const {
-			draw.draw(this->background);
-			if (this->active_value) {
-				draw.draw(this->text);
-			}
-		}
 	};
 
 	struct border_graphic {

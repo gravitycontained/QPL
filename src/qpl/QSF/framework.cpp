@@ -43,6 +43,9 @@ namespace qsf {
 		if (this->states.size() && !this->states.back()->is_initalized) {
 			this->states.back()->init();
 			this->states.back()->is_initalized = true;
+			if (this->call_resize_call_on_init && this->states.back()->call_resize_call_on_init) {
+				this->states.back()->call_on_resize();
+			}
 		}
 	}
 	void qsf::framework::display() {
@@ -231,6 +234,15 @@ namespace qsf {
 	bool qsf::framework::is_update_if_no_focus_enabled() const {
 		return this->update_if_no_focus;
 	}
+	void qsf::framework::enable_call_resize_call_on_init() {
+		this->call_resize_call_on_init = true;
+	}
+	void qsf::framework::disable_call_resize_call_on_init() {
+		this->call_resize_call_on_init = false;
+	}
+	bool qsf::framework::is_call_resize_call_on_init() const {
+		return this->call_resize_call_on_init;
+	}
 	bool qsf::framework::has_focus() const {
 		return this->focus;
 	}
@@ -413,6 +425,9 @@ namespace qsf {
 	}
 	void qsf::framework::set_style(qpl::u32 style) {
 		this->style = style;
+	}
+	void qsf::framework::set_antialiasing_level(qpl::u32 level) {
+		this->context_settings.antialiasingLevel = level;
 	}
 	void qsf::framework::hide_cursor() {
 		this->window.setMouseCursorVisible(false);
@@ -682,6 +697,15 @@ namespace qsf {
 	}
 	bool qsf::base_state::is_display_allowed() const {
 		return this->is_allow_display;
+	}
+	void qsf::base_state::enable_call_resize_call_on_init() {
+		this->call_resize_call_on_init = true;
+	}
+	void qsf::base_state::disable_call_resize_call_on_init() {
+		this->call_resize_call_on_init = false;
+	}
+	bool qsf::base_state::is_call_resize_call_on_init() const {
+		return this->call_resize_call_on_init;
 	}
 	bool qsf::base_state::has_focus() const {
 		return this->framework->has_focus();

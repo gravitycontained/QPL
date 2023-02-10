@@ -6,6 +6,10 @@
 #include <ctime>
 #include <thread>
 
+#ifdef QPL_INTERN_SFML_USE
+#include <qpl/QSF/event_info.hpp>
+#endif
+
 namespace qpl {
 	qpl::time qpl::time::clock_time() {
 		return qpl::time{ 
@@ -839,7 +843,7 @@ namespace qpl {
 
 		auto millis = transformed % 1000;
 
-		return qpl::to_string(buffer, qpl::prepended_to_string_to_fit(millis, '0', 3));
+		return qpl::to_string(buffer, qpl::prepended_to_string_to_fit(qpl::to_string(millis), '0', 3));
 	}
 
 	std::unordered_map<std::string, std::unordered_map<std::string, qpl::halted_clock>> qpl::detail::sub_benchmark_clocks;
@@ -1062,6 +1066,11 @@ namespace qpl {
 		this->progress_change_flag = (this->progress != this->progress_before);
 		this->progress_before = this->progress;
 	}
+#ifdef QPL_INTERN_SFML_USE
+	void qpl::animation::update(const qsf::event_info& event) {
+		this->update(event.frame_time_f());
+	}
+#endif
 	void qpl::animation::go_forwards() {
 		this->start();
 		this->reversed = false;
