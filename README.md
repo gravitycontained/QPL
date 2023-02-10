@@ -10,7 +10,7 @@ I highly recommend installing the feature from a greater source, especially if d
 
 # Setup
 
-To build this library in a static way, include all files (as well as `.cpp` files) and add `#define QPLDLL_EXPORTS` to the pre-processor defines. This will remove the "inconsistent dll linkage" errors. It is build by default with SFML enabled, so you you have to include and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. 
+To build this library in a static way, include all files (as well as `.cpp` files) and add `#define QPLDLL_EXPORTS` to the pre-processor defines. This will remove the "inconsistent dll linkage" errors. It is build by default with SFML enabled, so you have to include and link the [SFML](https://www.sfml-dev.org/) library in order to compile your program. SFML can be turned off by defining `QPL_NO_SFML` as a preprocessor define.
 
 There are 3 defines, that, if written **before** `#include <qpl/qpl.hpp>` or defined as a preprocessor define will have a different effect. 
 `QPL_USE_ALL` to use all 3 below.
