@@ -1,5 +1,6 @@
 #include <qpl/config.hpp>
 #include <qpl/system.hpp>
+#include <qpl/exception.hpp>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -36,8 +37,7 @@ namespace qpl {
     
         qpl::println("loading config file \"", file_name, "\"");
         if (!infile.good()) {
-            qpl::println("couldn't load \"", file_name, "\"!");
-            qpl::system_pause();
+            throw qpl::exception("qpl::config::wload : couldn't load \"", file_name, "\"!");
         }
     
         auto content = qpl::winsys::read_utf8_file(file_name);

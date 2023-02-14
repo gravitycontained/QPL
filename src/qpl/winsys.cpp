@@ -657,7 +657,7 @@ namespace qpl {
 		wchar_t username[UNLEN + 1];
 		DWORD username_len = UNLEN + 1;
 		GetUserName(username, &username_len);
-		return std::wstring(username, username_len);
+		return std::wstring{ username };
 	}
 	void qpl::screen_shot(const std::string& file_name) {
 		auto screen = qpl::winsys::get_screen_pixels();

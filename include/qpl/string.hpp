@@ -33,6 +33,11 @@
 
 namespace qpl {
 
+	QPLDLL std::string to_lower(const std::string& string);
+	QPLDLL std::wstring to_lower(const std::wstring& string);
+	QPLDLL std::string to_upper(const std::string& string);
+	QPLDLL std::wstring to_upper(const std::wstring& string);
+
 	QPLDLL std::wstring string_to_wstring(const std::string& str);
 	QPLDLL std::wstring string_to_wstring(std::string_view str);
 	QPLDLL std::wstring string_to_unicode_wstring(const std::string& str);
@@ -222,7 +227,7 @@ namespace qpl {
 				stream << '{' << qpl::to_string(value.first) << ", " << qpl::to_string(value.second) << '}';
 			}
 			else if constexpr (qpl::is_wstring_type<T>()) {
-				//stream << qpl::wstring_to_string(value); //todo
+				stream << qpl::wstring_to_string(std::wstring{ value });
 			}
 			else {
 				stream << value;
@@ -398,6 +403,22 @@ namespace qpl {
 		}
 		return false;
 	}
+	constexpr bool string_contains_ignore_case(const std::string& string, const std::string& sequence) {
+		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
+			if (qpl::to_lower(string.substr(i, sequence.length())) == qpl::to_lower(sequence)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	constexpr bool string_contains_ignore_case(const std::wstring& string, const std::wstring& sequence) {
+		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
+			if (qpl::to_lower(string.substr(i, sequence.length())) == qpl::to_lower(sequence)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	constexpr bool string_contains(const std::string_view& string, const std::string_view& sequence) {
 		for (qpl::isize i = 0; i <= qpl::isize_cast(string.length() - sequence.length()); ++i) {
 			if (string.substr(i, sequence.length()) == sequence) {
@@ -540,6 +561,9 @@ namespace qpl {
 
 	template<typename T>
 	std::string to_string_repeat(T&& value, qpl::size repeat) {
+		if (repeat > qpl::size_cast(1e12)) {
+			return "";
+		}
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < repeat; ++i) {
 			stream << value;
@@ -548,6 +572,9 @@ namespace qpl {
 	}
 	template<typename T>
 	std::wstring to_wstring_repeat(T&& value, qpl::size repeat) {
+		if (repeat > qpl::size_cast(1e12)) {
+			return L"";
+		}
 		std::wostringstream stream;
 		for (auto i = qpl::size{}; i < repeat; ++i) {
 			stream << qpl::to_wstring(value);
@@ -608,7 +635,7 @@ namespace qpl {
 	namespace detail {
 		QPLDLL std::string appended_to_string_to_fit(const std::string_view& string, char append, qpl::size length);
 		QPLDLL std::string appended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
-		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, char append, qpl::size length);
+		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, wchar_t append, qpl::size length);
 		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
 
 		QPLDLL std::string appended_to_fit(qpl::size prepended_length, const std::string_view& prepend, qpl::size length);
@@ -618,7 +645,7 @@ namespace qpl {
 
 		QPLDLL std::string prepended_to_string_to_fit(const std::string_view& string, char prepend, qpl::size length);
 		QPLDLL std::string prepended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
-		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, char prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, wchar_t prepend, qpl::size length);
 		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
 	}
 
@@ -896,11 +923,50 @@ namespace qpl {
 			if (!start) {
 				str << delimiter;
 			}
-			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && !qpl::is_string_type<C>()) {
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && !qpl::is_string_type<qpl::container_subtype<C>>()) {
 				str << container_to_string(e, format);
 			}
 			else {
-				str << e;
+				str << qpl::to_string(e);
+			}
+			start = false;
+		}
+		str << close;
+		return str.str();
+	}
+	template<typename C> requires qpl::is_container_c<C>
+	inline std::wstring container_to_string(const C& data, std::wstring_view format = "{a, b}") {
+		qpl::size open_i = 0u;
+		std::wstring_view open;
+		std::wstring_view close;
+		std::wstring_view delimiter;
+		for (qpl::size i = 0u; i < format.length(); ++i) {
+			if (format[i] == 'a') {
+				open = format.substr(0u, i);
+				open_i = i;
+			}
+			if (format[i] == 'b') {
+				if (i) {
+					delimiter = format.substr(open_i + 1, i - open_i - 1);
+					if (i != format.length() - 1) {
+						close = format.substr(i + 1);
+					}
+				}
+			}
+		}
+
+		std::wostringstream str;
+		str << open;
+		bool start = true;
+		for (const auto& e : data) {
+			if (!start) {
+				str << delimiter;
+			}
+			if constexpr (qpl::is_container<qpl::container_subtype<C>>() && !qpl::is_string_type<qpl::container_subtype<C>>()) {
+				str << container_to_string(e, format);
+			}
+			else {
+				str << qpl::to_wstring(e);
 			}
 			start = false;
 		}
@@ -1925,9 +1991,6 @@ namespace qpl {
 	QPLDLL std::string get_random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::wstring get_random_wstring_full_range(qpl::size length);
 
-	QPLDLL std::string to_lower(const std::string& string);
-	QPLDLL std::string to_upper(const std::string& string);
-
 	QPLDLL std::string remove_backslash_r(const std::string& string);
 	QPLDLL std::wstring remove_backslash_r(const std::wstring& string);
 
@@ -2270,9 +2333,16 @@ namespace qpl {
 
 	//https://en.wikipedia.org/wiki/Levenshtein_distance
 	QPLDLL qpl::size string_levenshtein_distance(const std::string& a, const std::string& b);
-	QPLDLL bool string_starts_with_ignore_case(const std::string& a, const std::string& b);
+	QPLDLL bool string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b);
+	QPLDLL bool string_starts_with(const std::string_view& a, const std::string_view& b);
+	QPLDLL bool string_starts_with_ignore_case(const std::wstring_view& a, const std::wstring_view& b);
+	QPLDLL bool string_starts_with(const std::wstring_view& a, const std::wstring_view& b);
 	QPLDLL std::vector<std::string> best_string_matches(const std::vector<std::string>& list, const std::string& search);
+
+
+	QPLDLL std::vector<qpl::size> best_string_matches_at_start_or_contains(const std::vector<std::string>& list, const std::string& search);
 	QPLDLL std::vector<qpl::size> best_string_matches_indices(const std::vector<std::string>& list, const std::string& search);
+	QPLDLL std::vector<qpl::size> best_string_matches_check_start_contains_indices(const std::vector<std::string>& list, const std::string& search);
 
 
 	enum class operator_type {

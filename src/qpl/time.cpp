@@ -81,304 +81,243 @@ namespace qpl {
 	bool qpl::time::operator>=(const qpl::time& other) const {
 		return this->m_ns >= other.m_ns;
 	}
-	std::string qpl::time::nsecs_string() const {
+
+	std::string qpl::time::single_short_nsecs_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->nsecs_mod()), '0', qpl::number_of_digits(this->nsecs_in_usec - 1)), this->nsecs_mod(), "ns");
 	}
-	std::string qpl::time::usecs_string() const {
+	std::string qpl::time::single_short_usecs_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->usecs_mod()), '0', qpl::number_of_digits(this->usecs_in_msec - 1)), this->usecs_mod(), "us");
 	}
-	std::string qpl::time::msecs_string() const {
+	std::string qpl::time::single_short_msecs_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->msecs_mod()), '0', qpl::number_of_digits(this->msecs_in_sec - 1)), this->msecs_mod(), "ms");
 	}
-	std::string qpl::time::secs_string() const {
+	std::string qpl::time::single_short_secs_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->secs_mod()), '0', qpl::number_of_digits(this->secs_in_min - 1)), this->secs_mod(), 's');
 	}
-	std::string qpl::time::mins_string() const {
+	std::string qpl::time::single_short_mins_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->mins_mod()), '0', qpl::number_of_digits(this->mins_in_hour - 1)), this->mins_mod(), 'm');
 	}
-	std::string qpl::time::hours_string() const {
+	std::string qpl::time::single_short_hours_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->hours_mod()), '0', qpl::number_of_digits(this->hours_in_day - 1)), this->hours_mod(), 'h');
 	}
-	std::string qpl::time::days_string() const {
+	std::string qpl::time::single_short_days_string() const {
 		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->days_mod()), '0', qpl::number_of_digits(this->days_in_year - 1)), this->days_mod(), 'd');
 	}
-	std::string qpl::time::years_string() const {
+	std::string qpl::time::single_short_days_week_string() const {
+		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->days_week_mod()), '0', qpl::number_of_digits(this->days_in_week - 1)), this->days_week_mod(), 'd');
+	}
+	std::string qpl::time::single_short_weeks_string() const {
+		return qpl::to_string(qpl::string_to_fit(qpl::to_string(this->weeks_mod()), '0', qpl::number_of_digits(this->weeks_in_year - 1)), this->weeks_mod(), 'w');
+	}
+	std::string qpl::time::single_short_years_string() const {
 		return qpl::to_string(this->years(), 'y');
 	}
 
+	std::string qpl::time::single_descriptive_nsecs_string() const {
+		return qpl::to_string(this->nsecs_mod(), " nanosecond", this->nsecs_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_usecs_string() const {
+		return qpl::to_string(this->usecs_mod(), " microsecond", this->usecs_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_msecs_string() const {
+		return qpl::to_string(this->msecs_mod(), " millisecond", this->msecs_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_secs_string() const {
+		return qpl::to_string(this->secs_mod(), " second", this->secs_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_mins_string() const {
+		return qpl::to_string(this->mins_mod(), " minute", this->mins_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_hours_string() const {
+		return qpl::to_string(this->hours_mod(), " hour", this->hours_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_days_string() const {
+		return qpl::to_string(this->days_mod(), " day", this->days_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_days_week_string() const {
+		return qpl::to_string(this->days_week_mod(), " day", this->days_week_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_weeks_string() const {
+		return qpl::to_string(this->weeks_mod(), " week", this->weeks_mod() == 1u ? "" : "s");
+	}
+	std::string qpl::time::single_descriptive_years_string() const {
+		return qpl::to_string(this->years(), " year", this->years() == 1u ? "" : "s");
+	}
 
-	std::string qpl::time::string_non_zero(std::string parantheses) const {
-		std::ostringstream stream;
-		bool found = false;
+	std::string qpl::time::nsecs_string(bool short_string) const {
+		return short_string ? this->single_short_nsecs_string() : this->single_descriptive_nsecs_string();
+	}
+	std::string qpl::time::usecs_string(bool short_string) const {
+		return short_string ? this->single_short_usecs_string() : this->single_descriptive_usecs_string();
+	}
+	std::string qpl::time::msecs_string(bool short_string) const {
+		return short_string ? this->single_short_msecs_string() : this->single_descriptive_msecs_string();
+	}
+	std::string qpl::time::secs_string(bool short_string) const {
+		return short_string ? this->single_short_secs_string() : this->single_descriptive_secs_string();
+	}
+	std::string qpl::time::mins_string(bool short_string) const {
+		return short_string ? this->single_short_mins_string() : this->single_descriptive_mins_string();
+	}
+	std::string qpl::time::hours_string(bool short_string) const {
+		return short_string ? this->single_short_hours_string() : this->single_descriptive_hours_string();
+	}
+	std::string qpl::time::days_string(bool short_string) const {
+		return short_string ? this->single_short_days_string() : this->single_descriptive_days_string();
+	}
+	std::string qpl::time::days_week_string(bool short_string) const {
+		return short_string ? this->single_short_days_week_string() : this->single_descriptive_days_week_string();
+	}
+	std::string qpl::time::weeks_string(bool short_string) const {
+		return short_string ? this->single_short_weeks_string() : this->single_descriptive_weeks_string();
+	}
+	std::string qpl::time::years_string(bool short_string) const {
+		return short_string ? this->single_short_years_string() : this->single_descriptive_years_string();
+	}
 
-		if (parantheses.size() > 0) {
-			stream << parantheses[0];
-		}
+
+	std::vector<std::string> qpl::time::get_string_segments(bool short_string, bool weeks) const {
+		std::vector<std::string> result;
 		if (this->years()) {
-			found = true;
-			stream << this->years_string();
+			result.push_back(this->years_string(short_string));
 		}
-		if (this->days_mod()) {
-			if (found) {
-				stream << " : ";
+		else {
+			result.push_back("");
+		}
+		if (weeks) {
+			if (this->weeks_mod()) {
+				result.push_back(this->weeks_string(short_string));
 			}
-			found = true;
-			stream << this->days_string();
+			else {
+				result.push_back("");
+			}
+			if (this->days_week_mod()) {
+				result.push_back(this->days_week_string(short_string));
+			}
+			else {
+				result.push_back("");
+			}
+		}
+		else {
+			if (this->days_mod()) {
+				result.push_back(this->days_string(short_string));
+			}
+			else {
+				result.push_back("");
+			}
 		}
 		if (this->hours_mod()) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->hours_string();
+			result.push_back(this->hours_string(short_string));
+		}
+		else {
+			result.push_back("");
 		}
 		if (this->mins_mod()) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->mins_string();
+			result.push_back(this->mins_string(short_string));
+		}
+		else {
+			result.push_back("");
 		}
 		if (this->secs_mod()) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->secs_string();
+			result.push_back(this->secs_string(short_string));
+		}
+		else {
+			result.push_back("");
 		}
 		if (this->msecs_mod()) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->msecs_string();
+			result.push_back(this->msecs_string(short_string));
+		}
+		else {
+			result.push_back("");
 		}
 		if (this->usecs_mod()) {
-			if (found) {
-				stream << " : ";
-			}
-			stream << this->usecs_string();
+			result.push_back(this->usecs_string(short_string));
 		}
-		if (this->nsecs_mod() || !found) {
-			if (found) {
-				stream << " : ";
-			}
-			stream << this->nsecs_string();
+		else {
+			result.push_back("");
 		}
-		if (parantheses.size() > 1) {
-			stream << parantheses[1];
-		}
-		return stream.str();
+		return result;
 	}
-	std::string qpl::time::string(std::string parantheses) const {
-		std::ostringstream stream;
-		bool found = false;
 
-		if (parantheses.size() > 0) {
-			stream << parantheses[0];
+	std::vector<std::string> qpl::time::get_full_string_segments(bool short_string, bool weeks) const {
+		std::vector<std::string> result;
+		result.push_back(this->years_string(short_string));
+		if (weeks) {
+			result.push_back(this->weeks_string(short_string));
+			result.push_back(this->days_week_string(short_string));
 		}
-		if (this->years() || found) {
-			found = true;
-			stream << this->years_string() << " : ";
+		else {
+			result.push_back(this->days_string(short_string));
 		}
-		if (this->days_mod() || found) {
-			found = true;
-			stream << this->days_string() << " : ";
-		}
-		if (this->hours_mod() || found) {
-			found = true;
-			stream << this->hours_string() << " : ";
-		}
-		if (this->mins_mod() || found) {
-			found = true;
-			stream << this->mins_string() << " : ";
-		}
-		if (this->secs_mod() || found) {
-			found = true;
-			stream << this->secs_string() << " : ";
-		}
-		if (this->msecs_mod() || found) {
-			found = true;
-			stream << this->msecs_string() << " : ";
-		}
-		if (this->usecs_mod() || found) {
-			found = true;
-			stream << this->usecs_string() << " : ";
-		}
-		stream << this->nsecs_string();
-
-		if (parantheses.size() > 1) {
-			stream << parantheses[1];
-		}
-		return stream.str();
+		result.push_back(this->hours_string(short_string));
+		result.push_back(this->mins_string(short_string));
+		result.push_back(this->secs_string(short_string));
+		result.push_back(this->msecs_string(short_string));
+		result.push_back(this->usecs_string(short_string));
+	return result;
 	}
-	std::string qpl::time::string_short(std::string parantheses, qpl::size segments) const {
-		std::ostringstream stream;
+	std::vector<std::string> qpl::time::get_string_active_segments(qpl::size stop_at_segment, bool short_string, bool weeks, qpl::size precision) const {
+		auto segments = this->get_string_segments(short_string, weeks);
+
+		auto stop = qpl::min(stop_at_segment, segments.size());
 		qpl::size found = 0u;
-
-		if (parantheses.size() > 0) {
-			stream << parantheses[0];
-		}
-		if ((this->years() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
+		std::vector<std::string> result;
+		for (qpl::size i = 0u; i < stop && found < precision; ++i) {
+			if (!segments[i].empty()) {
+				++found;
+				result.push_back(segments[i]);
 			}
-			++found;
-			stream << this->years_string();
 		}
-		if ((this->days_mod() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->days_string();
+		if (segments.empty()) {
+			segments.push_back(segments[stop_at_segment]);
 		}
-		if ((this->hours_mod() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->hours_string();
-		}
-		if ((this->mins_mod() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->mins_string();
-		}
-		if ((this->secs_mod() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->secs_string();
-		}
-		if ((this->msecs_mod() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->msecs_string();
-		}
-		if ((this->usecs_mod() || found) && found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->usecs_string();
-		}
-		if (found < segments) {
-			if (found) {
-				stream << " : ";
-			}
-			++found;
-			stream << this->nsecs_string();
-		}
-
-		if (parantheses.size() > 1) {
-			stream << parantheses[1];
-		}
-		return stream.str();
+		return result;
 	}
 
-	std::string qpl::time::string_until_sec(std::string parantheses) const {
+	std::string qpl::time::string_until_segment(qpl::size stop_at_segment, std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
 		std::ostringstream stream;
-		bool found = false;
-
 		if (parantheses.size() > 0) {
 			stream << parantheses[0];
 		}
-		if (this->years() || found) {
-			found = true;
-			stream << this->years_string();
-		}
-		if (this->days_mod() || found) {
-			if (found) {
-				stream << " : ";
+		auto segments = this->get_string_active_segments(stop_at_segment, short_string, weeks, precision);
+		auto stop = qpl::min(segments.size(), stop_at_segment);
+
+		for (qpl::size i = 0u; i < stop; ++i) {
+			if (i) {
+				if (!short_string && i == stop - 1) {
+					stream << " and ";
+				}
+				else {
+					stream << seperation;
+				}
 			}
-			found = true;
-			stream << this->days_string();
+			stream << segments[i];
 		}
-		if (this->hours_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->hours_string();
-		}
-		if (this->mins_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->mins_string();
-		}
-		if (this->secs_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << qpl::string_to_fit(qpl::to_string(this->secs_mod()), '0', qpl::number_of_digits(this->secs_in_min - 1)) << this->secs_mod() << "s";
-		}
-		if (!found) {
-			stream << "0s";
-		}
+
 		if (parantheses.size() > 1) {
 			stream << parantheses[1];
 		}
 		return stream.str();
 	}
 
-	std::string qpl::time::string_until_ms(std::string parantheses) const {
+
+	std::string qpl::time::string_full(std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks) const {
 		std::ostringstream stream;
-		bool found = false;
-
 		if (parantheses.size() > 0) {
 			stream << parantheses[0];
 		}
-		if (this->years() || found) {
-			found = true;
-			stream << this->years_string();
-		}
-		if (this->days_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->days_string();
-		}
-		if (this->hours_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->hours_string();
-		}
-		if (this->mins_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->mins_string();
-		}
-		if (this->secs_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->secs_string();
-		}
-		if (this->msecs_mod() || found) {
-			if (found) {
-				stream << " : ";
-			}
-			found = true;
-			stream << this->msecs_string();
-		}
 
-		if (!found) {
-			stream << "0ms";
+		auto segments = this->get_full_string_segments(short_string, weeks);
+		for (qpl::size i = 0u; i < segments.size(); ++i) {
+			if (i) {
+				if (!short_string && i == segments.size() - 1) {
+					stream << " and ";
+				}
+				else {
+					stream << seperation;
+				}
+			}
+			stream << segments[i];
 		}
 
 		if (parantheses.size() > 1) {
@@ -386,26 +325,44 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::time::string_full(std::string parantheses) const {
-		std::ostringstream stream;
 
-		if (parantheses.size() > 0) {
-			stream << parantheses[0];
-		}
-		stream << this->years_string() << " : ";
-		stream << this->days_string() << " : ";
-		stream << this->hours_string() << " : ";
-		stream << this->mins_string() << " : ";
-		stream << this->secs_string() << " : ";
-		stream << this->msecs_string() << " : ";
-		stream << this->usecs_string() << " : ";
-		stream << this->nsecs_string();
-
-		if (parantheses.size() > 1) {
-			stream << parantheses[1];
-		}
-		return stream.str();
+	std::string qpl::time::string(std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
+		return this->string_until_segment(qpl::size_max, parantheses, seperation, short_string, weeks, precision);
 	}
+
+
+	std::string qpl::time::string_until_hour(std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
+		return this->string_until_segment(weeks ? 4u : 3u, parantheses, seperation, short_string, weeks, precision);
+	}
+	std::string qpl::time::string_until_min(std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
+		return this->string_until_segment(weeks ? 5u : 4u, parantheses, seperation, short_string, weeks, precision);
+	}
+	std::string qpl::time::string_until_sec(std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
+		return this->string_until_segment(weeks ? 6u : 5u, parantheses, seperation, short_string, weeks, precision);
+	}
+	std::string qpl::time::string_until_ms(std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
+		return this->string_until_segment(weeks ? 7u : 6u, parantheses, seperation, short_string, weeks, precision);
+	}
+
+	std::string qpl::time::descriptive_string(qpl::size precision, bool weeks, qpl::size stop_at_segment) const {
+		return this->string_until_segment(stop_at_segment, "", ", ", false, weeks, precision);
+	}
+	std::string qpl::time::compact_string(qpl::size precision, bool weeks, qpl::size stop_at_segment) const {
+		return this->string_until_segment(stop_at_segment, "[]", " : ", true, weeks, precision);
+	}
+
+	std::string qpl::time::small_string(qpl::size precision, bool weeks, bool short_string, std::string_view parantheses, std::string_view seperation) const {
+		return this->string(parantheses, seperation, short_string, weeks, precision);
+	}
+	std::string qpl::time::small_descriptive_string(qpl::size precision, bool weeks) const {
+		return this->descriptive_string(precision, weeks);
+	}
+	std::string qpl::time::small_compact_string(qpl::size precision, bool weeks) const {
+		return this->compact_string(precision, weeks);
+	}
+
+
+
 	qpl::f64 qpl::time::frequency() const {
 		auto x = qpl::f64_cast(this->m_ns);
 		return qpl::time::nsecs_in_sec / x;
@@ -432,6 +389,9 @@ namespace qpl {
 	qpl::u64 qpl::time::days() const {
 		return this->m_ns / qpl::time::nsecs_in_day;
 	}
+	qpl::u64 qpl::time::weeks() const {
+		return this->m_ns / qpl::time::nsecs_in_week;
+	}
 	qpl::u64 qpl::time::years() const {
 		return this->m_ns / qpl::time::nsecs_in_year;
 	}
@@ -456,6 +416,12 @@ namespace qpl {
 	}
 	qpl::u64 qpl::time::days_mod() const {
 		return this->days() % this->days_in_year;
+	}
+	qpl::u64 qpl::time::days_week_mod() const {
+		return (this->days() % this->days_in_year) % this->days_in_week;
+	}
+	qpl::u64 qpl::time::weeks_mod() const {
+		return (this->weeks() % this->weeks_in_year);
 	}
 	qpl::u64 qpl::time::years_mod() const {
 		return this->years();
@@ -692,6 +658,14 @@ namespace qpl {
 		}
 	}
 
+	std::chrono::system_clock::time_point get_current_system_time() {
+		return std::chrono::system_clock::now();
+	}
+	std::chrono::system_clock::time_point get_current_utc_time() {
+		std::chrono::zoned_time zt{ "UTC", qpl::get_current_system_time()};
+		auto utc_time = std::chrono::system_clock::to_time_t(zt.get_sys_time());
+		return std::chrono::system_clock::from_time_t(utc_time);
+	}
 
 	std::string get_current_time_string() {
 		std::time_t rawtime;
@@ -726,6 +700,14 @@ namespace qpl {
 
 		std::strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", timeinfo);
 		return { buffer };
+	}
+
+
+	std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format) {
+		std::istringstream stream{ date };
+		std::chrono::system_clock::time_point result;
+		stream >> parse(format, result);
+		return result;
 	}
 
 	qpl::time get_remaining_time(qpl::f64 progress, qpl::time elapsed) {

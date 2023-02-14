@@ -5,6 +5,35 @@
 
 namespace qpl {
 
+	std::string qpl::to_lower(const std::string& string) {
+		auto result = string;
+		for (auto& i : result) {
+			i = std::tolower(i);
+		}
+		return result;
+	}
+	std::wstring qpl::to_lower(const std::wstring& string) {
+		auto result = string;
+		for (auto& i : result) {
+			i = std::tolower(i);
+		}
+		return result;
+	}
+	std::string qpl::to_upper(const std::string& string) {
+		auto result = string;
+		for (auto& i : result) {
+			i = std::toupper(i);
+		}
+		return result;
+	}
+	std::wstring qpl::to_upper(const std::wstring& string) {
+		auto result = string;
+		for (auto& i : result) {
+			i = std::toupper(i);
+		}
+		return result;
+	}
+
 	std::wstring qpl::string_to_wstring(std::string_view s) {
 		return qpl::string_to_wstring(std::string{ s });
 	}
@@ -120,7 +149,7 @@ namespace qpl {
 
 			return stream.str();
 		}
-		std::wstring qpl::detail::appended_to_string_to_fit(const std::wstring_view& string, char append, qpl::size length) {
+		std::wstring qpl::detail::appended_to_string_to_fit(const std::wstring_view& string, wchar_t append, qpl::size length) {
 			if (string.length() >= length) {
 				return std::wstring{ string };
 			}
@@ -265,7 +294,7 @@ namespace qpl {
 			stream << string;
 			return stream.str();
 		}
-		std::wstring qpl::detail::prepended_to_string_to_fit(const std::wstring_view& string, char prepend, qpl::size length) {
+		std::wstring qpl::detail::prepended_to_string_to_fit(const std::wstring_view& string, wchar_t prepend, qpl::size length) {
 			if (string.length() >= length) {
 				return std::wstring{ string };
 			}
@@ -696,20 +725,6 @@ namespace qpl {
 		return stream.str();
 	}
 
-	std::string qpl::to_lower(const std::string& string) {
-		auto result = string;
-		for (auto& i : result) {
-			i = std::tolower(i);
-		}
-		return result;
-	}
-	std::string qpl::to_upper(const std::string& string) {
-		auto result = string;
-		for (auto& i : result) {
-			i = std::toupper(i);
-		}
-		return result;
-	}
 	std::string qpl::remove_backslash_r(const std::string& string) {
 		std::string result = string;
 		if (result.back() == '\r') {
@@ -1511,7 +1526,7 @@ namespace qpl {
 		}
 		return matrix[a.length()][b.length()];
 	}
-	bool qpl::string_starts_with_ignore_case(const std::string& a, const std::string& b) {
+	bool qpl::string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b) {
 		if (b.length() > a.length()) {
 			return false;
 		}
@@ -1522,8 +1537,104 @@ namespace qpl {
 		}
 		return true;
 	}
+	bool qpl::string_starts_with(const std::string_view& a, const std::string_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < b.length(); ++i) {
+			if (a[i] != b[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool qpl::string_starts_with_ignore_case(const std::wstring_view& a, const std::wstring_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < b.length(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool qpl::string_starts_with(const std::wstring_view& a, const std::wstring_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < b.length(); ++i) {
+			if (a[i] != b[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+	std::vector<qpl::size> qpl::best_string_matches_at_start_or_contains(const std::vector<std::string>& list, const std::string& search) {
+		std::vector<qpl::size> check_result;
+		for (qpl::size i = 0u; i < list.size(); ++i) {
+			if (qpl::string_starts_with(list[i], search)) {
+				check_result.push_back(i);
+			}
+		}
+		if (check_result.size() == 1u) {
+			return check_result;
+		}
+		for (qpl::size i = 0u; i < list.size(); ++i) {
+			if (qpl::string_contains(list[i], search) && !qpl::find(check_result, i)) {
+				check_result.push_back(i);
+			}
+		}
+		if (check_result.size() == 1u) {
+			return check_result;
+		}
+
+		check_result.clear();
+		for (qpl::size i = 0u; i < list.size(); ++i) {
+			if (qpl::string_starts_with_ignore_case(list[i], search) && !qpl::find(check_result, i)) {
+				check_result.push_back(i);
+			}
+		}
+		if (check_result.size() == 1u) {
+			return check_result;
+		}
+		for (qpl::size i = 0u; i < list.size(); ++i) {
+			if (qpl::string_contains_ignore_case(list[i], search) && !qpl::find(check_result, i)) {
+				check_result.push_back(i);
+			}
+		}
+		if (check_result.size() == 1u) {
+			return check_result;
+		}
+		return check_result;
+	}
 	std::vector<qpl::size> qpl::best_string_matches_indices(const std::vector<std::string>& list, const std::string& search) {
 		std::vector<qpl::size> result;
+		std::vector<std::pair<qpl::size, qpl::size>> score(list.size());
+		for (qpl::size i = 0u; i < score.size(); ++i) {
+			score[i] = std::make_pair(qpl::string_levenshtein_distance(list[i], search), i);
+		}
+
+		qpl::sort(score, [](auto a, auto b) { return a.first < b.first; });
+
+		qpl::size best_score = score[0].first;
+		for (qpl::size i = 0u; i < score.size(); ++i) {
+			if (score[i].first == best_score) {
+				result.push_back(score[i].second);
+			}
+		}
+		return result;
+	}
+	std::vector<qpl::size> qpl::best_string_matches_check_start_contains_indices(const std::vector<std::string>& list, const std::string& search) {
+		std::vector<qpl::size> result;
+
+		auto test = qpl::best_string_matches_at_start_or_contains(list, search);
+		if (!test.empty()) {
+			return test;
+		}
+
 		std::vector<std::pair<qpl::size, qpl::size>> score(list.size());
 		for (qpl::size i = 0u; i < score.size(); ++i) {
 			score[i] = std::make_pair(qpl::string_levenshtein_distance(list[i], search), i);

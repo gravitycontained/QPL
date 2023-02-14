@@ -7,6 +7,20 @@ namespace qpl {
 	bool qpl::colored_string::element::is_default_colors() const {
 		return this->foreground == qpl::foreground::white && this->background == qpl::background::black;
 	}
+	void qpl::colored_string::add(const qpl::colored_string::element& element) {
+		if (this->empty()) {
+			this->elements.push_back(element);
+		}
+		else if (this->elements.back().foreground == element.foreground && this->elements.back().background == element.background) {
+			this->elements.back().text += element.text;
+		}
+		else {
+			this->elements.push_back(element);
+		}
+	}
+	bool qpl::colored_string::empty() const {
+		return this->elements.empty();
+	}
 	void qpl::colored_string::print() const {
 		qpl::cc cc;
 
@@ -81,7 +95,7 @@ namespace qpl {
 		return result;
 	}
 
-	void qpl::print_box_around(const std::wstring& string, qpl::size left_offset, qpl::foreground text_color, qpl::vec2s margin, qpl::foreground box_color) {
+	void qpl::print_box_around(const std::wstring& string, qpl::foreground text_color, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground box_color) {
 		auto lines = qpl::string_split(string, L'\n');
 		qpl::size max = 0u;
 		for (auto& i : lines) {
@@ -90,27 +104,41 @@ namespace qpl {
 			}
 		}
 		auto offset = qpl::to_wstring_repeat(L" ", left_offset);
-		auto xspace = std::wstring(L" ", margin.x);
-		qpl::println(offset, box_color, qpl::to_wstring(L"█", qpl::to_wstring_repeat(L"▀", max + margin.x * 2), L'█'));
+		auto xspace = qpl::to_wstring_repeat(L" ", margin.x);
+		auto wall = qpl::to_wstring_repeat(L"█", wall_width.x);
+
+
+		for (qpl::size i = 0u; i < wall_width.y - 1; ++i) {
+			auto w = max + margin.x * 2;
+			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(i ? L"█" : L"▄", w + wall_width.x * 2)));
+		}
+		qpl::println(offset, box_color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▀", max + margin.x * 2), wall));
+
 		for (qpl::size i = 0u; i < margin.y; ++i) {
-			qpl::print(offset, box_color, L"█");
+			qpl::print(offset, box_color, wall);
 			qpl::print(qpl::to_string_repeat(" ", max + margin.x * 2));
-			qpl::println(box_color, L"█");
+			qpl::println(box_color, wall);
 		}
 		for (auto& line : lines) {
-			qpl::print(offset, box_color, L"█");
+			qpl::print(offset, box_color, wall);
 			qpl::print(xspace, text_color, line, xspace);
 			qpl::print(qpl::to_string_repeat(" ", max - line.length()));
-			qpl::println(box_color, L"█");
+			qpl::println(box_color, wall);
 		}
 		for (qpl::size i = 0u; i < margin.y; ++i) {
-			qpl::print(offset, box_color, L"█");
+			qpl::print(offset, box_color, wall);
 			qpl::print(qpl::to_string_repeat(" ", max + margin.x * 2));
-			qpl::println(box_color, L"█");
+			qpl::println(box_color, wall);
 		}
-		qpl::println(offset, box_color, qpl::to_wstring(L'█', qpl::to_wstring_repeat(L"▄", max + margin.x * 2), L'█'));
+		qpl::println(offset, box_color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▄", max + margin.x * 2), wall));
+		for (qpl::size i = 1u; i < wall_width.y; ++i) {
+			auto index = wall_width.y - i - 1;
+			auto w = max + margin.x * 2;
+			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(index ? L"█" : L"▀", w + wall_width.x * 2)));
+		}
 	}
-	void qpl::print_box_around(const qpl::colored_string& string, qpl::size left_offset, qpl::vec2s margin, qpl::foreground color) {
+
+	void qpl::print_box_around(const qpl::colored_string& string, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground color) {
 		auto lines = string.get_lines();
 		qpl::size max = 0u;
 		for (auto& i : lines) {
@@ -120,26 +148,39 @@ namespace qpl {
 		}
 		auto offset = qpl::to_wstring_repeat(L" ", left_offset);
 		auto xspace = qpl::to_wstring_repeat(L" ", margin.x);
-		qpl::println(offset, color, qpl::to_wstring(L"█", qpl::to_wstring_repeat(L"▀", max + margin.x * 2), L'█'));
+		auto wall = qpl::to_wstring_repeat(L"█", wall_width.x);
+
+
+		for (qpl::size i = 0u; i < wall_width.y - 1; ++i) {
+			auto w = max + margin.x * 2;
+			qpl::println(offset, color, qpl::to_wstring(qpl::to_wstring_repeat(i ? L"█" : L"▄", w + wall_width.x * 2)));
+		}
+		qpl::println(offset, color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▀", max + margin.x * 2), wall));
+
 		for (qpl::size i = 0u; i < margin.y; ++i) {
-			qpl::print(offset, color, L"█");
+			qpl::print(offset, color, wall);
 			qpl::print(qpl::to_string_repeat(" ", max + margin.x * 2));
-			qpl::println(color, L"█");
+			qpl::println(color, wall);
 		}
 		for (auto& line : lines) {
-			qpl::print(offset, color, L"█");
+			qpl::print(offset, color, wall);
 			qpl::print(xspace);
 			line.print();
 			qpl::print(qpl::to_string_repeat(" ", max - line.wstring().length()));
 			qpl::print(xspace);
-			qpl::println(color, L"█");
+			qpl::println(color, wall);
 		}
 		for (qpl::size i = 0u; i < margin.y; ++i) {
-			qpl::print(offset, color, L"█");
+			qpl::print(offset, color, wall);
 			qpl::print(qpl::to_string_repeat(" ", max + margin.x * 2));
-			qpl::println(color, L"█");
+			qpl::println(color, wall);
 		}
-		qpl::println(offset, color, qpl::to_wstring(L'█', qpl::to_wstring_repeat(L"▄", max + margin.x * 2), L'█'));
+		qpl::println(offset, color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▄", max + margin.x * 2), wall));
+		for (qpl::size i = 1u; i < wall_width.y; ++i) {
+			auto index = wall_width.y - i - 1;
+			auto w = max + margin.x * 2;
+			qpl::println(offset, color, qpl::to_wstring(qpl::to_wstring_repeat(index ? L"█": L"▀", w + wall_width.x * 2)));
+		}
 	}
 }
 #endif

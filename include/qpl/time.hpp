@@ -50,21 +50,60 @@ namespace qpl {
 		QPLDLL bool operator>(const qpl::time& other) const;
 		QPLDLL bool operator>=(const qpl::time& other) const;
 
-		QPLDLL std::string nsecs_string() const;
-		QPLDLL std::string usecs_string() const;
-		QPLDLL std::string msecs_string() const;
-		QPLDLL std::string secs_string() const;
-		QPLDLL std::string mins_string() const;
-		QPLDLL std::string hours_string() const;
-		QPLDLL std::string days_string() const;
-		QPLDLL std::string years_string() const;
+		QPLDLL std::string single_short_nsecs_string() const;
+		QPLDLL std::string single_short_usecs_string() const;
+		QPLDLL std::string single_short_msecs_string() const;
+		QPLDLL std::string single_short_secs_string() const;
+		QPLDLL std::string single_short_mins_string() const;
+		QPLDLL std::string single_short_hours_string() const;
+		QPLDLL std::string single_short_days_string() const;
+		QPLDLL std::string single_short_days_week_string() const;
+		QPLDLL std::string single_short_weeks_string() const;
+		QPLDLL std::string single_short_years_string() const;
 
-		QPLDLL std::string string_non_zero(std::string parantheses = "[]") const;
-		QPLDLL std::string string(std::string parantheses = "[]") const;
-		QPLDLL std::string string_short(std::string parantheses = "[]", qpl::size segments = 2u) const;
-		QPLDLL std::string string_until_sec(std::string parantheses = "[]") const;
-		QPLDLL std::string string_until_ms(std::string parantheses = "[]") const;
-		QPLDLL std::string string_full(std::string parantheses = "[]") const;
+		QPLDLL std::string single_descriptive_nsecs_string() const;
+		QPLDLL std::string single_descriptive_usecs_string() const;
+		QPLDLL std::string single_descriptive_msecs_string() const;
+		QPLDLL std::string single_descriptive_secs_string() const;
+		QPLDLL std::string single_descriptive_mins_string() const;
+		QPLDLL std::string single_descriptive_hours_string() const;
+		QPLDLL std::string single_descriptive_days_string() const;
+		QPLDLL std::string single_descriptive_days_week_string() const;
+		QPLDLL std::string single_descriptive_weeks_string() const;
+		QPLDLL std::string single_descriptive_years_string() const;
+
+		QPLDLL std::string nsecs_string(bool short_string = true) const;
+		QPLDLL std::string usecs_string(bool short_string = true) const;
+		QPLDLL std::string msecs_string(bool short_string = true) const;
+		QPLDLL std::string secs_string(bool short_string = true) const;
+		QPLDLL std::string mins_string(bool short_string = true) const;
+		QPLDLL std::string hours_string(bool short_string = true) const;
+		QPLDLL std::string days_string(bool short_string = true) const;
+		QPLDLL std::string days_week_string(bool short_string = true) const;
+		QPLDLL std::string weeks_string(bool short_string = true) const;
+		QPLDLL std::string years_string(bool short_string = true) const;
+
+		QPLDLL std::vector<std::string> get_string_segments(bool short_string = true, bool weeks = true) const;
+		QPLDLL std::vector<std::string> get_full_string_segments(bool short_string = true, bool weeks = true) const;
+		QPLDLL std::vector<std::string> get_string_active_segments(qpl::size stop_at_segment, bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+
+		QPLDLL std::string string_full(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true) const;
+		QPLDLL std::string string_until_segment(qpl::size stop_at_segment, std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+
+		QPLDLL std::string string(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+		QPLDLL std::string string_until_hour(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+		QPLDLL std::string string_until_min(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+		QPLDLL std::string string_until_sec(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+		QPLDLL std::string string_until_ms(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+
+		QPLDLL std::string descriptive_string(qpl::size precision = qpl::size_max, bool weeks = true, qpl::size stop_at_segment = qpl::size_max) const;
+		QPLDLL std::string compact_string(qpl::size precision = qpl::size_max, bool weeks = true, qpl::size stop_at_segment = qpl::size_max) const;
+
+		QPLDLL std::string small_string(qpl::size precision = 2u, bool weeks = true, bool short_string = true, std::string_view parantheses = "[]", std::string_view seperation = " : ") const;
+		QPLDLL std::string small_descriptive_string(qpl::size precision = 2u, bool weeks = true) const;
+		QPLDLL std::string small_compact_string(qpl::size precision = 2u, bool weeks = true) const;
+
+
 		QPLDLL static time clock_time();
 		QPLDLL qpl::f64 frequency() const;
 
@@ -75,6 +114,7 @@ namespace qpl {
 		QPLDLL qpl::u64 mins() const;
 		QPLDLL qpl::u64 hours() const;
 		QPLDLL qpl::u64 days() const;
+		QPLDLL qpl::u64 weeks() const;
 		QPLDLL qpl::u64 years() const;
 
 		QPLDLL qpl::u64 nsecs_mod() const;
@@ -84,6 +124,8 @@ namespace qpl {
 		QPLDLL qpl::u64 mins_mod() const;
 		QPLDLL qpl::u64 hours_mod() const;
 		QPLDLL qpl::u64 days_mod() const;
+		QPLDLL qpl::u64 days_week_mod() const;
+		QPLDLL qpl::u64 weeks_mod() const;
 		QPLDLL qpl::u64 years_mod() const;
 
 		QPLDLL qpl::f64 nsecs_f() const;
@@ -102,6 +144,8 @@ namespace qpl {
 		constexpr static qpl::u64 mins_in_hour  = qpl::u64{ 60ull };
 		constexpr static qpl::u64 hours_in_day = qpl::u64{ 24ull };
 		constexpr static qpl::u64 days_in_year = qpl::u64{ 365ull };
+		constexpr static qpl::u64 days_in_week = qpl::u64{ 7ull };
+		constexpr static qpl::u64 weeks_in_year = qpl::u64{ 52ull };
 
 		constexpr static qpl::u64 nsecs_in_nsec = qpl::u64{ 1ull };
 		constexpr static qpl::u64 nsecs_in_msec = usecs_in_msec * nsecs_in_usec;
@@ -109,6 +153,7 @@ namespace qpl {
 		constexpr static qpl::u64 nsecs_in_min  = secs_in_min * nsecs_in_sec;
 		constexpr static qpl::u64 nsecs_in_hour = mins_in_hour * nsecs_in_min;
 		constexpr static qpl::u64 nsecs_in_day  = hours_in_day * nsecs_in_hour;
+		constexpr static qpl::u64 nsecs_in_week  = days_in_week * nsecs_in_day;
 		constexpr static qpl::u64 nsecs_in_year = days_in_year * nsecs_in_day;
 	
 		QPLDLL void set(qpl::u64 ns);
@@ -308,6 +353,10 @@ namespace qpl {
 		buffer << std::put_time(gmt, format.c_str());
 		return buffer.str();
 	}
+
+	QPLDLL std::chrono::system_clock::time_point get_current_system_time();
+	QPLDLL std::chrono::system_clock::time_point get_current_utc_time();
+
 	//YYYY-MM-DD-HH-MM-SS
 	QPLDLL std::string get_current_time_string();
 	QPLDLL std::string get_current_time_string_ms();
@@ -316,9 +365,39 @@ namespace qpl {
 	QPLDLL std::string get_current_time_string_ymd_hmsms_compact();
 	QPLDLL std::string get_current_time_string_ymdhmsms_compact();
 	QPLDLL std::string unix_to_date(qpl::u32 unix);
-
+	
+	//template <typename C> requires (qpl::is_container<C>())
+	//std::chrono::system_clock::time_point data_ymdhm_to_utc_timepoint(const C& values) {
+	//	std::tm tm = {
+	//		/* tm_sec  */ 0,
+	//		/* tm_min  */ qpl::i32_cast(values.at(4)),
+	//		/* tm_hour */ qpl::i32_cast(values.at(3)),
+	//		/* tm_mday */ qpl::i32_cast(values.at(2)),
+	//		/* tm_mon  */ qpl::i32_cast(values.at(1) - 1),
+	//		/* tm_year */ qpl::i32_cast(values.at(0) - 1900),
+	//	};
+	//	//tm.tm_isdst = 0; //utc
+	//
+	//	auto tm = std::mktime(&tm);
+	//	auto local_field = *std::gmtime(&tm);
+	//	return std::chrono::system_clock::from_time_t(std::mktime(&local_field));
+	//}
+	QPLDLL std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format = "%F %T");
 	template <typename C> requires (qpl::is_container<C>())
-	std::chrono::system_clock::time_point data_ymdhms_to_timepoint(const C& values) {
+	auto data_ymdhm_to_timepoint(const C& values) {
+		std::tm tm = {
+			/* tm_sec  */ 0,
+			/* tm_min  */ qpl::i32_cast(values.at(4)),
+			/* tm_hour */ qpl::i32_cast(values.at(3)),
+			/* tm_mday */ qpl::i32_cast(values.at(2)),
+			/* tm_mon  */ qpl::i32_cast(values.at(1) - 1),
+			/* tm_year */ qpl::i32_cast(values.at(0) - 1900),
+		};
+		//tm.tm_isdst = -1; // local time zone
+		return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+	}
+	template <typename C> requires (qpl::is_container<C>())
+	auto data_ymdhms_to_timepoint(const C& values) {
 		std::tm tm = {
 			/* tm_sec  */ qpl::i32_cast(values.at(5)),
 			/* tm_min  */ qpl::i32_cast(values.at(4)),

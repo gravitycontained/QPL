@@ -73,14 +73,6 @@ namespace qpl {
 		string_to_container_memory(data, destination);
 	}
 	template<typename C> requires (qpl::has_data<C>() && qpl::has_resize<C>())
-	constexpr inline void string_to_container_memory(const std::string& data, C& destination) {
-		if (data.empty()) {
-			return;
-		}
-		destination.resize((data.size() - 1) / sizeof(qpl::container_subtype<C>) + 1);
-		memcpy(destination.data(), data.data(), data.size());
-	}
-	template<typename C> requires (qpl::has_data<C>() && qpl::has_resize<C>())
 	constexpr inline void string_to_heap_memory(const std::string& data, C& destination) {
 		string_to_container_memory(data, destination);
 	}
