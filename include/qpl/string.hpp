@@ -575,6 +575,7 @@ namespace qpl {
 		if (repeat > qpl::size_cast(1e12)) {
 			return L"";
 		}
+		
 		std::wostringstream stream;
 		for (auto i = qpl::size{}; i < repeat; ++i) {
 			stream << qpl::to_wstring(value);
@@ -2339,12 +2340,54 @@ namespace qpl {
 	QPLDLL bool string_starts_with(const std::wstring_view& a, const std::wstring_view& b);
 	QPLDLL std::vector<std::string> best_string_matches(const std::vector<std::string>& list, const std::string& search);
 
-
 	QPLDLL std::vector<qpl::size> best_string_matches_at_start_or_contains(const std::vector<std::string>& list, const std::string& search);
 	QPLDLL std::vector<qpl::size> best_string_matches_indices(const std::vector<std::string>& list, const std::string& search);
 	QPLDLL std::vector<qpl::size> best_string_matches_check_start_contains_indices(const std::vector<std::string>& list, const std::string& search);
 
-
+	constexpr bool string_matches_pattern(const std::wstring_view& string, const std::wstring_view& pattern, qpl::wchar_type any_placeholder_char = L' ') {
+		if (string.length() < pattern.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < qpl::min(string.length(), pattern.length()); ++i) {
+			if (pattern[i] != any_placeholder_char && string[i] != pattern[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	constexpr bool string_find_pattern(const std::wstring_view& string, const std::wstring_view& pattern, qpl::wchar_type any_placeholder_char = L' ') {
+		if (string.length() < pattern.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < string.length() - pattern.length(); ++i) {
+			if (qpl::string_matches_pattern(string.substr(i), pattern, any_placeholder_char)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	constexpr bool string_matches_pattern(const std::string_view& string, const std::string_view& pattern, qpl::char_type any_placeholder_char = ' ') {
+		if (string.length() < pattern.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < qpl::min(string.length(), pattern.length()); ++i) {
+			if (pattern[i] != any_placeholder_char && string[i] != pattern[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	constexpr bool string_find_pattern(const std::string_view& string, const std::string_view& pattern, qpl::char_type any_placeholder_char = ' ') {
+		if (string.length() < pattern.length()) {
+			return false;
+		}
+		for (qpl::size i = 0u; i < string.length() - pattern.length(); ++i) {
+			if (qpl::string_matches_pattern(string.substr(i), pattern, any_placeholder_char)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	enum class operator_type {
 		plus,
 		minus,

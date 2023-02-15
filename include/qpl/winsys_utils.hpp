@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef QPL_WINSYS_UTILS_HPP
 #define QPL_WINSYS_UTILS_HPP
 #ifdef _WIN32
@@ -85,8 +85,8 @@ namespace qpl {
 		return qpl::to_colored_string(args..., L'\n');
 	}
 
-	QPLDLL void print_box_around(const std::wstring& string, qpl::foreground text_color = qpl::foreground::white, qpl::size left_offset = 0u, qpl::vec2s margin = { 1, 0 }, qpl::vec2s wall_width = { 1, 1 }, qpl::foreground box_color = qpl::foreground::gray);
-	QPLDLL void print_box_around(const qpl::colored_string& string, qpl::size left_offset = 0u, qpl::vec2s margin = { 1, 0 }, qpl::vec2s wall_width = { 1, 1 }, qpl::foreground color = qpl::foreground::gray);
+	QPLDLL void print_box_around(const std::wstring& string, qpl::foreground text_color = qpl::foreground::white, qpl::size left_offset = 0u, qpl::vec2s margin = { 1, 0 }, qpl::vec2s wall_width = { 1, 1 }, qpl::foreground box_color = qpl::foreground::gray, std::wstring border_blocks = L"▄█▀");
+	QPLDLL void print_box_around(const qpl::colored_string& string, qpl::size left_offset = 0u, qpl::vec2s margin = { 1, 0 }, qpl::vec2s wall_width = { 1, 1 }, qpl::foreground color = qpl::foreground::gray, std::wstring border_blocks = L"▄█▀");
 }
 
 #endif

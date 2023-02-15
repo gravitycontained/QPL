@@ -1667,6 +1667,10 @@ namespace qpl {
 		}
 		return result;
 	}
+
+
+
+
 	bool qpl::is_string_floating_point(std::string string) {
 		std::istringstream iss(string);
 		qpl::f64 f;
