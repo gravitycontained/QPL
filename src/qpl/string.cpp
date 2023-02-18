@@ -1499,7 +1499,36 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	qpl::size qpl::string_levenshtein_distance(const std::string& a, const std::string& b) {
+
+	qpl::size qpl::string_levenshtein_distance(const std::string_view& a, const std::string_view& b) {
+		std::vector<std::vector<qpl::size>> matrix(a.length() + 1, std::vector<qpl::size>(b.length() + 1, 0));
+
+		qpl::size cost{};
+		for (qpl::size i = 0u; i <= a.length(); i++) {
+			matrix[i][0] = i;
+		}
+		for (qpl::size j = 0; j <= b.length(); j++) {
+			matrix[0][j] = j;
+		}
+		for (qpl::size i = 1; i <= a.length(); i++) {
+			for (qpl::size j = 1; j <= b.length(); j++) {
+				if (a[i - 1] == b[j - 1]) {
+					cost = 0;
+				}
+				else {
+					cost = 1;
+				}
+				matrix[i][j] = std::min(matrix[i - 1][j] + 1, std::min(matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost));
+
+				if ((i > 1) && (j > 1) && (a[i - 1] == b[j - 2]) && (a[i - 2] == b[j - 1])) {
+					matrix[i][j] = std::min(matrix[i][j], matrix[i - 2][j - 2] + cost);
+				}
+			}
+		}
+		return matrix[a.length()][b.length()];
+	}
+
+	qpl::size qpl::string_levenshtein_distance(const std::wstring_view& a, const std::wstring_view& b) {
 		std::vector<std::vector<qpl::size>> matrix(a.length() + 1, std::vector<qpl::size>(b.length() + 1, 0));
 
 		qpl::size cost{};
@@ -1570,6 +1599,55 @@ namespace qpl {
 		}
 		return true;
 	}
+	bool qpl::string_ends_with_ignore_case(const std::string_view& a, const std::string_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		auto start = a.length() - b.length();
+		for (qpl::size i = start; i < a.length(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i - start])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool qpl::string_ends_with(const std::string_view& a, const std::string_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		auto start = a.length() - b.length();
+		for (qpl::size i = start; i < a.length(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i - start])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool qpl::string_ends_with_ignore_case(const std::wstring_view& a, const std::wstring_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		auto start = a.length() - b.length();
+		for (qpl::size i = start; i < a.length(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i - start])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool qpl::string_ends_with(const std::wstring_view& a, const std::wstring_view& b) {
+		if (b.length() > a.length()) {
+			return false;
+		}
+		auto start = a.length() - b.length();
+		for (qpl::size i = start; i < a.length(); ++i) {
+			if (std::tolower(a[i]) != std::tolower(b[i - start])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 
 	std::vector<qpl::size> qpl::best_string_matches_at_start_or_contains(const std::vector<std::string>& list, const std::string& search) {
@@ -1667,6 +1745,10 @@ namespace qpl {
 		}
 		return result;
 	}
+
+
+
+
 	bool qpl::is_string_floating_point(std::string string) {
 		std::istringstream iss(string);
 		qpl::f64 f;

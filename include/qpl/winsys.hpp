@@ -283,6 +283,24 @@ namespace qpl {
 		size = 16,
 	};
 
+	
+	constexpr qpl::foreground black = qpl::foreground::black;
+	constexpr qpl::foreground blue = qpl::foreground::blue;
+	constexpr qpl::foreground green = qpl::foreground::green;
+	constexpr qpl::foreground aqua = qpl::foreground::aqua;
+	constexpr qpl::foreground red = qpl::foreground::red;
+	constexpr qpl::foreground purple = qpl::foreground::purple;
+	constexpr qpl::foreground yellow = qpl::foreground::yellow;
+	constexpr qpl::foreground white = qpl::foreground::white;
+	constexpr qpl::foreground gray = qpl::foreground::gray;
+	constexpr qpl::foreground light_blue = qpl::foreground::light_blue;
+	constexpr qpl::foreground light_green = qpl::foreground::light_green;
+	constexpr qpl::foreground light_aqua = qpl::foreground::light_aqua;
+	constexpr qpl::foreground light_red = qpl::foreground::light_red;
+	constexpr qpl::foreground light_purple = qpl::foreground::light_purple;
+	constexpr qpl::foreground light_yellow = qpl::foreground::light_yellow;
+	constexpr qpl::foreground bright_white = qpl::foreground::bright_white;
+
 
 	QPLDLL std::ostream& operator<<(std::ostream& os, color color);
 	QPLDLL std::ostream& operator<<(std::ostream& os, foreground foreground);

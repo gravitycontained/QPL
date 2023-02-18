@@ -95,7 +95,7 @@ namespace qpl {
 		return result;
 	}
 
-	void qpl::print_box_around(const std::wstring& string, qpl::foreground text_color, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground box_color) {
+	void qpl::print_box_around(const std::wstring& string, qpl::foreground text_color, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground box_color, std::wstring border_blocks) {
 		auto lines = qpl::string_split(string, L'\n');
 		qpl::size max = 0u;
 		for (auto& i : lines) {
@@ -105,14 +105,14 @@ namespace qpl {
 		}
 		auto offset = qpl::to_wstring_repeat(L" ", left_offset);
 		auto xspace = qpl::to_wstring_repeat(L" ", margin.x);
-		auto wall = qpl::to_wstring_repeat(L"█", wall_width.x);
+		auto wall = qpl::to_wstring_repeat(border_blocks[1], wall_width.x);
 
 
 		for (qpl::size i = 0u; i < wall_width.y - 1; ++i) {
 			auto w = max + margin.x * 2;
-			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(i ? L"█" : L"▄", w + wall_width.x * 2)));
+			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(i ? border_blocks[1] : border_blocks[0], w + wall_width.x * 2)));
 		}
-		qpl::println(offset, box_color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▀", max + margin.x * 2), wall));
+		qpl::println(offset, box_color, qpl::to_wstring(wall, qpl::to_wstring_repeat(border_blocks[2], max + margin.x * 2), wall));
 
 		for (qpl::size i = 0u; i < margin.y; ++i) {
 			qpl::print(offset, box_color, wall);
@@ -130,15 +130,15 @@ namespace qpl {
 			qpl::print(qpl::to_string_repeat(" ", max + margin.x * 2));
 			qpl::println(box_color, wall);
 		}
-		qpl::println(offset, box_color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▄", max + margin.x * 2), wall));
+		qpl::println(offset, box_color, qpl::to_wstring(wall, qpl::to_wstring_repeat(border_blocks[0], max + margin.x * 2), wall));
 		for (qpl::size i = 1u; i < wall_width.y; ++i) {
 			auto index = wall_width.y - i - 1;
 			auto w = max + margin.x * 2;
-			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(index ? L"█" : L"▀", w + wall_width.x * 2)));
+			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(index ? border_blocks[1] : border_blocks[2], w + wall_width.x * 2)));
 		}
 	}
 
-	void qpl::print_box_around(const qpl::colored_string& string, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground color) {
+	void qpl::print_box_around(const qpl::colored_string& string, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground color, std::wstring border_blocks) {
 		auto lines = string.get_lines();
 		qpl::size max = 0u;
 		for (auto& i : lines) {
@@ -148,14 +148,14 @@ namespace qpl {
 		}
 		auto offset = qpl::to_wstring_repeat(L" ", left_offset);
 		auto xspace = qpl::to_wstring_repeat(L" ", margin.x);
-		auto wall = qpl::to_wstring_repeat(L"█", wall_width.x);
+		auto wall = qpl::to_wstring_repeat(border_blocks[1], wall_width.x);
 
 
 		for (qpl::size i = 0u; i < wall_width.y - 1; ++i) {
 			auto w = max + margin.x * 2;
-			qpl::println(offset, color, qpl::to_wstring(qpl::to_wstring_repeat(i ? L"█" : L"▄", w + wall_width.x * 2)));
+			qpl::println(offset, color, qpl::to_wstring(qpl::to_wstring_repeat(i ? border_blocks[1] : border_blocks[0], w + wall_width.x * 2)));
 		}
-		qpl::println(offset, color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▀", max + margin.x * 2), wall));
+		qpl::println(offset, color, qpl::to_wstring(wall, qpl::to_wstring_repeat(border_blocks[2], max + margin.x * 2), wall));
 
 		for (qpl::size i = 0u; i < margin.y; ++i) {
 			qpl::print(offset, color, wall);
@@ -175,11 +175,11 @@ namespace qpl {
 			qpl::print(qpl::to_string_repeat(" ", max + margin.x * 2));
 			qpl::println(color, wall);
 		}
-		qpl::println(offset, color, qpl::to_wstring(wall, qpl::to_wstring_repeat(L"▄", max + margin.x * 2), wall));
+		qpl::println(offset, color, qpl::to_wstring(wall, qpl::to_wstring_repeat(border_blocks[0], max + margin.x * 2), wall));
 		for (qpl::size i = 1u; i < wall_width.y; ++i) {
 			auto index = wall_width.y - i - 1;
 			auto w = max + margin.x * 2;
-			qpl::println(offset, color, qpl::to_wstring(qpl::to_wstring_repeat(index ? L"█": L"▀", w + wall_width.x * 2)));
+			qpl::println(offset, color, qpl::to_wstring(qpl::to_wstring_repeat(index ? border_blocks[1]: border_blocks[2], w + wall_width.x * 2)));
 		}
 	}
 }
