@@ -613,12 +613,13 @@ namespace qpl {
 	}
 	std::string qpl::get_random_string_with_repetions(qpl::size length, qpl::size repetion_size) {
 		std::ostringstream stream;
-		for (auto i = qpl::size{}; i < length; ++i) {
+		for (auto i = qpl::size{}; i < length;) {
 
 			auto rep = qpl::random(qpl::size{ 1 }, repetion_size);
 			rep = qpl::min(rep, length - i);
 
 			stream << std::string(rep, qpl::get_random_visible_char());
+			i += rep;
 		}
 		return stream.str();
 	}

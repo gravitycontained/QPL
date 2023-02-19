@@ -867,30 +867,29 @@ namespace qpl {
 	qpl::cipherN<cipher_config{ 4, 3, 64, 64 } > qpl::detail::cipher512;
 	qpl::cipherN<cipher_config{ 4, 12, 64, 64 } > qpl::detail::cipher512_save;
 
-
 	std::string qpl::encrypt512_ultra_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_ultra_quick.encrypt(message, key);
+		return qpl::detail::cipher512_ultra_quick.encrypted(message, key);
 	}
 	std::string qpl::decrypt512_ultra_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_ultra_quick.decrypt(message, key);
+		return qpl::detail::cipher512_ultra_quick.decrypted(message, key);
 	}
 	std::string qpl::encrypt512_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_quick.encrypt(message, key);
+		return qpl::detail::cipher512_quick.encrypted(message, key);
 	}
 	std::string qpl::decrypt512_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_quick.decrypt(message, key);
+		return qpl::detail::cipher512_quick.decrypted(message, key);
 	}
 	std::string qpl::encrypt512(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512.encrypt(message, key);
+		return qpl::detail::cipher512.encrypted(message, key);
 	}
 	std::string qpl::decrypt512(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512.decrypt(message, key);
+		return qpl::detail::cipher512.decrypted(message, key);
 	}
 	std::string qpl::encrypt512_save(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_save.encrypt(message, key);
+		return qpl::detail::cipher512_save.encrypted(message, key);
 	}
 	std::string qpl::decrypt512_save(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_save.decrypt(message, key);
+		return qpl::detail::cipher512_save.decrypted(message, key);
 	}
 #endif
 }

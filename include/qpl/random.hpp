@@ -116,9 +116,13 @@ namespace qpl {
 			return WMSK;
 		}
 
-		void init() {
+		void clear() {
+			this->state_position = 0;
 			this->index = 0;
 			this->using_seed_seq = false;
+		}
+		void init() {
+			this->clear();
 		}
 		void shuffle() {
 			qpl::i32 i;
@@ -214,6 +218,9 @@ namespace qpl {
 		}
 		auto get_current() const {
 			return this->engine.get_current();
+		}
+		void clear() {
+			this->engine.clear();
 		}
 		void discard(qpl::u64 count) {
 			this->engine.discard(count);
