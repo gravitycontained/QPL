@@ -12,7 +12,194 @@
 #include <qpl/memory.hpp>
 #include <qpl/random.hpp>
 
+#ifdef QPL_RSA
+#pragma warning( push )
+#pragma warning( disable : 4146)
+#include <gmpxx.h>
+#pragma warning( pop ) 
+#endif
+
 namespace qpl {
+
+
+	struct sha256 {
+		using utype = qpl::u32;
+
+		constexpr static qpl::size bits = 32u;
+		constexpr static qpl::size message_size = 512u;
+		constexpr static qpl::size sequence_size = (message_size / bits);
+		constexpr static qpl::size hash_size = 8u;
+		constexpr static qpl::size working_size = 8u;
+		constexpr static qpl::size round_size = 64u;
+		constexpr static qpl::size output_size = 8u;
+		constexpr static qpl::size state_size = 8u;
+		constexpr static qpl::size block_size = 64u;
+		constexpr static qpl::size digest_bits = bits * qpl::bits_in_byte();
+
+
+		std::array<utype, block_size> data{};
+		std::array<utype, state_size> state;
+		utype blocklen;
+		qpl::size bitlen;
+
+		using hash_result = std::array<qpl::u8, bits>;
+
+		static constexpr auto table = std::array{
+			0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u,
+			0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
+			0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u,
+			0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
+			0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu,
+			0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
+			0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u,
+			0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
+			0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u,
+			0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
+			0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u,
+			0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
+			0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u,
+			0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+			0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u,
+			0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u,
+		};
+
+
+
+		sha256() {
+			this->reset();
+		}
+
+		static constexpr auto rotr(utype x, utype n) {
+			return (x >> n) | (x << (bits - n));
+		}
+		static constexpr auto choose(utype e, utype f, utype g) {
+			return (e & f) ^ (~e & g);
+		}
+		static constexpr auto majority(utype a, utype b, utype c) {
+			return (a & (b | c)) | (b & c);
+		}
+		static constexpr auto sig0(utype x) {
+			return rotr(x, 7u) ^ rotr(x, 18u) ^ (x >> 3u);
+		}
+		static constexpr auto sig1(utype x) {
+			return rotr(x, 17u) ^ rotr(x, 19u) ^ (x >> 10u);
+		}
+
+		QPLDLL void reset();
+		QPLDLL void update(const std::string_view& data);
+		QPLDLL auto digest();
+		QPLDLL void transform();
+		QPLDLL void add_padding();
+		QPLDLL void revert(qpl::sha256::hash_result& hash);
+		QPLDLL static std::string to_string(const qpl::sha256::hash_result& hash);
+	};
+
+	struct sha512 {
+		using utype = qpl::u64;
+
+		constexpr static qpl::size bits = 64u;
+		constexpr static qpl::size message_size = 1024u;
+		constexpr static qpl::size sequence_size = (message_size / bits);
+		constexpr static qpl::size hash_size = 8u;
+		constexpr static qpl::size working_size = 8u;
+		constexpr static qpl::size round_size = 80u;
+		constexpr static qpl::size output_size = 8u;
+		constexpr static qpl::size state_size = 8u;
+		constexpr static qpl::size block_size = 128u;
+		constexpr static qpl::size digest_bits = bits * qpl::bits_in_byte();
+
+		std::array<utype, block_size> data{};
+		std::array<utype, state_size> state;
+		utype blocklen;
+		qpl::size bitlen;
+
+		using hash_result = std::array<qpl::u8, bits>;
+
+		static constexpr auto table = std::array{
+			0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL,
+			0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL,
+			0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
+			0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL,
+			0xd807aa98a3030242ULL, 0x12835b0145706fbeULL,
+			0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL,
+			0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL,
+			0x9bdc06a725c71235ULL, 0xc19bf174cf692694ULL,
+			0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL,
+			0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL,
+			0x2de92c6f592b0275ULL, 0x4a7484aa6ea6e483ULL,
+			0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL,
+			0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL,
+			0xb00327c898fb213fULL, 0xbf597fc7beef0ee4ULL,
+			0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL,
+			0x06ca6351e003826fULL, 0x142929670a0e6e70ULL,
+			0x27b70a8546d22ffcULL, 0x2e1b21385c26c926ULL,
+			0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL,
+			0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL,
+			0x81c2c92e47edaee6ULL, 0x92722c851482353bULL,
+			0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL,
+			0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL,
+			0xd192e819d6ef5218ULL, 0xd69906245565a910ULL,
+			0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL,
+			0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL,
+			0x2748774cdf8eeb99ULL, 0x34b0bcb5e19b48a8ULL,
+			0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL,
+			0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL,
+			0x748f82ee5defb2fcULL, 0x78a5636f43172f60ULL,
+			0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL,
+			0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL,
+			0xbef9a3f7b2c67915ULL, 0xc67178f2e372532bULL,
+			0xca273eceea26619cULL, 0xd186b8c721c0c207ULL,
+			0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL,
+			0x06f067aa72176fbaULL, 0x0a637dc5a2c898a6ULL,
+			0x113f9804bef90daeULL, 0x1b710b35131c471bULL,
+			0x28db77f523047d84ULL, 0x32caab7b40c72493ULL,
+			0x3c9ebe0a15c9bebcULL, 0x431d67c49c100d4cULL,
+			0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL,
+			0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL,
+		};
+
+		sha512() {
+			this->reset();
+		}
+
+		static constexpr auto rotr(utype x, utype n) {
+			return (x >> n) | (x << (bits - n));
+		}
+		static constexpr auto choose(utype e, utype f, utype g) {
+			return (e & f) ^ (~e & g);
+		}
+		static constexpr auto majority(utype a, utype b, utype c) {
+			return (a & (b | c)) | (b & c);
+		}
+		static constexpr auto sig0(utype x) {
+			return rotr(x, 1u) ^ rotr(x, 8u) ^ (x >> 7u);
+		}
+		static constexpr auto sig1(utype x) {
+			return rotr(x, 19u) ^ rotr(x, 61u) ^ (x >> 6u);
+		}
+
+		QPLDLL void reset();
+		QPLDLL void update(const std::string_view& data);
+		QPLDLL auto digest();
+		QPLDLL void transform();
+		QPLDLL void add_padding();
+		QPLDLL void revert(qpl::sha512::hash_result& hash);
+		QPLDLL static std::string to_string(const qpl::sha512::hash_result& hash);
+	};
+
+	namespace detail {
+		QPLDLL extern qpl::sha256 sha256_t;
+		QPLDLL extern qpl::sha512 sha512_t;
+	}
+
+	QPLDLL std::string sha256_hash(const std::string_view& string);
+	QPLDLL std::string sha512_hash(const std::string_view& string);
+
+	constexpr auto sha256_object = std::make_pair(sha256_hash, 256u);
+	constexpr auto sha512_object = std::make_pair(sha512_hash, 512u);
+	using hash_type = decltype(sha256_object);
+
+	QPLDLL std::string mgf1(std::string seed, qpl::size length, hash_type hash_object);
 
 	namespace detail {
 		struct aes_tables_t {
@@ -207,12 +394,7 @@ namespace qpl {
 			};
 		}
 
-
-
 		QPLDLL extern std::unique_ptr<qpl::detail::aes_tables_t> aes_tables_deprecated;
-
-
-
 
 		QPLDLL void calculate_mul1();
 		QPLDLL void calculate_mul2();
@@ -441,9 +623,9 @@ namespace qpl {
 			return qpl::aes_256_decrypted(message, s, remove_null_terminations);
 		}
 	}
+
+
 #ifdef QPL_CIPHER
-
-
 	namespace detail {
 		constexpr std::array<std::array<qpl::u8, 256u>, 256u> galois_mul = {
 			std::array<qpl::u8, 256>{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0},
@@ -897,10 +1079,16 @@ namespace qpl {
 				}
 			}
 
+			std::string seed;
+			seed.append(key);
+			seed.append(qpl::container_memory_to_string(initialization_vector));
+			auto sha512_hash = qpl::mgf1(seed, 624 * 4u, qpl::sha512_object);
+
 			std::array<qpl::u32, 624> random_data{};
 			for (qpl::size i = 0u; i < random_data.size(); ++i) {
 				for (qpl::size b = 0u; b < 4u; ++b) {
-					random_data[i] |= (qpl::u32_cast(state[i * 4u + b]) << (b * 8u));
+					auto index = i * 4u + b;
+					random_data[i] |= (qpl::u32_cast(state[index]) << (b * 8u)) ^ sha512_hash[index];
 				}
 			}
 
@@ -1727,13 +1915,13 @@ namespace qpl {
 		}
 		std::string decrypted(const std::string& message, const std::string_view& key) {
 			auto copy = message;
-			this->decrypt(copy);
+			this->decrypt(copy, key);
 			return copy;
 		}
 	};
 
 	namespace detail {
-		QPLDLL extern cipherN < cipher_config{ 4, 1, 64, 64, false } > cipher512_ultra_quick;
+		QPLDLL extern cipherN < cipher_config{ 4, 1, 64, 64, 0.75, false } > cipher512_ultra_quick;
 		QPLDLL extern cipherN < cipher_config{ 4, 1, 64, 64 } > cipher512_quick;
 		QPLDLL extern cipherN < cipher_config{ 4, 3, 64, 64 } > cipher512;
 		QPLDLL extern cipherN < cipher_config{ 4, 12, 64, 64 } > cipher512_save;
@@ -1749,6 +1937,115 @@ namespace qpl {
 
 	QPLDLL std::string encrypt512_save(const std::string& message, const std::string& key);
 	QPLDLL std::string decrypt512_save(const std::string& message, const std::string& key);
+#endif
+
+#ifdef QPL_RSA
+
+	struct RSA_key_pair {
+		mpz_class mod;
+		mpz_class key;
+
+		QPLDLL bool empty() const;
+		QPLDLL void set(const std::string_view& mod, const std::string_view& key);
+		QPLDLL void set_base64(const std::string_view& mod, const std::string_view& key);
+		QPLDLL std::string string();
+		QPLDLL qpl::size bits() const;
+	};
+
+	struct RSA {
+		mpz_class mod;
+		mpz_class private_key;
+		mpz_class public_key;
+		qpl::size bits = 0;
+
+		QPLDLL void set_decryption_key(const mpz_class& key, const mpz_class& mod);
+		QPLDLL void set_encryption_key(const mpz_class& key, const mpz_class& mod);
+		QPLDLL void set_decryption_key(const RSA_key_pair& key);
+		QPLDLL void set_encryption_key(const RSA_key_pair& key);
+
+		QPLDLL RSA_key_pair get_public_key() const;
+		QPLDLL RSA_key_pair get_private_key() const;
+		QPLDLL qpl::size get_bits() const;
+		QPLDLL bool check(const std::string& prime1, const std::string& prime2);
+		QPLDLL void create(const std::string& prime1, const std::string& prime2);
+		QPLDLL void create(mpz_class prime1, mpz_class prime2, mpz_class lambda = 0);
+		QPLDLL bool check(mpz_class prime1, mpz_class prime2);
+		QPLDLL mpz_class encrypt_integer(mpz_class message) const;
+		QPLDLL mpz_class decrypt_integer(mpz_class message) const;
+		QPLDLL void pad_string(std::string& string) const;
+		QPLDLL std::string encrypt_single_hex(const std::string& message) const;
+		QPLDLL std::string decrypt_single_hex(const std::string& message) const;
+		QPLDLL qpl::size get_max_message_length(qpl::hash_type hash_object = qpl::sha512_object) const;
+		QPLDLL std::optional<std::string> encrypt_hex_OAEP(const std::string_view& message, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) const;
+		QPLDLL std::optional<std::string> decrypt_hex_OAEP(const std::string_view& message, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) const;
+
+		QPLDLL std::optional<std::string> encrypt(const std::string_view& message, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) const;
+		QPLDLL std::optional<std::string> decrypt(const std::string_view& message, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) const;
+
+		QPLDLL std::string sign_RSASSA_PSS(const std::string_view& signature, qpl::hash_type hash_object = qpl::sha512_object, qpl::size salt_length = qpl::size_max) const;
+		QPLDLL bool verify_RSASSA_PSS(const std::string& message, const std::string_view& signature, qpl::hash_type hash_object = qpl::sha512_object, qpl::size salt_length = qpl::size_max) const;
+	};
+
+	QPLDLL std::optional<std::string> RSA_encrypt(const std::string_view& message, const RSA_key_pair& private_key, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object);
+	QPLDLL std::optional<std::string> RSA_decrypt(const std::string_view& message, const RSA_key_pair& public_key, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object);
+
+	QPLDLL std::string RSASSA_PSS_sign(const std::string_view& signature, const RSA_key_pair& private_key, qpl::hash_type hash_object = qpl::sha512_object);
+	QPLDLL bool RSASSA_PSS_verify(const std::string& message, const std::string_view& signature, const RSA_key_pair& public_key, qpl::hash_type hash_object = qpl::sha512_object);
+
+	struct RSASSA_PSS_OAEP {
+		qpl::RSA_key_pair signature_key;
+		qpl::RSA_key_pair cipher_key;
+
+		QPLDLL bool empty() const;
+		QPLDLL void load_keys(const std::string& path);
+		QPLDLL void set_signature_key(const std::string_view& mod, const std::string_view& key);
+		QPLDLL void set_cipher_key(const std::string_view& mod, const std::string_view& key);
+		QPLDLL std::optional<std::string> add_signature_and_encrypt(const std::string_view& message, const std::string_view& signature, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) const;
+		QPLDLL std::optional<std::string> verify_and_decrypt(const std::string& message, const std::string_view& signature, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) const;
+	};
+
+#ifdef QPL_CIPHER
+	template<qpl::cipher_config cipher_config>
+	struct RSASSA_PSS_OAEP_CIPHER {
+		RSASSA_PSS_OAEP rsa;
+		qpl::cipherN<cipher_config> cipher;
+
+		std::optional<std::string> encrypt(const std::string& message, const std::string_view& cipher_key, const std::string_view& signature, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) {
+			if (this->rsa.empty()) {
+				return std::nullopt;
+			}
+			auto rsa_header = this->rsa.add_signature_and_encrypt(cipher_key, signature, label, hash_object);
+			if (!rsa_header.has_value()) {
+				return std::nullopt;
+			}
+
+			auto encrypted = this->cipher.encrypted(message, cipher_key);
+			auto decrypted = this->cipher.decrypted(encrypted, cipher_key);
+
+			qpl::collection_string result;
+			result.add_string(rsa_header.value());
+			result.add_string(encrypted);
+			return result.get_finalized_string();
+		}
+		std::optional<std::string> decrypt(const std::string& message, const std::string_view& signature, std::string label = "", qpl::hash_type hash_object = qpl::sha512_object) {
+			qpl::collection_string collection_string;
+			collection_string.set_string_and_read(message);
+
+			if (collection_string.size() != 2u) {
+				return std::nullopt;
+			}
+
+			auto rsa_header = collection_string.get_string(0u);
+			auto cipher_key = this->rsa.verify_and_decrypt(rsa_header, signature, label, hash_object);
+			if (!cipher_key.has_value()) {
+				return std::nullopt;
+			}
+			auto encrypted = collection_string.get_string(1u);
+			return this->cipher.decrypted(encrypted, cipher_key.value());
+		}
+
+	};
+#endif
 #endif
 }
 

@@ -361,7 +361,45 @@ namespace qpl {
 	namespace detail {
 		qpl::console_effect_state console_effect_state;
 	}
+	std::string qpl::base64_string(const std::string_view& input) {
+		std::string output;
+		for (qpl::size i = 0u; i < input.length(); i += 3u) {
+			std::bitset<24> buffer{ 0 };
+			for (qpl::size j = 0; j < 3; ++j) {
+				buffer <<= 8;
+				if (i + j < input.length()) {
+					buffer |= qpl::u8_cast(input[i + j]);
+				}
+			}
+			for (qpl::size j = 0; j < 4; ++j) {
+				if (i + j * 6 / 8 < input.length()) {
+					output += qpl::detail::base_64[(buffer >> (18 - j * 6)).to_ulong() & 0x3F];
+				}
+			}
+		}
+		return output;
+	}
+	std::string qpl::from_base64_string(const std::string_view& input) {
+		std::string output;
+		for (qpl::size i = 0; i < input.length(); i += 4) {
+			std::bitset<24> buffer{ 0 };
 
+			for (qpl::size j = 0; j < 4; ++j) {
+				buffer <<= 6;
+				if (i + j < input.length()) {
+					buffer |= qpl::detail::base_64_inv[qpl::u8_cast(input[i + j])];
+				}
+			}
+
+			for (qpl::size j = 0u; j < 3u; ++j) {
+				if (i + j + 1 < input.length()) {
+					output += static_cast<char>((buffer >> (16 - j * 8)).to_ulong() & 0xFF);
+				}
+			}
+		}
+
+		return output;
+	}
 	std::string qpl::hex_string(const std::string_view& string) {
 		std::ostringstream stream;
 		for (auto& i : string) {
@@ -376,12 +414,35 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	std::string qpl::hex_to_base64_string(const std::string_view& string) {
+		return qpl::base64_string(qpl::from_hex_string(string));
+	}
+	std::string qpl::base64_to_hex_string(const std::string_view& string) {
+		return qpl::hex_string(qpl::from_base64_string(string));
+	}
 	std::string qpl::binary_string(const std::string& string) {
 		std::ostringstream stream;
 		for (auto& i : string) {
 			stream << qpl::prepended_to_string_to_fit(qpl::binary_string(qpl::u8_cast(i)), "0", 8);
 		}
 		return stream.str();
+	}
+	std::string qpl::string_xor(std::string a, std::string b) {
+		std::string result;
+		result.resize(qpl::min(a.size(), b.size()));
+		for (qpl::size i = 0u; i < result.length(); ++i) {
+			result[i] = a[i] ^ b[i];
+		}
+		return result;
+	}
+	std::string qpl::hex_string_xor(std::string a, std::string b) {
+		std::string result;
+		result.resize(qpl::min(a.size(), b.size()));
+		for (qpl::size i = 0u; i < result.length(); ++i) {
+			auto value = qpl::from_base_char(a[i], 16u) ^ qpl::from_base_char(b[i], 16u);
+			result[i] = qpl::base_char(value, 16u);
+		}
+		return result;
 	}
 	strform_content qpl::strform_endl() {
 		strform_content result;
@@ -705,7 +766,7 @@ namespace qpl {
 		}
 		return stream.str();
 	}
-	std::string qpl::get_random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size) {
+	std::string qpl::get_random_string_full_range_with_repetitions(qpl::size length, qpl::size repetition_size) {
 		std::ostringstream stream;
 		qpl::set_random_range_i(qpl::type_min<char>(), qpl::type_max<char>());
 		for (auto i = qpl::size{}; i < length; ) {

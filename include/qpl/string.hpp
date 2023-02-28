@@ -1304,32 +1304,38 @@ namespace qpl {
 			'+', '/'
 		}; 
 		constexpr std::array<qpl::u8, qpl::type_configurations<qpl::u8>()> base_64_inv = {
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0x3e}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0x3f}, qpl::u8{0x34}, qpl::u8{0x35},
-			qpl::u8{0x36}, qpl::u8{0x37}, qpl::u8{0x38}, qpl::u8{0x39}, qpl::u8{0x3a}, qpl::u8{0x3b}, qpl::u8{0x3c}, qpl::u8{0x3d}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0x0},  qpl::u8{0x1},  qpl::u8{0x2},  qpl::u8{0x3},  qpl::u8{0x4},
-			qpl::u8{0x5},  qpl::u8{0x6},  qpl::u8{0x7},  qpl::u8{0x8},  qpl::u8{0x9},  qpl::u8{0xa},  qpl::u8{0xb},  qpl::u8{0xc},  qpl::u8{0xd},  qpl::u8{0xe},
-			qpl::u8{0xf},  qpl::u8{0x10}, qpl::u8{0x11}, qpl::u8{0x12}, qpl::u8{0x13}, qpl::u8{0x14}, qpl::u8{0x15}, qpl::u8{0x16}, qpl::u8{0x17}, qpl::u8{0x18},
-			qpl::u8{0x19}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0x1a}, qpl::u8{0x1b}, qpl::u8{0x1c},
-			qpl::u8{0x1d}, qpl::u8{0x1e}, qpl::u8{0x1f}, qpl::u8{0x20}, qpl::u8{0x21}, qpl::u8{0x22}, qpl::u8{0x23}, qpl::u8{0x24}, qpl::u8{0x25}, qpl::u8{0x26},
-			qpl::u8{0x27}, qpl::u8{0x28}, qpl::u8{0x29}, qpl::u8{0x2a}, qpl::u8{0x2b}, qpl::u8{0x2c}, qpl::u8{0x2d}, qpl::u8{0x2e}, qpl::u8{0x2f}, qpl::u8{0x30},
-			qpl::u8{0x31}, qpl::u8{0x32}, qpl::u8{0x33}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff},
-			qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}, qpl::u8{0xff}
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0x3eu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0x3fu},
+			qpl::u8{0x34u}, qpl::u8{0x35u}, qpl::u8{0x36u}, qpl::u8{0x37u}, qpl::u8{0x38u}, qpl::u8{0x39u}, qpl::u8{0x3au}, qpl::u8{0x3bu},
+			qpl::u8{0x3cu}, qpl::u8{0x3du}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0x40u}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0x0u},  qpl::u8{0x1u},  qpl::u8{0x2u},  qpl::u8{0x3u},  qpl::u8{0x4u},  qpl::u8{0x5u},  qpl::u8{0x6u},
+			qpl::u8{0x7u},  qpl::u8{0x8u},  qpl::u8{0x9u},  qpl::u8{0xau},  qpl::u8{0xbu},  qpl::u8{0xcu},  qpl::u8{0xdu},  qpl::u8{0xeu},
+			qpl::u8{0xfu},  qpl::u8{0x10u}, qpl::u8{0x11u}, qpl::u8{0x12u}, qpl::u8{0x13u}, qpl::u8{0x14u}, qpl::u8{0x15u}, qpl::u8{0x16u},
+			qpl::u8{0x17u}, qpl::u8{0x18u}, qpl::u8{0x19u}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0x1au}, qpl::u8{0x1bu}, qpl::u8{0x1cu}, qpl::u8{0x1du}, qpl::u8{0x1eu}, qpl::u8{0x1fu}, qpl::u8{0x20u},
+			qpl::u8{0x21u}, qpl::u8{0x22u}, qpl::u8{0x23u}, qpl::u8{0x24u}, qpl::u8{0x25u}, qpl::u8{0x26u}, qpl::u8{0x27u}, qpl::u8{0x28u},
+			qpl::u8{0x29u}, qpl::u8{0x2au}, qpl::u8{0x2bu}, qpl::u8{0x2cu}, qpl::u8{0x2du}, qpl::u8{0x2eu}, qpl::u8{0x2fu}, qpl::u8{0x30u},
+			qpl::u8{0x31u}, qpl::u8{0x32u}, qpl::u8{0x33u}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
+			qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu}, qpl::u8{0xFFu},
 		};
 		constexpr std::array<qpl::u8, 36> base_36_upper = {
 			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -1762,11 +1768,20 @@ namespace qpl {
 
 
 	template<typename T> requires (qpl::is_integer<T>())
+	std::string base64_string(T value, const std::string& prefix = "", base_format base_format = base_format::base64, bool prepend_zeroes = false) {
+		return qpl::base_string(value, T{ 64 }, prefix, base_format, prepend_zeroes);
+	}
+	QPLDLL std::string base64_string(const std::string_view& string);
+	QPLDLL std::string from_base64_string(const std::string_view& string);
+	template<typename T> requires (qpl::is_integer<T>())
 	std::string hex_string(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l, bool prepend_zeroes = false) {
 		return qpl::base_string(value, T{ 16 }, prefix, base_format, prepend_zeroes);
 	}
 	QPLDLL std::string hex_string(const std::string_view& string);
 	QPLDLL std::string from_hex_string(const std::string_view& string);
+
+	QPLDLL std::string hex_to_base64_string(const std::string_view& string);
+	QPLDLL std::string base64_to_hex_string(const std::string_view& string);
 
 	template<typename T> requires (qpl::is_integer<T>())
 	std::string hex_string_full(T value, const std::string& prefix = "0x", base_format base_format = base_format::base36l) {
@@ -1783,6 +1798,8 @@ namespace qpl {
 		return qpl::base_string(value, T{ 2 }, "", base_format, true, prepended_size);
 	}
 
+	QPLDLL std::string string_xor(std::string a, std::string b);
+	QPLDLL std::string hex_string_xor(std::string a, std::string b);
 	template<typename C> requires (qpl::is_container<C>())
 	inline std::string container_to_hex_string(const C& data, std::string_view delimiter = ", ", std::string_view brackets = "{}") {
 		std::ostringstream str;
@@ -1989,7 +2006,7 @@ namespace qpl {
 	QPLDLL std::string get_random_lowercase_string(qpl::size length);
 	QPLDLL std::string get_random_uppercase_string(qpl::size length);
 	QPLDLL std::string get_random_string_full_range(qpl::size length);
-	QPLDLL std::string get_random_string_full_range_with_repetions(qpl::size length, qpl::size repetition_size);
+	QPLDLL std::string get_random_string_full_range_with_repetitions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::wstring get_random_wstring_full_range(qpl::size length);
 
 	QPLDLL std::string remove_backslash_r(const std::string& string);

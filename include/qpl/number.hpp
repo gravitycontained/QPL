@@ -2272,6 +2272,9 @@ namespace qpl {
 	template<qpl::size bits, bool sign>
 	struct integer {
 		using holding_type = qpl::conditional<qpl::if_true<bits% qpl::bits_in_type<qpl::u32>() == 0>, std::array<qpl::u32, (bits - 1) / qpl::bits_in_type<qpl::u32>() + 1>, qpl::default_error>;
+		
+		template<qpl::size bits2>
+		using with_bits_type = integer<bits2, sign>;
 
 		struct bit_proxy {
 			constexpr bit_proxy(holding_type& memory, qpl::size index) {
@@ -4589,35 +4592,19 @@ namespace qpl {
 			integer diff = max;
 			diff -= min;
 
-			integer result;
-
-			auto stop = diff.last_used_index();
-			bool consider_range = true;
-			for (qpl::i32 i = stop; i >= 0; --i) {
-				if (consider_range) {
-					result.memory[i] = qpl::random(diff.memory[i]);
-					consider_range = (result.memory[i] == diff.memory[i]);
-				}
-				else {
-					result.memory[i] = qpl::random<qpl::u32>();
-				}
-			}
-
-			result += min;
-
-			return result;
+			return integer::random(diff) + min;
 		}
 		template<typename T>
 		static integer random(T max) {
-			integer result;
+			integer result{};
 			integer conv = max;
 
 			auto stop = conv.last_used_index();
-			bool consider_range = true;
+			bool first = true;
 			for (qpl::i32 i = stop; i >= 0; --i) {
-				if (consider_range) {
+				if (first) {
 					result.memory[i] = qpl::random(conv.memory[i]);
-					consider_range = (result.memory[i] == conv.memory[i]);
+					first = false;
 				}
 				else {
 					result.memory[i] = qpl::random<qpl::u32>();
@@ -5731,6 +5718,9 @@ namespace qpl {
 			qpl::if_true<(bits >= qpl::bits_in_type<qpl::u64>() && bits % qpl::bits_in_type<qpl::u64>() == 0u)>, std::array<qpl::u64, bits / qpl::bits_in_type<qpl::u64>()>,
 			qpl::default_error>;
 
+		template<qpl::size bits2>
+		using with_bits_type = x64_integer<bits2, sign>;
+
 		struct bit_proxy {
 			constexpr bit_proxy(holding_type& memory, qpl::size index) {
 				this->memory = &memory;
@@ -5766,7 +5756,7 @@ namespace qpl {
 		constexpr static qpl::size used_bit_size() {
 			return bits - sign;
 		}
-		constexpr static qpl::size memory_size() {
+		constexpr static qpl::u32 memory_size() {
 			return bits / 64u;
 		}
 
@@ -5989,6 +5979,10 @@ namespace qpl {
 		constexpr static x64_integer one() {
 			x64_integer result{ constexpr_construction::one };
 			return result;
+		}
+
+		constexpr operator bool() const {
+			return qpl::bool_cast(this->memory[0]);
 		}
 
 		constexpr operator qpl::i8() const {
@@ -7267,6 +7261,36 @@ namespace qpl {
 			return std::make_pair(div, mod);
 		}
 
+		static x64_integer random() {
+			x64_integer result;
+			result.randomize();
+			return result;
+		}
+		template<typename T1, typename T2>
+		static x64_integer random(T1 min, T2 max) {
+			x64_integer diff = max;
+			diff -= min;
+
+			return x64_integer::random(diff) + min;
+		}
+		template<typename T>
+		static x64_integer random(T max) {
+			x64_integer result{};
+			x64_integer conv = max;
+
+			auto stop = conv.last_used_index();
+			bool first = true;
+			for (qpl::size i = stop; i >= 0; --i) {
+				if (first) {
+					result.memory[i] = qpl::random(conv.memory[i]);
+					first = false;
+				}
+				else {
+					result.memory[i] = qpl::random<qpl::u64>();
+				}
+			}
+			return result;
+		}
 		void randomize() {
 			for (qpl::u32 i = 0u; i < this->memory_size(); ++i) {
 				this->memory[i] = qpl::random();
@@ -7310,11 +7334,6 @@ namespace qpl {
 		}
 
 
-		static x64_integer random() {
-			x64_integer result;
-			result.randomize();
-			return result;
-		}
 		static x64_integer random_bits(qpl::u64 random_bits) {
 			x64_integer result;
 			result.randomize_bits(random_bits);

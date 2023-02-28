@@ -909,7 +909,7 @@ namespace qpl {
 		else if constexpr (qpl::is_tuple<T>()) {
 			qpl::tuple_iterate(value, [&](auto& v) {
 				iterate_struct_members(v, function);
-				});
+			});
 		}
 		else if constexpr (std::is_class_v<T>) {
 			auto tuple = qpl::get_struct_members_tuple(value);

@@ -15,13 +15,16 @@ namespace qpl {
 
 	template<typename T>
 	bool is_prime(T value) {
-		if (value < 5u) {
-			return value == 2u || value == 3u;
+		if (value <= 7u) {
+			return value == 2u || value == 3u || value == 5u || value == 7u;
+		}
+		if (value % 2u == 0u || value % 3u == 0u) {
+			return false;
 		}
 
-		qpl::u32 add = 2u;
+		qpl::u32 add = 4u;
 		auto sqrt = std::sqrt(value);
-		for (qpl::u32 i = 5u; i < sqrt; i += add) {
+		for (qpl::u32 i = 5u; i <= sqrt; i += add) {
 			if (value % i == 0) {
 				return false;
 			}
@@ -51,18 +54,19 @@ namespace qpl {
 	template<typename T, qpl::size N>
 	std::array<T, N> generate_primes() {
 		if (N == 1u) {
-			return { 2u };
+			return { T{ 2u } };
 		}
 		else if (N == 2u) {
-			return { 2u, 3u };
+			return { T{ 2u }, T{ 3u } };
 		}
 
 		std::array<T, N> primes;
 		primes[0u] = 2u;
 		primes[1u] = 3u;
+		primes[2u] = 5u;
 
-		qpl::size ctr = 2u;
-		qpl::size add = 2u;
+		qpl::size ctr = 3u;
+		qpl::size add = 4u;
 		for (qpl::size n = 5u; ctr < N; n += add) {
 			bool is_prime = true;
 			for (qpl::size p = 0u; p < ctr; ++p) {
@@ -91,9 +95,10 @@ namespace qpl {
 		std::vector<T> primes(size);
 		primes[0u] = 2u;
 		primes[1u] = 3u;
+		primes[2u] = 5u;
 
-		qpl::size ctr = 2u;
-		qpl::size add = 2u;
+		qpl::size ctr = 3u;
+		qpl::u32 add = 4u;
 		for (qpl::size n = 5u; ctr < size; n += add) {
 			bool is_prime = true;
 			for (qpl::size p = 0u; p < ctr; ++p) {
@@ -122,6 +127,33 @@ namespace qpl {
 
 		}
 		return result;
+	}
+
+
+	template<typename T>
+	constexpr T mod_inverse(T a, T m) {
+		T m0 = m;
+		T y = 0;
+		T x = 1;
+
+		if (m == 1)
+			return T{ 0u };
+
+		while (a > 1) {
+			T q = static_cast<T>(a / m);
+			T t = m;
+
+			m = static_cast<T>(a % m);
+			a = t;
+			t = y;
+
+			y = static_cast<T>(x - q * y);
+			x = t;
+		}
+		if (x < 0) {
+			x += m0;
+		}
+		return x;
 	}
 
 	template<typename T> requires (qpl::is_integer<T>())
