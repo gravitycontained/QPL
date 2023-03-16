@@ -70,7 +70,7 @@ namespace qpl {
 
 		bool first = true;
 		auto add_to_stream = [&]<typename T>(T value) {
-			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type_c<T>) {
+			if constexpr (qpl::is_container_c<T> && !qpl::is_long_string_type<T>()) {
 				stream << open;
 				bool first = true;
 				for (auto& i : value) {
@@ -91,7 +91,7 @@ namespace qpl {
 				}
 				stream << qpl::to_string_format(format, qpl::tuple_value_back(value));
 			}
-			else if constexpr (qpl::is_wstring_type_c<T>) {
+			else if constexpr (qpl::is_wstring_type<T>()) {
 				if (!first) {
 					stream << delimiter;
 				}
@@ -168,7 +168,7 @@ namespace qpl {
 				}
 				stream << qpl::to_wstring_format(format, qpl::tuple_value_back(value));
 			}
-			else if constexpr (qpl::is_standard_string_type_c<T>) {
+			else if constexpr (qpl::is_standard_string_type<T>()) {
 				if (!first) {
 					stream << delimiter;
 				}
@@ -198,7 +198,11 @@ namespace qpl {
 
 	template<typename... Args> requires (qpl::is_printable<Args...>())
 	std::string to_string(Args&&... args) {
-	
+
+		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::string>()) {
+			return qpl::variadic_value<0u>(args...);
+		}
+
 		std::ostringstream stream;
 		auto add_to_stream = [&]<typename T>(T value) {
 			if constexpr (qpl::is_container<T>() && !qpl::is_long_string_type<T>()) {
@@ -238,6 +242,64 @@ namespace qpl {
 	
 		return stream.str();
 	}
+
+	template<typename char_type = std::uint32_t, typename... Args> requires (qpl::is_printable<Args...>())
+	std::basic_string<char_type> to_basic_string(Args&&... args) {
+		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::basic_string<char_type>>()) {
+			return qpl::variadic_value<0u>(args...);
+		}
+
+		std::basic_string<char_type> result;
+		auto add_to_stream = [&]<typename T>(T value) {
+			if constexpr (qpl::is_container<T>() && !qpl::is_long_string_type<T>()) {
+				result += qpl::to_basic_string<char_type>('{');
+				bool first = true;
+				for (auto& i : value) {
+					if (!first) {
+						result += qpl::to_basic_string<char_type>(", ");
+					}
+					result += qpl::to_basic_string<char_type>(i);
+					first = false;
+				}
+				result += qpl::to_basic_string<char_type>('}');
+			}
+			else if constexpr (qpl::is_tuple<T>()) {
+				result += qpl::to_basic_string<char_type>('{');
+				if constexpr (qpl::tuple_size<T>() > 1) {
+					auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+						((result += qpl::to_basic_string<char_type>(std::get<Ints>(value)) + qpl::to_basic_string<char_type>(", ")), ...);
+					};
+					unpack(std::make_index_sequence<qpl::tuple_size<T>() - 1>());
+				}
+				result += qpl::to_basic_string<char_type>(qpl::tuple_value_back(value)) + qpl::to_basic_string<char_type>('}');
+			}
+			else if constexpr (qpl::is_pair<T>()) {
+				result += qpl::to_basic_string<char_type>('{') + qpl::to_basic_string<char_type>(value.first) + qpl::to_basic_string<char_type>(", "); + qpl::to_basic_string<char_type>(value.second) + qpl::to_basic_string<char_type>('}');
+			}
+			else if constexpr (qpl::is_char_type<T>()) {
+				result += static_cast<char32_t>(value);
+			}
+			else if constexpr (qpl::is_char_pointer_type<T>()) {
+				std::basic_string<qpl::decay_t<T>> string = value;
+				std::basic_string<char_type> convert(string.begin(), string.end());
+				result += convert;
+			}
+			else {
+				std::basic_string<char_type> convert(value.begin(), value.end());
+				result += convert;
+			}
+		};
+
+		(add_to_stream(args), ...);
+
+		return result;
+	}
+
+	template<typename char_type = std::uint32_t, typename... Args> requires (qpl::is_printable<Args...>())
+	auto to_u32_string(Args&&... args) {
+		return qpl::to_basic_string<qpl::u32>(args...);
+	}
+
 
 	template<typename T, typename F> requires (qpl::is_container<T>() && !qpl::is_long_string_type<T>())
 	std::string to_string_specified(const T& value, F&& callable) {
@@ -294,6 +356,9 @@ namespace qpl {
 
 	template<typename T> requires qpl::is_wcout_printable_c<T>
 	std::wstring to_wstring(const T& first) {
+		if constexpr (qpl::is_same<T, std::wstring>()) {
+			return first;
+		}
 		std::wostringstream stream;
 		if constexpr (qpl::is_standard_string_type<T>()) {
 			stream << qpl::string_to_wstring(qpl::to_string(first));
@@ -305,22 +370,41 @@ namespace qpl {
 	}
 
 
+	QPLDLL extern std::function<void(std::wstring)> default_output_function_w;
+	QPLDLL extern std::function<void(std::string)> default_output_function;
+	QPLDLL extern std::function<void(qpl::cc)> default_output_color_function;
+
+	QPLDLL extern std::function<void(std::wstring)> custom_output_function_w;
+	QPLDLL extern std::function<void(std::string)> custom_output_function;
+	QPLDLL extern std::function<void(qpl::cc)> custom_output_color_function;
+
+
+	QPLDLL extern std::function<void(std::wstring)> output_function_w;
+	QPLDLL extern std::function<void(std::string)> output_function;
+	QPLDLL extern std::function<void(qpl::cc)> output_color_function;
+
+
+
+	QPLDLL extern bool use_default_print;
+	QPLDLL void use_default_print_functions();
+	QPLDLL void use_custom_print_functions();
+
 	template<typename T> requires (qpl::is_printable<T>())
 	void ios_print(T&& value) {
 		if (qpl::detail::utf_enabled) {
 			if constexpr (qpl::is_wstring_type<T>()) {
-				std::wcout << value;
+				qpl::output_function_w(qpl::to_wstring(value));
 			}
 			else {
-				std::wcout << qpl::string_to_wstring(qpl::to_string(value));
+				qpl::output_function_w(qpl::string_to_wstring(qpl::to_string(value)));
 			}
 		}
 		else {
 			if constexpr (qpl::is_wstring_type<T>()) {
-				std::wcout << value;
+				qpl::output_function_w(qpl::to_wstring(value));
 			}
 			else {
-				std::cout << value;
+				qpl::output_function(qpl::to_string(value));
 			}
 		}
 	}
@@ -328,8 +412,10 @@ namespace qpl {
 	void ios_print(T&&... value) {
 		(ios_print(value), ...);
 	}
+
+
 	template<typename T> requires (qpl::is_readable<T>())
-		void ios_read(T& value) {
+	void ios_read(T& value) {
 		if (qpl::detail::utf_enabled) {
 			std::wcin >> value;
 		}
@@ -985,61 +1071,79 @@ namespace qpl {
 		if constexpr (qpl::is_derived<std::decay_t<T>, qpl::print_effect>()) {
 			if constexpr (qpl::is_same<std::decay_t<T>, cspace>()) {
 				qpl::detail::console_effect_state.next_print_space = value.value;
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, cspaceln>()) {
 				qpl::detail::console_effect_state.println_space = value.value;
 				qpl::detail::console_effect_state.next_println_space = true;
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, cspace_permament>()) {
 				qpl::detail::console_effect_state.println_default_space = value.value;
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, ccolor>()) {
 				qpl::detail::console_effect_state.next_print_color = true;
 				qpl::set_console_color(value.value);
 				qpl::detail::console_effect_state.current_console_color = value.value;
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, ccolorln>()) {
 				qpl::detail::console_effect_state.println_color = value.value;
 				qpl::detail::console_effect_state.next_println_color = true;
 				qpl::set_console_color(value.value);
 				qpl::detail::console_effect_state.current_console_color = value.value;
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, ccolor_permament>()) {
 				qpl::detail::console_effect_state.println_default_color = value.value;
 				qpl::detail::console_effect_state.println_color = value.value;
 				qpl::set_console_color(value.value);
 				qpl::detail::console_effect_state.current_console_color = value.value;
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclearln>()) {
 				qpl::ios_print(qpl::to_string("\r", qpl::to_string_repeat(' ', 40)));
+				return;
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::t_cclear>()) {
 				qpl::clear_console();
+				return;
 			}
-			return;
 		}
 		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::color>()) {
 			qpl::detail::console_effect_state.next_print_color = true;
-			qpl::detail::console_effect_state.current_console_color.foreground = static_cast<qpl::foreground>(value);
-			qpl::set_console_color(value);
+
+			//if (qpl::detail::console_effect_state.current_console_color.foreground != static_cast<qpl::foreground>(value)) {
+				qpl::detail::console_effect_state.current_console_color.foreground = static_cast<qpl::foreground>(value);
+				qpl::output_color_function(qpl::detail::console_effect_state.current_console_color);
+			//}
 			return;
 		}
 		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::foreground>()) {
 			qpl::detail::console_effect_state.next_print_color = true;
-			qpl::detail::console_effect_state.current_console_color.foreground = value;
-			qpl::set_console_color(qpl::detail::console_effect_state.current_console_color);
+
+			//if (qpl::detail::console_effect_state.current_console_color.foreground != value) {
+				qpl::detail::console_effect_state.current_console_color.foreground = value;
+				qpl::output_color_function(qpl::detail::console_effect_state.current_console_color);
+			//}
 			return;
 		}
 		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::background>()) {
 			qpl::detail::console_effect_state.next_print_color = true;
-			qpl::detail::console_effect_state.current_console_color.background = value;
-			qpl::set_console_color(qpl::detail::console_effect_state.current_console_color);
+
+			//if (qpl::detail::console_effect_state.current_console_color.background != value) {
+				qpl::detail::console_effect_state.current_console_color.background = value;
+				qpl::output_color_function(qpl::detail::console_effect_state.current_console_color);
+			//}
 			return;
 		}
 		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::cc>()) {
 			qpl::detail::console_effect_state.next_print_color = true;
-			qpl::set_console_color(value);
-			qpl::detail::console_effect_state.current_console_color = value;
+			//if (qpl::detail::console_effect_state.current_console_color != value) {
+				qpl::detail::console_effect_state.current_console_color = value;
+				qpl::output_color_function(value);
+			//}
 			return;
 		}
 		else if constexpr (qpl::is_wcout_printable<T>() || qpl::is_cout_printable<T>()) {
@@ -2852,7 +2956,427 @@ namespace qpl {
 		}
 	};
 
+
+
+	namespace style {
+		struct color {
+			qpl::rgba value;
+			constexpr color(qpl::rgb color) : value(color) {}
+			constexpr color(qpl::foreground color) {
+				this->value = qpl::foreground_to_rgb(color);
+			}
+		};
+		struct style {
+			qpl::u32 value;
+			constexpr style(qpl::u32 style) : value(style) {}
+		};
+		struct outline_thickness {
+			qpl::f32 value;
+			constexpr outline_thickness(qpl::f32 thickness) : value(thickness) {}
+		};
+		struct outline_color {
+			qpl::rgba value;
+			constexpr outline_color(qpl::rgb color) : value(color) {}
+			constexpr outline_color(qpl::foreground color) {
+				this->value = qpl::foreground_to_rgb(color);
+			}
+		};
+		struct keep {};
+		struct pop {};
+	}
+
+	template<typename T>
+	struct styled_string {
+		struct element {
+			T text{};
+			qpl::rgba color = qpl::rgba(204, 204, 204);
+			qpl::rgba outline_color = qpl::rgba::black();
+			qpl::f32 outline_thickness = 0.0f;
+			qpl::u32 style = 0u;
+			bool keep = false;
+
+			bool operator==(const element& other) const {
+				return
+					this->color == other.color &&
+					this->style == other.style &&
+					this->outline_thickness == other.outline_thickness &&
+					((this->outline_thickness == 0.0f && other.outline_thickness == 0.0f) || (this->outline_color == other.outline_color));
+			}
+			bool is_default() const {
+				return *this == element{};
+			}
+			void copy_style(const element& other) {
+				this->color = other.color;
+				this->outline_color = other.outline_color;
+				this->outline_thickness = other.outline_thickness;
+				this->style = other.style;
+			}
+		};
+		std::vector<element> elements;
+		bool always_keep_styles = true;
+
+
+		styled_string() {
+			this->clear();
+		}
+
+		void clear_copy_style(const styled_string<T>& other) {
+			this->elements.resize(1u);
+			this->elements[0u].copy_style(other.elements.back());
+		}
+
+		void clear_copy_style_self() {
+			auto copy = this->elements.back();
+			this->elements.resize(1u);
+			this->elements[0u].text.clear();
+			this->elements[0u].copy_style(copy);
+		}
+		void clear_copy_style(const styled_string<T>::element& other) {
+			this->elements.resize(1u);
+			this->elements[0u].text.clear();
+			this->elements[0u].copy_style(other);
+		}
+
+		void clear() {
+			this->elements.clear();
+			this->always_keep_styles = true;
+			this->elements.push_back({});
+		}
+
+		qpl::size size() const {
+			return this->elements.size();
+		}
+		constexpr auto& operator[](qpl::size index) {
+			return this->elements[index];
+		}
+		constexpr const auto& operator[](qpl::size index) const {
+			return this->elements[index];
+		}
+		constexpr auto& at(qpl::size index) {
+			return this->elements.at(index);
+		}
+		constexpr const auto& at(qpl::size index) const {
+			return this->elements.at(index);
+		}
+		constexpr void resize(qpl::size size) {
+			this->elements.resize(size);
+		}
+		constexpr void reserve(qpl::size size) {
+			this->elements.reserve(size);
+		}
+		constexpr auto begin() {
+			return this->elements.begin();
+		}
+		constexpr const auto begin() const {
+			return this->elements.begin();
+		}
+		constexpr const auto cbegin() const {
+			return this->elements.cbegin();
+		}
+		constexpr auto end() {
+			return this->elements.end();
+		}
+		constexpr const auto end() const {
+			return this->elements.end();
+		}
+		constexpr const auto cend() const {
+			return this->elements.cend();
+		}
+		constexpr auto rbegin() {
+			return this->elements.rbegin();
+		}
+		constexpr const auto rbegin() const {
+			return this->elements.rbegin();
+		}
+		constexpr const auto rcbegin() const {
+			return this->elements.crbegin();
+		}
+		constexpr auto rend() {
+			return this->elements.rend();
+		}
+		constexpr const auto rend() const {
+			return this->elements.rend();
+		}
+		constexpr const auto rcend() const {
+			return this->elements.crend();
+		}
+
+		void prepare_next_style() {
+			this->elements.push_back({});
+			if (this->elements.back().keep || this->always_keep_styles) {
+				this->elements.back().copy_style(this->elements[this->elements.size() - 2]);
+			}
+		}
+		void add(const style::keep& keep) {
+			this->elements.back().keep = true;
+		}
+		void add(const style::pop& push) {
+			this->elements.pop_back();
+			if (this->elements.empty()) {
+				this->elements.push_back({});
+			}
+		}
+
+		void add(const qpl::rgba& color) {
+			this->add(style::color(color));
+		}
+		void add(const qpl::rgb& color) {
+			this->add(style::color(color));
+		}
+		void add(const qpl::foreground& color) {
+			this->add(style::color(color));
+		}
+		void add(const qpl::style::color& color) {
+			if (this->elements.back().color == color.value) {
+				return;
+			}
+			this->prepare_next_style();
+			this->elements.back().color = color.value;
+		}
+		void add(const qpl::style::outline_color& outline_color) {
+			if (this->elements.back().outline_color == outline_color.value) {
+				return;
+			}
+			this->prepare_next_style();
+			this->elements.back().outline_color = outline_color.value;
+		}
+		void add(const qpl::style::outline_thickness& thickness) {
+			if (this->elements.back().outline_thickness == thickness.value) {
+				return;
+			}
+			this->prepare_next_style();
+			this->elements.back().outline_thickness = thickness.value;
+		}
+		void add(const qpl::style::style& style) {
+			if (this->elements.back().style == style.value) {
+				return;
+			}
+			this->prepare_next_style();
+			this->elements.back().style = style.value;
+		}
+		void add(const element& element) {
+			if (this->elements.back() == element) {
+				this->elements.back().text += element.text;
+			}
+			else {
+				this->elements.push_back(element);
+			}
+		}
+		void remove_character_at(qpl::vec2s pos) {
+			qpl::size y = 0u;
+
+			for (qpl::size i = 0u; i < this->elements.size(); ++i) {
+				auto& element = this->elements[i];
+				if (element.text.empty() && i != this->elements.size() - 1) {
+					continue;
+				}
+				auto element_string = qpl::to_basic_string<wchar_t>(element.text);
+				auto new_lines = qpl::count(element_string, L'\n');
+				auto new_y = y + new_lines;
+
+				if (pos.y >= y && pos.y <= new_y) {
+					auto off = pos.y - y;
+
+					qpl::size size = 0u;
+					auto split = qpl::string_split_allow_empty(element_string, L'\n');
+					for (qpl::size i = 0u; i < off; ++i) {
+						size += split[i].length() + 1;
+					}
+					size += pos.x;
+
+					if (!size) {
+						return;
+					}
+					auto result = element.text.substr(0u, size - 1);
+					if (element.text.length() > size) {
+						result += element.text.substr(size);
+					}
+					element.text = result;
+					return;
+				}
+
+				y = new_y;
+			}
+		}
+		void clear_last_line() {
+			auto& text = this->elements.back().text;
+			auto ctr = qpl::signed_cast(text.length()) - 1;
+			while (ctr >= 0 && text[ctr] != U'\n') {
+				--ctr;
+			}
+			text.resize(ctr + 1);
+		}
+
+		void add_text_at(qpl::vec2s pos, const T& string) {
+			qpl::size y = 0u;
+			for (qpl::size i = 0u; i < this->elements.size(); ++i) {
+				auto& element = this->elements[i];
+				if (element.text.empty() && i != this->elements.size() - 1) {
+					continue;
+				}
+				auto element_string = qpl::to_basic_string<wchar_t>(element.text);
+				auto new_lines = qpl::count(element_string, L'\n');
+				auto new_y = y + new_lines;
+
+				if (pos.y >= y && pos.y <= new_y) {
+					auto off = pos.y - y;
+
+					qpl::size size = 0u;
+					auto split = qpl::string_split_allow_empty(element_string, L'\n');
+					for (qpl::size i = 0u; i < off; ++i) {
+						size += split[i].length() + 1;
+					}
+					size += pos.x;
+
+					auto result = element.text.substr(0u, size) + string;
+					if (size && element.text.length() >= size) {
+						result += element.text.substr(size);
+					}
+					element.text = result;
+					return;
+				}
+
+				y = new_y;
+			}
+		}
+
+		template<typename S> requires (qpl::is_string_type<S>())
+		void add(const S& string) {
+			if (!this->always_keep_styles && !this->elements.back().is_default()) {
+				this->elements.push_back({});
+			}
+			this->elements.back().text += qpl::to_basic_string<typename T::value_type>(string);
+		}
+		void add(const styled_string& styled_string) {
+			for (auto& i : styled_string) {
+				this->add(i);
+			}
+		}
+
+		template<typename T>
+		styled_string& operator<<(T value) {
+			this->add(value);
+			return *this;
+		}
+
+		bool empty() const {
+			return this->elements.empty();
+		}
+		auto string() const {
+			T result{};
+			for (auto& i : this->elements) {
+				result += i.text;
+			}
+			return result;
+		}
+	};
+	template<typename T, typename... Args>
+	qpl::styled_string<T> to_styled_string(Args... args) {
+		styled_string<T> result;
+		((result << args), ...);
+		return result;
+	}
+	template<typename T, typename... Args>
+	qpl::styled_string<T> to_styled_stringln(Args... args) {
+		return to_styled_string(args..., L'\n');
+	}
+
 	QPLDLL void set_language_locale(std::string local);
+
+
+	struct character_range {
+		qpl::u32 start;
+		qpl::u32 size;
+
+		bool operator<(const character_range& value) const {
+			return this->start < (value.start + this->size);
+		}
+		bool operator==(const character_range& value) const {
+			return value.start >= this->start && value.start <= (this->start + this->size);
+		}
+	};
+	constexpr auto unicode_long_ranges = std::array<character_range, 450u>{
+		character_range{ 0, 31}, character_range{ 127, 32}, character_range{ 173, 0}, character_range{ 847, 0}, character_range{ 888, 1}, character_range{ 896, 3}, character_range{ 907, 0}, character_range{ 909, 0}, character_range{ 930, 0}, character_range{ 1322, 1},
+		character_range{ 1328, 0}, character_range{ 1367, 1}, character_range{ 1419, 3}, character_range{ 1424, 0}, character_range{ 1480, 7}, character_range{ 1515, 3}, character_range{ 1525, 19}, character_range{ 1547, 0}, character_range{ 1550, 1},
+		character_range{ 1564, 0}, character_range{ 1566, 0}, character_range{ 1706, 0}, character_range{ 1757, 1}, character_range{ 1769, 0}, character_range{ 1792, 16}, character_range{ 1810, 29}, character_range{ 1867, 4}, character_range{ 1936, 0},
+		character_range{ 1949, 2}, character_range{ 1970, 13}, character_range{ 2043, 1}, character_range{ 2048, 21}, character_range{ 2074, 0}, character_range{ 2084, 0}, character_range{ 2088, 0}, character_range{ 2094, 42}, character_range{ 2140, 19},
+		character_range{ 2191, 8}, character_range{ 2308, 53}, character_range{ 2365, 0}, character_range{ 2384, 0}, character_range{ 2392, 9}, character_range{ 2404, 28}, character_range{ 2436, 55}, character_range{ 2493, 0}, character_range{ 2501, 1},
+		character_range{ 2505, 1}, character_range{ 2510, 8}, character_range{ 2520, 9}, character_range{ 2532, 25}, character_range{ 2559, 1}, character_range{ 2564, 55}, character_range{ 2621, 0}, character_range{ 2627, 3}, character_range{ 2633, 1},
+		character_range{ 2638, 2}, character_range{ 2642, 29}, character_range{ 2674, 2}, character_range{ 2678, 10}, character_range{ 2692, 55}, character_range{ 2749, 0}, character_range{ 2758, 0}, character_range{ 2762, 0}, character_range{ 2766, 19},
+		character_range{ 2788, 21}, character_range{ 2816, 0}, character_range{ 2820, 55}, character_range{ 2877, 0}, character_range{ 2885, 1}, character_range{ 2889, 1}, character_range{ 2894, 6}, character_range{ 2904, 9}, character_range{ 2916, 29},
+		character_range{ 2947, 58}, character_range{ 3011, 2}, character_range{ 3017, 0}, character_range{ 3022, 8}, character_range{ 3032, 39}, character_range{ 3077, 54}, character_range{ 3133, 0}, character_range{ 3141, 0}, character_range{ 3145, 0},
+		character_range{ 3150, 6}, character_range{ 3159, 10}, character_range{ 3172, 28}, character_range{ 3204, 55}, character_range{ 3261, 0}, character_range{ 3269, 0}, character_range{ 3273, 0}, character_range{ 3278, 6}, character_range{ 3287, 10},
+		character_range{ 3300, 27}, character_range{ 3332, 54}, character_range{ 3389, 0}, character_range{ 3397, 0}, character_range{ 3401, 0}, character_range{ 3406, 8}, character_range{ 3416, 9}, character_range{ 3428, 28}, character_range{ 3460, 69},
+		character_range{ 3531, 3}, character_range{ 3541, 0}, character_range{ 3543, 0}, character_range{ 3552, 17}, character_range{ 3572, 12}, character_range{ 3643, 3}, character_range{ 3675, 37}, character_range{ 3715, 0}, character_range{ 3717, 0},
+		character_range{ 3723, 0}, character_range{ 3748, 0}, character_range{ 3750, 0}, character_range{ 3774, 1}, character_range{ 3781, 0}, character_range{ 3783, 0}, character_range{ 3791, 0}, character_range{ 3802, 1}, character_range{ 3808, 31},
+		character_range{ 3842, 1}, character_range{ 3862, 1}, character_range{ 3898, 1}, character_range{ 3912, 0}, character_range{ 3949, 3}, character_range{ 3976, 0}, character_range{ 3992, 0}, character_range{ 4029, 0}, character_range{ 4037, 0},
+		character_range{ 4039, 6}, character_range{ 4048, 0}, character_range{ 4053, 85}, character_range{ 4159, 22}, character_range{ 4186, 3}, character_range{ 4193, 0}, character_range{ 4197, 1}, character_range{ 4206, 2}, character_range{ 4213, 12},
+		character_range{ 4238, 0}, character_range{ 4240, 9}, character_range{ 4254, 1}, character_range{ 4294, 0}, character_range{ 4296, 4}, character_range{ 4302, 1}, character_range{ 4352, 578}, character_range{ 4932, 24}, character_range{ 4960, 0},
+		character_range{ 4962, 45}, character_range{ 5013, 0}, character_range{ 5015, 1}, character_range{ 5018, 5}, character_range{ 5110, 1}, character_range{ 5118, 1}, character_range{ 5121, 28}, character_range{ 5163, 7}, character_range{ 5178, 14},
+		character_range{ 5196, 25}, character_range{ 5223, 3}, character_range{ 5312, 15}, character_range{ 5331, 22}, character_range{ 5388, 24}, character_range{ 5442, 5}, character_range{ 5459, 9}, character_range{ 5470, 11}, character_range{ 5483, 15},
+		character_range{ 5502, 7}, character_range{ 5514, 12}, character_range{ 5531, 3}, character_range{ 5536, 5}, character_range{ 5560, 53}, character_range{ 5615, 17}, character_range{ 5634, 67}, character_range{ 5704, 17}, character_range{ 5723, 17},
+		character_range{ 5743, 7}, character_range{ 5760, 31}, character_range{ 5856, 0}, character_range{ 5858, 0}, character_range{ 5881, 24}, character_range{ 5910, 27}, character_range{ 5941, 28}, character_range{ 5972, 13}, character_range{ 5987, 14},
+		character_range{ 6004, 65}, character_range{ 6100, 1}, character_range{ 6103, 4}, character_range{ 6110, 17}, character_range{ 6138, 174}, character_range{ 6314, 9}, character_range{ 6327, 0}, character_range{ 6331, 2}, character_range{ 6336, 2},
+		character_range{ 6342, 13}, character_range{ 6368, 8}, character_range{ 6378, 0}, character_range{ 6380, 6}, character_range{ 6390, 41}, character_range{ 6444, 3}, character_range{ 6460, 19}, character_range{ 6510, 1}, character_range{ 6517, 13},
+		character_range{ 6532, 10}, character_range{ 6544, 0}, character_range{ 6546, 7}, character_range{ 6555, 2}, character_range{ 6559, 1}, character_range{ 6562, 0}, character_range{ 6565, 1}, character_range{ 6568, 7}, character_range{ 6580, 2}, character_range{ 6587, 5},
+		character_range{ 6594, 3}, character_range{ 6599, 0}, character_range{ 6602, 5}, character_range{ 6613, 0}, character_range{ 6615, 0}, character_range{ 6618, 60}, character_range{ 6684, 56}, character_range{ 6751, 0}, character_range{ 6781, 1}, character_range{ 6784, 47},
+		character_range{ 6863, 48}, character_range{ 6917, 46}, character_range{ 6981, 37}, character_range{ 7028, 11}, character_range{ 7043, 29}, character_range{ 7086, 55}, character_range{ 7156, 47}, character_range{ 7224, 23}, character_range{ 7305, 6},
+		character_range{ 7355, 1}, character_range{ 7360, 15}, character_range{ 7379, 0}, character_range{ 7401, 3}, character_range{ 7406, 5}, character_range{ 7413, 1}, character_range{ 7418, 5}, character_range{ 7546, 0}, character_range{ 7958, 1}, character_range{ 7966, 1},
+		character_range{ 8006, 1}, character_range{ 8014, 1}, character_range{ 8024, 0}, character_range{ 8026, 0}, character_range{ 8028, 0}, character_range{ 8030, 0}, character_range{ 8062, 1}, character_range{ 8117, 0}, character_range{ 8133, 0}, character_range{ 8148, 1},
+		character_range{ 8156, 0}, character_range{ 8176, 1}, character_range{ 8181, 0}, character_range{ 8191, 0}, character_range{ 8203, 4}, character_range{ 8232, 6}, character_range{ 8279, 0}, character_range{ 8288, 15}, character_range{ 8306, 1}, character_range{ 8335, 0},
+		character_range{ 8349, 2}, character_range{ 8377, 0}, character_range{ 8385, 14}, character_range{ 8433, 14}, character_range{ 8462, 1}, character_range{ 8494, 0}, character_range{ 8506, 3}, character_range{ 8511, 1}, character_range{ 8517, 4}, character_range{ 8524, 0},
+		character_range{ 8527, 0}, character_range{ 8578, 0}, character_range{ 8584, 0}, character_range{ 8588, 3}, character_range{ 8604, 1}, character_range{ 8692, 0}, character_range{ 8697, 3}, character_range{ 8703, 0}, character_range{ 8886, 2}, character_range{ 8920, 1},
+		character_range{ 8946, 1}, character_range{ 8949, 1}, character_range{ 8953, 2}, character_range{ 8957, 0}, character_range{ 8959, 1}, character_range{ 8982, 0}, character_range{ 9001, 1}, character_range{ 9004, 9}, character_range{ 9083, 3}, character_range{ 9089, 19},
+		character_range{ 9111, 3}, character_range{ 9138, 4}, character_range{ 9152, 10}, character_range{ 9165, 1}, character_range{ 9172, 5}, character_range{ 9179, 12}, character_range{ 9193, 56}, character_range{ 9255, 24}, character_range{ 9291, 180}, character_range{ 9711, 0},
+		character_range{ 9731, 0}, character_range{ 9744, 2}, character_range{ 9749, 4}, character_range{ 9762, 2}, character_range{ 9771, 1}, character_range{ 9775, 8}, character_range{ 9842, 29}, character_range{ 9874, 14}, character_range{ 9890, 5}, character_range{ 9897, 0},
+		character_range{ 9901, 4}, character_range{ 9910, 0}, character_range{ 9917, 36}, character_range{ 9955, 132}, character_range{ 10102, 57}, character_range{ 10161, 14}, character_range{ 10177, 0}, character_range{ 10179, 1}, character_range{ 10184, 1}, character_range{ 10187, 5},
+		character_range{ 10194, 0}, character_range{ 10197, 9}, character_range{ 10209, 4}, character_range{ 10224, 15}, character_range{ 10496, 7}, character_range{ 10506, 7}, character_range{ 10516, 35}, character_range{ 10554, 14}, character_range{ 10570, 1}, character_range{ 10574, 0},
+		character_range{ 10576, 0}, character_range{ 10578, 1}, character_range{ 10582, 1}, character_range{ 10586, 1}, character_range{ 10590, 1}, character_range{ 10594, 25}, character_range{ 10622, 1}, character_range{ 10643, 3}, character_range{ 10654, 0}, character_range{ 10664, 40},
+		character_range{ 10714, 1}, character_range{ 10719, 1}, character_range{ 10722, 8}, character_range{ 10732, 1}, character_range{ 10740, 0}, character_range{ 10750, 12}, character_range{ 10764, 0}, character_range{ 10781, 0}, character_range{ 10784, 0}, character_range{ 10797, 1},
+		character_range{ 10803, 8}, character_range{ 10830, 23}, character_range{ 10856, 1}, character_range{ 10868, 2}, character_range{ 10872, 18}, character_range{ 10893, 1}, character_range{ 10901, 41}, character_range{ 10957, 5}, character_range{ 10967, 6}, character_range{ 10975, 14},
+		character_range{ 10995, 2}, character_range{ 10999, 6}, character_range{ 11008, 5}, character_range{ 11016, 4}, character_range{ 11022, 14}, character_range{ 11039, 5}, character_range{ 11052, 1}, character_range{ 11056, 0}, character_range{ 11058, 27}, character_range{ 11088, 120},
+		character_range{ 11210, 52}, character_range{ 11279, 0}, character_range{ 11295, 0}, character_range{ 11303, 2}, character_range{ 11327, 0}, character_range{ 11343, 0}, character_range{ 11351, 2}, character_range{ 11495, 0}, character_range{ 11498, 0}, character_range{ 11508, 4},
+		character_range{ 11525, 0}, character_range{ 11527, 0}, character_range{ 11530, 0}, character_range{ 11533, 0}, character_range{ 11536, 0}, character_range{ 11539, 1}, character_range{ 11547, 1}, character_range{ 11552, 0}, character_range{ 11557, 1}, character_range{ 11560, 4},
+		character_range{ 11566, 1}, character_range{ 11592, 0}, character_range{ 11624, 6}, character_range{ 11633, 13}, character_range{ 11648, 95}, character_range{ 11790, 3}, character_range{ 11795, 2}, character_range{ 11834, 1}, character_range{ 11843, 0}, character_range{ 11856, 1},
+		character_range{ 11870, 459}, character_range{ 12336, 14}, character_range{ 12352, 88}, character_range{ 12443, 29748}, character_range{ 42240, 319}, character_range{ 42572, 1}, character_range{ 42590, 0}, character_range{ 42594, 5}, character_range{ 42604, 2},
+		character_range{ 42628, 1}, character_range{ 42648, 1}, character_range{ 42744, 7}, character_range{ 42792, 1}, character_range{ 42802, 11}, character_range{ 42830, 1}, character_range{ 42840, 1}, character_range{ 42865, 6}, character_range{ 42946, 1}, character_range{ 42955, 4},
+		character_range{ 42962, 0}, character_range{ 42964, 0}, character_range{ 42970, 23}, character_range{ 43007, 2}, character_range{ 43011, 2}, character_range{ 43015, 3}, character_range{ 43020, 22}, character_range{ 43050, 1}, character_range{ 43053, 82}, character_range{ 43138, 49},
+		character_range{ 43206, 25}, character_range{ 43250, 12}, character_range{ 43264, 37}, character_range{ 43310, 24}, character_range{ 43348, 43}, character_range{ 43396, 46}, character_range{ 43457, 35}, character_range{ 43494, 66}, character_range{ 43575, 11},
+		character_range{ 43588, 7}, character_range{ 43598, 44}, character_range{ 43646, 49}, character_range{ 43697, 0}, character_range{ 43701, 1}, character_range{ 43705, 4}, character_range{ 43712, 0}, character_range{ 43714, 40}, character_range{ 43760, 4}, character_range{ 43767, 56},
+		character_range{ 43884, 3}, character_range{ 43968, 34}, character_range{ 44011, 0}, character_range{ 44014, 5115}
+	};
+
+	template<typename T>
+	constexpr bool is_special_unicode_character(const T& c) {
+		return qpl::u32_cast(c) >= 256u;
+	}
+
+	template<typename T>
+	qpl::size unicode_character_length(const T& c) {
+
+		//auto found = std::binary_search(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), character_range{ qpl::u32_cast(c), 0u });
+		//return found ? 2u : 1u;
+
+		//auto find = std::find(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), character_range{ qpl::u32_cast(c), 0u });
+
+		auto range = character_range{ qpl::u32_cast(c), 0u };
+		auto find = std::find(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
+		//auto find = std::lower_bound(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
+		return find == qpl::unicode_long_ranges.cend() ? 1u : *find == range ? 2u : 1u;
+
+		//auto range = character_range{ qpl::u32_cast(c), 0u };
+		//auto find = std::lower_bound(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
+		//return find == qpl::unicode_long_ranges.cend() ? 1u : *find == range ? 2u : 1u;
+	}
+
+	template<typename T>
+	constexpr qpl::size unicode_string_length(const T& string) {
+		qpl::size result = 0u;
+		for (qpl::size i = 0u; i < string.length(); ++i) {
+			result += qpl::unicode_character_length(string[i]);
+		}
+		return result;
+	}
 }
 
 #endif

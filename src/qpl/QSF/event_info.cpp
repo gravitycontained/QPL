@@ -219,6 +219,7 @@ namespace qsf {
 		this->m_keys_single_pressed.clear();
 
 		this->m_text_entered.clear();
+		this->m_u32_text_entered.clear();
 
 		this->m_mouse_position_screen = this->m_mouse_position = sf::Mouse::getPosition(window);
 		this->m_mouse_position_desktop = sf::Mouse::getPosition();
@@ -228,6 +229,7 @@ namespace qsf {
 	}
 	void qsf::event_info::update(const sf::Event& event) {
 		if (event.type == sf::Event::TextEntered) {
+			this->m_u32_text_entered += event.text.unicode;
 			this->m_text_entered.push_back(event.text.unicode);
 			this->m_text_entered_stream << (wchar_t)event.text.unicode;
 
@@ -439,6 +441,9 @@ namespace qsf {
 	}
 	std::wstring qsf::event_info::text_entered() const {
 		return this->m_text_entered;
+	}
+	qpl::u32_string qsf::event_info::u32_text_entered() const {
+		return this->m_u32_text_entered;
 	}
 	std::string qsf::event_info::text_entered_str() const {
 		return qpl::wstring_to_string(this->m_text_entered);

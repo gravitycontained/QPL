@@ -326,11 +326,15 @@ namespace qpl {
 		constexpr vectorN() : impl_type() {
 			this->clear();
 		}
+		template<typename U>
+		constexpr vectorN(const vectorN<U, N>& other) : impl_type() {
+			*this = other;
+		}
 		template<typename U, qpl::size M>
 		constexpr vectorN(const vectorN<U, M>& other) : impl_type() {
 			*this = other;
 		}
-		template<typename U>
+		template<typename U> requires (!qpl::is_vectorN<U>())
 		constexpr vectorN(const std::initializer_list<U>& list) : impl_type() {
 			*this = list;
 		}
@@ -402,6 +406,13 @@ namespace qpl {
 		}
 #endif
 
+		template<typename U>
+		constexpr vectorN& operator=(const vectorN<U, N>& other) {
+			for (qpl::u32 i = 0u; i < this->data.size(); ++i) {
+				this->data[i] = static_cast<T>(other.data[i]);
+			}
+			return *this;
+		}
 		template<typename U, qpl::size M>
 		constexpr vectorN& operator=(const vectorN<U, M>& other) {
 			for (qpl::u32 i = 0u; i < qpl::min(N, M); ++i) {
@@ -438,7 +449,7 @@ namespace qpl {
 			});
 			return *this;
 		}
-		template<typename U>
+		template<typename U> requires (!qpl::is_vectorN<U>())
 		constexpr vectorN& operator=(const std::initializer_list<U>& list) {
 			if (list.size() == 0) {
 				this->clear();
@@ -499,6 +510,13 @@ namespace qpl {
 			vectorN result = *this;
 			for (auto& i : result.data) {
 				i = std::ceil(i);
+			}
+			return result;
+		}
+		constexpr vectorN round() const {
+			vectorN result = *this;
+			for (auto& i : result.data) {
+				i = std::round(i);
 			}
 			return result;
 		}

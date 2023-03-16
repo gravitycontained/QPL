@@ -68,7 +68,38 @@ namespace qpl {
 	}
 
 
-	QPLDLL std::wostringstream detail::stream_wstr;
+	std::function<void(std::wstring)> qpl::default_output_function_w = [](const std::wstring& string) {
+		std::wcout << string;
+	};
+	std::function<void(std::string)> qpl::default_output_function = [](const std::string& string) {
+		std::cout << string;
+	};
+	std::function<void(qpl::cc)> qpl::default_output_color_function = [](qpl::cc color) {
+		qpl::set_console_color(color);
+	};
+	std::function<void(std::wstring)> qpl::custom_output_function_w = qpl::default_output_function_w;
+	std::function<void(std::string)> qpl::custom_output_function = qpl::default_output_function;
+	std::function<void(qpl::cc)> qpl::custom_output_color_function = qpl::default_output_color_function;
+
+	std::function<void(std::wstring)> qpl::output_function_w = qpl::default_output_function_w;
+	std::function<void(std::string)> qpl::output_function = qpl::default_output_function;
+	std::function<void(qpl::cc)> qpl::output_color_function = qpl::default_output_color_function;
+
+	bool qpl::use_default_print = true;
+	void qpl::use_default_print_functions() {
+		qpl::output_function_w = qpl::default_output_function_w;
+		qpl::output_function = qpl::default_output_function;
+		qpl::output_color_function = qpl::default_output_color_function;
+		qpl::use_default_print = true;
+	}
+	void qpl::use_custom_print_functions() {
+		qpl::output_function_w = qpl::custom_output_function_w;
+		qpl::output_function = qpl::custom_output_function;
+		qpl::output_color_function = qpl::custom_output_color_function;
+		qpl::use_default_print = false;
+	}
+
+	std::wostringstream detail::stream_wstr;
 
 	std::string qpl::to_string(const std::string& first) {
 		return first;

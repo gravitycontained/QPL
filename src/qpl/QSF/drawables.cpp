@@ -1457,6 +1457,90 @@ namespace qsf {
 			*this = rect;
 		}
 	}
+	qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) {
+		this->position = smooth_rectangle.get_position();
+		this->dimension = smooth_rectangle.get_dimension();
+
+		this->polygon.set_color(smooth_rectangle.color);
+		this->polygon.set_outline_color(smooth_rectangle.outline_color);
+		this->polygon.set_outline_thickness(smooth_rectangle.outline_thickness);
+		this->polygon.shape.setFillColor(smooth_rectangle.color);
+		this->polygon.shape.setOutlineColor(smooth_rectangle.outline_color);
+
+		auto active_corners = smooth_rectangle.round_corners.number_of_set_bits();
+		auto size = smooth_rectangle.slope_point_count;
+		this->polygon.resize(active_corners * size + (4 - active_corners));
+
+		auto position = smooth_rectangle.position;
+		auto dimension = smooth_rectangle.slope_dim;
+		auto rect_dimension = smooth_rectangle.dimension;
+		auto slope_exponent = std::pow(smooth_rectangle.slope, 1.0);
+
+		qpl::u32 ctr = 0u;
+
+		if (smooth_rectangle.round_corners[0u]) {
+			for (qpl::u32 i = 0u; i < size; ++i) {
+				auto progress = std::pow(qpl::f64_cast(i) / (size - 1), slope_exponent);
+				auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+				auto curve_pos = qpl::vec(progress, -value) * dimension;
+				auto pos = position + qpl::vec(0, dimension.y) + curve_pos;
+				this->polygon.set_point(ctr, pos);
+				++ctr;
+			}
+		}
+		else {
+			auto pos = position;
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		if (smooth_rectangle.round_corners[1u]) {
+			for (qpl::u32 i = 0u; i < size; ++i) {
+				auto progress = std::pow(1 - qpl::f64_cast(i) / (size - 1), slope_exponent);
+				auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+				auto curve_pos = qpl::vec(progress, value) * dimension;
+				auto pos = position + qpl::vec(rect_dimension.x, dimension.y) - curve_pos;
+				this->polygon.set_point(ctr, pos);
+				++ctr;
+			}
+		}
+		else {
+			auto pos = position + rect_dimension.just_x();
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		if (smooth_rectangle.round_corners[2u]) {
+			for (qpl::u32 i = 0u; i < size; ++i) {
+				auto progress = std::pow(qpl::f64_cast(i) / (size - 1), slope_exponent);
+				auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+				auto curve_pos = qpl::vec(-progress, value) * dimension;
+				auto pos = position + qpl::vec(rect_dimension.x, rect_dimension.y - dimension.y) + curve_pos;
+				this->polygon.set_point(ctr, pos);
+				++ctr;
+			}
+		}
+		else {
+			auto pos = position + rect_dimension;
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		if (smooth_rectangle.round_corners[3u]) {
+			for (qpl::u32 i = 0u; i < size; ++i) {
+				auto progress = std::pow(1 - qpl::f64_cast(i) / (size - 1), slope_exponent);
+				auto value = qpl::smooth_curve(progress, smooth_rectangle.slope);
+				auto curve_pos = qpl::vec(progress, value) * dimension;
+				auto pos = position + qpl::vec(0, rect_dimension.y - dimension.y) + curve_pos;
+				this->polygon.set_point(ctr, pos);
+				++ctr;
+			}
+		}
+		else {
+			auto pos = position + rect_dimension.just_y();
+			this->polygon.set_point(ctr, pos);
+			++ctr;
+		}
+		this->internal_check = false;
+		return *this;
+	}
 	const qsf::smooth_rectangle& qsf::smooth_rectangle::operator=(const qsf::vsmooth_rectangle& smooth_rectangle) const {
 		this->position = smooth_rectangle.get_position();
 		this->dimension = smooth_rectangle.get_dimension();
@@ -5612,6 +5696,357 @@ namespace qsf {
 	}
 	void qsf::border_graphic::draw(qsf::draw_object& object) const {
 		object.draw(this->sprites);
+	}
+
+	namespace {
+		void addLine(qsf::vertex_array& vertices,
+			qpl::f32 line_length,
+			qpl::f32 lineTop,
+			const qpl::rgba& color,
+			qpl::f32 offset,
+			qpl::f32 thickness,
+			qpl::f32 outline_thickness = 0) {
+			qpl::f32 top = std::floor(lineTop + offset - (thickness / 2) + 0.5f);
+			qpl::f32 bottom = top + std::floor(thickness + 0.5f);
+
+			vertices.add(qsf::vertex(qpl::vec2f(-outline_thickness, top - outline_thickness), color, qpl::vec2f(1, 1)));
+			vertices.add(qsf::vertex(qpl::vec2f(line_length + outline_thickness, top - outline_thickness), color, qpl::vec2f(1, 1)));
+			vertices.add(qsf::vertex(qpl::vec2f(-outline_thickness, bottom + outline_thickness), color, qpl::vec2f(1, 1)));
+			vertices.add(qsf::vertex(qpl::vec2f(-outline_thickness, bottom + outline_thickness), color, qpl::vec2f(1, 1)));
+			vertices.add(qsf::vertex(qpl::vec2f(line_length + outline_thickness, top - outline_thickness), color, qpl::vec2f(1, 1)));
+			vertices.add(qsf::vertex(qpl::vec2f(line_length + outline_thickness, bottom + outline_thickness), color, qpl::vec2f(1, 1)));
+		}
+
+
+		glyph_quad get_glyph_quad(const sf::Glyph& glyph, qpl::f32 italic_shear) {
+			qpl::f32 padding = 1.0;
+
+			qpl::f32 left = glyph.bounds.left - padding;
+			qpl::f32 top = glyph.bounds.top - padding;
+			qpl::f32 right = glyph.bounds.left + glyph.bounds.width + padding;
+			qpl::f32 bottom = glyph.bounds.top + glyph.bounds.height + padding;
+
+			qpl::f32 u1 = qpl::f32_cast(glyph.textureRect.left) - padding;
+			qpl::f32 v1 = qpl::f32_cast(glyph.textureRect.top) - padding;
+			qpl::f32 u2 = qpl::f32_cast(glyph.textureRect.left + glyph.textureRect.width) + padding;
+			qpl::f32 v2 = qpl::f32_cast(glyph.textureRect.top + glyph.textureRect.height) + padding;
+
+			qpl::size ctr = 0u;
+			glyph_quad result;
+			result[0u] = glyph_quad_vertex{ qpl::vec2f(left - italic_shear * top, top), qpl::vec2f(u1, v1) };
+			result[1u] = glyph_quad_vertex{ qpl::vec2f(right - italic_shear * top, top), qpl::vec2f(u2, v1) };
+			result[2u] = glyph_quad_vertex{ qpl::vec2f(left - italic_shear * bottom, bottom), qpl::vec2f(u1, v2) };
+			result[3u] = glyph_quad_vertex{ qpl::vec2f(left - italic_shear * bottom, bottom), qpl::vec2f(u1, v2) };
+			result[4u] = glyph_quad_vertex{ qpl::vec2f(right - italic_shear * top, top), qpl::vec2f(u2, v1) };
+			result[5u] = glyph_quad_vertex{ qpl::vec2f(right - italic_shear * bottom, bottom), qpl::vec2f(u2, v2) };
+			return result;
+		}
+
+		// Add a glyph quad to the vertex array
+		void add_glyph_quad(qsf::vertex_array& vertices, qpl::vec2f position, const qpl::rgba& color, const sf::Glyph& glyph, qpl::f32 italic_shear) {
+			auto quad = get_glyph_quad(glyph, italic_shear);
+
+			for (auto& i : quad) {
+				qsf::vertex vertex;
+				vertex.position = i.position + position;
+				vertex.tex_coords = i.tex_coord;
+				vertex.color = color;
+				vertices.add(vertex);
+			}
+		}
+	}
+
+	qsf::colored_text::colored_text() {
+		this->clear();
+	}
+	qsf::colored_text::colored_text(const qsf::colored_text&) = default;
+	qsf::colored_text& qsf::colored_text::operator=(const qsf::colored_text&) = default;
+	qsf::colored_text::colored_text(qsf::colored_text&&) noexcept = default;
+	qsf::colored_text& qsf::colored_text::operator=(qsf::colored_text&&) noexcept = default;
+	void qsf::colored_text::set_font(const sf::Font& font) {
+		this->font = &font;
+	}
+	void qsf::colored_text::set_unicode_font(const sf::Font& font) {
+		this->unicode_font = &font;
+	}
+	void qsf::colored_text::set_character_size(qpl::u32 size) {
+		if (this->character_size != size) {
+			this->character_size = size;
+		}
+	}
+	void qsf::colored_text::set_letter_spacing(qpl::f32 spacingFactor) {
+		if (this->letter_spacing_factor != spacingFactor) {
+			this->letter_spacing_factor = spacingFactor;
+		}
+	}
+	void qsf::colored_text::set_line_spacing(qpl::f32 spacingFactor) {
+		if (this->line_spacing_factor != spacingFactor) {
+			this->line_spacing_factor = spacingFactor;
+		}
+	}
+	void qsf::colored_text::set_style(qpl::u32 style) {
+		if (this->style != style) {
+			this->style = style;
+		}
+	}
+	qpl::u32 qsf::colored_text::get_character_size() const {
+		return this->character_size;
+	}
+	qpl::f32 qsf::colored_text::get_line_spacing() const {
+		return this->line_spacing_factor;
+	}
+	qpl::f32 qsf::colored_text::get_line_spacing_pixels() const {
+		return this->font->getLineSpacing(this->character_size) * this->line_spacing_factor;
+	}
+	qpl::f32 qsf::colored_text::get_outline_thickness() const {
+		return this->outline_thickness;
+	}
+	qpl::f32 qsf::colored_text::get_white_space_width() const {
+		auto whitespace_width = this->font->getGlyph(U' ', this->character_size, false).advance;
+		auto letter_spacing = (whitespace_width / 3.f) * (this->letter_spacing_factor - 1.f);
+		return whitespace_width + letter_spacing;
+	}
+	qpl::f32 qsf::colored_text::get_underline_position() const {
+		return this->font->getUnderlinePosition(this->character_size);
+	}
+	qpl::f32 qsf::colored_text::get_chracter_top_offset() const {
+		return this->character_size + this->font->getGlyph(U'A', this->character_size, false).bounds.top;
+	}
+	const sf::Glyph& qsf::colored_text::get_glyph(qpl::u32 character, qpl::u32 character_size, bool is_bold, qpl::f32 outline_thickness) {
+		return this->font->getGlyph(character, character_size, is_bold, outline_thickness);
+	}
+	const sf::Glyph& qsf::colored_text::get_unicode_glyph(qpl::u32 character, qpl::u32 character_size, bool is_bold, qpl::f32 outline_thickness) {
+		return this->unicode_font->getGlyph(character, character_size, is_bold, outline_thickness);
+	}
+	qpl::u32 qsf::colored_text::get_style() const {
+		return this->style;
+	}
+	void qsf::colored_text::clear() {
+		this->vertices.clear();
+		this->outline_vertices.clear();
+		this->unicode_vertices.clear();
+		this->unicode_outline_vertices.clear();
+		this->text_position.x = 0.f;
+		this->text_position.y = 0.f;
+		this->rows = 0u;
+	}
+	void qsf::colored_text::pop_last_character() {
+		if (this->last_element.style & sf::Text::Style::Bold) {
+			this->outline_vertices.resize(qpl::max(0ll, qpl::signed_cast(this->outline_vertices.size()) - 6));
+		}
+		this->vertices.resize(qpl::max(0ll, qpl::signed_cast(this->vertices.size()) - 6));
+	}
+	void qsf::colored_text::draw(sf::RenderTarget& target, sf::RenderStates states) const {
+		if (this->font) {
+
+			sf::RenderStates new_states{ states };
+
+			new_states.texture = &this->font->getTexture(this->character_size);
+
+			if (this->outline_vertices.size()) {
+				this->outline_vertices.draw(target, new_states);
+			}
+
+			this->vertices.draw(target, new_states);
+		}
+		if (this->unicode_font) {
+
+			sf::RenderStates new_states{ states };
+
+			new_states.texture = &this->unicode_font->getTexture(this->character_size);
+
+			if (this->unicode_outline_vertices.size()) {
+				this->unicode_outline_vertices.draw(target, new_states);
+			}
+
+			this->unicode_vertices.draw(target, new_states);
+		}
+	}
+	void qsf::colored_text::create(const qpl::styled_string<qpl::u32_string>& string, qpl::f32 visible_y_min, qpl::f32 visible_y_max) {
+		this->clear();
+		this->add(string, visible_y_min, visible_y_max);
+	}
+	void qsf::colored_text::add(const qpl::styled_string<qpl::u32_string>& string, qpl::f32 visible_y_min, qpl::f32 visible_y_max) {
+		if (!this->font) {
+			return;
+		}
+
+		this->hitbox = qpl::hitbox{};
+
+		if (string.empty()) {
+			return;
+		}
+		auto underline_offset = this->font->getUnderlinePosition(this->character_size);
+		auto underline_thickness = this->font->getUnderlineThickness(this->character_size);
+
+
+		auto line_spacing = this->get_line_spacing_pixels();
+
+		if (this->text_position.y == 0.f) {
+			this->text_position.y = this->font->getLineSpacing(this->character_size);
+		}
+
+		auto minX = qpl::f32_cast(this->character_size);
+		auto minY = 0.f;
+		auto maxX = 0.f;
+		auto maxY = 0.f;
+		qpl::u32 previous = 0;
+
+		this->last_element.copy_style(string.elements.back());
+		for (auto& element : string) {
+			bool is_bold = element.style & sf::Text::Style::Bold;
+			bool is_underlined = element.style & sf::Text::Style::Underlined;
+			bool is_strike_through = element.style & sf::Text::Style::StrikeThrough;
+			auto italic_shear = (element.style & sf::Text::Style::Italic) ? 0.2094395102393f : 0.f;
+
+			const auto& default_glyph = this->get_glyph(U'x', this->character_size, is_bold);
+			sf::FloatRect default_bounds = default_glyph.bounds;
+
+			sf::Glyph default_unicode_glyph;
+			if (this->unicode_font) {
+				default_unicode_glyph = this->get_unicode_glyph(U'x', this->character_size, is_bold);
+			}
+
+			auto unreadable_glyph_texture = this->get_glyph(63744u, this->character_size, is_bold).textureRect;
+
+			auto strike_through_offset = default_bounds.top + default_bounds.height / 2.f;
+			auto whitespace_width = this->font->getGlyph(U' ', this->character_size, is_bold).advance;
+			auto letter_spacing = (whitespace_width / 3.f) * (this->letter_spacing_factor - 1.f);
+			whitespace_width += letter_spacing;
+
+			for (qpl::size i = 0u; i < element.text.length(); ++i) {
+				qpl::u32 c = element.text[i];
+
+				if (c == U'\r') {
+					continue;
+				}
+				this->text_position.x += this->font->getKerning(previous, c, this->character_size);
+				if (is_underlined && (c == U'\n' && previous != U'\n')) {
+					addLine(this->vertices, this->text_position.x, this->text_position.y, element.color, underline_offset, underline_thickness);
+
+					if (element.outline_thickness != 0) {
+						addLine(this->outline_vertices, this->text_position.x, this->text_position.y, element.outline_color, underline_offset, underline_thickness, element.outline_thickness);
+					}
+				}
+				if (is_strike_through && (c == U'\n' && previous != U'\n')) {
+					addLine(this->vertices, this->text_position.x, this->text_position.y, element.color, strike_through_offset, underline_thickness);
+
+					if (element.outline_thickness != 0) {
+						addLine(this->outline_vertices, this->text_position.x, this->text_position.y, element.outline_color, strike_through_offset, underline_thickness, element.outline_thickness);
+					}
+				}
+
+				previous = c;
+
+				if ((c == U' ') || (c == U'\n') || (c == U'\t')) {
+					minX = std::min(minX, this->text_position.x);
+					minY = std::min(minY, this->text_position.y);
+
+					switch (c) {
+					case U' ':
+						this->text_position.x += whitespace_width;
+						break;
+					case U'\t':
+						this->text_position.x += whitespace_width * 4;
+						break;
+					case U'\n':
+						this->text_position.y += line_spacing;
+						this->text_position.x = 0;
+						++this->rows;
+						break;
+					}
+
+					maxX = std::max(maxX, this->text_position.x);
+					maxY = std::max(maxY, this->text_position.y);
+					continue;
+				}
+
+				bool in_range = (this->text_position.y - line_spacing) > visible_y_min && (text_position.y + line_spacing) < visible_y_max;
+
+				if (in_range && element.outline_thickness != 0) {
+					sf::Glyph glyph;
+					if (this->unicode_font && qpl::unicode_character_length(c) == 2u) {
+						glyph = this->get_unicode_glyph(c, this->character_size, is_bold, element.outline_thickness);
+						if (in_range) {
+							add_glyph_quad(this->unicode_outline_vertices, this->text_position, element.color, glyph, italic_shear);
+						}
+					}
+					else {
+						glyph = this->get_glyph(c, this->character_size, is_bold, element.outline_thickness);
+						if (in_range) {
+							add_glyph_quad(this->outline_vertices, this->text_position, element.color, glyph, italic_shear);
+						}
+					}
+				}
+
+				sf::Glyph glyph;
+				glyph = this->get_glyph(c, this->character_size, is_bold);
+				auto glyph_bounds = glyph.textureRect;
+				if (this->unicode_font && glyph_bounds.left == unreadable_glyph_texture.left && glyph_bounds.top == unreadable_glyph_texture.top &&
+					glyph_bounds.width == unreadable_glyph_texture.width && glyph_bounds.height == unreadable_glyph_texture.height) {
+
+					glyph = this->get_unicode_glyph(c, this->character_size, is_bold);
+
+					auto factor = glyph.advance / default_unicode_glyph.advance;
+					if (factor >= 1.5) {
+						glyph.advance = default_glyph.advance * 2u;
+					}
+					else {
+						glyph.advance = default_glyph.advance;
+					}
+					if (in_range) {
+						add_glyph_quad(this->unicode_vertices, this->text_position, element.color, glyph, italic_shear);
+					}
+				}
+				else {
+					glyph = this->get_glyph(c, this->character_size, is_bold);
+					if (in_range) {
+						add_glyph_quad(this->vertices, this->text_position, element.color, glyph, italic_shear);
+					}
+				}
+
+
+				qpl::f32 left = glyph.bounds.left;
+				qpl::f32 top = glyph.bounds.top;
+				qpl::f32 right = glyph.bounds.left + glyph.bounds.width;
+				qpl::f32 bottom = glyph.bounds.top + glyph.bounds.height;
+
+				minX = std::min(minX, this->text_position.x + left - italic_shear * bottom);
+				maxX = std::max(maxX, this->text_position.x + right - italic_shear * top);
+				minY = std::min(minY, this->text_position.y + top);
+				maxY = std::max(maxY, this->text_position.y + bottom);
+
+				this->text_position.x += glyph.advance + letter_spacing;
+			}
+		}
+
+		//if (this->outline_vertices.size()) {
+		//    qpl::f32 outline = std::abs(std::ceil(element.outline_thickness));
+		//    minX -= outline;
+		//    maxX += outline;
+		//    minY -= outline;
+		//    maxY += outline;
+		//}
+
+		//if (is_underlined && (x > 0)) {
+		//    addLine(this->vertices, x, y, element.color, underline_offset, underline_thickness);
+		//
+		//    if (element.outline_thickness != 0) {
+		//        addLine(this->outline_vertices, x, y, element.outline_color, underline_offset, underline_thickness, element.outline_thickness);
+		//    }
+		//}
+		//if (is_strike_through && (x > 0)) {
+		//    addLine(this->vertices, x, y, element.color, strike_through_offset, underline_thickness);
+		//
+		//    if (element.outline_thickness != 0) {
+		//        addLine(this->outline_vertices, x, y, element.outline_color, strike_through_offset, underline_thickness, element.outline_thickness);
+		//    }
+		//}
+
+		this->hitbox.position.x = minX;
+		this->hitbox.position.y = 0;
+		this->hitbox.dimension.x = maxX - minX;
+		this->hitbox.dimension.y = maxY - minY;
 	}
 
 	std::unordered_map<std::string, qsf::text> qsf::detail::texts;

@@ -18,15 +18,24 @@ namespace qpl {
 			this->elements.push_back(element);
 		}
 	}
+
+	void qpl::colored_string::clear() {
+		this->elements.clear();
+	}
+	void qpl::colored_string::clear_retain_last_color() {
+		auto last = this->elements.back();
+		this->elements.resize(1u);
+		this->elements.back() = last;
+		this->elements.back().text.clear();
+	}
 	bool qpl::colored_string::empty() const {
 		return this->elements.empty();
 	}
 	void qpl::colored_string::print() const {
 		qpl::cc cc;
 
-		qpl::set_console_color_default();
+		qpl::print(qpl::cc{});
 		for (auto& i : this->elements) {
-
 			bool set = false;
 			if (cc.foreground != i.foreground) {
 				cc.foreground = i.foreground;
@@ -37,11 +46,11 @@ namespace qpl {
 				set = true;
 			}
 			if (set) {
-				qpl::set_console_color(cc);
+				qpl::print(cc);
 			}
 			qpl::print(i.text);
 		}
-		qpl::set_console_color_default();
+		qpl::print(qpl::cc{});
 	}
 
 	void qpl::colored_string::println() const {
@@ -99,8 +108,11 @@ namespace qpl {
 		auto lines = qpl::string_split(string, L'\n');
 		qpl::size max = 0u;
 		for (auto& i : lines) {
-			if (max < i.length()) {
-				max = i.length();
+			//if (max < i.length()) {
+			//	max = i.length();
+			//}
+			if (max < qpl::unicode_string_length(i)) {
+				max = qpl::unicode_string_length(i);
 			}
 		}
 		auto offset = qpl::to_wstring_repeat(L" ", left_offset);
@@ -122,7 +134,8 @@ namespace qpl {
 		for (auto& line : lines) {
 			qpl::print(offset, box_color, wall);
 			qpl::print(xspace, text_color, line, xspace);
-			qpl::print(qpl::to_string_repeat(" ", max - line.length()));
+			//qpl::print(qpl::to_string_repeat(" ", max - line.length()));
+			qpl::print(qpl::to_string_repeat(" ", max - qpl::unicode_string_length(line)));
 			qpl::println(box_color, wall);
 		}
 		for (qpl::size i = 0u; i < margin.y; ++i) {
@@ -137,13 +150,12 @@ namespace qpl {
 			qpl::println(offset, box_color, qpl::to_wstring(qpl::to_wstring_repeat(index ? border_blocks[1] : border_blocks[2], w + wall_width.x * 2)));
 		}
 	}
-
 	void qpl::print_box_around(const qpl::colored_string& string, qpl::size left_offset, qpl::vec2s margin, qpl::vec2s wall_width, qpl::foreground color, std::wstring border_blocks) {
 		auto lines = string.get_lines();
 		qpl::size max = 0u;
 		for (auto& i : lines) {
-			if (max < i.wstring().length()) {
-				max = i.wstring().length();
+			if (max < qpl::unicode_string_length(i.wstring())) {
+				max = qpl::unicode_string_length(i.wstring());
 			}
 		}
 		auto offset = qpl::to_wstring_repeat(L" ", left_offset);
@@ -166,7 +178,7 @@ namespace qpl {
 			qpl::print(offset, color, wall);
 			qpl::print(xspace);
 			line.print();
-			qpl::print(qpl::to_string_repeat(" ", max - line.wstring().length()));
+			qpl::print(qpl::to_string_repeat(" ", max - qpl::unicode_string_length(line.wstring())));
 			qpl::print(xspace);
 			qpl::println(color, wall);
 		}

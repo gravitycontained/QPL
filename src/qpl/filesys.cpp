@@ -944,6 +944,9 @@ namespace qpl {
             return copy;
         }
 
+        qpl::size qpl::filesys::path::directory_content_count() const {
+            return std::distance(std::filesystem::directory_iterator(this->string()), std::filesystem::directory_iterator{});
+        }
         qpl::filesys::paths qpl::filesys::path::list_current_directory() const {
             qpl::filesys::paths list;
             auto str = this->is_directory() ? this->string() : this->get_parent_branch().string();

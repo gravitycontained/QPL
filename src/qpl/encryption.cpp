@@ -114,7 +114,7 @@ namespace qpl {
 
 		for (qpl::size i = 0u; i < 8u; ++i) {
 			auto shift = (8u - i - 1);
-			this->data[sub_size + shift] = (this->bitlen >> (i * 8u));
+			this->data[sub_size + shift] = qpl::u8_cast(this->bitlen >> (i * 8u));
 		}
 		this->transform();
 	}
@@ -285,7 +285,7 @@ namespace qpl {
 		auto digest = qpl::detail::sha512_t.digest();
 		return qpl::sha512::to_string(digest);
 	}
-	std::string qpl::mgf1(std::string seed, qpl::size length, hash_type hash_object) {
+	std::string qpl::mgf1(const std::string_view& seed, qpl::size length, hash_type hash_object) {
 		std::string result = "";
 		auto blocks = ((length - 1) / (hash_object.second / 4u) + 1);
 		for (qpl::size i = 0u; i < blocks; ++i) {
@@ -1153,35 +1153,47 @@ namespace qpl {
 
 
 #ifdef QPL_CIPHER
-	qpl::cipherN<cipher_config{ 4, 1, 64, 64, 0.75, false } > qpl::detail::cipher512_ultra_quick;
-	qpl::cipherN<cipher_config{ 4, 1, 64, 64 } > qpl::detail::cipher512_quick;
-	qpl::cipherN<cipher_config{ 4, 3, 64, 64 } > qpl::detail::cipher512;
-	qpl::cipherN<cipher_config{ 4, 12, 64, 64 } > qpl::detail::cipher512_save;
+	qpl::cipher_ultra_fast qpl::cipher::ultra_fast;
+	qpl::cipher_fast qpl::cipher::fast;
+	qpl::cipher_mid qpl::cipher::mid;
+	qpl::cipher_secure qpl::cipher::secure;
+	qpl::cipher_very_secure qpl::cipher::very_secure;
 
-	std::string qpl::encrypt512_ultra_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_ultra_quick.encrypted(message, key);
+	std::string qpl::encrypt_ultra_fast(const std::string& message, const std::string& key) {
+		return qpl::cipher::ultra_fast.encrypted(message, key);
 	}
-	std::string qpl::decrypt512_ultra_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_ultra_quick.decrypted(message, key);
+	std::string qpl::decrypt_ultra_fast(const std::string& message, const std::string& key) {
+		return qpl::cipher::ultra_fast.decrypted(message, key);
 	}
-	std::string qpl::encrypt512_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_quick.encrypted(message, key);
+
+	std::string qpl::encrypt_fast(const std::string& message, const std::string& key) {
+		return qpl::cipher::fast.encrypted(message, key);
 	}
-	std::string qpl::decrypt512_quick(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_quick.decrypted(message, key);
+	std::string qpl::decrypt_fast(const std::string& message, const std::string& key) {
+		return qpl::cipher::fast.decrypted(message, key);
 	}
-	std::string qpl::encrypt512(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512.encrypted(message, key);
+
+	std::string qpl::encrypt_mid(const std::string& message, const std::string& key) {
+		return qpl::cipher::mid.encrypted(message, key);
 	}
-	std::string qpl::decrypt512(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512.decrypted(message, key);
+	std::string qpl::decrypt_mid(const std::string& message, const std::string& key) {
+		return qpl::cipher::mid.decrypted(message, key);
 	}
-	std::string qpl::encrypt512_save(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_save.encrypted(message, key);
+
+	std::string qpl::encrypt_secure(const std::string& message, const std::string& key) {
+		return qpl::cipher::secure.encrypted(message, key);
 	}
-	std::string qpl::decrypt512_save(const std::string& message, const std::string& key) {
-		return qpl::detail::cipher512_save.decrypted(message, key);
+	std::string qpl::decrypt_secure(const std::string& message, const std::string& key) {
+		return qpl::cipher::secure.decrypted(message, key);
 	}
+
+	std::string qpl::encrypt_very_secure(const std::string& message, const std::string& key) {
+		return qpl::cipher::very_secure.encrypted(message, key);
+	}
+	std::string qpl::decrypt_very_secure(const std::string& message, const std::string& key) {
+		return qpl::cipher::very_secure.decrypted(message, key);
+	}
+
 #endif
 
 #ifdef QPL_RSA
@@ -1541,8 +1553,8 @@ namespace qpl {
 	bool qpl::RSASSA_PSS_OAEP::empty() const {
 		return this->cipher_key.empty() || this->signature_key.empty();
 	}
-	void qpl::RSASSA_PSS_OAEP::load_keys(const std::string& path) {
-		auto lines = qpl::string_split(qpl::filesys::read_file(path), '\n');
+	void qpl::RSASSA_PSS_OAEP::load_keys(const std::string& data) {
+		auto lines = qpl::string_split(data, '\n');
 		if (lines.size() != 5u) {
 			qpl::println("qpl::RSASSA_PSS_OAEP::load_keys : invalid keys file");
 			return;
@@ -1554,6 +1566,9 @@ namespace qpl {
 		}
 		this->set_cipher_key(lines[0], lines[1]);
 		this->set_signature_key(lines[3], lines[4]);
+	}
+	void qpl::RSASSA_PSS_OAEP::load_keys_from_file(const std::string& path) {
+		this->load_keys(qpl::filesys::read_file(path));
 	}
 	void RSASSA_PSS_OAEP::set_signature_key(const std::string_view& mod, const std::string_view& key) {
 		this->signature_key.set(mod, key);
@@ -1571,22 +1586,22 @@ namespace qpl {
 		if (!encrypted_string.has_value()) {
 			return std::nullopt;
 		}
-		result.append(signature_string);
-		result.append(encrypted_string.value());
+		result.append(qpl::from_hex_string(signature_string));
+		result.append(qpl::from_hex_string(encrypted_string.value()));
 		return result;
 	}
 	std::optional<std::string> qpl::RSASSA_PSS_OAEP::verify_and_decrypt(const std::string& message, const std::string_view& signature, std::string label, qpl::hash_type hash_object) const {
 		if (this->empty()) {
 			return std::nullopt;
 		}
-		auto signature_offset = this->signature_key.bits() / 4u;
+		auto signature_offset = this->signature_key.bits() / 8u;
 		auto verify_string = message.substr(0u, signature_offset);
-		auto verified = qpl::RSASSA_PSS_verify(verify_string, signature, this->signature_key, hash_object);
+		auto verified = qpl::RSASSA_PSS_verify(qpl::hex_string(verify_string), signature, this->signature_key, hash_object);
 
 		if (!verified) {
 			return std::nullopt;
 		}
-		auto decrypted_string = qpl::RSA_decrypt(message.substr(signature_offset), this->cipher_key, label, hash_object);
+		auto decrypted_string = qpl::RSA_decrypt(qpl::hex_string(message.substr(signature_offset)), this->cipher_key, label, hash_object);
 		if (!decrypted_string.has_value()) {
 			return std::nullopt;
 		}

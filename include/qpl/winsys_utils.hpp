@@ -19,6 +19,30 @@ namespace qpl {
 		std::vector<element> elements;
 		QPLDLL void add(const element& element);
 
+
+		template<typename T>
+		void create_from_styled_string(const qpl::styled_string<T>& string) {
+			this->clear();
+			for (auto& i : string.elements) {
+
+				qpl::colored_string::element element;		
+				element.text = qpl::to_basic_string<wchar_t>(i.text);
+				element.foreground = qpl::rgb_to_foreground(i.color);
+				this->add(element);
+			}
+		}
+
+		template<typename T>
+		auto as_styled_string() const {
+			qpl::styled_string<T> result;
+
+			for (auto& i : this->elements) {
+				result.add(i.foreground);
+				result.add(i.text);
+			}
+			return result;
+		}
+
 		template<typename T>
 		colored_string& operator<<(T value) {
 			if (this->elements.empty()) {
@@ -40,7 +64,7 @@ namespace qpl {
 						this->elements.push_back({});
 					}
 					this->elements.back().background = value;
-					}
+				}
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::cc>()) {
 				bool change = (value.foreground != this->elements.back().foreground) || (value.background != this->elements.back().background);
@@ -66,6 +90,8 @@ namespace qpl {
 			return *this;
 		}
 
+		QPLDLL void clear();
+		QPLDLL void clear_retain_last_color();
 		QPLDLL bool empty() const;
 		QPLDLL void print() const;
 		QPLDLL void println() const;

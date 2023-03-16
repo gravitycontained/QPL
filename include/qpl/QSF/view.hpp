@@ -99,6 +99,12 @@ namespace qsf {
 			this->apply_to(states.transform);
 		}
 		constexpr void apply_to(sf::Transform& transform) const {
+			transform.combine(this->get_transform());
+		}
+		constexpr void apply_to_inverse(sf::RenderStates& states) const {
+			this->apply_to_inverse(states.transform);
+		}
+		constexpr void apply_to_inverse(sf::Transform& transform) const {
 			transform.combine(this->get_transform().getInverse());
 		}
 	};
@@ -127,8 +133,8 @@ namespace qsf {
 
 	template<typename T>
 	concept has_view_c = requires (T x) {
-		{ x.view };
-		requires qsf::is_view<decltype(T::view)>();
+		{ x.auto_view };
+		requires qsf::is_view<decltype(T::auto_view)>();
 	};
 
 	template<typename T>

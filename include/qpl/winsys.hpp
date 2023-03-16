@@ -24,6 +24,7 @@
 #include <qpl/type_traits.hpp>
 #include <qpl/pictures.hpp>
 #include <qpl/vector.hpp>
+#include <qpl/color.hpp>
 
 namespace qpl {
 	namespace winsys {
@@ -225,82 +226,6 @@ namespace qpl {
 	QPLDLL void copy_to_clipboard(const std::wstring& s);
 
 
-	enum class color : unsigned {
-		black = 0,
-		blue = 1,
-		green = 2,
-		aqua = 3,
-		red = 4,
-		purple = 5,
-		yellow = 6,
-		white = 7,
-		gray = 8,
-		light_blue = 9,
-		light_green = 10,
-		light_aqua = 11,
-		light_red = 12,
-		light_purple = 13,
-		light_yellow = 14,
-		bright_white = 15,
-		size = 16,
-	};
-	enum class foreground : unsigned {
-		black = 0,
-		blue = 1,
-		green = 2,
-		aqua = 3,
-		red = 4,
-		purple = 5,
-		yellow = 6,
-		white = 7,
-		gray = 8,
-		light_blue = 9,
-		light_green = 10,
-		light_aqua = 11,
-		light_red = 12,
-		light_purple = 13,
-		light_yellow = 14,
-		bright_white = 15,
-		size = 16,
-	};
-	enum class background : unsigned {
-		black = 0,
-		blue = 1,
-		green = 2,
-		aqua = 3,
-		red = 4,
-		purple = 5,
-		yellow = 6,
-		white = 7,
-		gray = 8,
-		light_blue = 9,
-		light_green = 10,
-		light_aqua = 11,
-		light_red = 12,
-		light_purple = 13,
-		light_yellow = 14,
-		bright_white = 15,
-		size = 16,
-	};
-
-	
-	constexpr qpl::foreground black = qpl::foreground::black;
-	constexpr qpl::foreground blue = qpl::foreground::blue;
-	constexpr qpl::foreground green = qpl::foreground::green;
-	constexpr qpl::foreground aqua = qpl::foreground::aqua;
-	constexpr qpl::foreground red = qpl::foreground::red;
-	constexpr qpl::foreground purple = qpl::foreground::purple;
-	constexpr qpl::foreground yellow = qpl::foreground::yellow;
-	constexpr qpl::foreground white = qpl::foreground::white;
-	constexpr qpl::foreground gray = qpl::foreground::gray;
-	constexpr qpl::foreground light_blue = qpl::foreground::light_blue;
-	constexpr qpl::foreground light_green = qpl::foreground::light_green;
-	constexpr qpl::foreground light_aqua = qpl::foreground::light_aqua;
-	constexpr qpl::foreground light_red = qpl::foreground::light_red;
-	constexpr qpl::foreground light_purple = qpl::foreground::light_purple;
-	constexpr qpl::foreground light_yellow = qpl::foreground::light_yellow;
-	constexpr qpl::foreground bright_white = qpl::foreground::bright_white;
-
 
 	QPLDLL std::ostream& operator<<(std::ostream& os, color color);
 	QPLDLL std::ostream& operator<<(std::ostream& os, foreground foreground);
@@ -345,6 +270,9 @@ namespace qpl {
 		}
 		bool operator==(const cc& other) const {
 			return this->foreground == other.foreground && this->background == other.background;
+		}
+		bool operator!=(const cc& other) const {
+			return !(*this == other);
 		}
 
 		QPLDLL static qpl::cc def();

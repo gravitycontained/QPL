@@ -484,7 +484,14 @@ namespace qpl {
 			return copy;
 		}
 
-
+		template<typename U, qpl::size M>
+		constexpr bool operator==(const qpl::rgbN<U, M>& other) const {
+			return *this == qpl::rgbN<T, N>(other);
+		}
+		template<typename U, qpl::size M>
+		constexpr bool operator!=(const qpl::rgbN<U, M>& other) const {
+			return *this != qpl::rgbN<T, N>(other);
+		}
 		constexpr bool operator==(const qpl::rgbN<T, N>& other) const {
 			return this->data == other.data;
 		}
@@ -1025,23 +1032,28 @@ namespace qpl {
 		multiplied_color_extension() {
 
 		}
-		template<typename T> requires detail::has_set_color_c<T>
-		multiplied_color_extension(const T& value) {
-			T::operator=(value);
+		multiplied_color_extension(const multiplied_color_extension& other) = default;
+		multiplied_color_extension& operator=(const multiplied_color_extension& value) = default;
+
+		template<typename U>
+		multiplied_color_extension(const U& value) : T(value) {
+
 		}
-		template<typename U> requires (std::is_convertible_v<U, T>)
-		multiplied_color_extension(const U& value) {
-			T::operator=(value);
+		template<typename U>
+		multiplied_color_extension(U&& value) : T(std::move(value)) {
+
 		}
-		multiplied_color_extension& operator=(const T& value) {
-			T::operator=(value);
-			return *this;
-		}
-		template<typename U> requires (std::is_convertible_v<U, T>)
-		multiplied_color_extension& operator=(const U& value) {
-			T::operator=(value);
-			return *this;
-		}
+		//template<typename U>
+		//multiplied_color_extension& operator=(const U& value) {
+		//	*this = multiplied_color_extension{ value };
+		//	return *this;
+		//}
+		//template<typename U>
+		//multiplied_color_extension& operator=(U&& value) {
+		//	*this = multiplied_color_extension{ std::move(value) };
+		//	return *this;
+		//}
+
 		void set_color(qpl::rgba color) {
 			this->original_color = color;
 			T::set_color(this->original_color.multiplied_color(this->multiplied_color));
@@ -1061,6 +1073,120 @@ namespace qpl {
 			this->set_multiplied_color(this->multiplied_color.with_alpha(alpha));
 		}
 	};
+
+
+	enum class color : qpl::u32 {
+		black = 0,
+		blue = 1,
+		green = 2,
+		aqua = 3,
+		red = 4,
+		purple = 5,
+		yellow = 6,
+		white = 7,
+		gray = 8,
+		light_blue = 9,
+		light_green = 10,
+		light_aqua = 11,
+		light_red = 12,
+		light_purple = 13,
+		light_yellow = 14,
+		bright_white = 15,
+		size = 16,
+	};
+	enum class foreground : qpl::u32 {
+		black = 0,
+		blue = 1,
+		green = 2,
+		aqua = 3,
+		red = 4,
+		purple = 5,
+		yellow = 6,
+		white = 7,
+		gray = 8,
+		light_blue = 9,
+		light_green = 10,
+		light_aqua = 11,
+		light_red = 12,
+		light_purple = 13,
+		light_yellow = 14,
+		bright_white = 15,
+		size = 16,
+	};
+	enum class background : qpl::u32 {
+		black = 0,
+		blue = 1,
+		green = 2,
+		aqua = 3,
+		red = 4,
+		purple = 5,
+		yellow = 6,
+		white = 7,
+		gray = 8,
+		light_blue = 9,
+		light_green = 10,
+		light_aqua = 11,
+		light_red = 12,
+		light_purple = 13,
+		light_yellow = 14,
+		bright_white = 15,
+		size = 16,
+	};
+
+
+	constexpr qpl::foreground black = qpl::foreground::black;
+	constexpr qpl::foreground blue = qpl::foreground::blue;
+	constexpr qpl::foreground green = qpl::foreground::green;
+	constexpr qpl::foreground aqua = qpl::foreground::aqua;
+	constexpr qpl::foreground red = qpl::foreground::red;
+	constexpr qpl::foreground purple = qpl::foreground::purple;
+	constexpr qpl::foreground yellow = qpl::foreground::yellow;
+	constexpr qpl::foreground white = qpl::foreground::white;
+	constexpr qpl::foreground gray = qpl::foreground::gray;
+	constexpr qpl::foreground light_blue = qpl::foreground::light_blue;
+	constexpr qpl::foreground light_green = qpl::foreground::light_green;
+	constexpr qpl::foreground light_aqua = qpl::foreground::light_aqua;
+	constexpr qpl::foreground light_red = qpl::foreground::light_red;
+	constexpr qpl::foreground light_purple = qpl::foreground::light_purple;
+	constexpr qpl::foreground light_yellow = qpl::foreground::light_yellow;
+	constexpr qpl::foreground bright_white = qpl::foreground::bright_white;
+
+
+	constexpr auto console_colors = std::array{
+		/*black,       */ qpl::rgb(12, 12, 12),
+		/*blue,        */ qpl::rgb(0, 55, 218),
+		/*green,       */ qpl::rgb(19, 161, 14),
+		/*aqua,        */ qpl::rgb(58, 150, 221),
+		/*red,         */ qpl::rgb(197, 15, 31),
+		/*purple,      */ qpl::rgb(136, 23, 152),
+		/*yellow,      */ qpl::rgb(193, 156, 0),
+		/*white,       */ qpl::rgb(204, 204, 204),
+		/*gray,        */ qpl::rgb(118, 118, 118),
+		/*light_blue,  */ qpl::rgb(59, 120, 255),
+		/*light_green, */ qpl::rgb(22, 198, 12),
+		/*light_aqua,  */ qpl::rgb(97, 214, 214),
+		/*light_red,   */ qpl::rgb(231, 72, 86),
+		/*light_purple,*/ qpl::rgb(180, 0, 158),
+		/*light_yellow,*/ qpl::rgb(249, 241, 165),
+		/*bright_white,*/ qpl::rgb(242, 242, 242),
+	};
+
+	constexpr qpl::rgb foreground_to_rgb(qpl::foreground foreground) {
+		return console_colors[qpl::size_cast(foreground)];
+	}
+	constexpr qpl::foreground rgb_to_foreground(qpl::rgb color) {
+		qpl::size index = qpl::size_max;
+		qpl::f64 min = qpl::f64_max;
+		for (qpl::size i = 0u; i < console_colors.size(); ++i) {
+			auto distance = color.get_perceived_difference(console_colors[i]);
+			if (min > distance) {
+				min = distance;
+				index = i;
+			}
+		}
+		return static_cast<qpl::foreground>(index);
+	}
+
 }
 
 

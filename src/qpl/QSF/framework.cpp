@@ -141,6 +141,9 @@ namespace qsf {
 		return true;
 	}
 	void qsf::framework::game_loop() {
+		if (this->states.empty()) {
+			return;
+		}
 		if (!this->is_created()) {
 			this->create();
 		}

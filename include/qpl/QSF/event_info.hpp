@@ -108,6 +108,7 @@ namespace qsf {
 
 		QPLDLL bool is_text_entered() const;
 		QPLDLL std::wstring text_entered() const;
+		QPLDLL qpl::u32_string u32_text_entered() const;
 		QPLDLL std::string text_entered_str() const;
 		QPLDLL std::wstring all_text_entered() const;
 		QPLDLL std::string all_text_entered_str() const;
@@ -174,6 +175,7 @@ namespace qsf {
 		bool m_middle_mouse_fast_click = false;
 
 		std::wstring m_text_entered;
+		qpl::u32_string m_u32_text_entered;
 		std::wostringstream m_text_entered_stream;
 
 		qpl::vector2i m_resized_size;

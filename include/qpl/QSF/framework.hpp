@@ -54,6 +54,13 @@ namespace qsf {
 #endif
 
 			this->states.back()->call_before_create();
+
+			if (this->states.back()->is_pop_this_state) {
+				this->states.pop_back();
+				if (this->states.empty()) {
+					return;
+				}
+			}
 			this->states.back()->last_dimension = this->dimension;
 			if (this->is_created()) {
 				this->init_back();

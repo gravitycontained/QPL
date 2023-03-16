@@ -1222,6 +1222,178 @@ namespace qsf {
 		QPLDLL void update(const qsf::event_info& event);
 		QPLDLL void draw(qsf::draw_object& draw) const;
 	};
+
+
+	struct scroll_bar {
+		qsf::smooth_rectangle background;
+		qsf::smooth_rectangle knob;
+
+		qpl::hitbox hitbox;
+
+		qpl::f32 knob_progress = 0.0f;
+		qpl::f32 knob_range = 1.0f;
+		qpl::f32 visible_knob_progress = 0.0f;
+		qpl::size integer_step = qpl::size_max;
+
+		qpl::animation background_hover_animation;
+		qpl::rgb background_color = qpl::rgb::grey_shade(24);
+		qpl::rgb background_color_hover = qpl::rgb::grey_shade(30);
+
+		qpl::animation hover_animation;
+		qpl::rgb knob_color = qpl::rgb::grey_shade(141);
+		qpl::rgb knob_color_hover = qpl::rgb::grey_shade(200);
+
+		bool hovering = false;
+		bool hovering_background = false;
+		bool dragging = false;
+		bool allow_dragging = true;
+		bool clicked_on_background_below = false;
+		bool clicked_on_background_above = false;
+		bool released_dragging = false;
+		bool value_changed = false;
+		qpl::vec2f dragging_position;
+
+		QPLDLL scroll_bar();
+		QPLDLL void set_dimension(qpl::vec2f dimension);
+		QPLDLL void set_position(qpl::vec2f position);
+		QPLDLL void set_hitbox(qpl::hitbox hitbox);
+		QPLDLL void set_visible_knob_progress(qpl::f64 progress);
+		QPLDLL void update_knob();
+		QPLDLL void update_positions();
+		QPLDLL qpl::f32 stepped_progress() const;
+		QPLDLL qpl::f32 stepped_progress_unless_dragging() const;
+		QPLDLL qpl::f32 get_progress() const;
+		QPLDLL qpl::size get_progress_step() const;
+		QPLDLL void set_progress_integer_step(qpl::size step, qpl::size knob_steps);
+		QPLDLL void set_progress(qpl::f32 progress);
+		QPLDLL void set_knob_height(qpl::f32 height);
+		QPLDLL void set_knob_range(qpl::f32 range);
+		QPLDLL void update_hover(const qsf::event_info& event);
+		QPLDLL void update_background_hover(const qsf::event_info& event);
+		QPLDLL void update(const qsf::event_info& event);
+		QPLDLL void draw(qsf::draw_object& draw) const;
+	};
+
+	struct console {
+		qsf::colored_text colored_text;
+		qpl::styled_string<qpl::u32_string> string;
+		qpl::styled_string<qpl::u32_string> input_string;
+		qpl::styled_string<qpl::u32_string> string_and_input;
+		std::vector<std::wstring> input_string_split;
+		std::vector<std::wstring> string_split;
+		std::vector<std::wstring> string_and_input_split;
+		std::vector<qsf::rectangle> selection_rectangle;
+
+		qpl::vec2f selection_rectangle_start;
+		qpl::vec2f selection_rectangle_end;
+
+		qsf::border_graphic shadow_border;
+		qsf::border_graphic scroll_bar_shadow_border;
+
+		qsf::view view;
+		qpl::vec2f dimension;
+		qpl::isize zooms = 10;
+		qpl::isize view_row = 0;
+		qpl::size visible_rows = 0u;
+		qsf::scroll_bar scroll_bar;
+		qpl::f64 cursor_interval_duration = 1.5;
+		qsf::rectangle cursor;
+		qpl::small_clock cursor_blink_timer;
+
+		qpl::animation scroll_transition_animation;
+		qpl::f64 scroll_transition_start = 0.0;
+		qpl::f64 scroll_transition_end = 0.0;
+		qpl::f64 scroll_bar_transition_start = 0.0;
+		qpl::f64 scroll_bar_transition_end = 0.0;
+
+		qpl::rgba selection_rectangle_color = qpl::rgba(200, 200, 200, 140);
+		qpl::rgba shadow_border_color = qpl::rgb(10, 10, 14);
+
+		qpl::isize visible_y_min = 0;
+		qpl::isize visible_y_max = 0;
+		qpl::size visible_buffer = 100;
+
+		qpl::size before_input_vertices_size = qpl::size_max;
+		qpl::size before_input_outline_vertices_size = qpl::size_max;
+		qpl::size before_input_unicode_vertices_size = qpl::size_max;
+		qpl::size before_input_unicode_outline_vertices_size = qpl::size_max;
+		qpl::size before_input_text_rows = 0u;
+		qpl::vec2f before_input_text_position = { 0.f, 0.f };
+		qpl::vec2s cursor_position;
+		qpl::vec2f clicked_mouse_position;
+		qpl::vec2f character_size;
+
+		std::vector<std::wstring> input_history;
+		qpl::size input_history_index = 0u;
+
+		bool accept_input = false;
+		bool text_entered = false;
+		bool line_entered = false;
+		bool text_dragging = false;
+		bool allow_text_dragging = true;
+		bool allow_going_up_with_cursor = false;
+		bool border_texture_set = false;
+		bool enter_to_continue = false;
+		bool exited_enter_to_continue = false;
+
+		QPLDLL void press_enter_to_continue_mode();
+		QPLDLL void reset_visible_range();
+		QPLDLL void clear();
+		QPLDLL void init();
+		QPLDLL void apply_font();
+		QPLDLL void set_border_texture(const sf::Texture& texture);
+		QPLDLL void set_font(std::string font);
+		QPLDLL void set_unicode_font(std::string font);
+		QPLDLL void calculate_default_character_size();
+		QPLDLL void track_before_input_values();
+		QPLDLL void start_accepting_input();
+		QPLDLL void stop_accepting_input();
+		QPLDLL void clamp_view_y(bool transition = true);
+		QPLDLL void set_dimension(qpl::vec2f dimension);
+		QPLDLL void set_input_color(qpl::foreground color);
+		QPLDLL void prepare_scroll();
+		QPLDLL void update_visible_rows_count();
+		QPLDLL void end_animation();
+		QPLDLL void update_string_and_input_split();
+		QPLDLL void update_string_split();
+		QPLDLL void update_input_string_split();
+		QPLDLL void update_cursor_position(bool reset_timer = false);
+		QPLDLL void update_input_text_graphics();
+		QPLDLL void add_text_input(const qpl::u32_string& string);
+		QPLDLL void pop_character_at_cursor();
+		QPLDLL void update_cursor_dimension();
+		QPLDLL void update_text_range();
+		QPLDLL void process_character_size();
+		QPLDLL qpl::size get_text_height() const;
+		QPLDLL qpl::size get_text_width(qpl::size y) const;
+		QPLDLL qpl::size get_input_text_width(qpl::size y) const;
+		QPLDLL qpl::size get_input_text_height() const;
+		QPLDLL qpl::vec2f position_to_text_position(qpl::vec2f position) const;
+		QPLDLL void clear_selection_rectangles_if_visible();
+		QPLDLL auto get_selection_rectangle_bounds() const;
+		QPLDLL std::wstring get_selection_rectangle_string() const;
+		QPLDLL void make_selection_rectangles();
+		QPLDLL void move_to_input();
+		QPLDLL auto get_input_text() const;
+		QPLDLL std::wstring get_last_input_line() const;
+		QPLDLL void process_text();
+
+		template<typename T> requires (!qpl::is_same<qpl::styled_string<qpl::u32_string>, T>())
+		void add(const T& value) {
+			qpl::styled_string<qpl::u32_string> string;
+			string.clear_copy_style(this->colored_text.last_element);
+			string.add(value);
+			this->add(string);
+		}
+		QPLDLL void add(const qpl::styled_string<qpl::u32_string>& string);
+		QPLDLL void create(const qpl::styled_string<qpl::u32_string>& string);
+		QPLDLL void update_key_input(const qsf::event_info& event);
+		QPLDLL void update_selection_rectangle(const qsf::event_info& event);
+		QPLDLL void update_cursor();
+		QPLDLL void update(const qsf::event_info& event);
+		QPLDLL void draw(qsf::draw_object& draw) const;
+	};
+
 }
 
 #endif

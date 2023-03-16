@@ -123,6 +123,14 @@ namespace qsf {
 			}
 		}
 
+		template<typename T, typename U> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
+		void draw(const T& object, const qsf::view_t<U>& view) {
+
+			auto copy = this->states;
+			view.apply_to(this->states);
+			this->draw(object);
+			this->states = copy;
+		}
 		template<typename T> requires (qsf::has_any_draw<T>() || qpl::is_container<T>())
 		void draw(const T& object) {
 			if constexpr (qsf::has_view<T>()) {
@@ -255,6 +263,11 @@ namespace qsf {
 			this->position = position;
 			this->color = color;
 		}
+		vertex(qpl::vector2f position, qpl::rgba color, qpl::vec2 tex_coords) {
+			this->position = position;
+			this->color = color;
+			this->tex_coords = tex_coords;
+		}
 
 		qpl::vector2f position;
 		qpl::rgba color;
@@ -274,6 +287,13 @@ namespace qsf {
 	};
 
 	struct vertex_array {
+
+		vertex_array() {
+
+		}
+		vertex_array(sf::PrimitiveType primitive_type) {
+			this->set_primitive_type(primitive_type);
+		}
 
 		QPLDLL void set_primitive_type(qsf::primitive_type primitive_type);
 		QPLDLL void set_primitive_type(sf::PrimitiveType primitive_type);
@@ -742,6 +762,24 @@ namespace qsf {
 		smooth_rectangle() {
 			this->round_corners.fill(true);
 		}
+		smooth_rectangle(const qsf::smooth_rectangle& smooth_rectangle) {
+			*this = smooth_rectangle;
+		}
+		smooth_rectangle(const qsf::vsmooth_rectangle& other) {
+			*this = other;
+		}
+		qsf::smooth_rectangle& operator=(const qsf::smooth_rectangle& other) {
+			this->dimension = other.dimension;
+			this->position = other.position;
+			this->slope = other.slope;
+			this->slope_point_count = other.slope_point_count;
+			this->slope_dim = other.slope_dim;
+			this->outline_thickness = other.outline_thickness;
+			this->round_corners = other.round_corners;
+			this->internal_check = other.internal_check;
+			return *this;
+		}
+
 		QPLDLL void set_position(qpl::vector2f position);
 		QPLDLL void set_dimension(qpl::vector2f dimension);
 		QPLDLL void set_hitbox(qpl::hitbox hitbox);
@@ -769,6 +807,7 @@ namespace qsf {
 		QPLDLL void check_create() const;
 		QPLDLL void move(qpl::vector2f delta);
 		QPLDLL bool contains(qpl::vector2f point) const;
+		QPLDLL qsf::smooth_rectangle& operator=(const qsf::vsmooth_rectangle& smooth_rectangle);
 		QPLDLL const qsf::smooth_rectangle& operator=(const qsf::vsmooth_rectangle& smooth_rectangle) const;
 		QPLDLL void draw(sf::RenderTarget& window, sf::RenderStates states = sf::RenderStates::Default) const;
 
@@ -2907,6 +2946,73 @@ namespace qsf {
 		QPLDLL void add_right(qpl::f32 correction_gap = 0.0f);
 		QPLDLL void add_all_sides(qpl::f32 correction_gap = 0.0f);
 		QPLDLL void draw(qsf::draw_object& object) const;
+	};
+
+	struct glyph_quad_vertex {
+		qpl::vec2f position;
+		qpl::vec2f tex_coord;
+	};
+
+	using glyph_quad = std::array<glyph_quad_vertex, 6u>;
+
+	struct colored_text {
+		colored_text();
+		colored_text(const colored_text&);
+		colored_text& operator=(const colored_text&);
+		colored_text(colored_text&&) noexcept;
+		colored_text& operator=(colored_text&&) noexcept;
+
+		QPLDLL void set_font(const sf::Font& font);
+		QPLDLL void set_unicode_font(const sf::Font& font);
+		QPLDLL void set_font(sf::Font&& font) = delete;
+		QPLDLL void set_character_size(qpl::u32 size);
+		QPLDLL void set_line_spacing(qpl::f32 spacingFactor);
+		QPLDLL void set_letter_spacing(qpl::f32 spacingFactor);
+		QPLDLL void set_style(qpl::u32 style);
+		QPLDLL qpl::u32 get_character_size() const;
+		QPLDLL qpl::f32 get_line_spacing() const;
+		QPLDLL qpl::f32 get_line_spacing_pixels() const;
+		QPLDLL qpl::u32 get_style() const;
+		QPLDLL qpl::f32 get_outline_thickness() const;
+		QPLDLL qpl::f32 get_white_space_width() const;
+		QPLDLL qpl::f32 get_underline_position() const;
+		QPLDLL qpl::f32 get_chracter_top_offset() const;
+		QPLDLL const sf::Glyph& get_glyph(qpl::u32 character, qpl::u32 character_size, bool is_bold, qpl::f32 outline_thickness = 0.f);
+		QPLDLL const sf::Glyph& get_unicode_glyph(qpl::u32 character, qpl::u32 character_size, bool is_bold, qpl::f32 outline_thickness = 0.f);
+
+		QPLDLL void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+		QPLDLL void add(const qpl::styled_string<qpl::u32_string>& string, qpl::f32 visible_y_min = qpl::f32_min, qpl::f32 visible_y_max = qpl::f32_max);
+		QPLDLL void create(const qpl::styled_string<qpl::u32_string>& string, qpl::f32 visible_y_min = qpl::f32_min, qpl::f32 visible_y_max = qpl::f32_max);
+		QPLDLL void clear();
+
+		QPLDLL void pop_last_character();
+
+		template<typename T>
+		colored_text& operator<<(const T& value) {
+			qpl::styled_string<qpl::u32_string> string;
+			string.clear_copy_style(this->last_element);
+			string.elements[0u].text = qpl::to_u32_string(value);
+			this->add(string);
+			return *this;
+		}
+
+		const sf::Font* font = nullptr;
+		const sf::Font* unicode_font = nullptr;
+		qpl::styled_string<qpl::u32_string>::element last_element;
+		qpl::u32 character_size{ 30 };
+		qpl::f32 letter_spacing_factor{ 1.f };
+		qpl::f32 line_spacing_factor{ 1.f };
+		qpl::u32 style{ sf::Text::Style::Regular };
+		qpl::rgba fill_color{ qpl::rgba::white() };
+		qpl::rgba outline_color{ qpl::rgba::black() };
+		qpl::f32 outline_thickness{ 0.f };
+		qsf::vertex_array vertices{ sf::PrimitiveType::Triangles };
+		qsf::vertex_array outline_vertices{ sf::PrimitiveType::Triangles };
+		qsf::vertex_array unicode_vertices{ sf::PrimitiveType::Triangles };
+		qsf::vertex_array unicode_outline_vertices{ sf::PrimitiveType::Triangles };
+		qpl::hitbox hitbox;
+		qpl::vec2f text_position;
+		qpl::size rows = 0u;
 	};
 
 	namespace detail {

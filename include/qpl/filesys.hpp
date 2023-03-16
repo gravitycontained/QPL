@@ -183,6 +183,7 @@ namespace qpl {
             QPLDLL path appended(const std::string& string) const;
             QPLDLL path appended(char c) const;
 
+            QPLDLL qpl::size directory_content_count() const;
             QPLDLL qpl::filesys::paths list_current_directory() const;
             QPLDLL qpl::filesys::paths list_current_directory_include_self() const;
             QPLDLL qpl::filesys::paths list_current_directory_tree() const;
@@ -677,7 +678,7 @@ namespace qpl {
         qpl::filesys::paths encrypt(const std::string& key, std::string output_name, qpl::aes::mode mode, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max);
 
         template<typename F>
-        qpl::filesys::paths decrypt(const std::string& key, F&& decryption_function, qpl::filesys::path destination_path = "") const {
+        qpl::filesys::paths decrypt(const std::string& key, F decryption_function, qpl::filesys::path destination_path = "") const {
             if (!destination_path.empty() && destination_path.string().back() != '/') {
                 destination_path.append("/");
             }
@@ -715,7 +716,7 @@ namespace qpl {
         bool adding_parts = false;
 
         template<typename F>
-        void internal_decrypt(const std::string & string, const std::string & key, F&& decryption_function, qpl::filesys::path destination_path, qpl::filesys::paths & tree) const {
+        void internal_decrypt(const std::string & string, const std::string & key, F decryption_function, qpl::filesys::path destination_path, qpl::filesys::paths & tree) const {
             auto str = decryption_function(string, key);
 
             qpl::load_state load_state;

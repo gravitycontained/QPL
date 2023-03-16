@@ -661,11 +661,14 @@ namespace qpl {
 	std::chrono::system_clock::time_point get_current_system_time() {
 		return std::chrono::system_clock::now();
 	}
-	std::chrono::system_clock::time_point get_current_utc_time() {
-		std::chrono::zoned_time zt{ "UTC", qpl::get_current_system_time()};
-		auto utc_time = std::chrono::system_clock::to_time_t(zt.get_sys_time());
-		return std::chrono::system_clock::from_time_t(utc_time);
+	std::chrono::utc_clock::time_point get_current_utc_time() {
+		return std::chrono::utc_clock::now();
 	}
+	//std::chrono::system_clock::time_point get_current_utc_time() {
+	//	std::chrono::zoned_time zt{ "UTC", qpl::get_current_system_time()};
+	//	auto utc_time = std::chrono::system_clock::to_time_t(zt.get_sys_time());
+	//	return std::chrono::system_clock::from_time_t(utc_time);
+	//}
 
 	std::string get_current_time_string() {
 		std::time_t rawtime;
@@ -702,11 +705,20 @@ namespace qpl {
 		return { buffer };
 	}
 
-
+	/*
 	std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format) {
 		std::istringstream stream{ date };
 		std::chrono::system_clock::time_point result;
 		stream >> parse(format, result);
+		return result;
+	}
+	*/
+	std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format) {
+		std::istringstream stream{ date };
+		std::chrono::system_clock::time_point result;
+		if (!std::chrono::from_stream(stream, "%F %T", result)) {
+			throw qpl::exception("utc_data_ymdhm_to_utc_timepoint error : cannot parse date ", date);
+		}
 		return result;
 	}
 

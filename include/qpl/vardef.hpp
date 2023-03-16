@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <tuple>
 #include <limits>
+#include <string>
 
 
 namespace qpl {
@@ -182,6 +183,8 @@ namespace qpl {
 
 	using f32 = float;
 	using f64 = double;
+
+	using u32_string = std::basic_string<qpl::u32>;
 
 #ifndef QPL_NO_FLOATS
 	using ff32 = qpl::floating_point<32u, 32u>;
