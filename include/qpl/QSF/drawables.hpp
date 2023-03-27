@@ -2331,7 +2331,7 @@ namespace qsf {
 			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(indices.size() * 4);
 
-			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+			auto texture_row_tile_count = this->texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
 			qpl::u32 ctr = 0;
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
@@ -2369,7 +2369,7 @@ namespace qsf {
 			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(dim.x * dim.y * 4);
 
-			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+			auto texture_row_tile_count = this->texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
 			qpl::u32 ctr = 0;
 			for (qpl::u32 i = 0; i < dim.x * dim.y; ++i) {
@@ -2425,7 +2425,7 @@ namespace qsf {
 			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(indices.size() * 4);
 
-			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+			auto texture_row_tile_count = this->texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
 			qpl::u32 ctr = 0;
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {
@@ -2468,7 +2468,7 @@ namespace qsf {
 			this->vertices.set_primitive_type(sf::Quads);
 			this->vertices.resize(indices.size() * 4);
 
-			auto texture_row_tile_count = this->texture_ptr->getSize().x * this->texture_tile_dimension.x;
+			auto texture_row_tile_count = this->texture_ptr->getSize().x / this->texture_tile_dimension.x;
 
 			qpl::u32 ctr = 0;
 			for (qpl::u32 i = 0; i < indices.size(); ++i) {

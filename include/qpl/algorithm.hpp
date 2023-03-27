@@ -93,6 +93,7 @@ namespace qpl {
 		constexpr qpl::i64 log2(T a) {
 		return a ? qpl::i64{ 1 } + qpl::log2(static_cast<T>(a >> 1)) : qpl::i64{ -1 };
 	}
+
 	template<typename T> requires (qpl::is_integer<T>())
 		constexpr T shift(T a, T b) {
 		return b == T{} ? T{ 1 } : static_cast<T>(a * qpl::pow<T>(a, b - T{ 1 }));
@@ -180,6 +181,10 @@ namespace qpl {
 		return result;
 	}
 
+	template<typename T> requires (qpl::is_integer<T>())
+	constexpr bool is_power_of_2(T a) {
+		return a && (T{ 1 } << (qpl::significant_bit(a) - 1)) == a;
+	}
 
 	template<typename T> requires (qpl::is_integer<T>())
 		constexpr qpl::size number_of_set_bits(T n) {

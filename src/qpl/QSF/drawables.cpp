@@ -5968,13 +5968,13 @@ namespace qsf {
 					if (this->unicode_font && qpl::unicode_character_length(c) == 2u) {
 						glyph = this->get_unicode_glyph(c, this->character_size, is_bold, element.outline_thickness);
 						if (in_range) {
-							add_glyph_quad(this->unicode_outline_vertices, this->text_position, element.color, glyph, italic_shear);
+							add_glyph_quad(this->unicode_outline_vertices, this->text_position, element.outline_color, glyph, italic_shear);
 						}
 					}
 					else {
 						glyph = this->get_glyph(c, this->character_size, is_bold, element.outline_thickness);
 						if (in_range) {
-							add_glyph_quad(this->outline_vertices, this->text_position, element.color, glyph, italic_shear);
+							add_glyph_quad(this->outline_vertices, this->text_position, element.outline_color, glyph, italic_shear);
 						}
 					}
 				}

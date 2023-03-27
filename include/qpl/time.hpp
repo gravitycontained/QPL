@@ -88,7 +88,7 @@ namespace qpl {
 		QPLDLL std::vector<std::string> get_string_active_segments(qpl::size stop_at_segment, bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
 
 		QPLDLL std::string string_full(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true) const;
-		QPLDLL std::string string_until_segment(qpl::size stop_at_segment, std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
+		QPLDLL std::string string_until_segment(qpl::size stop_at_segment, std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max, bool use_and = true) const;
 
 		QPLDLL std::string string(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
 		QPLDLL std::string string_until_hour(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
@@ -97,10 +97,12 @@ namespace qpl {
 		QPLDLL std::string string_until_ms(std::string_view parantheses = "[]", std::string_view seperation = " : ", bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
 
 		QPLDLL std::string descriptive_string(qpl::size precision = qpl::size_max, bool weeks = true, qpl::size stop_at_segment = qpl::size_max) const;
+		QPLDLL std::string descriptive_string_no_and(qpl::size precision = qpl::size_max, bool weeks = true, qpl::size stop_at_segment = qpl::size_max) const;
 		QPLDLL std::string compact_string(qpl::size precision = qpl::size_max, bool weeks = true, qpl::size stop_at_segment = qpl::size_max) const;
 
 		QPLDLL std::string small_string(qpl::size precision = 2u, bool weeks = true, bool short_string = true, std::string_view parantheses = "[]", std::string_view seperation = " : ") const;
 		QPLDLL std::string small_descriptive_string(qpl::size precision = 2u, bool weeks = true) const;
+		QPLDLL std::string small_descriptive_string_no_and(qpl::size precision = 2u, bool weeks = true) const;
 		QPLDLL std::string small_compact_string(qpl::size precision = 2u, bool weeks = true) const;
 
 

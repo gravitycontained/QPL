@@ -274,7 +274,7 @@ namespace qpl {
 		return result;
 	}
 
-	std::string qpl::time::string_until_segment(qpl::size stop_at_segment, std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision) const {
+	std::string qpl::time::string_until_segment(qpl::size stop_at_segment, std::string_view parantheses, std::string_view seperation, bool short_string, bool weeks, qpl::size precision, bool use_and) const {
 		std::ostringstream stream;
 		if (parantheses.size() > 0) {
 			stream << parantheses[0];
@@ -284,7 +284,7 @@ namespace qpl {
 
 		for (qpl::size i = 0u; i < stop; ++i) {
 			if (i) {
-				if (!short_string && i == stop - 1) {
+				if (use_and && !short_string && i == stop - 1) {
 					stream << " and ";
 				}
 				else {
@@ -347,6 +347,9 @@ namespace qpl {
 	std::string qpl::time::descriptive_string(qpl::size precision, bool weeks, qpl::size stop_at_segment) const {
 		return this->string_until_segment(stop_at_segment, "", ", ", false, weeks, precision);
 	}
+	std::string qpl::time::descriptive_string_no_and(qpl::size precision, bool weeks, qpl::size stop_at_segment) const {
+		return this->string_until_segment(stop_at_segment, "", ", ", false, weeks, precision, false);
+	}
 	std::string qpl::time::compact_string(qpl::size precision, bool weeks, qpl::size stop_at_segment) const {
 		return this->string_until_segment(stop_at_segment, "[]", " : ", true, weeks, precision);
 	}
@@ -356,6 +359,9 @@ namespace qpl {
 	}
 	std::string qpl::time::small_descriptive_string(qpl::size precision, bool weeks) const {
 		return this->descriptive_string(precision, weeks);
+	}
+	std::string qpl::time::small_descriptive_string_no_and(qpl::size precision, bool weeks) const {
+		return this->descriptive_string_no_and(precision, weeks);
 	}
 	std::string qpl::time::small_compact_string(qpl::size precision, bool weeks) const {
 		return this->compact_string(precision, weeks);

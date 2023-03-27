@@ -343,6 +343,10 @@ namespace qsf {
 		}
 
 		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
+		void draw(const T& drawable, qsf::view_t<V> view) {
+			this->draw(drawable, view.get_render_states());
+		}
+		template<typename T, typename V> requires (qsf::has_any_draw<T>() || (qpl::is_container<T>() && qsf::has_any_draw<qpl::container_deepest_subtype<T>>()))
 		void draw(const T& drawable, qsf::view_control_t<V> view) {
 			if (!view.enabled) {
 				this->draw(drawable);
@@ -498,6 +502,25 @@ namespace qsf {
 					this->update(i, args...);
 				}
 			}
+		}
+		template<typename T, typename V, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))
+		void update(T& updatable, const qsf::view_t<V>& view, Args&&... args) {
+			auto before = this->event().m_mouse_position;
+			auto before_delta = this->event().m_delta_mouse_position;
+
+			this->event().m_mouse_position = view.transform_point(this->event().m_mouse_position);
+			this->event().m_delta_mouse_position = view.transform_point_no_offset(this->event().m_delta_mouse_position);
+
+			if constexpr (qsf::has_update<T, Args...>()) {
+				this->final_update(updatable, args...);
+			}
+			else {
+				for (auto& i : updatable) {
+					this->update(i, args...);
+				}
+			}
+			this->event().m_mouse_position = before;
+			this->event().m_delta_mouse_position = before_delta;
 		}
 
 		template<typename T, typename V, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))

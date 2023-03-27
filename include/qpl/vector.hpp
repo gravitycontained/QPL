@@ -962,7 +962,7 @@ namespace qpl {
 			*this = center + vectorN(x, y) * diff.length();
 		}
 		constexpr void rotate(qpl::f64 delta_angle) requires (N == 2) {
-			this->set_rotation(this->angle() + delta_angle);
+			this->set_rotation(-this->angle() + delta_angle);
 		}
 		constexpr void rotate_around(vectorN center, qpl::f64 delta_angle) requires (N == 2) {
 			auto diff = *this - center;

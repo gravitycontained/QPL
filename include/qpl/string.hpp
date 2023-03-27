@@ -2905,6 +2905,10 @@ namespace qpl {
 		return qpl::to_string(qpl::big_number_string(number * 100), '%');
 	}
 	template<typename T> requires (qpl::is_arithmetic<T>())
+	std::string angle_string(T number) {
+		return qpl::to_string(qpl::to_string_precision(2u, (number / qpl::pi) * 180));
+	}
+	template<typename T> requires (qpl::is_arithmetic<T>())
 	std::string percentage_string_precision(T number, qpl::u32 precision) {
 		return qpl::to_string(qpl::big_number_string(number * 100, precision), '%');
 	}
@@ -3353,20 +3357,10 @@ namespace qpl {
 
 	template<typename T>
 	qpl::size unicode_character_length(const T& c) {
-
-		//auto found = std::binary_search(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), character_range{ qpl::u32_cast(c), 0u });
-		//return found ? 2u : 1u;
-
-		//auto find = std::find(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), character_range{ qpl::u32_cast(c), 0u });
-
 		auto range = character_range{ qpl::u32_cast(c), 0u };
 		auto find = std::find(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
 		//auto find = std::lower_bound(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
 		return find == qpl::unicode_long_ranges.cend() ? 1u : *find == range ? 2u : 1u;
-
-		//auto range = character_range{ qpl::u32_cast(c), 0u };
-		//auto find = std::lower_bound(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
-		//return find == qpl::unicode_long_ranges.cend() ? 1u : *find == range ? 2u : 1u;
 	}
 
 	template<typename T>
