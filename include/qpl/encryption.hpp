@@ -1200,6 +1200,10 @@ namespace qpl {
 			if constexpr (config.skip_rotation_chance) {
 				this->generate_rotation_skips(engine);
 			}
+
+			if (debug_print) {
+				this->print();
+			}
 		}
 	};
 
