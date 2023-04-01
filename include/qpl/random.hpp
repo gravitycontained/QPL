@@ -58,8 +58,8 @@ namespace qpl {
 				std::swap(a, b);
 			}
 			auto f = this->generate_0_1();
-			auto d = (b - a);
-			return static_cast<T>(std::round(f * d)) + a;
+			auto d = (b - a) + 1;
+			return static_cast<T>(std::floor(f * d)) + a;
 		}
 
 		//returns current and advances by 1
