@@ -1027,7 +1027,7 @@ namespace qpl {
 		std::array<std::array<matrix_type, config.N* config.N>, config.table_size> shuffle{};
 		qpl::bitset<256 * 8u> rotation_skips{};
 
-		void seed_state(qpl::random_engine<64u>& engine, const std::string_view& key, bool debug_print = false) {
+		void seed_state(std::mt19937_64& engine, const std::string_view& key, bool debug_print = false) {
 			constexpr auto size = 50;
 			std::array<qpl::u8, size* size> state{};
 			for (qpl::size i = 0u; i < qpl::min(key.length(), config.key_size); ++i) {
@@ -1107,16 +1107,25 @@ namespace qpl {
 
 			std::seed_seq seeds(std::begin(random_data), std::end(random_data));
 			engine.seed(seeds);
-			engine.engine.shuffle();
+			//engine.engine.shuffle();
+
+			//if (debug_print) {
+			//	qpl::print("mt19937 state: ");
+			//	for (auto& i : engine.engine.state) {
+			//		qpl::print(qpl::hex_string(i, ""));
+			//	}
+			//	qpl::println();
+			//}
 		}
-		void generate_sbox(qpl::random_engine<64u>& engine) {
+		void generate_sbox(std::mt19937_64& engine) {
 			constexpr std::array<qpl::u8, 256u> sbox_bytes = detail::get_array_0_n<256, qpl::u8>();
 			for (qpl::size s = 0u; s < this->sbox.size(); ++s) {
 				while (true) {
 					this->sbox[s] = sbox_bytes;
 
 					bool found = true;
-					std::shuffle(this->sbox[s].begin(), this->sbox[s].end(), engine.engine);
+					std::shuffle(this->sbox[s].begin(), this->sbox[s].end(), engine);
+					//std::shuffle(this->sbox[s].begin(), this->sbox[s].end(), engine.engine);
 					for (qpl::size i = 0u; i < sbox_bytes.size(); ++i) {
 						this->sbox_inverse[s][this->sbox[s][i]] = qpl::u8_cast(i);
 						if (this->sbox[s][i] == i) {
@@ -1130,14 +1139,15 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_shuffle(qpl::random_engine<64u>& engine) {
+		void generate_shuffle(std::mt19937_64& engine) {
 			constexpr std::array<matrix_type, config.N* config.N> shuffle_bytes = detail::get_array_0_n<config.N* config.N, matrix_type>();
 			for (qpl::size s = 0u; s < this->shuffle.size(); ++s) {
 				while (true) {
 					this->shuffle[s] = shuffle_bytes;
 
 					bool found = true;
-					std::shuffle(this->shuffle[s].begin(), this->shuffle[s].end(), engine.engine);
+					//std::shuffle(this->shuffle[s].begin(), this->shuffle[s].end(), engine.engine);
+					std::shuffle(this->shuffle[s].begin(), this->shuffle[s].end(), engine);
 					for (qpl::size i = 0u; i < shuffle_bytes.size(); ++i) {
 						if (this->shuffle[s][i] == i) {
 							found = false;
@@ -1150,11 +1160,13 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_mds(qpl::random_engine<64u>& engine) {
+		void generate_mds(std::mt19937_64& engine) {
+			std::uniform_int_distribution<unsigned> dist(1u, 255u);
 			for (qpl::size s = 0u; s < this->mds.size(); ++s) {
 				while (true) {
 					for (qpl::size i = 0u; i < config.N; ++i) {
-						this->mds[s][i] = engine.generate(1, 255);
+						//this->mds[s][i] = engine.generate(1, 255);
+						this->mds[s][i] = dist(engine);
 					}
 					for (qpl::size c = 1u; c < config.N; ++c) {
 						for (qpl::size r = 0u; r < config.N; ++r) {
@@ -1172,27 +1184,45 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_rotation_skips(qpl::random_engine<64u>& engine) {
+		void generate_rotation_skips(std::mt19937_64& engine) {
 			for (qpl::size i = 0u; i < this->rotation_skips.size(); ++i) {
-				auto percentage = engine.generate_0_1();
+				//auto percentage = engine.generate_0_1();
+				auto percentage = std::generate_canonical<qpl::f64, std::numeric_limits<qpl::f64>::digits>(engine);
 				this->rotation_skips[i] = i && (percentage < config.skip_rotation_chance);
-
 			}
 		}
 		bool is_rotation_skip(qpl::size index) const {
 			return this->rotation_skips[index % this->rotation_skips.size()];
 		}
 
+		void print_array(auto a) {
+			if constexpr (!qpl::is_container<decltype(a)>()) {
+				qpl::print(qpl::hex_string(qpl::size_cast(a), ""));
+			}
+			else {
+				for (auto& i : a) {
+					this->print_array(i);
+				}
+			}
+			qpl::println();
+		}
 		void print() {
-			qpl::println("sbox = ", qpl::aqua, this->sbox);
-			qpl::println("sbox_inverse = ", qpl::aqua, this->sbox_inverse);
-			qpl::println("mds = ", qpl::aqua, this->mds);
-			qpl::println("mds_inverse = ", qpl::aqua, this->mds_inverse);
-			qpl::println("shuffle = ", qpl::aqua, this->shuffle);
-			qpl::println("rotation_skips = ", qpl::aqua, this->rotation_skips);
+			qpl::println("sbox = ", qpl::aqua);
+			this->print_array(this->sbox);
+			qpl::println("sbox_inverse = ", qpl::aqua);
+			this->print_array(this->sbox_inverse);
+			qpl::println("mds = ", qpl::aqua);
+			this->print_array(this->mds);
+			qpl::println("mds_inverse = ", qpl::aqua);
+			this->print_array(this->mds_inverse);
+			qpl::println("shuffle = ", qpl::aqua);
+			this->print_array(this->shuffle);
+			qpl::println("rotation_skips = ", qpl::aqua);
+			this->print_array(this->rotation_skips);
 		}
 		void create(const std::string_view& key, bool debug_print = false) {
-			qpl::random_engine<64u> engine;
+			//qpl::random_engine<64u> engine;
+			std::mt19937_64 engine;
 			this->seed_state(engine, key, debug_print);
 			this->generate_sbox(engine);
 			this->generate_shuffle(engine);

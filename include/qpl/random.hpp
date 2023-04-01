@@ -140,10 +140,10 @@ namespace qpl {
 			this->index = 0;
 		}
 
-		std::array<Ty, N * 2> state;
-		qpl::u32 state_position;
-		qpl::u32 index;
-		bool using_seed_seq;
+		std::array<Ty, N * 2> state{};
+		qpl::u32 state_position = 0u;
+		qpl::u32 index = 0u;
+		bool using_seed_seq = false;
 		static constexpr Ty FH = N - M;
 		static constexpr Ty WMSK = ~((~Ty{ 0 } << (W - 1)) << 1);
 		static constexpr Ty HMSK = (WMSK << R) & WMSK;
