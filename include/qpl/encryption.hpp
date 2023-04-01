@@ -1259,7 +1259,7 @@ namespace qpl {
 				}
 				qpl::println();
 				qpl::print("2 the first random numbers are: ");
-				std::uniform_int_distribution<int> dist(0u, 255u);
+				std::uniform_int_distribution<qpl::u64> dist(0u, 255u);
 				for (qpl::size i = 0u; i < 1024u; ++i) {
 					qpl::print(qpl::hex_string(dist(engine.engine), ""));
 				}
