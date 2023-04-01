@@ -1611,7 +1611,7 @@ namespace qpl {
 			}
 		}
 
-		void create_round_key(const std::string_view& key) {
+		void create_round_key(const std::string_view& key, bool debug_print) {
 
 			std::array<qpl::u8, this->key_size> full_key{};
 			std::array<qpl::u8, this->state_size> last_key_state{};
@@ -1621,6 +1621,14 @@ namespace qpl {
 				full_key[i] = qpl::u8_cast(key[i]);
 			}
 
+			if (debug_print) {
+				qpl::println(qpl::yellow, " create_round_key !");
+			}
+			auto sha512 = qpl::mgf1(key, this->round_key_size, qpl::sha512_object);
+			if (debug_print) {
+				qpl::println("sha512 = ", qpl::aqua, sha512);
+			}
+
 			for (qpl::size round = 0u; round < this->cipher_rounds; ++round) {
 				auto round_index = round * this->state_size;
 				auto stop = qpl::min(qpl::signed_cast(this->key_size) - qpl::signed_cast(round_index), qpl::signed_cast(this->state_size));
@@ -1628,13 +1636,18 @@ namespace qpl {
 					key_state[i] ^= full_key[i + round_index];
 				}
 
-				auto sha512 = qpl::mgf1(key, this->round_key_size, qpl::sha512_object);
 				auto sbox_index = qpl::u8_cast((round ^ last_key_state[0]) % this->table_size);
 				auto mds_index = this->table.sbox[sbox_index][qpl::rotate_left(qpl::u8_cast(round ^ last_key_state[0]), 2)] % this->table_size;
 				auto shuffle_index = this->table.sbox[sbox_index][qpl::rotate_left(qpl::u8_cast(round ^ last_key_state[0]), 5)] % this->table_size;
 				const auto& sbox = this->table.sbox[sbox_index];
 				const auto& mds = this->table.mds[mds_index];
 				const auto& shuffle = this->table.shuffle[shuffle_index];
+
+				if (debug_print) {
+					qpl::println("sbox_index = ", qpl::aqua, sbox_index);
+					qpl::println("mds_index = ", qpl::aqua, mds_index);
+					qpl::println("shuffle_index = ", qpl::aqua, shuffle_index);
+				}
 
 				auto copy = key_state;
 				for (qpl::size i = 0u; i < this->state_size; ++i) {
@@ -1654,6 +1667,10 @@ namespace qpl {
 					for (qpl::size i = 0u; i < this->N; ++i) {
 						auto index = c * this->N + i;
 						key_state[index] = row[i];
+
+						if (debug_print) {
+							qpl::println("1 key_state[", index, "] = ", qpl::aqua, qpl::hex_string(this->round_key[index]));
+						}
 					}
 				}
 				for (qpl::size c = 0u; c < this->N; ++c) {
@@ -1670,13 +1687,22 @@ namespace qpl {
 					for (qpl::size i = 0u; i < this->N; ++i) {
 						auto index = i * this->N + c;
 						key_state[index] = col[i];
+
+						if (debug_print) {
+							qpl::println("2 key_state[", index, "] = ", qpl::aqua, qpl::hex_string(this->round_key[index]));
+						}
 					}
 				}
 				for (qpl::size i = 0u; i < this->state_size; ++i) {
 					auto index = round_index + i;
 					this->round_key[index] = key_state[i] ^ last_key_state[i] ^ sha512[i];
+
+					if (debug_print) {
+						qpl::println("this->round_key[", index, "] = ", qpl::aqua, qpl::hex_string(this->round_key[index]));
+					}
 				}
 				last_key_state = key_state;
+
 			}
 		}
 
@@ -1714,7 +1740,7 @@ namespace qpl {
 				return;
 			}
 			this->table.create(key);
-			this->create_round_key(key);
+			this->create_round_key(key, debug_print);
 			this->key = key;
 
 			if (debug_print) {
