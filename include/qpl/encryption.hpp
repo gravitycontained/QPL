@@ -1472,8 +1472,9 @@ namespace qpl {
 				this->state_ctr = qpl::size_cast(i);
 
 				if (debug_print) {
-					qpl::print("add_reverse_state_rotation state_ctr = ", i);
+					qpl::print("add_reverse_state_rotation state_ctr = ", i, " ");
 					this->print_state();
+					qpl::println();
 				}
 
 				//this->add_roundkey_diffuse_rows(i % this->cipher_rounds);
@@ -1489,8 +1490,9 @@ namespace qpl {
 				}
 			}
 			if (debug_print) {
-				qpl::print("add_reverse_state_rotation state_ctr = ", 0, " (end)");
+				qpl::print("add_reverse_state_rotation state_ctr = ", 0, " (end) ");
 				this->print_state();
+				qpl::println();
 			}
 		}
 		void sub_reverse_state_rotation(bool debug_print = false) {
@@ -1503,8 +1505,9 @@ namespace qpl {
 				this->state_ctr = qpl::size_cast(i);
 
 				if (debug_print) {
-					qpl::print("sub_reverse_state_rotation state_ctr = ", this->state_ctr);
+					qpl::print("sub_reverse_state_rotation state_ctr = ", this->state_ctr, " ");
 					this->print_state();
+					qpl::println();
 				}
 
 				//this->add_roundkey_diffuse_rows(i % this->cipher_rounds);
@@ -1520,8 +1523,9 @@ namespace qpl {
 				}
 			}
 			if (debug_print) {
-				qpl::print("sub_reverse_state_rotation state_ctr = ", 0, " (end)");
+				qpl::print("sub_reverse_state_rotation state_ctr = ", 0, " (end)", " ");
 				this->print_state();
+				qpl::println();
 			}
 		}
 
@@ -1554,7 +1558,8 @@ namespace qpl {
 				if (debug_print) {
 					qpl::print("state_ctr = ", this->state_ctr);
 					this->print_state();
-					qpl::println("state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
+					qpl::println(" state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
+
 				}
 
 				this->input_cipher_state();
@@ -1565,6 +1570,7 @@ namespace qpl {
 			if (debug_print) {
 				qpl::print("state_ctr = ", this->state_ctr);
 				this->print_state();
+				qpl::println(" state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
 			}
 
 			if constexpr (this->bidirectional) {
@@ -1590,7 +1596,7 @@ namespace qpl {
 				if (debug_print) {
 					qpl::print("state_ctr = ", this->state_ctr);
 					this->print_state();
-					qpl::println("state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
+					qpl::println(" state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
 				}
 
 				this->input_decipher_state();
@@ -1601,6 +1607,7 @@ namespace qpl {
 			if (debug_print) {
 				qpl::print("state_ctr = ", this->state_ctr);
 				this->print_state();
+				qpl::println(" state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
 			}
 		}
 
