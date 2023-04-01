@@ -2102,6 +2102,7 @@ namespace qpl {
 	QPLDLL qpl::char_type get_random_visible_char();
 	QPLDLL std::string get_random_string(qpl::size length);
 	QPLDLL std::string get_random_string_with_repetions(qpl::size length, qpl::size repetition_size);
+	QPLDLL std::string get_random_string_with_repetions(qpl::size length, std::vector<qpl::size> repetitions);
 	QPLDLL std::string get_random_number_string(qpl::size length);
 	QPLDLL std::string get_random_lowercase_uppercase_number_string(qpl::size length);
 	QPLDLL std::string get_random_lowercase_number_string(qpl::size length);
@@ -2112,6 +2113,10 @@ namespace qpl {
 	QPLDLL std::string get_random_string_full_range(qpl::size length);
 	QPLDLL std::string get_random_string_full_range_with_repetitions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::wstring get_random_wstring_full_range(qpl::size length);
+	QPLDLL std::string get_random_hex_string(qpl::size length);
+	QPLDLL std::string get_random_hex_string_with_repetitions(qpl::size length, qpl::size repetition_size);
+	QPLDLL std::string get_random_base64_string(qpl::size length);
+	QPLDLL std::string get_random_base64_string_with_repetitions(qpl::size length, qpl::size repetition_size);
 
 	QPLDLL std::string remove_backslash_r(const std::string& string);
 	QPLDLL std::wstring remove_backslash_r(const std::wstring& string);

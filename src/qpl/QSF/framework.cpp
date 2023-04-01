@@ -485,6 +485,9 @@ namespace qsf {
 	void qsf::base_state::call_on_close() {
 
 	}
+	void qsf::base_state::call_before_close() {
+
+	}
 	void qsf::base_state::call_on_activate() {
 
 	}
@@ -550,6 +553,7 @@ namespace qsf {
 	}
 	void qsf::base_state::update_close_window() {
 		if (this->event().window_closed() && this->is_allow_exit) {
+			this->call_before_close();
 			this->framework->window.close();
 			this->call_on_close();
 		}

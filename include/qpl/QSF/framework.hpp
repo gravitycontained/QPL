@@ -223,6 +223,7 @@ namespace qsf {
 		QPLDLL virtual void call_on_resize();
 		QPLDLL virtual void call_before_create();
 		QPLDLL virtual void call_on_close();
+		QPLDLL virtual void call_before_close();
 		QPLDLL virtual void call_on_activate();
 
 		QPLDLL void draw_call();

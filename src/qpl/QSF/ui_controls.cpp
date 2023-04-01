@@ -2619,22 +2619,19 @@ namespace qsf {
 	void qsf::console::init() {
 		this->scroll_transition_animation.set_duration(0.4);
 		this->view.position.x = -10.0f;
-		this->colored_text.character_size = 17u;
 		this->update_cursor_dimension();
 		this->update_cursor_position();
 	}
 	void qsf::console::apply_font() {
-		this->colored_text.set_character_size(17u);
-
 		this->init();
 		this->calculate_default_character_size();
 	}
 	void qsf::console::set_border_texture(const sf::Texture& texture) {
-		this->shadow_border.set_texture(texture);
-		this->shadow_border.set_color(this->shadow_border_color);
-		this->shadow_border.set_scale(0.2f);
-		this->shadow_border.clear();
-		this->shadow_border.add_top();
+		//this->shadow_border.set_texture(texture);
+		//this->shadow_border.set_color(this->shadow_border_color);
+		//this->shadow_border.set_scale(0.2f);
+		//this->shadow_border.clear();
+		//this->shadow_border.add_top();
 
 		this->scroll_bar_shadow_border.set_texture(texture);
 		//this->scroll_bar_shadow_border.set_color(this->shadow_border_color);
@@ -2704,9 +2701,9 @@ namespace qsf {
 		this->make_selection_rectangles();
 
 		if (this->border_texture_set) {
-			this->shadow_border.set_dimension(dimension);
-			this->shadow_border.clear();
-			this->shadow_border.add_top();
+			//this->shadow_border.set_dimension(dimension);
+			//this->shadow_border.clear();
+			//this->shadow_border.add_top();
 
 			this->scroll_bar_shadow_border.set_dimension(qpl::vec(this->scroll_bar.hitbox.position.x, dimension.y));
 			this->scroll_bar_shadow_border.clear();
@@ -2782,11 +2779,16 @@ namespace qsf {
 		//this->reset_visible_range();
 		this->update_cursor_position(false);
 	}
-	void qsf::console::add_text_input(const qpl::u32_string& string) {
-
+	void qsf::console::add_text_input(const qpl::u32_string& string, bool end_of_line) {
 		auto size = this->string_split.size();
 		auto pos = this->cursor_position;
-		pos.x = qpl::max(0ll, qpl::signed_cast(pos.x));
+
+		if (end_of_line) {
+			pos.x = this->string_and_input_split[pos.y].length() - 1;
+		}
+		else {
+			pos.x = qpl::max(0ll, qpl::signed_cast(pos.x));
+		}
 
 		auto count = qpl::count(qpl::to_basic_string<wchar_t>(string), L'\n');
 		if (count) {
@@ -3174,7 +3176,7 @@ namespace qsf {
 			}
 		}
 		if (event.key_pressed(sf::Keyboard::Enter)) {
-			this->add_text_input(qpl::to_u32_string('\n'));
+			this->add_text_input(qpl::to_u32_string('\n'), !this->allow_going_up_with_cursor);
 			special_input = true;
 
 			if (this->enter_to_continue) {
@@ -3279,6 +3281,7 @@ namespace qsf {
 			else {
 				if (event.scrolled_down()) {
 					this->view_row += qpl::max(1ll, (3 + this->zooms / 2));
+					this->view_row = qpl::min(this->view_row, qpl::isize_cast(this->colored_text.rows - 3u));
 					this->prepare_scroll();
 				}
 				if (event.scrolled_up()) {
@@ -3328,9 +3331,9 @@ namespace qsf {
 		draw.draw(this->selection_rectangle, copy);
 
 		if (this->border_texture_set) {
-			if (this->view_row > 1) {
-				draw.draw(this->shadow_border);
-			}
+			//if (this->view_row > 1) {
+			//	draw.draw(this->shadow_border);
+			//}
 			draw.draw(this->scroll_bar_shadow_border);
 		}
 		draw.draw(this->scroll_bar);

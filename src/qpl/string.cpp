@@ -715,6 +715,18 @@ namespace qpl {
 		}
 		return stream.str();
 	}
+	std::string qpl::get_random_string_with_repetions(qpl::size length, std::vector<qpl::size> repetions) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length;) {
+
+			auto rep = qpl::random_element(repetions);
+			rep = qpl::min(rep, length - i);
+
+			stream << std::string(rep, qpl::get_random_visible_char());
+			i += rep;
+		}
+		return stream.str();
+	}
 	std::string qpl::get_random_string(qpl::size length) {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
@@ -814,6 +826,46 @@ namespace qpl {
 		qpl::set_random_range_i(qpl::type_min<wchar_t>(), qpl::type_max<wchar_t>());
 		for (auto i = qpl::size{}; i < length; ++i) {
 			stream << qpl::char_cast(qpl::random_i());
+		}
+		return stream.str();
+	}
+	std::string qpl::get_random_hex_string(qpl::size length) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length; ++i) {
+			stream << qpl::detail::base_36_lower[qpl::random(0u, 15u)];
+		}
+		return stream.str();
+	}
+	std::string qpl::get_random_hex_string_with_repetitions(qpl::size length, qpl::size repetitions) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length; ) {
+
+			auto rep = qpl::random(qpl::size{ 1 }, repetitions);
+			rep = qpl::min(rep, length - i);
+
+			auto hex = qpl::detail::base_36_lower[qpl::random(0u, 15u)];
+			stream << qpl::to_string_repeat(hex, rep);
+			i += rep;
+		}
+		return stream.str();
+	}
+	std::string qpl::get_random_base64_string(qpl::size length) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length; ++i) {
+			stream << qpl::detail::base_64[qpl::random(0u, 63u)];
+		}
+		return stream.str();
+	}
+	std::string qpl::get_random_base64_string_with_repetitions(qpl::size length, qpl::size repetitions) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length; ) {
+
+			auto rep = qpl::random(qpl::size{ 1 }, repetitions);
+			rep = qpl::min(rep, length - i);
+
+			auto base64 = qpl::detail::base_64[qpl::random(0u, 63u)];
+			stream << qpl::to_string_repeat(base64, rep);
+			i += rep;
 		}
 		return stream.str();
 	}

@@ -1403,12 +1403,22 @@ namespace qpl {
 			}
 		}
 
+		void print_iv() {
+			for (qpl::size i = 0u; i < this->initialization_vector.size(); ++i) {
+				qpl::print(qpl::hex_string(this->initialization_vector[i], "", {}, true));
+			}
+			qpl::print("  ");
+		}
+		void print_round_key() {
+			for (qpl::size i = 0u; i < this->round_key.size(); ++i) {
+				qpl::print(qpl::hex_string(this->round_key[i], "", {}, true));
+			}
+			qpl::print("  ");
+		}
 		void print_state() {
 			for (qpl::size i = 0u; i < this->state.size(); ++i) {
-				//if (i && i % this->N == 0) qpl::print('\n');
 				qpl::print(qpl::hex_string(this->state[i], "", {}, true));
 			}
-			//qpl::println();
 			qpl::print("  ");
 		}
 
@@ -1457,9 +1467,14 @@ namespace qpl {
 
 		}
 
-		void add_reverse_state_rotation() {
+		void add_reverse_state_rotation(bool debug_print = false) {
 			for (qpl::isize i = this->states - 2; i >= 0; --i) {
 				this->state_ctr = qpl::size_cast(i);
+
+				if (debug_print) {
+					qpl::print("add_reverse_state_rotation state_ctr = ", i);
+					this->print_state();
+				}
 
 				//this->add_roundkey_diffuse_rows(i % this->cipher_rounds);
 				this->add_roundkey(i % this->cipher_rounds);
@@ -1473,8 +1488,12 @@ namespace qpl {
 					this->message[index + i] ^= this->state[i];
 				}
 			}
+			if (debug_print) {
+				qpl::print("add_reverse_state_rotation state_ctr = ", 0, " (end)");
+				this->print_state();
+			}
 		}
-		void sub_reverse_state_rotation() {
+		void sub_reverse_state_rotation(bool debug_print = false) {
 			auto index = (this->states - 1) * this->state_size;
 			for (qpl::size i = 0u; i < this->state_size; ++i) {
 				this->state[i] = this->message[index + i];
@@ -1483,6 +1502,11 @@ namespace qpl {
 			for (qpl::isize i = this->states - 2; i >= 0; --i) {
 				this->state_ctr = qpl::size_cast(i);
 
+				if (debug_print) {
+					qpl::print("sub_reverse_state_rotation state_ctr = ", this->state_ctr);
+					this->print_state();
+				}
+
 				//this->add_roundkey_diffuse_rows(i % this->cipher_rounds);
 				this->add_roundkey(i % this->cipher_rounds);
 				this->diffuse_rows(i % this->cipher_rounds);
@@ -1494,6 +1518,10 @@ namespace qpl {
 				for (qpl::size i = 0u; i < this->state_size; ++i) {
 					this->message[index + i] ^= this->state[i];
 				}
+			}
+			if (debug_print) {
+				qpl::print("sub_reverse_state_rotation state_ctr = ", 0, " (end)");
+				this->print_state();
 			}
 		}
 
@@ -1513,33 +1541,44 @@ namespace qpl {
 			this->print_state();
 			qpl::println();
 		}
-		void cipher() {
+		void cipher(bool debug_print = false) {
 			this->last_state.fill(0u);
 			this->state_byte = 0u;
 			this->shuffle_state_byte();
 
+
 			for (this->state_ctr = 0u; this->state_ctr < this->states; ++this->state_ctr) {
 
 				//qpl::println("cipher skip = ", this->table.get_diffusion_skip(this->state_ctr));
+
+				if (debug_print) {
+					qpl::print("state_ctr = ", this->state_ctr);
+					this->print_state();
+					qpl::println("state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
+				}
 
 				this->input_cipher_state();
 				this->cipher_rotation();
 				this->output_cipher_state();
 				this->shuffle_state_byte();
 			}
+			if (debug_print) {
+				qpl::print("state_ctr = ", this->state_ctr);
+				this->print_state();
+			}
 
 			if constexpr (this->bidirectional) {
 				this->state_byte = 0u;
-				this->add_reverse_state_rotation();
+				this->add_reverse_state_rotation(debug_print);
 			}
 		}
-		void decipher() {
+		void decipher(bool debug_print = false) {
 			this->state.fill(0u);
 			this->last_state.fill(0u);
 
 			if constexpr (this->bidirectional) {
 				this->state_byte = 0u;
-				this->sub_reverse_state_rotation();
+				this->sub_reverse_state_rotation(debug_print);
 			}
 			this->state_byte = 0u;
 
@@ -1548,10 +1587,20 @@ namespace qpl {
 			for (this->state_ctr = 0u; this->state_ctr < this->states; ++this->state_ctr) {
 				//qpl::println("decipher skip = ", this->table.get_diffusion_skip(this->state_ctr));
 
+				if (debug_print) {
+					qpl::print("state_ctr = ", this->state_ctr);
+					this->print_state();
+					qpl::println("state_byte = ", qpl::gray, qpl::hex_string(this->state_byte));
+				}
+
 				this->input_decipher_state();
 				this->decipher_rotation();
 				this->output_decipher_state();
 				this->shuffle_state_byte();
+			}
+			if (debug_print) {
+				qpl::print("state_ctr = ", this->state_ctr);
+				this->print_state();
 			}
 		}
 
@@ -1653,19 +1702,30 @@ namespace qpl {
 
 			this->message = message;
 		}
-		void set_key(const std::string_view& key) {
+		void set_key(const std::string_view& key, bool debug_print = false) {
 			if (this->key == key) {
 				return;
 			}
 			this->table.create(key);
 			this->create_round_key(key);
 			this->key = key;
+
+			if (debug_print) {
+				qpl::println("key = ", qpl::hex_string(key));
+				qpl::print("round_key = ");
+				this->print_round_key();
+
+				if constexpr (this->use_initialization_vector) {
+					qpl::print("HAS iv = ");
+					this->print_iv();
+				}
+			}
 		}
 
 		void clear() {
 			this->key.clear();
 		}
-		void encrypt(std::string& message) {
+		void encrypt(std::string& message, bool debug_print) {
 			using matrix_type = lookup_table<config>::matrix_type;
 
 			auto message_length = message.length();
@@ -1676,7 +1736,7 @@ namespace qpl {
 				this->add_initialization_vector();
 			}
 
-			this->cipher();
+			this->cipher(debug_print);
 			auto output_size = this->states * this->state_size;
 			auto delta = output_size - message_length;
 
@@ -1691,12 +1751,12 @@ namespace qpl {
 				}
 			}
 		}
-		void encrypt(std::string& message, const std::string_view& key, bool reset_key = true) {
+		void encrypt(std::string& message, const std::string_view& key, bool reset_key = true, bool debug_print = false) {
 			if constexpr (this->use_initialization_vector) {
 				this->create_initialization_vector();
 			}
-			this->set_key(key);
-			this->encrypt(message);
+			this->set_key(key, debug_print);
+			this->encrypt(message, debug_print);
 			if (reset_key) {
 				this->clear();
 			}
@@ -1706,8 +1766,7 @@ namespace qpl {
 			this->encrypt(copy, key, reset_key);
 			return copy;
 		}
-
-		void decrypt(std::string& message) {
+		void decrypt(std::string& message, bool debug_print = false) {
 			using matrix_type = lookup_table<config>::matrix_type;
 
 			constexpr auto init_vector_size = this->use_initialization_vector ? N * N : 0u;
@@ -1720,7 +1779,7 @@ namespace qpl {
 
 			message.resize(message_size, qpl::u8{ 0 });
 			this->set_input(message);
-			this->decipher();
+			this->decipher(debug_print);
 
 			if constexpr (this->use_initialization_vector) {
 				this->sub_initialization_vector();
@@ -1728,12 +1787,12 @@ namespace qpl {
 			auto output_size = this->states * this->state_size - delta;
 			message.resize(output_size, qpl::u8{ 0 });
 		}
-		void decrypt(std::string& message, const std::string_view& key, bool reset_key = true) {
+		void decrypt(std::string& message, const std::string_view& key, bool reset_key = true, bool debug_print = false) {
 			if constexpr (this->use_initialization_vector) {
 				this->read_initialization_vector(message);
 			}
-			this->set_key(key);
-			this->decrypt(message);
+			this->set_key(key, debug_print);
+			this->decrypt(message, debug_print);
 			if (reset_key) {
 				this->clear();
 			}
@@ -1741,6 +1800,21 @@ namespace qpl {
 		std::string decrypted(const std::string& message, const std::string_view& key, bool reset_key = true) {
 			auto copy = message;
 			this->decrypt(copy, key, reset_key);
+			return copy;
+		}
+		std::string encrypted_debug(const std::string& message, const std::string_view& key, bool reset_key = true) {
+			qpl::println("message = ", qpl::aqua, qpl::hex_string(message));
+			qpl::println("key = ", qpl::aqua, qpl::hex_string(key));
+			auto copy = message;
+			this->encrypt(copy, key, reset_key, true);
+			return copy;
+		}
+
+		std::string decrypted_debug(const std::string& message, const std::string_view& key, bool reset_key = true) {
+			qpl::println("message = ", qpl::aqua, qpl::hex_string(message));
+			qpl::println("key = ", qpl::aqua, qpl::hex_string(key));
+			auto copy = message;
+			this->decrypt(copy, key, reset_key, true);
 			return copy;
 		}
 	};

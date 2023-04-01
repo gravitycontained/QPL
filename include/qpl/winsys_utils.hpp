@@ -95,6 +95,7 @@ namespace qpl {
 		QPLDLL bool empty() const;
 		QPLDLL void print() const;
 		QPLDLL void println() const;
+		QPLDLL qpl::size count_new_line_size() const;
 		QPLDLL std::string string() const;
 		QPLDLL std::wstring wstring() const;
 		QPLDLL std::vector<colored_string> get_lines() const;

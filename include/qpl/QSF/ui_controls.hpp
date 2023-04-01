@@ -1287,7 +1287,7 @@ namespace qsf {
 		qpl::vec2f selection_rectangle_start;
 		qpl::vec2f selection_rectangle_end;
 
-		qsf::border_graphic shadow_border;
+		//qsf::border_graphic shadow_border;
 		qsf::border_graphic scroll_bar_shadow_border;
 
 		qsf::view view;
@@ -1359,7 +1359,7 @@ namespace qsf {
 		QPLDLL void update_input_string_split();
 		QPLDLL void update_cursor_position(bool reset_timer = false);
 		QPLDLL void update_input_text_graphics();
-		QPLDLL void add_text_input(const qpl::u32_string& string);
+		QPLDLL void add_text_input(const qpl::u32_string& string, bool end_of_line = false);
 		QPLDLL void pop_character_at_cursor();
 		QPLDLL void update_cursor_dimension();
 		QPLDLL void update_text_range();
