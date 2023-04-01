@@ -1253,11 +1253,15 @@ namespace qpl {
 			this->seed_state(engine, key, debug_print);
 
 			if (debug_print) {
-				qpl::print("the first random numbers are: ");
+				qpl::print("1 the first random numbers are: ");
+				for (qpl::size i = 0u; i < 1024u; ++i) {
+					qpl::print(qpl::hex_string(engine.engine(), ""));
+				}
+				qpl::println();
+				qpl::print("2 the first random numbers are: ");
 				std::uniform_int_distribution<int> dist(0u, 255u);
 				for (qpl::size i = 0u; i < 1024u; ++i) {
-
-					qpl::print(qpl::hex_string(engine.engine(), ""));
+					qpl::print(qpl::hex_string(dist(engine.engine), ""));
 				}
 				qpl::println();
 			}
@@ -1269,7 +1273,7 @@ namespace qpl {
 			}
 
 			if (debug_print) {
-				//this->print();
+				this->print();
 			}
 		}
 	};
