@@ -1204,21 +1204,26 @@ namespace qpl {
 					this->print_array(i);
 				}
 			}
-			qpl::println();
 		}
 		void print() {
 			qpl::println("sbox = ", qpl::aqua);
 			this->print_array(this->sbox);
+			qpl::println();
 			qpl::println("sbox_inverse = ", qpl::aqua);
 			this->print_array(this->sbox_inverse);
+			qpl::println();
 			qpl::println("mds = ", qpl::aqua);
 			this->print_array(this->mds);
+			qpl::println();
 			qpl::println("mds_inverse = ", qpl::aqua);
 			this->print_array(this->mds_inverse);
+			qpl::println();
 			qpl::println("shuffle = ", qpl::aqua);
 			this->print_array(this->shuffle);
+			qpl::println();
 			qpl::println("rotation_skips = ", qpl::aqua);
 			this->print_array(this->rotation_skips);
+			qpl::println();
 		}
 		void create(const std::string_view& key, bool debug_print = false) {
 			//qpl::random_engine<64u> engine;
