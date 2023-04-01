@@ -286,6 +286,9 @@ namespace qpl {
 		return qpl::sha512::to_string(digest);
 	}
 	std::string qpl::mgf1(const std::string_view& seed, qpl::size length, hash_type hash_object) {
+		if (length == 0u) {
+			return "";
+		}
 		std::string result = "";
 		auto blocks = ((length - 1) / (hash_object.second / 4u) + 1);
 		for (qpl::size i = 0u; i < blocks; ++i) {

@@ -1898,7 +1898,11 @@ namespace qpl {
 
 			constexpr auto init_vector_size = this->use_initialization_vector ? N * N : 0u;
 
-			auto message_size = message.length() - init_vector_size - sizeof(matrix_type);
+			auto message_size = qpl::signed_cast(message.length()) - qpl::signed_cast(init_vector_size) - qpl::signed_cast(sizeof(matrix_type));
+			if (message_size <= 0ll) {
+				message.clear();
+				return;
+			}
 			matrix_type delta = 0;
 			for (qpl::size i = 0u; i < sizeof(matrix_type); ++i) {
 				delta |= static_cast<matrix_type>(qpl::u8_cast(message[message_size + i])) << (i * qpl::bits_in_byte());
@@ -1911,7 +1915,8 @@ namespace qpl {
 			if constexpr (this->use_initialization_vector) {
 				this->sub_initialization_vector();
 			}
-			auto output_size = this->states * this->state_size - delta;
+			auto output_size = qpl::signed_cast(this->states * this->state_size) - qpl::signed_cast(delta);
+			output_size = qpl::max(0ll, output_size);
 			message.resize(output_size, qpl::u8{ 0 });
 		}
 		void decrypt(std::string& message, const std::string_view& key, bool reset_key = true, bool debug_print = false) {
