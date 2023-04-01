@@ -49,6 +49,18 @@ namespace qpl {
 		R generate_0_1() {
 			return std::generate_canonical<R, std::numeric_limits<R>::digits>(*this);
 		}
+		template<typename T>
+		T get(T a, T b) {
+			if (a == b) {
+				return a;
+			}
+			if (a > b) {
+				std::swap(a, b);
+			}
+			auto f = this->generate_0_1();
+			auto d = (b - a);
+			return static_cast<T>(std::round(f * d)) + a;
+		}
 
 		//returns current and advances by 1
 		Ty generate() {
@@ -624,8 +636,7 @@ namespace qpl {
 	template <typename C, typename R> requires (qpl::is_container<C>())
 	void shuffle(C& container, R& engine) {
 		for (auto i = container.size() - 1; i > 0; --i) {
-			std::uniform_int_distribution<std::size_t> dist(0, i);
-			std::swap(container[i], container[dist(engine)]);
+			std::swap(container[i], container[engine.get(qpl::size_cast(0ull), i)]);
 		}
 	}
 }

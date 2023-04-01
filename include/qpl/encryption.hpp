@@ -1162,7 +1162,6 @@ namespace qpl {
 			}
 		}
 		void generate_mds(auto& engine, bool debug_print = false) {
-			std::uniform_int_distribution<unsigned> dist(1u, 255u);
 			for (qpl::size s = 0u; s < this->mds.size(); ++s) {
 				while (true) {
 
@@ -1173,7 +1172,7 @@ namespace qpl {
 					for (qpl::size i = 0u; i < config.N; ++i) {
 						//this->mds[s][i] = engine.generate(1, 255);
 						//this->mds[s][i] = qpl::u8_cast(dist(engine));
-						this->mds[s][i] = qpl::u8_cast(dist(engine));
+						this->mds[s][i] = qpl::u8_cast(engine.get(1u, 255u));
 						if (debug_print) {
 							qpl::print(qpl::yellow, qpl::hex_string(this->mds[s][i]), " ");
 						}
@@ -1209,7 +1208,7 @@ namespace qpl {
 			for (qpl::size i = 0u; i < this->rotation_skips.size(); ++i) {
 				//auto percentage = engine.generate_0_1();
 				//auto percentage = std::generate_canonical<qpl::f64, std::numeric_limits<qpl::f64>::digits>(engine);
-				auto percentage = std::generate_canonical<qpl::f64, std::numeric_limits<qpl::f64>::digits>(engine);
+				auto percentage = engine.generate_0_1();
 				this->rotation_skips[i] = i && (percentage < config.skip_rotation_chance);
 			}
 		}
@@ -1259,9 +1258,8 @@ namespace qpl {
 				}
 				qpl::println();
 				qpl::print("2 the first random numbers are: ");
-				std::uniform_int_distribution<qpl::u64> dist(0u, 255u);
 				for (qpl::size i = 0u; i < 1024u; ++i) {
-					qpl::print(qpl::hex_string(dist(engine.engine), ""));
+					qpl::print(qpl::hex_string(engine.engine.get(0u, 255u), ""));
 				}
 				qpl::println();
 			}
