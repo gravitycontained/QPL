@@ -1028,7 +1028,7 @@ namespace qpl {
 		qpl::bitset<256 * 8u> rotation_skips{};
 
 		void seed_state(auto& engine, const std::string_view& key, bool debug_print = false) {
-			constexpr auto size = 50;
+			constexpr auto size = 71;
 			std::array<qpl::u8, size* size> state{};
 			for (qpl::size i = 0u; i < qpl::min(key.length(), config.key_size); ++i) {
 				state[i] = qpl::u8_cast(key[i]);
@@ -1083,7 +1083,7 @@ namespace qpl {
 			}
 
 			std::string seed = std::string{ key };
-			auto sha512_hash = qpl::from_hex_string(qpl::mgf1(seed, 624 * 8u, qpl::sha512_object));
+			auto sha512_hash = qpl::from_hex_string(qpl::mgf1(seed, 624 * 16u, qpl::sha512_object));
 
 			if (debug_print) {
 				qpl::println("sha512 hash: ", qpl::aqua, qpl::hex_string(sha512_hash));
@@ -1091,22 +1091,21 @@ namespace qpl {
 			}
 
 
-			std::array<qpl::u32, 624> random_data{};
-			for (qpl::size i = 0u; i < random_data.size(); ++i) {
-				for (qpl::size b = 0u; b < 4u; ++b) {
-					auto index = i * 4u + b;
-					random_data[i] |= (qpl::u32_cast(state[index] ^ qpl::u8_cast(sha512_hash[index])) << (b * 8u));
+			engine.engine.state.fill(qpl::u64{ 0ull });
+			for (qpl::size i = 0u; i < engine.engine.state.size(); ++i) {
+				for (qpl::size b = 0u; b < 8u; ++b) {
+					auto index = i * 8u + b;
+					engine.engine.state[i] |= (qpl::u64_cast(state[index] ^ qpl::u8_cast(sha512_hash[index])) << (b * 8u));
 				}
 				if (debug_print) {
-					qpl::print(qpl::hex_string(random_data[i], ""));
+					qpl::print(qpl::hex_string(engine.engine.state[i], ""));
 				}
 			}
 			if (debug_print) {
 				qpl::println();
 			}
 
-			std::seed_seq seeds(std::begin(random_data), std::end(random_data));
-			engine.seed(seeds);
+
 			//engine.engine.shuffle();
 
 			//if (debug_print) {
@@ -1251,6 +1250,10 @@ namespace qpl {
 			qpl::random_engine<64u> engine;
 			//std::mt19937_64 engine;
 			this->seed_state(engine, key, debug_print);
+
+			for (auto& i : engine.engine.state) {
+
+			}
 
 			if (debug_print) {
 				qpl::print("the first random numbers are: ");
