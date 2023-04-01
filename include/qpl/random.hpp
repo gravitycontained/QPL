@@ -613,8 +613,18 @@ namespace qpl {
 		}
 	};
 
+
 	using white_noise_engine = white_noise_engine_N<64u>;
 
+
+
+	template <typename C, typename R> requires (qpl::is_container<C>())
+	void shuffle(C& container, R& engine) {
+		for (auto i = container.size() - 1; i > 0; --i) {
+			std::uniform_int_distribution<std::size_t> dist(0, i);
+			std::swap(container[i], container[dist(engine)]);
+		}
+	}
 }
 
 #endif
