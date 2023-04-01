@@ -71,6 +71,9 @@ namespace qpl {
 			for (qpl::i32 i = 1; i < N; ++i) {
 				prev = this->state[i] = (i + F * (prev ^ (prev >> (W - 2))))& WMSK;
 			}
+			this->put_index_end();
+		}
+		void put_index_end() {
 			this->index = N;
 		}
 		void seed(const std::seed_seq& seq) {

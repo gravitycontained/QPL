@@ -1104,6 +1104,7 @@ namespace qpl {
 			if (debug_print) {
 				qpl::println();
 			}
+			engine.engine.put_index_end();
 
 
 			//engine.engine.shuffle();
@@ -1251,15 +1252,12 @@ namespace qpl {
 			//std::mt19937_64 engine;
 			this->seed_state(engine, key, debug_print);
 
-			for (auto& i : engine.engine.state) {
-
-			}
-
 			if (debug_print) {
 				qpl::print("the first random numbers are: ");
 				std::uniform_int_distribution<int> dist(0u, 255u);
 				for (qpl::size i = 0u; i < 1024u; ++i) {
-					qpl::print(qpl::hex_string(dist(engine.engine), ""));
+
+					qpl::print(qpl::hex_string(engine.engine(), ""));
 				}
 				qpl::println();
 			}
