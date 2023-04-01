@@ -278,10 +278,10 @@ namespace qpl {
 				return !(*this == other);
 			}
 
-			const bitset_proxy&& operator*() {
+			const bitset_proxy& operator*() {
 				return bitset_proxy(*ptr, index);
 			}
-			const bitset_const_proxy&& operator*() const {
+			const bitset_const_proxy& operator*() const {
 				return bitset_const_proxy(*ptr, index);
 			}
 

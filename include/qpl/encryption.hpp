@@ -1027,7 +1027,7 @@ namespace qpl {
 		std::array<std::array<matrix_type, config.N* config.N>, config.table_size> shuffle{};
 		qpl::bitset<256 * 8u> rotation_skips{};
 
-		void seed_state(qpl::random_engine<64u>& engine, const std::string_view& key) {
+		void seed_state(qpl::random_engine<64u>& engine, const std::string_view& key, bool debug_print = false) {
 			constexpr auto size = 50;
 			std::array<qpl::u8, size* size> state{};
 			for (qpl::size i = 0u; i < qpl::min(key.length(), config.key_size); ++i) {
@@ -1074,16 +1074,35 @@ namespace qpl {
 					}
 				}
 			}
+			if (debug_print) {
+				qpl::print("state: ");
+				for (auto& i : state) {
+					qpl::print(qpl::hex_string(i, ""));
+				}
+				qpl::println();
+			}
 
 			std::string seed = std::string{ key };
-			auto sha512_hash = qpl::mgf1(seed, 624 * 4u, qpl::sha512_object);
+			auto sha512_hash = qpl::from_hex_string(qpl::mgf1(seed, 624 * 8u, qpl::sha512_object));
+
+			if (debug_print) {
+				qpl::println("sha512 hash: ", qpl::aqua, qpl::hex_string(sha512_hash));
+				qpl::print("engine data: ");
+			}
+
 
 			std::array<qpl::u32, 624> random_data{};
 			for (qpl::size i = 0u; i < random_data.size(); ++i) {
 				for (qpl::size b = 0u; b < 4u; ++b) {
 					auto index = i * 4u + b;
-					random_data[i] |= (qpl::u32_cast(state[index]) << (b * 8u)) ^ sha512_hash[index];
+					random_data[i] |= (qpl::u32_cast(state[index] ^ qpl::u8_cast(sha512_hash[index])) << (b * 8u));
 				}
+				if (debug_print) {
+					qpl::print(qpl::hex_string(random_data[i], ""));
+				}
+			}
+			if (debug_print) {
+				qpl::println();
 			}
 
 			std::seed_seq seeds(std::begin(random_data), std::end(random_data));
@@ -1165,16 +1184,16 @@ namespace qpl {
 		}
 
 		void print() {
-			qpl::println("sbox = ", this->sbox);
-			qpl::println("sbox_inverse = ", this->sbox_inverse);
-			qpl::println("mds = ", this->mds);
-			qpl::println("mds_inverse = ", this->mds_inverse);
-			qpl::println("shuffle = ", this->shuffle);
-			qpl::println("rotation_skips = ", this->rotation_skips);
+			qpl::println("sbox = ", qpl::aqua, this->sbox);
+			qpl::println("sbox_inverse = ", qpl::aqua, this->sbox_inverse);
+			qpl::println("mds = ", qpl::aqua, this->mds);
+			qpl::println("mds_inverse = ", qpl::aqua, this->mds_inverse);
+			qpl::println("shuffle = ", qpl::aqua, this->shuffle);
+			qpl::println("rotation_skips = ", qpl::aqua, this->rotation_skips);
 		}
-		void create(const std::string_view& key) {
+		void create(const std::string_view& key, bool debug_print = false) {
 			qpl::random_engine<64u> engine;
-			this->seed_state(engine, key);
+			this->seed_state(engine, key, debug_print);
 			this->generate_sbox(engine);
 			this->generate_shuffle(engine);
 			this->generate_mds(engine);
@@ -1624,9 +1643,9 @@ namespace qpl {
 			if (debug_print) {
 				qpl::println(qpl::yellow, " create_round_key !");
 			}
-			auto sha512 = qpl::mgf1(key, this->round_key_size, qpl::sha512_object);
+			auto sha512 = qpl::from_hex_string(qpl::mgf1(key, this->round_key_size * 2u, qpl::sha512_object));
 			if (debug_print) {
-				qpl::println("sha512 = ", qpl::aqua, sha512);
+				qpl::println("sha512 = ", qpl::aqua, qpl::hex_string(sha512));
 			}
 
 			for (qpl::size round = 0u; round < this->cipher_rounds; ++round) {
@@ -1644,9 +1663,9 @@ namespace qpl {
 				const auto& shuffle = this->table.shuffle[shuffle_index];
 
 				if (debug_print) {
-					qpl::println("sbox_index = ", qpl::aqua, sbox_index);
-					qpl::println("mds_index = ", qpl::aqua, mds_index);
-					qpl::println("shuffle_index = ", qpl::aqua, shuffle_index);
+					qpl::println("sbox_index = ", qpl::aqua, qpl::size_cast(sbox_index));
+					qpl::println("mds_index = ", qpl::aqua, qpl::size_cast(mds_index));
+					qpl::println("shuffle_index = ", qpl::aqua, qpl::size_cast(shuffle_index));
 				}
 
 				auto copy = key_state;
@@ -1695,7 +1714,7 @@ namespace qpl {
 				}
 				for (qpl::size i = 0u; i < this->state_size; ++i) {
 					auto index = round_index + i;
-					this->round_key[index] = key_state[i] ^ last_key_state[i] ^ sha512[i];
+					this->round_key[index] = key_state[i] ^ last_key_state[i] ^ qpl::u8_cast(sha512[i]);
 
 					if (debug_print) {
 						qpl::println("this->round_key[", index, "] = ", qpl::aqua, qpl::hex_string(this->round_key[index]));
@@ -1739,7 +1758,7 @@ namespace qpl {
 			if (this->key == key) {
 				return;
 			}
-			this->table.create(key);
+			this->table.create(key, debug_print);
 			this->create_round_key(key, debug_print);
 			this->key = key;
 
