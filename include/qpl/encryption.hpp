@@ -1173,7 +1173,7 @@ namespace qpl {
 						//this->mds[s][i] = engine.generate(1, 255);
 						this->mds[s][i] = dist(engine);
 						if (debug_print) {
-							qpl::print(qpl::yellow, this->mds[s][i], " ");
+							qpl::print(qpl::yellow, qpl::hex_string(this->mds[s][i]), " ");
 						}
 					}
 					if (debug_print) {
