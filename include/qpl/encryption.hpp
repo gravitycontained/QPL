@@ -1027,7 +1027,7 @@ namespace qpl {
 		std::array<std::array<matrix_type, config.N* config.N>, config.table_size> shuffle{};
 		qpl::bitset<256 * 8u> rotation_skips{};
 
-		void seed_state(std::mt19937_64& engine, const std::string_view& key, bool debug_print = false) {
+		void seed_state(auto& engine, const std::string_view& key, bool debug_print = false) {
 			constexpr auto size = 50;
 			std::array<qpl::u8, size* size> state{};
 			for (qpl::size i = 0u; i < qpl::min(key.length(), config.key_size); ++i) {
@@ -1117,7 +1117,7 @@ namespace qpl {
 			//	qpl::println();
 			//}
 		}
-		void generate_sbox(std::mt19937_64& engine) {
+		void generate_sbox(auto& engine) {
 			constexpr std::array<qpl::u8, 256u> sbox_bytes = detail::get_array_0_n<256, qpl::u8>();
 			for (qpl::size s = 0u; s < this->sbox.size(); ++s) {
 				while (true) {
@@ -1140,7 +1140,7 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_shuffle(std::mt19937_64& engine) {
+		void generate_shuffle(auto& engine) {
 			constexpr std::array<matrix_type, config.N* config.N> shuffle_bytes = detail::get_array_0_n<config.N* config.N, matrix_type>();
 			for (qpl::size s = 0u; s < this->shuffle.size(); ++s) {
 				while (true) {
@@ -1161,7 +1161,7 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_mds(std::mt19937_64& engine, bool debug_print = false) {
+		void generate_mds(auto& engine, bool debug_print = false) {
 			std::uniform_int_distribution<unsigned> dist(1u, 255u);
 			for (qpl::size s = 0u; s < this->mds.size(); ++s) {
 				while (true) {
@@ -1205,7 +1205,7 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_rotation_skips(std::mt19937_64& engine) {
+		void generate_rotation_skips(auto& engine) {
 			for (qpl::size i = 0u; i < this->rotation_skips.size(); ++i) {
 				//auto percentage = engine.generate_0_1();
 				//auto percentage = std::generate_canonical<qpl::f64, std::numeric_limits<qpl::f64>::digits>(engine);
@@ -1248,18 +1248,27 @@ namespace qpl {
 			qpl::println();
 		}
 		void create(const std::string_view& key, bool debug_print = false) {
-			//qpl::random_engine<64u> engine;
-			std::mt19937_64 engine;
+			qpl::random_engine<64u> engine;
+			//std::mt19937_64 engine;
 			this->seed_state(engine, key, debug_print);
-			this->generate_sbox(engine);
-			this->generate_shuffle(engine);
-			this->generate_mds(engine, debug_print);
+
+			if (debug_print) {
+				qpl::print("the first random numbers are: ");
+				std::uniform_int_distribution<int> dist(0u, 255u);
+				for (qpl::size i = 0u; i < 1024u; ++i) {
+					qpl::print(qpl::hex_string(dist(engine.engine), ""));
+				}
+				qpl::println();
+			}
+			this->generate_sbox(engine.engine);
+			this->generate_shuffle(engine.engine);
+			this->generate_mds(engine.engine, debug_print);
 			if constexpr (config.skip_rotation_chance) {
-				this->generate_rotation_skips(engine);
+				this->generate_rotation_skips(engine.engine);
 			}
 
 			if (debug_print) {
-				this->print();
+				//this->print();
 			}
 		}
 	};
