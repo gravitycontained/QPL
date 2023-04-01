@@ -1721,10 +1721,12 @@ namespace qpl {
 				qpl::println("key = ", qpl::hex_string(key));
 				qpl::print("round_key = ");
 				this->print_round_key();
+				qpl::println();
 
 				if constexpr (this->use_initialization_vector) {
-					qpl::print("HAS iv = ");
+					qpl::print(qpl::yellow, "HAS iv = ");
 					this->print_iv();
+					qpl::println();
 				}
 			}
 		}
