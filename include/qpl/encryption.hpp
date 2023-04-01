@@ -1160,14 +1160,26 @@ namespace qpl {
 				}
 			}
 		}
-		void generate_mds(std::mt19937_64& engine) {
+		void generate_mds(std::mt19937_64& engine, bool debug_print = false) {
 			std::uniform_int_distribution<unsigned> dist(1u, 255u);
 			for (qpl::size s = 0u; s < this->mds.size(); ++s) {
 				while (true) {
+
+					if (debug_print) {
+						qpl::println("### generate mds. the next numbers are: ");
+					}
+
 					for (qpl::size i = 0u; i < config.N; ++i) {
 						//this->mds[s][i] = engine.generate(1, 255);
 						this->mds[s][i] = dist(engine);
+						if (debug_print) {
+							qpl::print(qpl::yellow, this->mds[s][i], " ");
+						}
 					}
+					if (debug_print) {
+						qpl::println();
+					}
+					
 					for (qpl::size c = 1u; c < config.N; ++c) {
 						for (qpl::size r = 0u; r < config.N; ++r) {
 							this->mds[s][c * config.N + r] = this->mds[s][((config.N - c) + r) % config.N];
@@ -1179,7 +1191,14 @@ namespace qpl {
 
 					auto valid_mds = nonzero && detail::check_if_mds(this->mds[s]);
 					if (valid_mds) {
+						if (debug_print) {
+							qpl::println("### this was a valid mds!");
+						}
 						break;
+					}
+
+					if (debug_print) {
+						qpl::println("### this was not a valid mds: ", nonzero, " and ", detail::check_if_mds(this->mds[s]));
 					}
 				}
 			}
@@ -1206,22 +1225,22 @@ namespace qpl {
 			}
 		}
 		void print() {
-			qpl::println("sbox = ", qpl::aqua);
+			qpl::print("sbox = ", qpl::aqua);
 			this->print_array(this->sbox);
 			qpl::println();
-			qpl::println("sbox_inverse = ", qpl::aqua);
+			qpl::print("sbox_inverse = ", qpl::aqua);
 			this->print_array(this->sbox_inverse);
 			qpl::println();
-			qpl::println("mds = ", qpl::aqua);
-			this->print_array(this->mds);
-			qpl::println();
-			qpl::println("mds_inverse = ", qpl::aqua);
-			this->print_array(this->mds_inverse);
-			qpl::println();
-			qpl::println("shuffle = ", qpl::aqua);
+			qpl::print("shuffle = ", qpl::aqua);
 			this->print_array(this->shuffle);
 			qpl::println();
-			qpl::println("rotation_skips = ", qpl::aqua);
+			qpl::print("mds = ", qpl::aqua);
+			this->print_array(this->mds);
+			qpl::println();
+			qpl::print("mds_inverse = ", qpl::aqua);
+			this->print_array(this->mds_inverse);
+			qpl::println();
+			qpl::print("rotation_skips = ", qpl::aqua);
 			this->print_array(this->rotation_skips);
 			qpl::println();
 		}
@@ -1231,7 +1250,7 @@ namespace qpl {
 			this->seed_state(engine, key, debug_print);
 			this->generate_sbox(engine);
 			this->generate_shuffle(engine);
-			this->generate_mds(engine);
+			this->generate_mds(engine, debug_print);
 			if constexpr (config.skip_rotation_chance) {
 				this->generate_rotation_skips(engine);
 			}
