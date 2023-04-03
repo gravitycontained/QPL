@@ -215,6 +215,7 @@ namespace qpl {
 
 		QPLDLL void execute_batch(const std::string& path, const std::string& command);
 		QPLDLL void execute_batch_command(const std::string& command);
+		QPLDLL void run_command(const std::string& path, const std::string& command, bool print = true);
 	}
 	QPLDLL void screen_shot(const std::string& file_name);
 	QPLDLL void screen_shot(const std::string& file_name, qpl::winsys::rect rectangle);

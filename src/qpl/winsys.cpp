@@ -779,6 +779,16 @@ namespace qpl {
 	void qpl::winsys::execute_batch_command(const std::string& command) {
 		std::system(command.c_str());
 	}
+	void qpl::winsys::run_command(const std::string& path, const std::string& command, bool print) {
+		if (print) {
+			qpl::println(qpl::gray, "<in ", qpl::aqua, path, qpl::gray, " executing ", qpl::light_green, command, qpl::gray, ">");
+		}
+		auto same_dir = qpl::filesys::get_current_location().string().front() == path.front();
+		auto set_directory = qpl::to_string(same_dir ? "cd " : "cd /D ", path);
+		auto cmd = qpl::to_string("@echo off && ", set_directory, " && echo on && ", command);
+
+		qpl::winsys::execute_batch_command(cmd);
+	}
 
 	std::ostream& qpl::operator<<(std::ostream& os, color color) {
 		return os;

@@ -58,12 +58,7 @@ namespace qpl {
 		qpl::println();
 	}
 	qpl::size qpl::colored_string::count_new_line_size() const {
-
-		auto wstr = this->wstring();
-		if (wstr.empty()) {
-			return 0ull;
-		}
-		return qpl::count(wstr, L'\n') + 1u;
+		return this->get_lines().size();
 	}
 	std::string qpl::colored_string::string() const {
 		return qpl::wstring_to_string(this->wstring());
