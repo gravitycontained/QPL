@@ -2210,6 +2210,8 @@ namespace qpl {
 	QPLDLL std::vector<std::string> string_split_digit_alpha(const std::string_view& string);
 
 	QPLDLL std::vector<std::wstring> string_split_whitespace(const std::wstring_view& string);
+	QPLDLL std::vector<std::wstring> string_split_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
+	QPLDLL std::vector<std::wstring> string_split_allow_empty_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string);
 

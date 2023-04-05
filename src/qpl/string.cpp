@@ -69,10 +69,12 @@ namespace qpl {
 
 
 	std::function<void(std::wstring)> qpl::default_output_function_w = [](const std::wstring& string) {
-		std::wcout << string;
+		std::wprintf(string.c_str());
+		//std::wcout << string;
 	};
 	std::function<void(std::string)> qpl::default_output_function = [](const std::string& string) {
-		std::cout << string;
+		//std::cout << string;
+		std::fwrite(string.data(), sizeof(string[0]) * string.size(), 1, stderr);
 	};
 	std::function<void(qpl::cc)> qpl::default_output_color_function = [](qpl::cc color) {
 		qpl::set_console_color(color);
@@ -1240,6 +1242,81 @@ namespace qpl {
 		return result;
 	}
 
+	std::vector<std::wstring> qpl::string_split_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quotes) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == quotes) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				qpl::size begin = i;
+				while (i < string.length() && string[i] != quotes) {
+					++i;
+				}
+				result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+				++i;
+				before = i;
+			}
+			else if (string[i] == by_what) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before < string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
+	std::vector<std::wstring> qpl::string_split_allow_empty_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quotes) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == quotes) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				qpl::size begin = i;
+				while (i < string.length() && string[i] != quotes) {
+					++i;
+				}
+				result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+				++i;
+				before = i;
+			}
+			else if (string[i] == by_what) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				while (i < string.length() && string[i] == by_what) {
+					result.push_back(L"");
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before < string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
 	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quotes) {
 		std::vector<std::wstring> result;
 

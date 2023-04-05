@@ -755,6 +755,13 @@ namespace qpl {
 		void save(const Ts&... data) {
 			(this->save_single(data), ...);
 		}
+		template<typename C> requires(qpl::is_container<C>())
+		void save_container(const C& data) {
+			this->save(data.size());
+			for (auto& i : data) {
+				this->save(i);
+			}
+		}
 	};
 
 
@@ -817,6 +824,15 @@ namespace qpl {
 		template<typename... Ts>
 		void load(Ts&... data) {
 			(this->load_single(data), ...);
+		}
+		template<typename C> requires(qpl::is_container<C>())
+		void load_container(C& data) {
+			qpl::size size;
+			this->load(size);
+			data.resize(size);
+			for (qpl::size i = 0u; i < size; ++i) {
+				this->load(data[i]);
+			}
 		}
 	};
 
