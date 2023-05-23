@@ -304,7 +304,7 @@ namespace qpl {
 				this->clock.reset();
 			}
 			else {
-				this->ema.add_value(this->clock.elapsed_f_reset());
+				this->ema.add(this->clock.elapsed_f_reset());
 			}
 		}
 

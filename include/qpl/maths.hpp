@@ -170,10 +170,22 @@ namespace qpl {
 		qpl::f64 last_ma = 0.0;
 
 		QPLDLL void reset();
-		QPLDLL void add_value(double value);
-		QPLDLL double get_average() const;
+		QPLDLL void add(qpl::f64 value);
+		QPLDLL qpl::f64 get_average() const;
 	};
 
+	struct moving_average {
+		moving_average(qpl::size time_period = 5) {
+			this->set_time_period(time_period);
+		}
+		qpl::circular_array<qpl::f64> array;
+
+		QPLDLL void reset();
+		QPLDLL void add(qpl::f64 value);
+		QPLDLL qpl::f64 get_average() const;
+		QPLDLL qpl::size time_period() const;
+		QPLDLL void set_time_period(qpl::size time_period);
+	};
 
 	template<typename T>
 	struct fast_moving_average {

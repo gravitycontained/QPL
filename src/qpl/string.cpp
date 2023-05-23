@@ -69,7 +69,7 @@ namespace qpl {
 
 
 	std::function<void(std::wstring)> qpl::default_output_function_w = [](const std::wstring& string) {
-		std::wprintf(string.c_str());
+		std::wprintf(L"%s", string.c_str());
 		//std::wcout << string;
 	};
 	std::function<void(std::string)> qpl::default_output_function = [](const std::string& string) {
