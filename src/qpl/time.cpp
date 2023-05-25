@@ -176,6 +176,161 @@ namespace qpl {
 	}
 
 
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_nsecs_string() const {
+		return std::make_pair(this->nsecs_mod(), "ns");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_usecs_string() const {
+		return std::make_pair(this->usecs_mod(), "us");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_msecs_string() const {
+		return std::make_pair(this->msecs_mod(), "ms");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_secs_string() const {
+		return std::make_pair(this->secs_mod(), "s");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_mins_string() const {
+		return std::make_pair(this->mins_mod(), "m");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_hours_string() const {
+		return std::make_pair(this->hours_mod(), "h");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_days_string() const {
+			return std::make_pair(this->days_mod(), "d");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_days_week_string() const {
+		return std::make_pair(this->days_mod(), "d");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_weeks_string() const {
+		return std::make_pair(this->weeks_mod(), "w");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_short_pair_years_string() const {
+		return std::make_pair(this->years(), "y");
+	}
+
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_nsecs_string() const {
+		return std::make_pair(this->nsecs_mod(), this->nsecs_mod() == 1u ? "nanosecond" : "nanoseconds");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_usecs_string() const {
+		return std::make_pair(this->usecs_mod(), this->usecs_mod() == 1u ? "microsecond" : "microseconds");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_msecs_string() const {
+		return std::make_pair(this->msecs_mod(), this->msecs_mod() == 1u ? "millisecond" : "milliseconds");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_secs_string() const {
+		return std::make_pair(this->secs_mod(), this->secs_mod() == 1u ? "second" : "seconds");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_mins_string() const {
+		return std::make_pair(this->mins_mod(), this->mins_mod() == 1u ? "minute" : "minutes");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_hours_string() const {
+		return std::make_pair(this->mins_mod(), this->mins_mod() == 1u ? "hour" : "hours");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_days_string() const {
+		return std::make_pair(this->days_mod(), this->days_mod() == 1u ? "day" : "days");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_days_week_string() const {
+		return std::make_pair(this->days_week_mod(), this->days_week_mod() == 1u ? "day" : "days");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_weeks_string() const {
+		return std::make_pair(this->weeks_mod(), this->weeks_mod() == 1u ? "week" : "weeks");
+	}
+	std::pair<qpl::size, std::string> qpl::time::single_descriptive_pair_years_string() const {
+		return std::make_pair(this->years(), this->years() == 1u ? "year" : "years");
+	}
+
+	std::pair<qpl::size, std::string> qpl::time::pair_nsecs_string(bool short_string) const {
+		return short_string ? this->single_short_pair_nsecs_string() : this->single_descriptive_pair_nsecs_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_usecs_string(bool short_string) const {
+		return short_string ? this->single_short_pair_usecs_string() : this->single_descriptive_pair_usecs_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_msecs_string(bool short_string) const {
+		return short_string ? this->single_short_pair_msecs_string() : this->single_descriptive_pair_msecs_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_secs_string(bool short_string) const {
+		return short_string ? this->single_short_pair_secs_string() : this->single_descriptive_pair_secs_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_mins_string(bool short_string) const {
+		return short_string ? this->single_short_pair_mins_string() : this->single_descriptive_pair_mins_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_hours_string(bool short_string) const {
+		return short_string ? this->single_short_pair_hours_string() : this->single_descriptive_pair_hours_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_days_string(bool short_string) const {
+		return short_string ? this->single_short_pair_days_string() : this->single_descriptive_pair_days_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_days_week_string(bool short_string) const {
+		return short_string ? this->single_short_pair_days_week_string() : this->single_descriptive_pair_days_week_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_weeks_string(bool short_string) const {
+		return short_string ? this->single_short_pair_weeks_string() : this->single_descriptive_pair_weeks_string();
+	}
+	std::pair<qpl::size, std::string> qpl::time::pair_years_string(bool short_string) const {
+		return short_string ? this->single_short_pair_years_string() : this->single_descriptive_pair_years_string();
+	}
+
+	std::vector<std::pair<qpl::size, std::string>> qpl::time::get_string_pair_segments(bool short_string, bool weeks) const {
+		std::vector<std::pair<qpl::size, std::string>> result;
+		if (this->years()) {
+			result.push_back(this->pair_years_string(short_string));
+		}
+		else {
+			result.push_back(std::make_pair(0ull, ""));
+		}
+		if (weeks) {
+			if (this->weeks_mod()) {
+				result.push_back(this->pair_weeks_string(short_string));
+			}
+			else {
+				result.push_back(std::make_pair(0ull, ""));
+			}
+			if (this->days_week_mod()) {
+				result.push_back(this->pair_days_week_string(short_string));
+			}
+			else {
+				result.push_back(std::make_pair(0ull, ""));
+			}
+		}
+		else {
+			if (this->days_mod()) {
+				result.push_back(this->pair_days_string(short_string));
+			}
+			else {
+				result.push_back(std::make_pair(0ull, ""));
+			}
+		}
+		if (this->hours_mod()) {
+			result.push_back(this->pair_hours_string(short_string));
+		}
+		else {
+			result.push_back(std::make_pair(0ull, ""));
+		}
+		if (this->mins_mod()) {
+			result.push_back(this->pair_mins_string(short_string));
+		}
+		else {
+			result.push_back(std::make_pair(0ull, ""));
+		}
+		if (this->secs_mod()) {
+			result.push_back(this->pair_secs_string(short_string));
+		}
+		else {
+			result.push_back(std::make_pair(0ull, ""));
+		}
+		if (this->msecs_mod()) {
+			result.push_back(this->pair_msecs_string(short_string));
+		}
+		else {
+			result.push_back(std::make_pair(0ull, ""));
+		}
+		if (this->usecs_mod()) {
+			result.push_back(this->pair_usecs_string(short_string));
+		}
+		else {
+			result.push_back(std::make_pair(0ull, ""));
+		}
+		return result;
+	}
 	std::vector<std::string> qpl::time::get_string_segments(bool short_string, bool weeks) const {
 		std::vector<std::string> result;
 		if (this->years()) {

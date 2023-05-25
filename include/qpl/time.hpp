@@ -83,6 +83,40 @@ namespace qpl {
 		QPLDLL std::string weeks_string(bool short_string = true) const;
 		QPLDLL std::string years_string(bool short_string = true) const;
 
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_nsecs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_usecs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_msecs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_secs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_mins_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_hours_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_days_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_days_week_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_weeks_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_short_pair_years_string() const;
+
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_nsecs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_usecs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_msecs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_secs_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_mins_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_hours_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_days_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_days_week_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_weeks_string() const;
+		QPLDLL std::pair<qpl::size, std::string> single_descriptive_pair_years_string() const;
+
+		QPLDLL std::pair<qpl::size, std::string> pair_nsecs_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_usecs_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_msecs_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_secs_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_mins_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_hours_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_days_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_days_week_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_weeks_string(bool short_string = true) const;
+		QPLDLL std::pair<qpl::size, std::string> pair_years_string(bool short_string = true) const;
+
+		QPLDLL std::vector<std::pair<qpl::size, std::string>> get_string_pair_segments(bool short_string = true, bool weeks = true) const;
 		QPLDLL std::vector<std::string> get_string_segments(bool short_string = true, bool weeks = true) const;
 		QPLDLL std::vector<std::string> get_full_string_segments(bool short_string = true, bool weeks = true) const;
 		QPLDLL std::vector<std::string> get_string_active_segments(qpl::size stop_at_segment, bool short_string = true, bool weeks = true, qpl::size precision = qpl::size_max) const;
