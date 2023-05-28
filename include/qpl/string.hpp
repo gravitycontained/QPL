@@ -2213,6 +2213,8 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> string_split_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::wstring> string_split_allow_empty_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quote = L'\'');
+	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes_and_extra_quotes(const std::wstring_view& string, wchar_t quote = L'\'', wchar_t additional_quote = L'"');
+	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_parantheses_and_extra_quotes(const std::wstring_view& string, std::vector<std::wstring> paras = { L"()", L"[]", L"{}" }, std::wstring additional_quotes = L"\"'");
 	QPLDLL std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string);
 
 	template<typename T>

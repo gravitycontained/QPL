@@ -1354,6 +1354,176 @@ namespace qpl {
 		}
 		return result;
 	}
+	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes_and_extra_quotes(const std::wstring_view& string, wchar_t quotes, wchar_t extra_quotes) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (string[i] == quotes) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				qpl::size begin = i;
+
+				if (i < string.length() && string[i] != quotes) {
+					bool inside_extra_quotes = false;
+					while (i < string.length()) {
+						++i;
+						if (string[i] == extra_quotes) {
+							inside_extra_quotes = !inside_extra_quotes;
+						}
+						if (!inside_extra_quotes && string[i] == quotes) {
+							break;
+						}
+					}
+				}
+				result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+				++i;
+				before = i;
+			}
+			else if (std::iswspace(string[i])) {
+				if (i - before) {
+					result.emplace_back(std::wstring{ string.substr(before, i - before) });
+				}
+				++i;
+				while (i < string.length() && std::iswspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before < string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
+	std::vector<std::wstring> qpl::string_split_whitespace_consider_parantheses_and_extra_quotes(const std::wstring_view& string, std::vector<std::wstring> paras, std::wstring additional_quotes) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+
+			bool any_para_match = false;
+			for (auto& para : paras) {
+				if (string[i] == para[0]) {
+					any_para_match = true;
+					if (i - before) {
+						result.emplace_back(std::wstring{ string.substr(before, i - before) });
+					}
+					++i;
+					qpl::size begin = i;
+
+					if (i < string.length() && string[i] != para[1]) {
+						std::vector<char> inside_extra_quotes(additional_quotes.length());
+						for (auto& extra : inside_extra_quotes) {
+							extra = false;
+						}
+
+						while (i < string.length()) {
+							++i;
+							for (qpl::size j = 0u; j < additional_quotes.length(); ++j) {
+								if (string[i] == additional_quotes[j]) {
+									bool any_other = false;
+									for (qpl::size k = 0u; k < inside_extra_quotes.size(); ++k) {
+										if (j == k) {
+											continue;
+										}
+										if (inside_extra_quotes[k]) {
+											any_other = true;
+											break;
+										}
+									}
+									if (!any_other) {
+										inside_extra_quotes[j] = !qpl::bool_cast(inside_extra_quotes[j]);
+									}
+								}
+							}
+							bool any_inside = false;
+							for (auto& extra : inside_extra_quotes) {
+								if (extra) {
+									any_inside = true;
+								}
+							}
+							if (!any_inside && string[i] == para[1]) {
+								break;
+							}
+						}
+					}
+					result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+					++i;
+					before = i;
+					break;
+				}
+			}
+			if (!any_para_match) {
+				std::vector<char> inside_extra_quotes(additional_quotes.length());
+				for (auto& extra : inside_extra_quotes) {
+					extra = false;
+				}
+
+				bool any_extra_quote = false;
+				for (qpl::size j = 0u; j < additional_quotes.length(); ++j) {
+					if (string[i] == additional_quotes[j]) {
+						inside_extra_quotes[j] = true;
+						any_extra_quote = true;
+						break;
+					}
+				}
+				if (any_extra_quote) {
+					while (i < string.length()) {
+						++i;
+						for (qpl::size j = 0u; j < additional_quotes.length(); ++j) {
+							if (string[i] == additional_quotes[j]) {
+								bool any_other = false;
+								for (qpl::size k = 0u; k < inside_extra_quotes.size(); ++k) {
+									if (j == k) {
+										continue;
+									}
+									if (inside_extra_quotes[k]) {
+										any_other = true;
+										break;
+									}
+								}
+								if (!any_other) {
+									inside_extra_quotes[j] = !qpl::bool_cast(inside_extra_quotes[j]);
+								}
+							}
+						}
+						bool any_inside = false;
+						for (auto& extra : inside_extra_quotes) {
+							if (extra) {
+								any_inside = true;
+							}
+						}
+						if (!any_inside) {
+							break;
+						}
+					}
+				}
+				else if (std::iswspace(string[i])) {
+					if (i - before) {
+						result.emplace_back(std::wstring{ string.substr(before, i - before) });
+					}
+					++i;
+					while (i < string.length() && std::iswspace(string[i])) {
+						++i;
+					}
+					before = i;
+				}
+				else {
+					++i;
+				}
+			}
+		}
+		if (before < string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
 	std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string) {
 		std::vector<std::pair<std::wstring, qpl::size>> result;
 
