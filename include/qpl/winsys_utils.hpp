@@ -81,6 +81,19 @@ namespace qpl {
 					this->add(i);
 				}
 			}
+			else if constexpr (qpl::is_container<std::decay_t<T>>() && !qpl::is_string_type<T>()) {
+				bool first = true;
+				for (auto& i : value) {
+					if (!first) {
+						this->elements.back().text += L", ";
+					}
+					first = false;
+					this->elements.back().text += qpl::to_wstring(i);
+				}
+				if (!this->elements.back().is_default_colors()) {
+					this->elements.push_back({});
+				}
+			}
 			else {
 				this->elements.back().text += qpl::to_wstring(value);
 				if (!this->elements.back().is_default_colors()) {

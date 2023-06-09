@@ -2659,7 +2659,6 @@ namespace qsf {
 			this->vertices[this->vertices.size() - 1].position = position + normal * thickness;
 			this->vertices[this->vertices.size() - 1].color = color;
 		}
-
 	}
 	void qsf::thick_lines::complete() {
 		if (this->empty()) {

@@ -619,7 +619,7 @@ namespace qsf {
 			this->set_knob_position();
 
 			if (!this->text.get_font().empty()) {
-				this->text.set_position(this->background.get_hitbox().middle_left());
+				this->text.set_position(this->background.get_hitbox().get_left_center());
 				this->text.centerize_y();
 			}
 		}
