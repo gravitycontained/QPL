@@ -720,20 +720,24 @@ namespace qpl {
 	QPLDLL inline std::string string_to_fit(const std::string& string, char append, qpl::size length);
 
 	namespace detail {
-		QPLDLL std::string appended_to_string_to_fit(const std::string_view& string, char append, qpl::size length);
-		QPLDLL std::string appended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::string  appended_to_string_to_fit(const std::string_view& string, char append, qpl::size length);
+		QPLDLL std::string  appended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
 		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, wchar_t append, qpl::size length);
 		QPLDLL std::wstring appended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
-
-		QPLDLL std::string appended_to_fit(qpl::size prepended_length, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::string  appended_to_fit(qpl::size prepended_length, const std::string_view& prepend, qpl::size length);
 		QPLDLL std::wstring appended_to_fit(qpl::size prepended_length, const std::wstring_view& prepend, qpl::size length);
-		QPLDLL std::string prepended_to_fit(qpl::size appended_length, const std::string_view& prepend, qpl::size length);
-		QPLDLL std::wstring prepended_to_fit(qpl::size appended_length, const std::wstring_view& prepend, qpl::size length);
 
-		QPLDLL std::string prepended_to_string_to_fit(const std::string_view& string, char prepend, qpl::size length);
-		QPLDLL std::string prepended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::string  prepended_to_string_to_fit(const std::string_view& string, char prepend, qpl::size length);
+		QPLDLL std::string  prepended_to_string_to_fit(const std::string_view& string, const std::string_view& prepend, qpl::size length);
 		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, wchar_t prepend, qpl::size length);
 		QPLDLL std::wstring prepended_to_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
+		QPLDLL std::string  prepended_to_fit(qpl::size appended_length, const std::string_view& prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_fit(qpl::size appended_length, const std::wstring_view& prepend, qpl::size length);
+
+		QPLDLL std::wstring appended_to_unicode_string_to_fit(const std::wstring_view& string, wchar_t prepend, qpl::size length);
+		QPLDLL std::wstring appended_to_unicode_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_unicode_string_to_fit(const std::wstring_view& string, wchar_t prepend, qpl::size length);
+		QPLDLL std::wstring prepended_to_unicode_string_to_fit(const std::wstring_view& string, const std::wstring_view& prepend, qpl::size length);
 	}
 
 	template<typename T, typename U> requires (qpl::is_wstring_type<T>())
@@ -798,6 +802,51 @@ namespace qpl {
 		return qpl::str_lspaced(value, length);
 	}
 
+	template<typename T, typename U> requires (qpl::is_wstring_type<T>())
+	auto appended_to_unicode_string_to_fit(const T& value, const U& append, qpl::size length) {
+		return qpl::detail::appended_to_unicode_string_to_fit(std::wstring_view{ qpl::to_wstring(value) }, append, length);
+	}
+	template<typename T, typename U> requires (qpl::is_standard_string_type<T>())
+	auto appended_to_unicode_string_to_fit(const T& value, const U& append, qpl::size length) {
+		return qpl::detail::appended_to_unicode_string_to_fit(std::string_view{ qpl::to_string(value) }, append, length);
+	}
+	template<typename T, typename U> requires (!qpl::is_string_type<T>())
+	auto appended_to_unicode_string_to_fit(const T& value, const U& append, qpl::size length) {
+		return qpl::appended_to_unicode_string_to_fit(qpl::to_auto_string(value), append, length);
+	}
+
+
+	template<typename T, typename U> requires (qpl::is_wstring_type<T>())
+	auto prepended_to_unicode_string_to_fit(const T& value, const U& prepend, qpl::size length) {
+		return qpl::detail::prepended_to_unicode_string_to_fit(std::wstring_view{ qpl::to_wstring(value) }, prepend, length);
+	}
+	template<typename T, typename U> requires (qpl::is_standard_string_type<T>())
+	auto prepended_to_unicode_string_to_fit(const T& value, const U& prepend, qpl::size length) {
+		return qpl::detail::prepended_to_unicode_string_to_fit(std::string_view{ qpl::to_string(value) }, prepend, length);
+	}
+	template<typename T, typename U> requires (!qpl::is_string_type<T>())
+	auto prepended_to_unicode_string_to_fit(const T& value, const U& prepend, qpl::size length) {
+		return qpl::prepended_to_unicode_string_to_fit(qpl::to_auto_string(value), prepend, length);
+	}
+
+	template<typename T>
+	auto str_unicode_lspaced(const T& value, qpl::size length) {
+		if constexpr (qpl::is_wstring_type<T>()) {
+			return qpl::appended_to_unicode_string_to_fit(value, L' ', length);
+		}
+		else {
+			return qpl::appended_to_unicode_string_to_fit(value, ' ', length);
+		}
+	}
+	template<typename T>
+	auto str_unicode_rspaced(const T& value, qpl::size length) {
+		if constexpr (qpl::is_wstring_type<T>()) {
+			return qpl::prepended_to_unicode_string_to_fit(value, L' ', length);
+		}
+		else {
+			return qpl::prepended_to_unicode_string_to_fit(value, ' ', length);
+		}
+	}
 
 	QPLDLL std::string two_strings_fixed_insert(const std::string& a, const std::string& b, const std::string_view& insert, qpl::size length, qpl::u32 rotation = 0u);
 	template<typename T, typename U>
@@ -3308,7 +3357,7 @@ namespace qpl {
 			return value.start >= this->start && value.start <= (this->start + this->size);
 		}
 	};
-	constexpr auto unicode_long_ranges = std::array<character_range, 450u>{
+	constexpr auto unicode_long_ranges = std::array<character_range, 452u>{
 		character_range{ 0, 31}, character_range{ 127, 32}, character_range{ 173, 0}, character_range{ 847, 0}, character_range{ 888, 1}, character_range{ 896, 3}, character_range{ 907, 0}, character_range{ 909, 0}, character_range{ 930, 0}, character_range{ 1322, 1},
 		character_range{ 1328, 0}, character_range{ 1367, 1}, character_range{ 1419, 3}, character_range{ 1424, 0}, character_range{ 1480, 7}, character_range{ 1515, 3}, character_range{ 1525, 19}, character_range{ 1547, 0}, character_range{ 1550, 1},
 		character_range{ 1564, 0}, character_range{ 1566, 0}, character_range{ 1706, 0}, character_range{ 1757, 1}, character_range{ 1769, 0}, character_range{ 1792, 16}, character_range{ 1810, 29}, character_range{ 1867, 4}, character_range{ 1936, 0},
@@ -3342,7 +3391,7 @@ namespace qpl {
 		character_range{ 8946, 1}, character_range{ 8949, 1}, character_range{ 8953, 2}, character_range{ 8957, 0}, character_range{ 8959, 1}, character_range{ 8982, 0}, character_range{ 9001, 1}, character_range{ 9004, 9}, character_range{ 9083, 3}, character_range{ 9089, 19},
 		character_range{ 9111, 3}, character_range{ 9138, 4}, character_range{ 9152, 10}, character_range{ 9165, 1}, character_range{ 9172, 5}, character_range{ 9179, 12}, character_range{ 9193, 56}, character_range{ 9255, 24}, character_range{ 9291, 180}, character_range{ 9711, 0},
 		character_range{ 9731, 0}, character_range{ 9744, 2}, character_range{ 9749, 4}, character_range{ 9762, 2}, character_range{ 9771, 1}, character_range{ 9775, 8}, character_range{ 9842, 29}, character_range{ 9874, 14}, character_range{ 9890, 5}, character_range{ 9897, 0},
-		character_range{ 9901, 4}, character_range{ 9910, 0}, character_range{ 9917, 36}, character_range{ 9955, 132}, character_range{ 10102, 57}, character_range{ 10161, 14}, character_range{ 10177, 0}, character_range{ 10179, 1}, character_range{ 10184, 1}, character_range{ 10187, 5},
+		character_range{ 9901, 4}, character_range{ 9910, 0}, character_range{ 9917, 36}, character_range{ 9955, 128}, character_range{ 10102, 57}, character_range{ 10161, 14}, character_range{ 10177, 0}, character_range{ 10179, 1}, character_range{ 10184, 1}, character_range{ 10187, 5},
 		character_range{ 10194, 0}, character_range{ 10197, 9}, character_range{ 10209, 4}, character_range{ 10224, 15}, character_range{ 10496, 7}, character_range{ 10506, 7}, character_range{ 10516, 35}, character_range{ 10554, 14}, character_range{ 10570, 1}, character_range{ 10574, 0},
 		character_range{ 10576, 0}, character_range{ 10578, 1}, character_range{ 10582, 1}, character_range{ 10586, 1}, character_range{ 10590, 1}, character_range{ 10594, 25}, character_range{ 10622, 1}, character_range{ 10643, 3}, character_range{ 10654, 0}, character_range{ 10664, 40},
 		character_range{ 10714, 1}, character_range{ 10719, 1}, character_range{ 10722, 8}, character_range{ 10732, 1}, character_range{ 10740, 0}, character_range{ 10750, 12}, character_range{ 10764, 0}, character_range{ 10781, 0}, character_range{ 10784, 0}, character_range{ 10797, 1},
@@ -3351,12 +3400,12 @@ namespace qpl {
 		character_range{ 11210, 52}, character_range{ 11279, 0}, character_range{ 11295, 0}, character_range{ 11303, 2}, character_range{ 11327, 0}, character_range{ 11343, 0}, character_range{ 11351, 2}, character_range{ 11495, 0}, character_range{ 11498, 0}, character_range{ 11508, 4},
 		character_range{ 11525, 0}, character_range{ 11527, 0}, character_range{ 11530, 0}, character_range{ 11533, 0}, character_range{ 11536, 0}, character_range{ 11539, 1}, character_range{ 11547, 1}, character_range{ 11552, 0}, character_range{ 11557, 1}, character_range{ 11560, 4},
 		character_range{ 11566, 1}, character_range{ 11592, 0}, character_range{ 11624, 6}, character_range{ 11633, 13}, character_range{ 11648, 95}, character_range{ 11790, 3}, character_range{ 11795, 2}, character_range{ 11834, 1}, character_range{ 11843, 0}, character_range{ 11856, 1},
-		character_range{ 11870, 459}, character_range{ 12336, 14}, character_range{ 12352, 88}, character_range{ 12443, 29748}, character_range{ 42240, 319}, character_range{ 42572, 1}, character_range{ 42590, 0}, character_range{ 42594, 5}, character_range{ 42604, 2},
+		character_range{ 11870, 459}, character_range{ 12336, 14}, character_range{ 12352, 88}, character_range{ 12443, 29748}, character_range{ 19968, 20990 }, character_range{ 42240, 319}, character_range{ 42572, 1}, character_range{ 42590, 0}, character_range{ 42594, 5}, character_range{ 42604, 2},
 		character_range{ 42628, 1}, character_range{ 42648, 1}, character_range{ 42744, 7}, character_range{ 42792, 1}, character_range{ 42802, 11}, character_range{ 42830, 1}, character_range{ 42840, 1}, character_range{ 42865, 6}, character_range{ 42946, 1}, character_range{ 42955, 4},
 		character_range{ 42962, 0}, character_range{ 42964, 0}, character_range{ 42970, 23}, character_range{ 43007, 2}, character_range{ 43011, 2}, character_range{ 43015, 3}, character_range{ 43020, 22}, character_range{ 43050, 1}, character_range{ 43053, 82}, character_range{ 43138, 49},
 		character_range{ 43206, 25}, character_range{ 43250, 12}, character_range{ 43264, 37}, character_range{ 43310, 24}, character_range{ 43348, 43}, character_range{ 43396, 46}, character_range{ 43457, 35}, character_range{ 43494, 66}, character_range{ 43575, 11},
 		character_range{ 43588, 7}, character_range{ 43598, 44}, character_range{ 43646, 49}, character_range{ 43697, 0}, character_range{ 43701, 1}, character_range{ 43705, 4}, character_range{ 43712, 0}, character_range{ 43714, 40}, character_range{ 43760, 4}, character_range{ 43767, 56},
-		character_range{ 43884, 3}, character_range{ 43968, 34}, character_range{ 44011, 0}, character_range{ 44014, 5115}
+		character_range{ 43884, 3}, character_range{ 43968, 34}, character_range{ 44011, 0}, character_range{ 44014, 5115}, character_range{ 44032, 11182 },
 	};
 
 	template<typename T>
@@ -3368,7 +3417,6 @@ namespace qpl {
 	qpl::size unicode_character_length(const T& c) {
 		auto range = character_range{ qpl::u32_cast(c), 0u };
 		auto find = std::find(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
-		//auto find = std::lower_bound(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
 		return find == qpl::unicode_long_ranges.cend() ? 1u : *find == range ? 2u : 1u;
 	}
 

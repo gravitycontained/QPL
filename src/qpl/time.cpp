@@ -819,6 +819,11 @@ namespace qpl {
 		}
 	}
 
+	std::chrono::local_time<std::chrono::system_clock::duration> get_current_zoned_time() {
+		auto now = std::chrono::system_clock::now();
+		auto x = std::chrono::zoned_time(std::chrono::current_zone(), now);
+		return x.get_local_time();
+	}
 	std::chrono::system_clock::time_point get_current_system_time() {
 		return std::chrono::system_clock::now();
 	}
@@ -877,7 +882,7 @@ namespace qpl {
 	std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format) {
 		std::istringstream stream{ date };
 		std::chrono::system_clock::time_point result;
-		if (!std::chrono::from_stream(stream, "%F %T", result)) {
+		if (!std::chrono::from_stream(stream, format.c_str(), result)) {
 			throw qpl::exception("utc_data_ymdhm_to_utc_timepoint error : cannot parse date ", date);
 		}
 		return result;
