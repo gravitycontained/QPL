@@ -2911,6 +2911,9 @@ namespace qpl {
     std::string qpl::read_file(const std::string& path) {
         return qpl::filesys::read_file(path);
     }
+    std::wstring qpl::wread_file(const std::wstring& path) {
+        return qpl::filesys::wread_file(path);
+    }
     void qpl::write_to_file(const std::string& text, const std::string& path) {
         return qpl::filesys::write_to_file(text, path);
     }

@@ -591,6 +591,7 @@ namespace qpl {
     }
 
     QPLDLL std::string read_file(const std::string& path);
+    QPLDLL std::wstring wread_file(const std::wstring& path);
     QPLDLL void write_to_file(const std::string& text, const std::string& path);
     QPLDLL void write_data_file(const std::string& data, const std::string& path);
     QPLDLL void write_text_file(const std::string& data, const std::string& path);

@@ -22,6 +22,7 @@
 namespace qpl {
 
 
+
 	struct sha256 {
 		using utype = qpl::u32;
 

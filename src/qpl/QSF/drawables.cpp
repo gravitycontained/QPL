@@ -5769,24 +5769,16 @@ namespace qsf {
 		this->unicode_font = &font;
 	}
 	void qsf::colored_text::set_character_size(qpl::u32 size) {
-		if (this->character_size != size) {
-			this->character_size = size;
-		}
+		this->character_size = size;
 	}
 	void qsf::colored_text::set_letter_spacing(qpl::f32 spacingFactor) {
-		if (this->letter_spacing_factor != spacingFactor) {
-			this->letter_spacing_factor = spacingFactor;
-		}
+		this->letter_spacing_factor = spacingFactor;
 	}
 	void qsf::colored_text::set_line_spacing(qpl::f32 spacingFactor) {
-		if (this->line_spacing_factor != spacingFactor) {
-			this->line_spacing_factor = spacingFactor;
-		}
+		this->line_spacing_factor = spacingFactor;
 	}
 	void qsf::colored_text::set_style(qpl::u32 style) {
-		if (this->style != style) {
-			this->style = style;
-		}
+		this->style = style;
 	}
 	qpl::u32 qsf::colored_text::get_character_size() const {
 		return this->character_size;
@@ -5867,6 +5859,7 @@ namespace qsf {
 	}
 	void qsf::colored_text::add(const qpl::styled_string<qpl::u32_string>& string, qpl::f32 visible_y_min, qpl::f32 visible_y_max) {
 		if (!this->font) {
+			qpl::println(" qsf::colored_text::add : no font set!");
 			return;
 		}
 
