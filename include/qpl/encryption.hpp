@@ -2064,7 +2064,6 @@ namespace qpl {
 			}
 
 			auto encrypted = this->cipher.encrypted(message, cipher_key);
-			auto decrypted = this->cipher.decrypted(encrypted, cipher_key);
 
 			qpl::collection_string result;
 			result.add_string(rsa_header.value());

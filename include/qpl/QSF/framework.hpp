@@ -256,7 +256,7 @@ namespace qsf {
 		void final_draw(const T& drawable, sf::RenderStates states) {
 
 			if constexpr (qsf::has_view<T>()) {
-				drawable.view.apply_to(states);
+				drawable.auto_view.apply_to(states);
 			}
 
 			if constexpr (qsf::is_render_texture<T>()) {
@@ -474,13 +474,13 @@ namespace qsf {
 		void final_update(T& updatable, Args&&... args) {
 
 			if constexpr (qsf::has_view<T>()) {
-				if (updatable.view.is_default_view()) {
+				if (updatable.auto_view.is_default_view()) {
 					updatable.update(this->event(), args...);
 				}
 				else {
 					auto before = this->event().m_mouse_position;
 					auto before_delta = this->event().m_delta_mouse_position;
-					this->event().apply_view(updatable.view);
+					this->event().apply_view(updatable.auto_view);
 
 					updatable.update(this->event(), args...);
 

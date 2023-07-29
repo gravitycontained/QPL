@@ -65,6 +65,9 @@ namespace qpl {
 	template<typename T>
 	using decay = std::decay_t<T>;
 
+	template<typename T>
+	using full_decay = std::remove_const_t<std::remove_pointer_t<std::decay_t<T>>>;
+
 	template<class... Args>
 	struct empty_indirection {
 		using type = typename identity<Args...>::type;
@@ -1525,8 +1528,10 @@ namespace qpl {
 
 	template<typename T>
 	constexpr bool is_string_type() {
-		return qpl::is_std_basic_string<T>() || qpl::is_std_basic_string_view<T>() || qpl::is_any_type_decayed_equal_to<T, char, const char*, char*, const char[], wchar_t, const wchar_t*, const wchar_t[], wchar_t*>();
+		return qpl::is_std_basic_string<T>() || qpl::is_std_basic_string_view<T>() || qpl::is_any_type_decayed_equal_to<T, char, const char*, char*, const char[], wchar_t, const wchar_t*, const wchar_t[], wchar_t*, char32_t>();
 	}
+
+
 
 	template<typename T>
 	constexpr bool is_standard_string_type() {
@@ -1572,7 +1577,7 @@ namespace qpl {
 
 	template<typename T>
 	constexpr bool is_char_type() {
-		return qpl::is_any_type_decayed_equal_to<T, char, wchar_t, char8_t, char16_t, char32_t>();
+		return qpl::is_any_type_decayed_equal_to<T, char, wchar_t, char8_t, char16_t, char32_t, qpl::u8, qpl::i8, qpl::u16, qpl::i16, qpl::u32, qpl::i32>();
 	}
 	template<typename T>
 	constexpr bool is_char_pointer_type() {
@@ -1633,6 +1638,7 @@ namespace qpl {
 	template<class Truth, class T, typename... Args>
 	using conditional = typename qpl::conditional_identity<Truth, T, Args...>::type;
 	
+
 
 	template<typename T>
 	qpl::size constexpr type_used_bit_size() {
@@ -1746,6 +1752,7 @@ namespace qpl {
 
 	template<typename C>
 	using container_deepest_subtype = decltype(impl::container_deepest_subtype<C>());
+
 
 
 	namespace impl {
@@ -2006,6 +2013,52 @@ namespace qpl {
 
 	template<typename T>
 	concept is_contiguous_container_c = (is_contiguous_container<T>());
+
+
+	namespace detail {
+		template<typename T>
+		constexpr auto get_char_type() {
+			if constexpr (qpl::is_container<T>()) {
+				return qpl::detail::get_char_type<qpl::container_subtype<T>>();
+			}
+			else {
+				if constexpr (qpl::is_any_type_decayed_equal_to<T, char, char*, char[], const char*, const char[]>()) {
+					return char{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, qpl::u8, qpl::u8*, qpl::u8[], const qpl::u8*, const qpl::u8[]>()) {
+					return u8{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, qpl::i8, qpl::i8*, qpl::i8[], const qpl::i8*, const qpl::i8[]>()) {
+					return i8{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, wchar_t, wchar_t*, wchar_t[], const wchar_t*, const wchar_t[]>()) {
+					return wchar_t{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, qpl::u16, qpl::u16*, qpl::u16[], const qpl::u16*, const qpl::u16[]>()) {
+					return u16{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, qpl::i16, qpl::i16*, qpl::i16[], const qpl::i16*, const qpl::i16[]>()) {
+					return i16{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, char32_t, char32_t*, char32_t[], const char32_t*, const char32_t[]>()) {
+					return char32_t{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, qpl::u32, qpl::u32*, qpl::u32[], const qpl::u32*, const qpl::u32[]>()) {
+					return u32{};
+				}
+				else if constexpr (qpl::is_any_type_decayed_equal_to<T, qpl::i32, qpl::i32*, qpl::i32[], const qpl::i32*, const qpl::i32[]>()) {
+					return i32{};
+				}
+				else {
+					return qpl::empty_type{};
+				}
+			}
+		}
+	}
+
+	template<typename T>
+	using string_char_type = decltype(qpl::detail::get_char_type<T>());
+
 
 
 

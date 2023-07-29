@@ -243,7 +243,7 @@ namespace qpl {
 		return stream.str();
 	}
 
-	template<typename char_type = std::uint32_t, typename... Args> requires (qpl::is_printable<Args...>())
+	template<typename char_type, typename... Args> requires (!qpl::is_long_string_type<char_type>() && qpl::is_printable<Args...>())
 	std::basic_string<char_type> to_basic_string(Args&&... args) {
 		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::basic_string<char_type>>()) {
 			return qpl::variadic_value<0u>(args...);
@@ -280,7 +280,7 @@ namespace qpl {
 				result += static_cast<char32_t>(value);
 			}
 			else if constexpr (qpl::is_char_pointer_type<T>()) {
-				std::basic_string<qpl::decay_t<T>> string = value;
+				std::basic_string<qpl::full_decay<T>> string = value;
 				std::basic_string<char_type> convert(string.begin(), string.end());
 				result += convert;
 			}
@@ -295,7 +295,12 @@ namespace qpl {
 		return result;
 	}
 
-	template<typename char_type = std::uint32_t, typename... Args> requires (qpl::is_printable<Args...>())
+	template<typename string_type, typename... Args> requires (qpl::is_long_string_type<string_type>() && qpl::is_printable<Args...>())
+	std::basic_string<qpl::string_char_type<string_type>> to_basic_string(Args&&... args) {
+		return qpl::to_basic_string<qpl::string_char_type<string_type>>(args...);
+	}
+
+	template<typename... Args> requires (qpl::is_printable<Args...>())
 	auto to_u32_string(Args&&... args) {
 		return qpl::to_basic_string<qpl::u32>(args...);
 	}

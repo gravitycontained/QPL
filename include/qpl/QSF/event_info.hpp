@@ -97,8 +97,8 @@ namespace qsf {
 
 		template<typename T>
 		void apply_view(const qsf::view_t<T>& view) const {
-			auto transform = view.get_transform();
-			this->m_mouse_position = transform.transformPoint(this->m_mouse_position);
+			this->m_mouse_position = view.transform_point(this->m_mouse_position);
+			this->m_delta_mouse_position = view.transform_point_no_offset(this->m_delta_mouse_position);
 		}
 
 		QPLDLL bool text_entered(char c) const;
@@ -113,18 +113,17 @@ namespace qsf {
 		QPLDLL std::wstring all_text_entered() const;
 		QPLDLL std::string all_text_entered_str() const;
 
-
 		template<typename T, typename ... Args> requires (qsf::has_update<T, Args...>() || (qpl::is_container<T>() && qsf::has_update<qpl::container_deepest_subtype<T>, Args...>()))
 		void update(T& updatable, Args&&... args) const {
 			if constexpr (qsf::has_update<T, Args...>()) {
 				if constexpr (qsf::has_view<T>()) {
-					if (updatable.view.is_default_view()) {
+					if (updatable.auto_view.is_default_view()) {
 						updatable.update(*this, args...);
 					}
 					else {
 						auto before = this->m_mouse_position;
 						auto before_delta = this->m_delta_mouse_position;
-						this->apply_view(updatable.view);
+						this->apply_view(updatable.auto_view);
 
 						updatable.update(*this, args...);
 
@@ -176,7 +175,7 @@ namespace qsf {
 
 		std::wstring m_text_entered;
 		qpl::u32_string m_u32_text_entered;
-		std::wostringstream m_text_entered_stream;
+		std::wstring m_text_entered_total;
 
 		qpl::vector2i m_resized_size;
 		mutable qpl::vector2f m_mouse_position;

@@ -231,7 +231,7 @@ namespace qsf {
 		if (event.type == sf::Event::TextEntered) {
 			this->m_u32_text_entered += event.text.unicode;
 			this->m_text_entered.push_back(event.text.unicode);
-			this->m_text_entered_stream << (wchar_t)event.text.unicode;
+			this->m_text_entered_total += (wchar_t)event.text.unicode;
 
 		}
 		if (event.type == sf::Event::MouseButtonPressed) {
@@ -449,10 +449,10 @@ namespace qsf {
 		return qpl::wstring_to_string(this->m_text_entered);
 	}
 	std::wstring qsf::event_info::all_text_entered() const {
-		return this->m_text_entered_stream.str();
+		return this->m_text_entered_total;
 	}
 	std::string qsf::event_info::all_text_entered_str() const {
-		return qpl::wstring_to_string(this->m_text_entered_stream.str());
+		return qpl::wstring_to_string(this->m_text_entered_total);
 	}
 
 }

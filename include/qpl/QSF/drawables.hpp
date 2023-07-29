@@ -135,7 +135,7 @@ namespace qsf {
 		void draw(const T& object) {
 			if constexpr (qsf::has_view<T>()) {
 				auto before = this->states.transform;
-				object.view.apply_to(this->states);
+				object.auto_view.apply_to(this->states);
 				this->final_draw(object);
 				this->states.transform = before;
 			}
@@ -147,7 +147,7 @@ namespace qsf {
 		void draw(const T& object, sf::RenderStates states) {
 
 			if constexpr (qsf::has_view<T>()) {
-				object.view.apply_to(states);
+				object.auto_view.apply_to(states);
 			}
 			if constexpr (qsf::has_any_draw<T>()) {
 				if constexpr (qsf::is_render_texture<T>()) {
