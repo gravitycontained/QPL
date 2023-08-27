@@ -509,8 +509,7 @@ namespace qsf {
 			auto before = this->event().m_mouse_position;
 			auto before_delta = this->event().m_delta_mouse_position;
 
-			this->event().m_mouse_position = view.transform_point(this->event().m_mouse_position);
-			this->event().m_delta_mouse_position = view.transform_point_no_offset(this->event().m_delta_mouse_position);
+			this->event().apply_view(view);
 
 			if constexpr (qsf::has_update<T, Args...>()) {
 				this->final_update(updatable, args...);

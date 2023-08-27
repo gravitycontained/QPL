@@ -212,6 +212,7 @@ namespace qpl {
 
 		QPLDLL std::wstring read_utf8_file(const std::wstring& path);
 		QPLDLL std::wstring read_utf8_file(const std::string& path);
+		QPLDLL std::string read_file(const std::string& path);
 
 		QPLDLL void execute_batch(const std::string& path, const std::string& command);
 		QPLDLL void execute_batch_command(const std::string& command);

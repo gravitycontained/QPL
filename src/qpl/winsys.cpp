@@ -742,6 +742,9 @@ namespace qpl {
 	void qpl::winsys::disable_utf() {
 		qpl::detail::utf_enabled = false;
 	}
+	std::wstring qpl::winsys::read_utf8_file(const std::string& file) {
+		return qpl::winsys::read_utf8_file(qpl::utf8_to_wstring(file));
+	}
 	std::wstring qpl::winsys::read_utf8_file(const std::wstring& file) {
 		std::wstring buffer;
 		FILE* f;
@@ -768,9 +771,38 @@ namespace qpl {
 
 		return buffer;
 	}
-	std::wstring qpl::winsys::read_utf8_file(const std::string& file) {
-		return qpl::winsys::read_utf8_file(qpl::string_to_wstring(file));
+
+	std::string qpl::winsys::read_file(const std::string& path) {
+		HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			throw qpl::exception("qpl::winsys::read_file(): error ", hFile);
+		}
+
+		DWORD fileSize = GetFileSize(hFile, NULL);
+		if (fileSize == INVALID_FILE_SIZE) {
+			throw qpl::exception("qpl::winsys::read_file(): error: ", hFile, " size: ", fileSize);
+			return "";
+		}
+
+		char* buffer = new char[fileSize + 1];
+		DWORD bytesRead;
+		BOOL result = ReadFile(hFile, buffer, fileSize, &bytesRead, NULL);
+		CloseHandle(hFile);
+
+		if (!result) {
+			// Handle error
+			throw qpl::exception("qpl::winsys::read_file(): ReadFile failed.");
+			delete[] buffer;
+			return "";
+		}
+
+		buffer[bytesRead] = '\0';  // Null-terminate the buffer
+		std::string fileContent(buffer);
+		delete[] buffer;
+
+		return fileContent;
 	}
+
 	void qpl::winsys::execute_batch(const std::string& path, const std::string& command) {
 		qpl::filesys::create_file(path, command);
 		std::system(path.c_str());

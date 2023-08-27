@@ -44,6 +44,11 @@ namespace qpl {
 	QPLDLL std::string wstring_to_string(const std::wstring& str);
 	QPLDLL std::string wstring_to_string(std::wstring_view str);
 
+	QPLDLL std::string wchar_to_utf8(wchar_t wc);
+	QPLDLL std::string wstring_to_utf8(const std::wstring& string);
+	QPLDLL wchar_t utf8_to_wchar(const std::string& str);
+	QPLDLL std::wstring utf8_to_wstring(const std::string& str);
+
 	//format is like (a, b)
 	template<typename... Args> requires (qpl::is_printable<Args...>())
 	std::string to_string_format(std::string_view format, Args&&... args) {
@@ -377,15 +382,18 @@ namespace qpl {
 
 	QPLDLL extern std::function<void(std::wstring)> default_output_function_w;
 	QPLDLL extern std::function<void(std::string)> default_output_function;
+	QPLDLL extern std::function<std::wstring()> default_input_function;
 	QPLDLL extern std::function<void(qpl::cc)> default_output_color_function;
 
 	QPLDLL extern std::function<void(std::wstring)> custom_output_function_w;
 	QPLDLL extern std::function<void(std::string)> custom_output_function;
+	QPLDLL extern std::function<std::wstring()> custom_input_function;
 	QPLDLL extern std::function<void(qpl::cc)> custom_output_color_function;
 
 
 	QPLDLL extern std::function<void(std::wstring)> output_function_w;
 	QPLDLL extern std::function<void(std::string)> output_function;
+	QPLDLL extern std::function<std::wstring()> input_function;
 	QPLDLL extern std::function<void(qpl::cc)> output_color_function;
 
 
@@ -2519,6 +2527,8 @@ namespace qpl {
 	QPLDLL qpl::size string_levenshtein_distance(const std::string_view& a, const std::string_view& b);
 	QPLDLL qpl::size string_levenshtein_distance(const std::wstring_view& a, const std::wstring_view& b);
 
+	QPLDLL void string_trim_whitespace(std::wstring& string);
+	QPLDLL void string_trim_whitespace(std::string& string);
 
 	QPLDLL bool string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b);
 	QPLDLL bool string_starts_with(const std::string_view& a, const std::string_view& b);

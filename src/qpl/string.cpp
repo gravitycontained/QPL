@@ -65,8 +65,88 @@ namespace qpl {
 	}
 	std::string qpl::wstring_to_string(std::wstring_view s) {
 		return qpl::wstring_to_string(std::wstring{ s });
+	}	
+	std::string qpl::wchar_to_utf8(wchar_t wc) {
+		std::string result;
+		if (wc < 0x80) {
+			result.push_back(static_cast<char>(wc));
+		}
+		else if (wc < 0x800) {
+			result.push_back(static_cast<char>(0xC0 | wc >> 6));
+			result.push_back(static_cast<char>(0x80 | (wc & 0x3F)));
+		}
+		else if (wc < 0x10000) {
+			result.push_back(static_cast<char>(0xE0 | wc >> 12));
+			result.push_back(static_cast<char>(0x80 | ((wc >> 6) & 0x3F)));
+			result.push_back(static_cast<char>(0x80 | (wc & 0x3F)));
+		}
+		else {
+			result.push_back(static_cast<char>(0xF0 | wc >> 18));
+			result.push_back(static_cast<char>(0x80 | ((wc >> 12) & 0x3F)));
+			result.push_back(static_cast<char>(0x80 | ((wc >> 6) & 0x3F)));
+			result.push_back(static_cast<char>(0x80 | (wc & 0x3F)));
+		}
+		return result;
+	}
+	std::string qpl::wstring_to_utf8(const std::wstring& string) {
+		std::string result = "";
+		for (auto& i : string) {
+			result += qpl::wchar_to_utf8(i);
+		}
+		return result;
+	}
+	wchar_t qpl::utf8_to_wchar(const std::string& utf8) {
+		qpl::size len = utf8.size();
+		if (len == 0) {
+			throw qpl::exception("Empty UTF-8 string");
+		}
+
+		wchar_t wc = 0;
+		if ((utf8[0] & 0x80) == 0) { // 0xxxxxxx
+			wc = utf8[0];
+		}
+		else if ((utf8[0] & 0xE0) == 0xC0 && len >= 2) { // 110xxxxx 10xxxxxx
+			wc = ((utf8[0] & 0x1F) << 6) | (utf8[1] & 0x3F);
+		}
+		else if ((utf8[0] & 0xF0) == 0xE0 && len >= 3) { // 1110xxxx 10xxxxxx 10xxxxxx
+			wc = ((utf8[0] & 0x0F) << 12) | ((utf8[1] & 0x3F) << 6) | (utf8[2] & 0x3F);
+		}
+		else if ((utf8[0] & 0xF8) == 0xF0 && len >= 4) { // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+			wc = ((utf8[0] & 0x07) << 18) | ((utf8[1] & 0x3F) << 12) | ((utf8[2] & 0x3F) << 6) | (utf8[3] & 0x3F);
+		}
+		else {
+			throw qpl::exception("Invalid UTF-8 encoding");
+		}
+		return wc;
 	}
 
+	std::wstring qpl::utf8_to_wstring(const std::string& utf8_string) {
+		std::wstring result;
+
+		for (qpl::size i = 0; i < utf8_string.size(); ) {
+			char c = utf8_string[i];
+			if ((c & 0x80) == 0) { // 0xxxxxxx
+				result.push_back(utf8_to_wchar(utf8_string.substr(i, 1)));
+				++i;
+			}
+			else if ((c & 0xE0) == 0xC0) { // 110xxxxx 10xxxxxx
+				result.push_back(utf8_to_wchar(utf8_string.substr(i, 2)));
+				i += 2;
+			}
+			else if ((c & 0xF0) == 0xE0) { // 1110xxxx 10xxxxxx 10xxxxxx
+				result.push_back(utf8_to_wchar(utf8_string.substr(i, 3)));
+				i += 3;
+			}
+			else if ((c & 0xF8) == 0xF0) { // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+				result.push_back(utf8_to_wchar(utf8_string.substr(i, 4)));
+				i += 4;
+			}
+			else {
+				throw qpl::exception("Invalid UTF-8 encoding");
+			}
+		}
+		return result;
+	}
 
 	std::function<void(std::wstring)> qpl::default_output_function_w = [](const std::wstring& string) {
 		std::wprintf(L"%s", string.c_str());
@@ -76,27 +156,36 @@ namespace qpl {
 		//std::cout << string;
 		std::fwrite(string.data(), sizeof(string[0]) * string.size(), 1, stderr);
 	};
+	std::function<std::wstring()> qpl::default_input_function = []() {
+		std::wstring line;
+		std::getline(std::wcin, line);
+		return line;
+	};
 	std::function<void(qpl::cc)> qpl::default_output_color_function = [](qpl::cc color) {
 		qpl::set_console_color(color);
 	};
 	std::function<void(std::wstring)> qpl::custom_output_function_w = qpl::default_output_function_w;
 	std::function<void(std::string)> qpl::custom_output_function = qpl::default_output_function;
+	std::function<std::wstring()> qpl::custom_input_function = qpl::default_input_function;
 	std::function<void(qpl::cc)> qpl::custom_output_color_function = qpl::default_output_color_function;
 
 	std::function<void(std::wstring)> qpl::output_function_w = qpl::default_output_function_w;
 	std::function<void(std::string)> qpl::output_function = qpl::default_output_function;
+	std::function<std::wstring()> qpl::input_function = qpl::default_input_function;
 	std::function<void(qpl::cc)> qpl::output_color_function = qpl::default_output_color_function;
 
 	bool qpl::use_default_print = true;
 	void qpl::use_default_print_functions() {
 		qpl::output_function_w = qpl::default_output_function_w;
 		qpl::output_function = qpl::default_output_function;
+		qpl::input_function = qpl::default_input_function;
 		qpl::output_color_function = qpl::default_output_color_function;
 		qpl::use_default_print = true;
 	}
 	void qpl::use_custom_print_functions() {
 		qpl::output_function_w = qpl::custom_output_function_w;
 		qpl::output_function = qpl::custom_output_function;
+		qpl::input_function = qpl::custom_input_function;
 		qpl::output_color_function = qpl::custom_output_color_function;
 		qpl::use_default_print = false;
 	}
@@ -2033,6 +2122,30 @@ namespace qpl {
 			}
 		}
 		return matrix[a.length()][b.length()];
+	}
+	void qpl::string_trim_whitespace(std::wstring& string) {
+		qpl::size index = 0u;
+		while (index < string.length() && qpl::is_character_whitespace(string[index])) {
+			++index;
+		}
+		if (index < string.length()) {
+			string = string.substr(index);
+		}
+		else {
+			string.clear();
+		}
+	}
+	void qpl::string_trim_whitespace(std::string& string) {
+		qpl::size index = 0u;
+		while (index < string.length() && qpl::is_character_whitespace(string[index])) {
+			++index;
+		}
+		if (index < string.length()) {
+			string = string.substr(index);
+		}
+		else {
+			string.clear();
+		}
 	}
 	bool qpl::string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b) {
 		if (b.length() > a.length()) {

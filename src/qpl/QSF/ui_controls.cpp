@@ -3320,6 +3320,11 @@ namespace qsf {
 		}
 		this->update_cursor();
 		this->update_text_range();
+
+
+		if (event.key_holding(sf::Keyboard::LShift) && event.holding_middle_mouse()) {
+			this->view.move(-event.delta_mouse_position());
+		}
 	}
 	void qsf::console::draw(qsf::draw_object& draw) const {
 		auto copy = this->view;
@@ -3330,7 +3335,7 @@ namespace qsf {
 		draw.draw(this->colored_text, copy);
 		draw.draw(this->selection_rectangle, copy);
 
-		if (this->border_texture_set) {
+		if (this->border_texture_set && this->scroll_bar.knob_range < 1.0f) {
 			//if (this->view_row > 1) {
 			//	draw.draw(this->shadow_border);
 			//}

@@ -19,7 +19,7 @@ namespace qpl {
         std::wstring whole_wstring;
 
        QPLDLL void load(const std::string& file_name, char seperate = ':');
-       QPLDLL void wload(const std::string& file_name, wchar_t seperate = L':');
+       QPLDLL void wload(const std::wstring& file_name, wchar_t seperate = L':');
        QPLDLL std::string string() const;
        QPLDLL std::wstring wstring() const;
 

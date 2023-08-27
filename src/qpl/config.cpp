@@ -32,7 +32,7 @@ namespace qpl {
         }
     }
 
-    void qpl::config::wload(const std::string& file_name, wchar_t seperate) {
+    void qpl::config::wload(const std::wstring& file_name, wchar_t seperate) {
         std::wifstream infile(file_name);
     
         qpl::println("loading config file \"", file_name, "\"");

@@ -24,11 +24,23 @@ namespace qpl {
             path() {
                 this->construct();
             }
+            path(const std::wstring& str) {
+                this->construct();
+                *this = str;
+            }
             path(const std::string& str) {
                 this->construct();
                 *this = str;
             }
+            path(const std::wstring_view& str) {
+                this->construct();
+                *this = str;
+            }
             path(const std::string_view& str) {
+                this->construct();
+                *this = str;
+            }
+            path(const wchar_t* str) {
                 this->construct();
                 *this = str;
             }
@@ -43,9 +55,12 @@ namespace qpl {
                 *this = entry;
             }
 
+            QPLDLL path& operator=(const std::wstring& str);
             QPLDLL path& operator=(const std::string& str);
+            QPLDLL path& operator=(const std::wstring_view& str);
             QPLDLL path& operator=(const std::string_view& str);
             QPLDLL path& operator=(const char* str);
+            QPLDLL path& operator=(const wchar_t* str);
             QPLDLL path& operator=(const path& other);
             QPLDLL path& operator=(const std::filesystem::directory_entry& entry);
 
@@ -60,6 +75,7 @@ namespace qpl {
             QPLDLL const char* data() const;
             QPLDLL const char* c_str() const;
             QPLDLL std::string string() const;
+            QPLDLL std::wstring wstring() const;
             QPLDLL operator std::string() const;
             QPLDLL bool empty() const;
             QPLDLL void clear();
@@ -542,6 +558,7 @@ namespace qpl {
         QPLDLL std::filesystem::file_time_type file_last_write_time(const std::string& path);
         QPLDLL std::string file_last_write_time_str(const std::string& path);
         QPLDLL void write_to_file(const std::string& text, const std::string& path);
+        QPLDLL void write_to_file(const std::wstring& text, const std::string& path);
         QPLDLL void writeln_to_file(const std::string& text, const std::string& path);
         QPLDLL void writeln_to_file(const std::wstring& text, const std::string& path);
 
