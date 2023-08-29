@@ -3051,6 +3051,16 @@ namespace qpl {
 			qpl::f32 value;
 			constexpr outline_thickness(qpl::f32 thickness) : value(thickness) {}
 		};
+		struct background_color {
+			qpl::rgba value;
+			constexpr background_color(qpl::rgb color) : value(color) {}
+			constexpr background_color(qpl::background color) {
+				this->value = qpl::background_to_rgb(color);
+			}			
+			constexpr background_color(qpl::foreground color) {
+				this->value = qpl::foreground_to_rgb(color);
+			}
+		};
 		struct outline_color {
 			qpl::rgba value;
 			constexpr outline_color(qpl::rgb color) : value(color) {}
@@ -3067,6 +3077,7 @@ namespace qpl {
 		struct element {
 			T text{};
 			qpl::rgba color = qpl::rgba(204, 204, 204);
+			qpl::rgba background_color = qpl::rgba::transparent;
 			qpl::rgba outline_color = qpl::rgba::black();
 			qpl::f32 outline_thickness = 0.0f;
 			qpl::u32 style = 0u;
@@ -3075,6 +3086,7 @@ namespace qpl {
 			bool operator==(const element& other) const {
 				return
 					this->color == other.color &&
+					this->background_color == other.background_color &&
 					this->style == other.style &&
 					this->outline_thickness == other.outline_thickness &&
 					((this->outline_thickness == 0.0f && other.outline_thickness == 0.0f) || (this->outline_color == other.outline_color));
@@ -3084,6 +3096,7 @@ namespace qpl {
 			}
 			void copy_style(const element& other) {
 				this->color = other.color;
+				this->background_color = other.background_color;
 				this->outline_color = other.outline_color;
 				this->outline_thickness = other.outline_thickness;
 				this->style = other.style;
@@ -3203,12 +3216,25 @@ namespace qpl {
 		void add(const qpl::foreground& color) {
 			this->add(style::color(color));
 		}
+		void add(const qpl::background& color) {
+			this->add(style::background_color(color));
+		}
 		void add(const qpl::style::color& color) {
 			if (this->elements.back().color == color.value) {
 				return;
 			}
 			this->prepare_next_style();
 			this->elements.back().color = color.value;
+		}
+		void add(const qpl::style::background_color& background_color) {
+			if (this->elements.back().background_color == background_color.value) {
+				return;
+			}
+			if (this->elements.back().background_color.a == 0 && background_color.value.a == 0) {
+				return;
+			}
+			this->prepare_next_style();
+			this->elements.back().background_color = background_color.value;
 		}
 		void add(const qpl::style::outline_color& outline_color) {
 			if (this->elements.back().outline_color == outline_color.value) {

@@ -12,7 +12,8 @@ namespace qpl {
 		struct element {
 			std::wstring text = L"";
 			qpl::foreground foreground = qpl::foreground::white;
-			qpl::background background = qpl::background::black;
+			qpl::background background = qpl::background::transparent;
+			//bool get_position = false;
 
 			QPLDLL bool is_default_colors() const;
 		};
@@ -25,7 +26,7 @@ namespace qpl {
 			this->clear();
 			for (auto& i : string.elements) {
 
-				qpl::colored_string::element element;		
+				qpl::colored_string::element element;
 				element.text = qpl::to_basic_string<wchar_t>(i.text);
 				element.foreground = qpl::rgb_to_foreground(i.color);
 				this->add(element);
@@ -38,6 +39,7 @@ namespace qpl {
 
 			for (auto& i : this->elements) {
 				result.add(i.foreground);
+				result.add(i.background);
 				result.add(i.text);
 			}
 			return result;

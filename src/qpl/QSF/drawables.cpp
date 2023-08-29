@@ -5698,7 +5698,7 @@ namespace qsf {
 	}
 
 	namespace {
-		void addLine(qsf::vertex_array& vertices,
+		void add_line(qsf::vertex_array& vertices,
 			qpl::f32 line_length,
 			qpl::f32 lineTop,
 			const qpl::rgba& color,
@@ -5749,6 +5749,24 @@ namespace qsf {
 				qsf::vertex vertex;
 				vertex.position = i.position + position;
 				vertex.tex_coords = i.tex_coord;
+				vertex.color = color;
+				vertices.add(vertex);
+			}
+		}
+
+		void add_background_quad(qsf::vertex_array& vertices, qpl::hitbox hitbox, const qpl::rgba& color) {
+
+			std::vector<qpl::vec2> positions;
+			positions.push_back(hitbox.get_side_corner(0u));
+			positions.push_back(hitbox.get_side_corner(1u));
+			positions.push_back(hitbox.get_side_corner(3u));
+			positions.push_back(hitbox.get_side_corner(1u));
+			positions.push_back(hitbox.get_side_corner(2u));
+			positions.push_back(hitbox.get_side_corner(3u));
+
+			for (auto& pos : positions) {
+				qsf::vertex vertex;
+				vertex.position = pos;
 				vertex.color = color;
 				vertices.add(vertex);
 			}
@@ -5884,6 +5902,10 @@ namespace qsf {
 		auto maxY = 0.f;
 		qpl::u32 previous = 0;
 
+
+		auto Xglyph = this->get_glyph(L'x', this->character_size, false);
+		auto delta_underline = Xglyph.bounds.top + Xglyph.bounds.height;
+
 		this->last_element.copy_style(string.elements.back());
 		for (auto& element : string) {
 			bool is_bold = element.style & sf::Text::Style::Bold;
@@ -5912,19 +5934,62 @@ namespace qsf {
 				if (c == U'\r') {
 					continue;
 				}
+
+				sf::Glyph character_glyph;
+				character_glyph = this->get_glyph(c, this->character_size, is_bold);
+				auto glyph_bounds = character_glyph.textureRect;
+
+				bool is_unicode_character = false;
+				if (this->unicode_font && glyph_bounds.left == unreadable_glyph_texture.left && glyph_bounds.top == unreadable_glyph_texture.top &&
+					glyph_bounds.width == unreadable_glyph_texture.width && glyph_bounds.height == unreadable_glyph_texture.height) {
+
+					character_glyph = this->get_unicode_glyph(c, this->character_size, is_bold);
+
+					auto factor = character_glyph.advance / default_unicode_glyph.advance;
+					if (factor >= 1.5) {
+						character_glyph.advance = default_glyph.advance * 2u;
+					}
+					else {
+						character_glyph.advance = default_glyph.advance;
+					}
+
+					is_unicode_character = true;
+				}
+
+
+				qpl::f32 left = character_glyph.bounds.left;
+				qpl::f32 top = character_glyph.bounds.top;
+				qpl::f32 right = character_glyph.bounds.left + character_glyph.bounds.width;
+				qpl::f32 bottom = character_glyph.bounds.top + character_glyph.bounds.height;
+
+				minX = std::min(minX, this->text_position.x + left - italic_shear * bottom);
+				maxX = std::max(maxX, this->text_position.x + right - italic_shear * top);
+				minY = std::min(minY, this->text_position.y + top);
+				maxY = std::max(maxY, this->text_position.y + bottom);
+
+				if (element.background_color.a) {
+					qpl::hitbox background_hitbox;
+					background_hitbox.position.x = this->text_position.x;
+					background_hitbox.position.y = this->text_position.y - this->character_size + underline_offset - this->character_size / 10.f;
+
+					background_hitbox.dimension = qpl::vec2(character_glyph.advance + letter_spacing, line_spacing);
+
+					add_background_quad(this->vertices, background_hitbox, element.background_color);
+				}
+
 				this->text_position.x += this->font->getKerning(previous, c, this->character_size);
 				if (is_underlined && (c == U'\n' && previous != U'\n')) {
-					addLine(this->vertices, this->text_position.x, this->text_position.y, element.color, underline_offset, underline_thickness);
+					add_line(this->vertices, this->text_position.x, this->text_position.y, element.color, underline_offset, underline_thickness);
 
 					if (element.outline_thickness != 0) {
-						addLine(this->outline_vertices, this->text_position.x, this->text_position.y, element.outline_color, underline_offset, underline_thickness, element.outline_thickness);
+						add_line(this->outline_vertices, this->text_position.x, this->text_position.y, element.outline_color, underline_offset, underline_thickness, element.outline_thickness);
 					}
 				}
 				if (is_strike_through && (c == U'\n' && previous != U'\n')) {
-					addLine(this->vertices, this->text_position.x, this->text_position.y, element.color, strike_through_offset, underline_thickness);
+					add_line(this->vertices, this->text_position.x, this->text_position.y, element.color, strike_through_offset, underline_thickness);
 
 					if (element.outline_thickness != 0) {
-						addLine(this->outline_vertices, this->text_position.x, this->text_position.y, element.outline_color, strike_through_offset, underline_thickness, element.outline_thickness);
+						add_line(this->outline_vertices, this->text_position.x, this->text_position.y, element.outline_color, strike_through_offset, underline_thickness, element.outline_thickness);
 					}
 				}
 
@@ -5971,69 +6036,18 @@ namespace qsf {
 					}
 				}
 
-				sf::Glyph glyph;
-				glyph = this->get_glyph(c, this->character_size, is_bold);
-				auto glyph_bounds = glyph.textureRect;
-				if (this->unicode_font && glyph_bounds.left == unreadable_glyph_texture.left && glyph_bounds.top == unreadable_glyph_texture.top &&
-					glyph_bounds.width == unreadable_glyph_texture.width && glyph_bounds.height == unreadable_glyph_texture.height) {
-
-					glyph = this->get_unicode_glyph(c, this->character_size, is_bold);
-
-					auto factor = glyph.advance / default_unicode_glyph.advance;
-					if (factor >= 1.5) {
-						glyph.advance = default_glyph.advance * 2u;
+				if (in_range) {
+					if (is_unicode_character) {
+						add_glyph_quad(this->unicode_vertices, this->text_position, element.color, character_glyph, italic_shear);
 					}
 					else {
-						glyph.advance = default_glyph.advance;
-					}
-					if (in_range) {
-						add_glyph_quad(this->unicode_vertices, this->text_position, element.color, glyph, italic_shear);
-					}
-				}
-				else {
-					glyph = this->get_glyph(c, this->character_size, is_bold);
-					if (in_range) {
-						add_glyph_quad(this->vertices, this->text_position, element.color, glyph, italic_shear);
+						add_glyph_quad(this->vertices, this->text_position, element.color, character_glyph, italic_shear);
 					}
 				}
 
-
-				qpl::f32 left = glyph.bounds.left;
-				qpl::f32 top = glyph.bounds.top;
-				qpl::f32 right = glyph.bounds.left + glyph.bounds.width;
-				qpl::f32 bottom = glyph.bounds.top + glyph.bounds.height;
-
-				minX = std::min(minX, this->text_position.x + left - italic_shear * bottom);
-				maxX = std::max(maxX, this->text_position.x + right - italic_shear * top);
-				minY = std::min(minY, this->text_position.y + top);
-				maxY = std::max(maxY, this->text_position.y + bottom);
-
-				this->text_position.x += glyph.advance + letter_spacing;
+				this->text_position.x += character_glyph.advance + letter_spacing;
 			}
 		}
-
-		//if (this->outline_vertices.size()) {
-		//    qpl::f32 outline = std::abs(std::ceil(element.outline_thickness));
-		//    minX -= outline;
-		//    maxX += outline;
-		//    minY -= outline;
-		//    maxY += outline;
-		//}
-
-		//if (is_underlined && (x > 0)) {
-		//    addLine(this->vertices, x, y, element.color, underline_offset, underline_thickness);
-		//
-		//    if (element.outline_thickness != 0) {
-		//        addLine(this->outline_vertices, x, y, element.outline_color, underline_offset, underline_thickness, element.outline_thickness);
-		//    }
-		//}
-		//if (is_strike_through && (x > 0)) {
-		//    addLine(this->vertices, x, y, element.color, strike_through_offset, underline_thickness);
-		//
-		//    if (element.outline_thickness != 0) {
-		//        addLine(this->outline_vertices, x, y, element.outline_color, strike_through_offset, underline_thickness, element.outline_thickness);
-		//    }
-		//}
 
 		this->hitbox.position.x = minX;
 		this->hitbox.position.y = 0;

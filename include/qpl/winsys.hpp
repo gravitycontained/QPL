@@ -236,7 +236,7 @@ namespace qpl {
 	struct cc {
 		cc() {
 			this->foreground = qpl::foreground::white;
-			this->background = qpl::background::black;
+			this->background = qpl::background::transparent;
 		}
 		cc(const cc& other) {
 			*this = other;
@@ -247,7 +247,7 @@ namespace qpl {
 		}
 		cc(qpl::color foreground) {
 			this->foreground = static_cast<qpl::foreground>(foreground);
-			this->background = qpl::background::black;
+			this->background = qpl::background::transparent;
 		}
 		cc(qpl::foreground foreground, qpl::background background) {
 			this->foreground = foreground;
@@ -259,7 +259,7 @@ namespace qpl {
 		}
 		cc(qpl::foreground foreground) {
 			this->foreground = foreground;
-			this->background = qpl::background::black;
+			this->background = qpl::background::transparent;
 		}
 		cc(qpl::background background) {
 			this->foreground = qpl::foreground::white;
@@ -291,7 +291,6 @@ namespace qpl {
 	QPLDLL qpl::foreground get_random_foreground();
 	QPLDLL qpl::background get_random_background();
 	QPLDLL void set_console_color(qpl::color foreground);
-	QPLDLL void set_console_color(qpl::color foreground, qpl::color background);
 	QPLDLL void set_console_color(qpl::foreground foreground, qpl::background background);
 	QPLDLL void set_console_color(qpl::background background, qpl::foreground foreground);
 	QPLDLL void set_console_color(qpl::foreground foreground);

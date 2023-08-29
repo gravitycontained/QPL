@@ -835,7 +835,7 @@ namespace qpl {
 	qpl::cc qpl::cc::def() {
 		qpl::cc result;
 		result.foreground = qpl::foreground::white;
-		result.background = qpl::background::black;
+		result.background = qpl::background::transparent;
 		return result;
 	}
 	qpl::cc qpl::cc::random() {
@@ -862,22 +862,18 @@ namespace qpl {
 		return qpl::cc::random();
 	}
 	qpl::background qpl::get_random_background() {
-		return static_cast<qpl::background>(qpl::random(0, (int)qpl::background::size - 1));
+		return static_cast<qpl::background>(qpl::random(0, 15));
 	}
 	qpl::foreground qpl::get_random_foreground() {
-		return static_cast<qpl::foreground>(qpl::random(0, (int)qpl::foreground::size - 1));
-	}
-	void qpl::set_console_color(qpl::color foreground, qpl::color background) {
-		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleTextAttribute(hConsole, static_cast<int>(foreground) + static_cast<int>(background) * 16);
+		return static_cast<qpl::foreground>(qpl::random(0, 15));
 	}
 	void qpl::set_console_color(qpl::foreground foreground, qpl::background background) {
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleTextAttribute(hConsole, static_cast<int>(foreground) + static_cast<int>(background) * 16);
+		SetConsoleTextAttribute(hConsole, static_cast<int>(foreground) + (static_cast<int>(background) % 16) * 16);
 	}
 	void qpl::set_console_color(qpl::background background, qpl::foreground foreground) {
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleTextAttribute(hConsole, static_cast<int>(foreground) + static_cast<int>(background) * 16);
+		SetConsoleTextAttribute(hConsole, static_cast<int>(foreground) + (static_cast<int>(background) % 16) * 16);
 	}
 	void qpl::set_console_color(qpl::color foreground) {
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -889,13 +885,13 @@ namespace qpl {
 	}
 	void qpl::set_console_color(qpl::background background) {
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleTextAttribute(hConsole, static_cast<int>(background) * 16);
+		SetConsoleTextAttribute(hConsole, (static_cast<int>(background) % 16) * 16);
 	}
 	void qpl::set_console_color(qpl::cc color) {
 		qpl::set_console_color(color.foreground, color.background);
 	}
 	void qpl::set_console_color_default() {
-		qpl::set_console_color(qpl::color::white, qpl::color::black);
+		qpl::set_console_color(qpl::foreground::white, qpl::background::transparent);
 	}
 
 	void* qpl::shared_memory::get() {

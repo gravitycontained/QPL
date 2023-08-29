@@ -819,6 +819,37 @@ namespace qpl {
 		}
 	}
 
+	std::chrono::system_clock::time_point get_current_local_time() {
+		auto now = std::chrono::system_clock::now();
+		auto now_time_t = std::chrono::system_clock::to_time_t(now);
+
+#pragma warning( push )
+#pragma warning( disable : 4996)
+		std::tm local_tm = *std::localtime(&now_time_t);
+		std::tm utc_tm = *std::gmtime(&now_time_t);
+#pragma warning( pop ) 
+
+		auto local_time_as_timepoint = std::chrono::system_clock::from_time_t(
+			mktime(&local_tm)
+		);
+
+		auto utc_time_as_timepoint = std::chrono::system_clock::from_time_t(
+			mktime(&utc_tm)
+		);
+
+		auto offset = local_time_as_timepoint - utc_time_as_timepoint;
+
+		// Adjust for DST
+		if (local_tm.tm_isdst > 0) {
+			offset += std::chrono::hours(1);
+		}
+		else if (local_tm.tm_isdst < 0) {
+			// DST information is unavailable
+			// You can decide how to handle this case
+		}
+		return (now + offset);
+	}
+
 	std::chrono::local_time<std::chrono::system_clock::duration> get_current_zoned_time() {
 		auto now = std::chrono::system_clock::now();
 		auto x = std::chrono::zoned_time(std::chrono::current_zone(), now);
@@ -830,11 +861,6 @@ namespace qpl {
 	std::chrono::utc_clock::time_point get_current_utc_time() {
 		return std::chrono::utc_clock::now();
 	}
-	//std::chrono::system_clock::time_point get_current_utc_time() {
-	//	std::chrono::zoned_time zt{ "UTC", qpl::get_current_system_time()};
-	//	auto utc_time = std::chrono::system_clock::to_time_t(zt.get_sys_time());
-	//	return std::chrono::system_clock::from_time_t(utc_time);
-	//}
 
 	std::string get_current_time_string() {
 		std::time_t rawtime;

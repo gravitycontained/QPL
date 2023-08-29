@@ -390,6 +390,7 @@ namespace qpl {
 		return buffer.str();
 	}
 
+	QPLDLL std::chrono::system_clock::time_point get_current_local_time();
 	QPLDLL std::chrono::system_clock::time_point get_current_system_time();
 	QPLDLL std::chrono::utc_clock::time_point get_current_utc_time();
 	QPLDLL std::chrono::local_time<std::chrono::system_clock::duration> get_current_zoned_time();

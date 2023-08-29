@@ -1785,10 +1785,6 @@ namespace qsf {
 				}
 				else {
 					this->make_selection_rectangles(count, i + begin.y, 0u);
-					//auto l = this->lines[i + begin.y].line_hitbox;
-					//this->selection_rectangles.push_back({});
-					//this->selection_rectangles.back().set_hitbox({ l.position, l.dimension });
-					//this->selection_rectangles.back().set_color(this->selection_color);
 				}
 			}
 		}
@@ -2752,8 +2748,6 @@ namespace qsf {
 		auto off = cursor_pos_with_tabs * this->character_size;
 
 		this->cursor.set_position(this->before_input_text_position + off - qpl::vec(0.0f, this->colored_text.character_size));
-		//this->cursor.set_position(this->before_input_text_position + off - qpl::vec(0.0f, this->colored_text.character_size));
-		//this->cursor.set_position(this->colored_text.text_position + off - qpl::vec(0.0f, this->colored_text.character_size));
 		if (reset_timer) {
 			this->cursor_blink_timer.reset();
 		}
@@ -2932,7 +2926,6 @@ namespace qsf {
 
 		auto [min, max] = this->get_selection_rectangle_bounds();
 
-		//for (qpl::size y = min.y; y <= max.y && y < this->string_and_input_split.size(); ++y) {
 		for (qpl::size y = min.y; y <= max.y; ++y) {
 			if (min.y == max.y) {
 				if (min.x <= this->string_and_input_split[y].length()) {
@@ -2995,7 +2988,7 @@ namespace qsf {
 				width = this->dimension.x;
 			}
 
-			auto offset_y = this->colored_text.get_chracter_top_offset();
+			auto offset_y = this->colored_text.get_chracter_top_offset() - this->colored_text.get_character_size() / 10.f;
 			this->selection_rectangle[index].set_position(pos * this->character_size + qpl::vec(0.f, offset_y));
 			this->selection_rectangle[index].set_dimension(qpl::vec(width, this->colored_text.get_line_spacing_pixels()));
 			this->selection_rectangle[index].set_color(this->selection_rectangle_color);

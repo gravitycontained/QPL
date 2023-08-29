@@ -2125,7 +2125,7 @@ namespace qpl {
 	}
 	void qpl::string_trim_whitespace(std::wstring& string) {
 		qpl::size index = 0u;
-		while (index < string.length() && qpl::is_character_whitespace(string[index])) {
+		while (index < string.length() && qpl::is_character_whitespace(qpl::u8_cast(string[index]))) {
 			++index;
 		}
 		if (index < string.length()) {
@@ -2137,7 +2137,7 @@ namespace qpl {
 	}
 	void qpl::string_trim_whitespace(std::string& string) {
 		qpl::size index = 0u;
-		while (index < string.length() && qpl::is_character_whitespace(string[index])) {
+		while (index < string.length() && qpl::is_character_whitespace(qpl::u8_cast(string[index]))) {
 			++index;
 		}
 		if (index < string.length()) {

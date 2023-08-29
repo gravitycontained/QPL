@@ -1092,7 +1092,9 @@ namespace qpl {
 		light_purple = 13,
 		light_yellow = 14,
 		bright_white = 15,
-		size = 16,
+		transparent,
+		dark_blue,
+		pink,
 	};
 	enum class foreground : qpl::u32 {
 		black = 0,
@@ -1111,7 +1113,9 @@ namespace qpl {
 		light_purple = 13,
 		light_yellow = 14,
 		bright_white = 15,
-		size = 16,
+		transparent,
+		dark_blue,
+		pink,
 	};
 	enum class background : qpl::u32 {
 		black = 0,
@@ -1130,7 +1134,9 @@ namespace qpl {
 		light_purple = 13,
 		light_yellow = 14,
 		bright_white = 15,
-		size = 16,
+		transparent,
+		dark_blue,
+		pink,
 	};
 
 
@@ -1150,31 +1156,41 @@ namespace qpl {
 	constexpr qpl::foreground light_purple = qpl::foreground::light_purple;
 	constexpr qpl::foreground light_yellow = qpl::foreground::light_yellow;
 	constexpr qpl::foreground bright_white = qpl::foreground::bright_white;
+	constexpr qpl::foreground pink = qpl::foreground::pink;
 
 
 	constexpr auto console_colors = std::array{
-		/*black,       */ qpl::rgb(12, 12, 12),
-		/*blue,        */ qpl::rgb(0, 55, 218),
-		/*green,       */ qpl::rgb(19, 161, 14),
-		/*aqua,        */ qpl::rgb(58, 150, 221),
-		/*red,         */ qpl::rgb(197, 15, 31),
-		/*purple,      */ qpl::rgb(136, 23, 152),
-		/*yellow,      */ qpl::rgb(193, 156, 0),
-		/*white,       */ qpl::rgb(204, 204, 204),
-		/*gray,        */ qpl::rgb(118, 118, 118),
-		/*light_blue,  */ qpl::rgb(59, 120, 255),
-		/*light_green, */ qpl::rgb(22, 198, 12),
-		/*light_aqua,  */ qpl::rgb(97, 214, 214),
-		/*light_red,   */ qpl::rgb(231, 72, 86),
-		/*light_purple,*/ qpl::rgb(180, 0, 158),
-		/*light_yellow,*/ qpl::rgb(249, 241, 165),
-		/*bright_white,*/ qpl::rgb(242, 242, 242),
+		/*black,       */ qpl::rgba(12, 12, 12),
+		/*blue,        */ qpl::rgba(0, 55, 218),
+		/*green,       */ qpl::rgba(19, 161, 14),
+		/*aqua,        */ qpl::rgba(58, 150, 221),
+		/*red,         */ qpl::rgba(197, 15, 31),
+		/*purple,      */ qpl::rgba(136, 23, 152),
+		/*yellow,      */ qpl::rgba(193, 156, 0),
+		/*white,       */ qpl::rgba(204, 204, 204),
+		/*gray,        */ qpl::rgba(118, 118, 118),
+		/*light_blue,  */ qpl::rgba(59, 120, 255),
+		/*light_green, */ qpl::rgba(22, 198, 12),
+		/*light_aqua,  */ qpl::rgba(97, 214, 214),
+		/*light_red,   */ qpl::rgba(231, 72, 86),
+		/*light_purple,*/ qpl::rgba(180, 0, 158),
+		/*light_yellow,*/ qpl::rgba(249, 241, 165),
+		/*bright_white,*/ qpl::rgba(242, 242, 242),
+		/*transparent, */  qpl::rgba::transparent(),
+		/*dark_blue    */ qpl::rgba(0, 15, 75),
+		/*pink         */ qpl::rgba(255, 166, 206),
 	};
 
-	constexpr qpl::rgb foreground_to_rgb(qpl::foreground foreground) {
+	constexpr qpl::rgba background_to_rgb(qpl::background background) {
+		if (background == qpl::background::transparent) {
+			return qpl::rgba::transparent();
+		}
+		return qpl::rgba(console_colors[qpl::size_cast(background)]);
+	}
+	constexpr qpl::rgba foreground_to_rgb(qpl::foreground foreground) {
 		return console_colors[qpl::size_cast(foreground)];
 	}
-	constexpr qpl::foreground rgb_to_foreground(qpl::rgb color) {
+	constexpr qpl::foreground rgb_to_foreground(qpl::rgba color) {
 		qpl::size index = qpl::size_max;
 		qpl::f64 min = qpl::f64_max;
 		for (qpl::size i = 0u; i < console_colors.size(); ++i) {
