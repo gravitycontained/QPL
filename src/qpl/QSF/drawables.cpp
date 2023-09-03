@@ -5908,6 +5908,11 @@ namespace qsf {
 
 		this->last_element.copy_style(string.elements.back());
 		for (auto& element : string) {
+			if (!element.get_position.name.empty() && !element.get_position.done) {
+				element.get_position.done = true;
+				qpl::colored_text_get_position_callback(element.get_position.name, this->text_position, element.get_position.information);
+			}
+
 			bool is_bold = element.style & sf::Text::Style::Bold;
 			bool is_underlined = element.style & sf::Text::Style::Underlined;
 			bool is_strike_through = element.style & sf::Text::Style::StrikeThrough;

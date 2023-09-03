@@ -777,6 +777,8 @@ namespace qsf {
 			this->outline_thickness = other.outline_thickness;
 			this->round_corners = other.round_corners;
 			this->internal_check = other.internal_check;
+			this->set_color(other.get_color());
+			this->set_outline_color(other.get_outline_color());
 			return *this;
 		}
 

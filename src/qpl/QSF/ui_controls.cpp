@@ -419,13 +419,19 @@ namespace qsf {
 	void qsf::smooth_button::update(const qsf::event_info& event) {
 		this->create_check();
 		if (this->simple_hitbox) {
-			this->hovering = this->rectangle.get_hitbox().contains(event.mouse_position());
+			this->hovering = this->rectangle.get_hitbox().increased(5).contains(event.mouse_position());
 		}
 		else {
 			this->hovering = this->rectangle.contains(event.mouse_position());
 		}
 		this->clicked = this->hovering && event.left_mouse_clicked();
 
+		if (this->clicked) {
+			this->clicked_once = true;
+			this->click_timer.reset();
+		}
+
+		qpl::rgba text_color_effect = this->text_color;
 		if (this->use_basic_hover_animation) {
 			if (this->hovering && !this->hover_before) {
 				this->hover_animation.go_forwards();
@@ -440,7 +446,7 @@ namespace qsf {
 				auto progress = this->hover_animation.get_curve_progress();
 
 				auto color = this->background_color;
-				color.interpolate(color.inverted(), progress);
+				color.interpolate(this->background_color_hover, progress);
 				this->smooth_layout.set_color(color);
 
 				color = this->background_outline_color;
@@ -448,11 +454,20 @@ namespace qsf {
 				this->smooth_layout.set_outline_color(color);
 
 				color = this->text_color;
-				color.interpolate(color.inverted(), progress);
+				color.interpolate(this->text_color_hover, progress);
+
+				text_color_effect = color;
 				this->text.set_color(color);
 				this->layout_changed = true;
 			}
 		}
+
+
+		if (this->clicked_once && this->click_timer.elapsed_f() < 1.5) {
+			auto progress = qpl::curve_slope(this->click_timer.elapsed_f() / 1.5, 1.0);
+			this->text.set_color(text_color_effect.interpolated(this->text_color_click, 1.0 - progress));
+		}
+
 	}
 	void qsf::smooth_button::create_check() const {
 		if (this->layout_changed) {
@@ -567,8 +582,14 @@ namespace qsf {
 		this->set_background_color(qpl::rgba::grey_shade(30));
 		this->set_background_outline_color(qpl::rgba::grey_shade(220));
 		this->set_background_outline_thickness(1.0f);
+		this->reset();
+	}
+	void qsf::text_field::reset() {
 		this->lines.resize(1u);
 		this->set_string_stack_size(10u);
+		for (auto& i : this->lines) {
+			i.layout_changed = true;
+		}
 	}
 
 	void qsf::text_field::set_font(std::string font) {
@@ -1402,6 +1423,7 @@ namespace qsf {
 		this->control_z = false;
 		this->control_y = false;
 		this->changed = false;
+		this->pressed_enter_key = false;
 
 		this->update_mouse_events(event);
 
@@ -1421,18 +1443,24 @@ namespace qsf {
 			this->changed = true;
 		}
 		if (event.key_pressed(sf::Keyboard::Enter)) {
-			this->edited_text = true;
-			if (this->lines.size() >= this->line_limit) {
-				this->finished_text = true;
-				this->focus = false;
-				this->delete_selection_range();
-				this->make_selection_rectangles();
+			this->pressed_enter_key = true;
+
+			if (!this->ignore_pressing_enter_key) {
+				if (this->lines.size() >= this->line_limit) {
+					this->finished_text = true;
+					this->focus = false;
+					this->delete_selection_range();
+					this->make_selection_rectangles();
+					return;
+				}
+				this->delete_selection_string();
+				this->new_line(this->cursor_position.y);
+				special_input = true;
+				this->changed = true;
+			}
+			else {
 				return;
 			}
-			this->delete_selection_string();
-			this->new_line(this->cursor_position.y);
-			special_input = true;
-			this->changed = true;
 		}
 		if (event.key_pressed(sf::Keyboard::Up)) {
 			auto before = this->cursor_position;
@@ -1583,6 +1611,9 @@ namespace qsf {
 				}
 				special_input = true;
 			}
+			else {
+				special_input = true;
+			}
 		}
 		if (event.is_text_entered() && !special_input) {
 			this->delete_selection_string();
@@ -1623,8 +1654,6 @@ namespace qsf {
 		this->dragging_selection_before = this->is_dragging_selection_considering_cooldown();
 	}
 	void qsf::text_field::draw(qsf::draw_object& draw) const {
-
-
 		draw.draw(this->background);
 		draw.draw(this->selection_rectangles);
 		draw.draw(this->lines);
@@ -1632,13 +1661,6 @@ namespace qsf {
 		if (this->focus) {
 			draw.draw(this->cursor);
 		}
-
-
-		//draw.draw(this->test_text);
-		//qsf::rectangle background;
-		//background.set_hitbox(this->hitbox);
-		//background.set_color(qpl::rgba::yellow.with_alpha(50));
-		//draw.draw(background);
 	}
 
 	std::pair<qpl::vector2s, qpl::vector2s> qsf::text_field::get_sorted_selection_range() const {
@@ -1871,7 +1893,19 @@ namespace qsf {
 		this->cursor_position_changed = true;
 	}
 	bool qsf::text_field::just_changed() const {
-		return this->changed;
+		return this->changed || this->pressed_enter_key;
+	}
+	void qsf::text_field::update_all_changes() {
+		this->text_mouse_hitboxes_changed = true;
+		this->text_layout_changed = true;
+		this->update_required = true;
+		this->whole_string_changed = true;
+		this->cursor_position_changed = true;
+		this->edited_text = true;
+		this->entered_text = true;
+		this->changed = true;
+		this->hitbox.dimension = qpl::vec(qpl::f32_max, qpl::f32_max);
+		this->internal_update();
 	}
 
 
@@ -2845,12 +2879,11 @@ namespace qsf {
 		}
 	}
 	void qsf::console::process_character_size() {
+
 		this->reset_visible_range();
-		//this->track_before_input_values();
 
 		if (this->accept_input) {
 			this->colored_text.add(this->input_string);
-			//this->reset_visible_range();
 		}
 
 		auto text_pos_before = this->before_input_text_position / this->character_size;
@@ -2869,6 +2902,7 @@ namespace qsf {
 		this->update_cursor_dimension();
 		this->update_cursor_position(false);
 		this->make_selection_rectangles();
+
 
 		this->update_visible_rows_count();
 		this->clamp_view_y(false);

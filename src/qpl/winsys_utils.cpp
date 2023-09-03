@@ -4,6 +4,7 @@
 
 #ifdef _WIN32
 namespace qpl {
+
 	bool qpl::colored_string::element::is_default_colors() const {
 		return this->foreground == qpl::foreground::white && this->background == qpl::background::black;
 	}
@@ -26,6 +27,7 @@ namespace qpl {
 		auto last = this->elements.back();
 		this->elements.resize(1u);
 		this->elements.back() = last;
+		this->elements.back().get_position = {};
 		this->elements.back().text.clear();
 	}
 	bool qpl::colored_string::empty() const {
@@ -36,6 +38,9 @@ namespace qpl {
 
 		qpl::print(qpl::cc{});
 		for (auto& i : this->elements) {
+			if (!i.get_position.name.empty()) {
+				qpl::print(i.get_position);
+			}
 			bool set = false;
 			if (cc.foreground != i.foreground) {
 				cc.foreground = i.foreground;
@@ -58,11 +63,6 @@ namespace qpl {
 		qpl::println();
 	}
 	qpl::size qpl::colored_string::count_new_line_size() const {
-		//auto wstr = this->wstring();
-		//if (wstr.empty()) {
-		//	return 0ull;
-		//}
-		//return qpl::count(wstr, L'\n') + 1u;
 		return qpl::count(this->wstring(), L'\n');
 	}
 	std::string qpl::colored_string::string() const {
@@ -83,6 +83,7 @@ namespace qpl {
 		for (qpl::size index = 0u; index < this->elements.size(); ++index) {
 			const auto& element = this->elements[index];
 			result.back().elements.push_back(element);
+
 			qpl::size before = 0u;
 			bool found_any = false;
 			for (qpl::size i = 0u; i < element.text.length(); ++i) {

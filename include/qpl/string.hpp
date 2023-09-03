@@ -380,19 +380,43 @@ namespace qpl {
 	}
 
 
+
+	struct colored_text_get_position_type {
+		std::string name = "";
+		std::wstring information = L"";
+		mutable bool done = false;
+
+		colored_text_get_position_type(const std::string& name = "", const std::wstring& information = L"") {
+			this->name = name;
+			this->information = information;
+		}
+		colored_text_get_position_type operator()(const std::string& name, const std::wstring& information = L"") const {
+			return colored_text_get_position_type(name, information);
+		}
+		bool operator==(const colored_text_get_position_type& other) const {
+			return this->name == other.name && this->information == other.information;
+		}
+	};
+	QPLDLL extern colored_text_get_position_type colored_text_get_position;
+	QPLDLL extern std::function<void(std::string, qpl::vec2, std::wstring)> colored_text_get_position_callback;
+
+
 	QPLDLL extern std::function<void(std::wstring)> default_output_function_w;
 	QPLDLL extern std::function<void(std::string)> default_output_function;
+	QPLDLL extern std::function<void(qpl::colored_text_get_position_type)> default_output_function_get_position;
 	QPLDLL extern std::function<std::wstring()> default_input_function;
 	QPLDLL extern std::function<void(qpl::cc)> default_output_color_function;
 
 	QPLDLL extern std::function<void(std::wstring)> custom_output_function_w;
 	QPLDLL extern std::function<void(std::string)> custom_output_function;
+	QPLDLL extern std::function<void(qpl::colored_text_get_position_type)> custom_output_function_get_position;
 	QPLDLL extern std::function<std::wstring()> custom_input_function;
 	QPLDLL extern std::function<void(qpl::cc)> custom_output_color_function;
 
 
 	QPLDLL extern std::function<void(std::wstring)> output_function_w;
 	QPLDLL extern std::function<void(std::string)> output_function;
+	QPLDLL extern std::function<void(qpl::colored_text_get_position_type)> output_function_get_position;
 	QPLDLL extern std::function<std::wstring()> input_function;
 	QPLDLL extern std::function<void(qpl::cc)> output_color_function;
 
@@ -1172,6 +1196,10 @@ namespace qpl {
 				qpl::clear_console();
 				return;
 			}
+		}
+		else if constexpr (qpl::is_same_decayed<T, qpl::colored_text_get_position_type>()) {
+			qpl::output_function_get_position(value);
+			return;
 		}
 		else if constexpr (qpl::is_same<std::decay_t<T>, qpl::color>()) {
 			qpl::detail::console_effect_state.next_print_color = true;
@@ -2176,6 +2204,7 @@ namespace qpl {
 	QPLDLL std::string get_random_string_full_range_with_repetitions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::wstring get_random_wstring_full_range(qpl::size length);
 	QPLDLL std::string get_random_hex_string(qpl::size length);
+	QPLDLL std::string get_random_uppercase_hex_string(qpl::size length);
 	QPLDLL std::string get_random_hex_string_with_repetitions(qpl::size length, qpl::size repetition_size);
 	QPLDLL std::string get_random_base64_string(qpl::size length);
 	QPLDLL std::string get_random_base64_string_with_repetitions(qpl::size length, qpl::size repetition_size);
@@ -3081,6 +3110,7 @@ namespace qpl {
 			qpl::rgba outline_color = qpl::rgba::black();
 			qpl::f32 outline_thickness = 0.0f;
 			qpl::u32 style = 0u;
+			colored_text_get_position_type get_position;
 			bool keep = false;
 
 			bool operator==(const element& other) const {
@@ -3089,6 +3119,7 @@ namespace qpl {
 					this->background_color == other.background_color &&
 					this->style == other.style &&
 					this->outline_thickness == other.outline_thickness &&
+					this->get_position == other.get_position &&
 					((this->outline_thickness == 0.0f && other.outline_thickness == 0.0f) || (this->outline_color == other.outline_color));
 			}
 			bool is_default() const {
@@ -3193,6 +3224,9 @@ namespace qpl {
 
 		void prepare_next_style() {
 			this->elements.push_back({});
+			if (!this->elements.back().get_position.name.empty()) {
+				return;
+			}
 			if (this->elements.back().keep || this->always_keep_styles) {
 				this->elements.back().copy_style(this->elements[this->elements.size() - 2]);
 			}
@@ -3235,6 +3269,10 @@ namespace qpl {
 			}
 			this->prepare_next_style();
 			this->elements.back().background_color = background_color.value;
+		}
+		void add(const qpl::colored_text_get_position_type& get_position) {
+			this->elements.push_back({});
+			this->elements.back().get_position = get_position;
 		}
 		void add(const qpl::style::outline_color& outline_color) {
 			if (this->elements.back().outline_color == outline_color.value) {
@@ -3398,7 +3436,7 @@ namespace qpl {
 			return value.start >= this->start && value.start <= (this->start + this->size);
 		}
 	};
-	constexpr auto unicode_long_ranges = std::array<character_range, 452u>{
+	constexpr auto unicode_long_ranges = std::array<character_range, 453u>{
 		character_range{ 0, 31}, character_range{ 127, 32}, character_range{ 173, 0}, character_range{ 847, 0}, character_range{ 888, 1}, character_range{ 896, 3}, character_range{ 907, 0}, character_range{ 909, 0}, character_range{ 930, 0}, character_range{ 1322, 1},
 		character_range{ 1328, 0}, character_range{ 1367, 1}, character_range{ 1419, 3}, character_range{ 1424, 0}, character_range{ 1480, 7}, character_range{ 1515, 3}, character_range{ 1525, 19}, character_range{ 1547, 0}, character_range{ 1550, 1},
 		character_range{ 1564, 0}, character_range{ 1566, 0}, character_range{ 1706, 0}, character_range{ 1757, 1}, character_range{ 1769, 0}, character_range{ 1792, 16}, character_range{ 1810, 29}, character_range{ 1867, 4}, character_range{ 1936, 0},
@@ -3432,7 +3470,7 @@ namespace qpl {
 		character_range{ 8946, 1}, character_range{ 8949, 1}, character_range{ 8953, 2}, character_range{ 8957, 0}, character_range{ 8959, 1}, character_range{ 8982, 0}, character_range{ 9001, 1}, character_range{ 9004, 9}, character_range{ 9083, 3}, character_range{ 9089, 19},
 		character_range{ 9111, 3}, character_range{ 9138, 4}, character_range{ 9152, 10}, character_range{ 9165, 1}, character_range{ 9172, 5}, character_range{ 9179, 12}, character_range{ 9193, 56}, character_range{ 9255, 24}, character_range{ 9291, 180}, character_range{ 9711, 0},
 		character_range{ 9731, 0}, character_range{ 9744, 2}, character_range{ 9749, 4}, character_range{ 9762, 2}, character_range{ 9771, 1}, character_range{ 9775, 8}, character_range{ 9842, 29}, character_range{ 9874, 14}, character_range{ 9890, 5}, character_range{ 9897, 0},
-		character_range{ 9901, 4}, character_range{ 9910, 0}, character_range{ 9917, 36}, character_range{ 9955, 128}, character_range{ 10102, 57}, character_range{ 10161, 14}, character_range{ 10177, 0}, character_range{ 10179, 1}, character_range{ 10184, 1}, character_range{ 10187, 5},
+		character_range{ 9901, 4}, character_range{ 9910, 0}, character_range{ 9917, 36}, character_range{ 9955, 128}, character_range{ 10084, 0}, character_range{ 10102, 57}, character_range{ 10161, 14}, character_range{ 10177, 0}, character_range{ 10179, 1}, character_range{ 10184, 1}, character_range{ 10187, 5},
 		character_range{ 10194, 0}, character_range{ 10197, 9}, character_range{ 10209, 4}, character_range{ 10224, 15}, character_range{ 10496, 7}, character_range{ 10506, 7}, character_range{ 10516, 35}, character_range{ 10554, 14}, character_range{ 10570, 1}, character_range{ 10574, 0},
 		character_range{ 10576, 0}, character_range{ 10578, 1}, character_range{ 10582, 1}, character_range{ 10586, 1}, character_range{ 10590, 1}, character_range{ 10594, 25}, character_range{ 10622, 1}, character_range{ 10643, 3}, character_range{ 10654, 0}, character_range{ 10664, 40},
 		character_range{ 10714, 1}, character_range{ 10719, 1}, character_range{ 10722, 8}, character_range{ 10732, 1}, character_range{ 10740, 0}, character_range{ 10750, 12}, character_range{ 10764, 0}, character_range{ 10781, 0}, character_range{ 10784, 0}, character_range{ 10797, 1},

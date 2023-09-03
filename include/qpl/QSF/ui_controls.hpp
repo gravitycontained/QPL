@@ -179,13 +179,18 @@ namespace qsf {
 		mutable qsf::smooth_rectangle rectangle;
 		qpl::vector2f hitbox_increase;
 		qpl::animation hover_animation;
-		qpl::rgba background_color = qpl::rgba::black();
+		qpl::rgba background_color = qpl::rgba(70, 70, 70);
 		qpl::rgba background_outline_color = qpl::rgba::black();
-		qpl::rgba text_color = qpl::rgba::white();
+		qpl::rgba text_color = qpl::rgba(220, 220, 220);
+		qpl::rgba background_color_hover = qpl::rgba(10, 10, 10);
+		qpl::rgba text_color_hover = qpl::rgba::white();
+		qpl::rgba text_color_click = qpl::rgba(100, 255, 100);
+		qpl::small_clock click_timer;
 		mutable bool layout_changed = false;
 		bool simple_hitbox = false;
 		bool hovering = false;
 		bool clicked = false;
+		bool clicked_once = false;
 		bool use_basic_hover_animation = true;
 		bool hover_before = false;
 
@@ -279,6 +284,7 @@ namespace qsf {
 
 		text_field();
 
+		QPLDLL void reset();
 		QPLDLL void set_font(std::string font);
 		QPLDLL void set_text_character_size(qpl::u32 character_size);
 		QPLDLL void set_text_style(qpl::u32 style);
@@ -377,6 +383,7 @@ namespace qsf {
 		QPLDLL void make_selection_rectangles(qpl::size& count, qpl::size y, qpl::size x1, qpl::size x2 = qpl::size_max) const;
 		QPLDLL void find_closest_cursor_position();
 		QPLDLL bool just_changed() const;
+		QPLDLL void update_all_changes();
 
 		qsf::vtext text_layout;
 		mutable qpl::hitbox hitbox;
@@ -424,6 +431,8 @@ namespace qsf {
 		bool copied_text = false;
 		bool pasted_text = false;
 		bool entered_text = false;
+		bool pressed_enter_key = false;
+		bool ignore_pressing_enter_key = false;
 		bool focus = false;
 		bool finished_text = false;
 		bool control_z = false;

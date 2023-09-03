@@ -1095,6 +1095,7 @@ namespace qpl {
 		transparent,
 		dark_blue,
 		pink,
+		dark_gray,
 	};
 	enum class foreground : qpl::u32 {
 		black = 0,
@@ -1116,6 +1117,7 @@ namespace qpl {
 		transparent,
 		dark_blue,
 		pink,
+		dark_gray,
 	};
 	enum class background : qpl::u32 {
 		black = 0,
@@ -1137,6 +1139,7 @@ namespace qpl {
 		transparent,
 		dark_blue,
 		pink,
+		dark_gray,
 	};
 
 
@@ -1157,6 +1160,7 @@ namespace qpl {
 	constexpr qpl::foreground light_yellow = qpl::foreground::light_yellow;
 	constexpr qpl::foreground bright_white = qpl::foreground::bright_white;
 	constexpr qpl::foreground pink = qpl::foreground::pink;
+	constexpr qpl::foreground dark_gray = qpl::foreground::dark_gray;
 
 
 	constexpr auto console_colors = std::array{
@@ -1176,9 +1180,10 @@ namespace qpl {
 		/*light_purple,*/ qpl::rgba(180, 0, 158),
 		/*light_yellow,*/ qpl::rgba(249, 241, 165),
 		/*bright_white,*/ qpl::rgba(242, 242, 242),
-		/*transparent, */  qpl::rgba::transparent(),
+		/*transparent, */ qpl::rgba::transparent(),
 		/*dark_blue    */ qpl::rgba(0, 15, 75),
 		/*pink         */ qpl::rgba(255, 166, 206),
+		/*dark-gray,   */ qpl::rgba(83, 83, 83),
 	};
 
 	constexpr qpl::rgba background_to_rgb(qpl::background background) {

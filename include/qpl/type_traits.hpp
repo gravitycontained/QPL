@@ -68,6 +68,53 @@ namespace qpl {
 	template<typename T>
 	using full_decay = std::remove_const_t<std::remove_pointer_t<std::decay_t<T>>>;
 
+
+
+	template<typename T, typename U>
+	constexpr bool is_same() {
+		return std::is_same_v<T, U>;
+	}
+	template<typename T, typename U>
+	constexpr bool is_same_decayed() {
+		return std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
+	}
+
+	template<typename T, typename U>
+	concept is_same_decayed_c = (qpl::is_same_decayed<T, U>());
+
+
+	template<typename T, typename U, typename... Args>
+	constexpr bool all_equal() {
+		return qpl::is_same<T, U>() && (qpl::is_same<T, Args>() && ...);
+	}
+	template<typename T, typename U, typename... Args>
+	constexpr bool all_equal_decayed() {
+		return qpl::is_same_decayed<T, U>() && (qpl::is_same_decayed<T, Args>() && ...);
+	}
+
+	template<class compare, class... Args>
+	constexpr bool is_any_type_equal_to() {
+		return (qpl::is_same<compare, Args>() || ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool is_any_type_decayed_equal_to() {
+		return (qpl::is_same_decayed<compare, Args>() || ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool are_all_types_equal() {
+		return (qpl::is_same<compare, Args>() && ...);
+	}
+	template<class compare, class... Args>
+	constexpr bool are_all_types_unique() {
+		if constexpr (sizeof...(Args) == 0) {
+			return true;
+		}
+		else {
+			return (!qpl::is_any_type_equal_to<compare, Args...>() && qpl::are_all_types_unique<Args...>());
+		}
+	}
+
+
 	template<class... Args>
 	struct empty_indirection {
 		using type = typename identity<Args...>::type;
@@ -1207,6 +1254,8 @@ namespace qpl {
 	concept is_wcout_printable_c = (qpl::is_wcout_printable<T>());
 	template<typename T>
 	concept is_u32_printable_c = (qpl::is_cout_printable<T>());
+	
+	struct colored_text_get_position_type;
 
 	namespace impl {
 		template<typename T>
@@ -1217,6 +1266,9 @@ namespace qpl {
 		constexpr bool is_printable() {
 			if constexpr (qpl::is_container_c<T>) {
 				return qpl::impl::is_printable<qpl::container_subtype<T>>();
+			}
+			else if constexpr (qpl::is_same_decayed<T, qpl::colored_text_get_position_type>()) {
+				return true;
 			}
 			else if constexpr (qpl::is_tuple_c<T>) {
 				auto check = [&]<typename... Ts>(std::tuple<Ts...>) {
@@ -1443,50 +1495,6 @@ namespace qpl {
 		return std::numeric_limits<T>::is_integer;
 	}
 
-
-	template<typename T, typename U>
-	constexpr bool is_same() {
-		return std::is_same_v<T, U>;
-	}
-	template<typename T, typename U>
-	constexpr bool is_same_decayed() {
-		return std::is_same_v<std::decay_t<T>, std::decay_t<U>>;
-	}
-
-	template<typename T, typename U>
-	concept is_same_decayed_c = (qpl::is_same_decayed<T, U>());
-
-
-	template<typename T, typename U, typename... Args>
-	constexpr bool all_equal() {
-		return qpl::is_same<T, U>() && (qpl::is_same<T, Args>() && ...);
-	}
-	template<typename T, typename U, typename... Args>
-	constexpr bool all_equal_decayed() {
-		return qpl::is_same_decayed<T, U>() && (qpl::is_same_decayed<T, Args>() && ...);
-	}
-
-	template<class compare, class... Args>
-	constexpr bool is_any_type_equal_to() {
-		return (qpl::is_same<compare, Args>() || ...);
-	}
-	template<class compare, class... Args>
-	constexpr bool is_any_type_decayed_equal_to() {
-		return (qpl::is_same_decayed<compare, Args>() || ...);
-	}
-	template<class compare, class... Args>
-	constexpr bool are_all_types_equal() {
-		return (qpl::is_same<compare, Args>() && ...);
-	}
-	template<class compare, class... Args>
-	constexpr bool are_all_types_unique() {
-		if constexpr (sizeof...(Args) == 0) {
-			return true;
-		}
-		else {
-			return (!qpl::is_any_type_equal_to<compare, Args...>() && qpl::are_all_types_unique<Args...>());
-		}
-	}
 	template<typename Tuple, class... Args>
 	constexpr qpl::size type_match_count() {
 		qpl::size result = 0u;

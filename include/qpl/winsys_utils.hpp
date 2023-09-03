@@ -8,12 +8,14 @@
 #include <qpl/vector.hpp>
 
 namespace qpl {
+
+
 	struct colored_string {
 		struct element {
 			std::wstring text = L"";
 			qpl::foreground foreground = qpl::foreground::white;
 			qpl::background background = qpl::background::transparent;
-			//bool get_position = false;
+			colored_text_get_position_type get_position;
 
 			QPLDLL bool is_default_colors() const;
 		};
@@ -29,7 +31,15 @@ namespace qpl {
 				qpl::colored_string::element element;
 				element.text = qpl::to_basic_string<wchar_t>(i.text);
 				element.foreground = qpl::rgb_to_foreground(i.color);
+				element.get_position = i.get_position;
 				this->add(element);
+			}
+		}
+		void reset_get_position_search() {
+			for (auto& i : this->elements) {
+				if (!i.get_position.name.empty()) {
+					i.get_position.done = false;
+				}
 			}
 		}
 
@@ -41,6 +51,7 @@ namespace qpl {
 				result.add(i.foreground);
 				result.add(i.background);
 				result.add(i.text);
+				result.add(i.get_position);
 			}
 			return result;
 		}
@@ -51,7 +62,7 @@ namespace qpl {
 				this->elements.push_back({});
 			}
 			if constexpr (qpl::is_same<std::decay_t<T>, qpl::foreground>()) {
-				bool change = (value != this->elements.back().foreground);
+				bool change = (value != this->elements.back().foreground || !this->elements.back().get_position.name.empty());
 				if (change) {
 					if (!this->elements.back().text.empty()) {
 						this->elements.push_back({});
@@ -59,8 +70,12 @@ namespace qpl {
 					this->elements.back().foreground = value;
 				}
 			}
+			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::colored_text_get_position_type>()) {
+				this->elements.push_back({});
+				this->elements.back().get_position = value;
+			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::background>()) {
-				bool change = (value != this->elements.back().foreground);
+				bool change = (value != this->elements.back().foreground || !this->elements.back().get_position.name.empty());
 				if (change) {
 					if (!this->elements.back().text.empty()) {
 						this->elements.push_back({});
@@ -69,7 +84,7 @@ namespace qpl {
 				}
 			}
 			else if constexpr (qpl::is_same<std::decay_t<T>, qpl::cc>()) {
-				bool change = (value.foreground != this->elements.back().foreground) || (value.background != this->elements.back().background);
+				bool change = (value.foreground != this->elements.back().foreground) || (value.background != this->elements.back().background || !this->elements.back().get_position.name.empty());
 				if (change) {
 					if (!this->elements.back().text.empty()) {
 						this->elements.push_back({});

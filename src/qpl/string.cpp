@@ -147,6 +147,8 @@ namespace qpl {
 		}
 		return result;
 	}
+	colored_text_get_position_type qpl::colored_text_get_position;
+	std::function<void(std::string, qpl::vec2, std::wstring)> qpl::colored_text_get_position_callback = [](const std::string& name, qpl::vec2 position, const std::wstring& information) {};
 
 	std::function<void(std::wstring)> qpl::default_output_function_w = [](const std::wstring& string) {
 		std::wprintf(L"%s", string.c_str());
@@ -155,6 +157,9 @@ namespace qpl {
 	std::function<void(std::string)> qpl::default_output_function = [](const std::string& string) {
 		//std::cout << string;
 		std::fwrite(string.data(), sizeof(string[0]) * string.size(), 1, stderr);
+	};
+	std::function<void(qpl::colored_text_get_position_type)> qpl::default_output_function_get_position{
+
 	};
 	std::function<std::wstring()> qpl::default_input_function = []() {
 		std::wstring line;
@@ -166,11 +171,13 @@ namespace qpl {
 	};
 	std::function<void(std::wstring)> qpl::custom_output_function_w = qpl::default_output_function_w;
 	std::function<void(std::string)> qpl::custom_output_function = qpl::default_output_function;
+	std::function<void(qpl::colored_text_get_position_type)> qpl::custom_output_function_get_position = qpl::default_output_function_get_position;
 	std::function<std::wstring()> qpl::custom_input_function = qpl::default_input_function;
 	std::function<void(qpl::cc)> qpl::custom_output_color_function = qpl::default_output_color_function;
 
 	std::function<void(std::wstring)> qpl::output_function_w = qpl::default_output_function_w;
 	std::function<void(std::string)> qpl::output_function = qpl::default_output_function;
+	std::function<void(qpl::colored_text_get_position_type)> qpl::output_function_get_position = qpl::default_output_function_get_position;
 	std::function<std::wstring()> qpl::input_function = qpl::default_input_function;
 	std::function<void(qpl::cc)> qpl::output_color_function = qpl::default_output_color_function;
 
@@ -178,6 +185,7 @@ namespace qpl {
 	void qpl::use_default_print_functions() {
 		qpl::output_function_w = qpl::default_output_function_w;
 		qpl::output_function = qpl::default_output_function;
+		qpl::output_function_get_position = qpl::default_output_function_get_position;
 		qpl::input_function = qpl::default_input_function;
 		qpl::output_color_function = qpl::default_output_color_function;
 		qpl::use_default_print = true;
@@ -185,6 +193,7 @@ namespace qpl {
 	void qpl::use_custom_print_functions() {
 		qpl::output_function_w = qpl::custom_output_function_w;
 		qpl::output_function = qpl::custom_output_function;
+		qpl::output_function_get_position = qpl::custom_output_function_get_position;
 		qpl::input_function = qpl::custom_input_function;
 		qpl::output_color_function = qpl::custom_output_color_function;
 		qpl::use_default_print = false;
@@ -988,6 +997,13 @@ namespace qpl {
 		std::ostringstream stream;
 		for (auto i = qpl::size{}; i < length; ++i) {
 			stream << qpl::detail::base_36_lower[qpl::random(0u, 15u)];
+		}
+		return stream.str();
+	}
+	std::string qpl::get_random_uppercase_hex_string(qpl::size length) {
+		std::ostringstream stream;
+		for (auto i = qpl::size{}; i < length; ++i) {
+			stream << qpl::detail::base_36_upper[qpl::random(0u, 15u)];
 		}
 		return stream.str();
 	}
@@ -2568,4 +2584,5 @@ namespace qpl {
 	void set_language_locale(std::string local) {
 		std::locale::global(std::locale(local));
 	}
+
 }
