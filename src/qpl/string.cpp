@@ -1275,6 +1275,12 @@ namespace qpl {
 		}
 		return string.length();
 	}
+	qpl::size qpl::string_find_last(const std::wstring& string, const std::wstring& search, bool ignore_case) {
+		return string.length() - search.length() - qpl::string_find(qpl::reversed(string), qpl::reversed(search), ignore_case);
+	}
+	qpl::size qpl::string_find_last(const std::string& string, const std::string& search, bool ignore_case) {
+		return string.length() - search.length() - qpl::string_find(qpl::reversed(string), qpl::reversed(search), ignore_case);
+	}
 	std::vector<qpl::size> qpl::string_find_all(const std::wstring& string, const std::wstring& search, bool ignore_case) {
 		if (search.empty()) {
 			return {};
@@ -2162,6 +2168,20 @@ namespace qpl {
 		else {
 			string.clear();
 		}
+	}
+	void qpl::string_trim_whitespace_end(std::wstring& string) {
+		qpl::size index = string.length() - 1;
+		while (index && qpl::is_character_whitespace(qpl::u8_cast(string[index]))) {
+			--index;
+		}
+		string = string.substr(0ull, index + 1);
+	}
+	void qpl::string_trim_whitespace_end(std::string& string) {
+		qpl::size index = string.length() - 1;
+		while (index && qpl::is_character_whitespace(qpl::u8_cast(string[index]))) {
+			--index;
+		}
+		string = string.substr(0ull, index + 1);
 	}
 	bool qpl::string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b) {
 		if (b.length() > a.length()) {

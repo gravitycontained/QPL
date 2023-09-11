@@ -599,6 +599,25 @@ namespace qpl {
 			auto pixels = qpl::winsys::get_screen_pixels();
 			return pixels.generate_bmp_string();
 		}
+		BOOL CALLBACK qpl::winsys::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+			MONITORINFO mi = { sizeof(mi) };
+			if (GetMonitorInfo(hMonitor, &mi)) {
+				qpl::winsys::point* screenSize = reinterpret_cast<qpl::winsys::point*>(dwData);
+
+				// Update maximum width (X dimension)
+				screenSize->x = std::max(qpl::size_cast(screenSize->x), qpl::size_cast(mi.rcMonitor.right));
+
+				// Update maximum height (Y dimension)
+				screenSize->y = std::max(qpl::size_cast(screenSize->y), qpl::size_cast(mi.rcMonitor.bottom));
+			}
+			return true;
+		}
+
+		qpl::winsys::point qpl::winsys::get_max_screen_size() {
+			qpl::winsys::point screenSize = { 0, 0 };
+			EnumDisplayMonitors(nullptr, nullptr, qpl::winsys::MonitorEnumProc, reinterpret_cast<LPARAM>(&screenSize));
+			return screenSize;
+		}
 
 		monitor_capture& qpl::winsys::get_capture_monitor(qpl::size index) {
 			return qpl::winsys::impl::monitor_captures[index];

@@ -198,6 +198,9 @@ namespace qpl {
 		QPLDLL qpl::pixels get_screen_pixels();
 		QPLDLL std::string get_screen_pixels_bmp_string();
 
+		QPLDLL BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
+		QPLDLL qpl::winsys::point get_max_screen_size();
+
 		QPLDLL monitor_capture& get_capture_monitor(qpl::size index);
 		QPLDLL void scan_monitor(qpl::u32 index);
 		QPLDLL void init_monitor_captures();

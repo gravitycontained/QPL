@@ -2282,6 +2282,8 @@ namespace qpl {
 	QPLDLL std::wstring string_remove_all(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
 
 	QPLDLL qpl::size string_find(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
+	QPLDLL qpl::size string_find_last(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
+	QPLDLL qpl::size string_find_last(const std::string& string, const std::string& search, bool ignore_case = false);
 	QPLDLL std::vector<qpl::size> string_find_all(const std::wstring& string, const std::wstring& search, bool ignore_case = false);
 
 	QPLDLL std::string string_extract(std::string& string, char by_what);
@@ -2558,6 +2560,8 @@ namespace qpl {
 
 	QPLDLL void string_trim_whitespace(std::wstring& string);
 	QPLDLL void string_trim_whitespace(std::string& string);
+	QPLDLL void string_trim_whitespace_end(std::wstring& string);
+	QPLDLL void string_trim_whitespace_end(std::string& string);
 
 	QPLDLL bool string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b);
 	QPLDLL bool string_starts_with(const std::string_view& a, const std::string_view& b);
