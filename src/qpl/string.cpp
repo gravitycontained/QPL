@@ -1536,6 +1536,50 @@ namespace qpl {
 		}
 		return filtered;
 	}
+	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, std::wstring quotes) {
+		std::vector<std::wstring> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+
+			bool any_quote_match = false;
+			for (auto& quote : quotes) {
+				if (string[i] == quote) {
+					any_quote_match = true;
+					if (i - before) {
+						result.emplace_back(std::wstring{ string.substr(before, i - before) });
+					}
+					++i;
+					qpl::size begin = i;
+					while (i < string.length() && string[i] != quote) {
+						++i;
+					}
+					result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+					++i;
+					before = i;
+				}
+			}
+			if (!any_quote_match) {
+				if (std::iswspace(string[i])) {
+					if (i - before) {
+						result.emplace_back(std::wstring{ string.substr(before, i - before) });
+					}
+					++i;
+					while (i < string.length() && std::iswspace(string[i])) {
+						++i;
+					}
+					before = i;
+				}
+				else {
+					++i;
+				}
+			}
+		}
+		if (before < string.length()) {
+			result.emplace_back(std::wstring{ string.substr(before) });
+		}
+		return result;
+	}
 	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes_and_extra_quotes(const std::wstring_view& string, wchar_t quotes, wchar_t extra_quotes) {
 		std::vector<std::wstring> result;
 
@@ -1995,7 +2039,67 @@ namespace qpl {
 		}
 		return result;
 	}
+	std::vector<std::string> qpl::string_split_whitespace_consider_quotes(const std::string_view& s, std::string quotes) {
+		std::vector<std::string> result;
+		size_t start = 0, end = 0;
+		bool insideQuote = false;
+		char currentQuoteChar = '\0';  // To keep track of the active quote character
 
+		for (; end < s.size(); ++end) {
+			// If the character is a quote and it's either the start of a quote block or matches the starting quote char
+			if (quotes.find(s[end]) != std::string::npos && (!insideQuote || s[end] == currentQuoteChar)) {
+				// Toggle the insideQuote flag
+				insideQuote = !insideQuote;
+
+				// If we're starting a quote, set the currentQuoteChar
+				if (insideQuote) {
+					currentQuoteChar = s[end];
+				}
+				else {
+					// If we're ending a quote, reset the currentQuoteChar
+					currentQuoteChar = '\0';
+				}
+			}
+			else if (std::iswspace(s[end]) && !insideQuote) {
+				// Push back the substring from start to end if it's not empty
+				if (end != start) {
+					result.push_back(std::string(s.substr(start, end - start)));
+				}
+				start = end + 1;  // Move start to after the whitespace
+			}
+		}
+
+		// If there's any remaining substring, push it to the result
+		if (start != end) {
+			result.push_back(std::string(s.substr(start)));
+		}
+
+		return result;
+	}
+	std::vector<std::pair<std::string, qpl::size>> qpl::string_split_whitespace_with_indices(const std::string_view& string) {
+		std::vector<std::pair<std::string, qpl::size>> result;
+
+		qpl::size before = 0;
+		for (qpl::size i = 0u; i < string.length(); ) {
+			if (std::iswspace(string[i])) {
+				if (i - before) {
+					result.push_back(std::make_pair(std::string{ string.substr(before, i - before) }, before));
+				}
+				++i;
+				while (i < string.length() && std::iswspace(string[i])) {
+					++i;
+				}
+				before = i;
+			}
+			else {
+				++i;
+			}
+		}
+		if (before != string.length()) {
+			result.push_back(std::make_pair(std::string{ string.substr(before) }, before));
+		}
+		return result;
+	}
 	std::vector<std::string> qpl::string_split_every(const std::string& string, qpl::size n) {
 		if (string.empty()) {
 			return {};
@@ -2396,6 +2500,16 @@ namespace qpl {
 		qpl::i64 i;
 		iss >> std::noskipws >> i; // noskipws considers leading whitespace invalid
 		// Check the entire string was consumed and if either failbit or badbit is set
+
+		if (iss.eof() && !iss.fail()) {
+			return true;
+		}
+
+		//check u64
+		iss.str(L"");
+		iss.seekg(0);
+		qpl::u64 u;
+		iss >> std::noskipws >> u; // noskipws considers leading whitespace invalid
 		return iss.eof() && !iss.fail();
 	}
 	std::string qpl::big_number_string(std::string decimal_string) {

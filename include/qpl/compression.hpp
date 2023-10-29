@@ -8,6 +8,10 @@
 #include <optional>
 #include <qpl/time.hpp>
 
+#ifdef QPL_ZIP
+#include <zlib.h>
+#endif
+
 namespace qpl {
 
 
@@ -154,4 +158,9 @@ namespace qpl {
 	QPLDLL std::string compress(const std::string& string);
 	QPLDLL std::optional<std::string> decompress_checked(const std::string& string);
 	QPLDLL std::string decompress(const std::string& string);
+
+#ifdef QPL_ZIP
+	QPLDLL std::string zip_compress(const std::string& string, int compressionlevel = Z_BEST_COMPRESSION);
+	QPLDLL std::string zip_decompress(const std::string& string);
+#endif
 }

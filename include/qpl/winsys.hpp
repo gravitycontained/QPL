@@ -200,6 +200,7 @@ namespace qpl {
 
 		QPLDLL BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 		QPLDLL qpl::winsys::point get_max_screen_size();
+		QPLDLL bool is_point_offscreen(qpl::vec2i point);
 
 		QPLDLL monitor_capture& get_capture_monitor(qpl::size index);
 		QPLDLL void scan_monitor(qpl::u32 index);

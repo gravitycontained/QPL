@@ -2301,11 +2301,14 @@ namespace qpl {
 	QPLDLL std::vector<std::string> string_split_words(const std::string_view& string);
 	QPLDLL std::vector<std::wstring> string_split_allow_empty(const std::wstring_view& string, wchar_t by_what);
 	QPLDLL std::vector<std::string> string_split_digit_alpha(const std::string_view& string);
+	QPLDLL std::vector<std::string> string_split_whitespace_consider_quotes(const std::string_view& string, std::string quotes);
+	QPLDLL std::vector<std::pair<std::string, qpl::size>> string_split_whitespace_with_indices(const std::string_view& string);
 
 	QPLDLL std::vector<std::wstring> string_split_whitespace(const std::wstring_view& string);
 	QPLDLL std::vector<std::wstring> string_split_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::wstring> string_split_allow_empty_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quote = L'\'');
+	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, std::wstring quotes);
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes_and_extra_quotes(const std::wstring_view& string, wchar_t quote = L'\'', wchar_t additional_quote = L'"');
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_parantheses_and_extra_quotes(const std::wstring_view& string, std::vector<std::wstring> paras = { L"()", L"[]", L"{}" }, std::wstring additional_quotes = L"\"'");
 	QPLDLL std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string);

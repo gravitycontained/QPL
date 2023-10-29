@@ -618,6 +618,13 @@ namespace qpl {
 			EnumDisplayMonitors(nullptr, nullptr, qpl::winsys::MonitorEnumProc, reinterpret_cast<LPARAM>(&screenSize));
 			return screenSize;
 		}
+		bool qpl::winsys::is_point_offscreen(qpl::vec2i point) {
+			POINT p;
+			p.x = point.x;
+			p.y = point.y;
+			HMONITOR hMon = MonitorFromPoint(p, MONITOR_DEFAULTTONULL);
+			return hMon == NULL;
+		}
 
 		monitor_capture& qpl::winsys::get_capture_monitor(qpl::size index) {
 			return qpl::winsys::impl::monitor_captures[index];

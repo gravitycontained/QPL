@@ -860,7 +860,7 @@ namespace qpl {
 	constexpr qpl::size tuple_size(T tuple) {
 		return std::tuple_size_v<T>;
 	}
-	template<typename... Ts>
+	template<typename... Ts> requires(!(qpl::is_tuple<Ts>() && ...))
 	constexpr qpl::size tuple_size() {
 		return std::tuple_size_v<std::tuple<Ts...>>;
 	}

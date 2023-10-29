@@ -435,6 +435,16 @@ namespace qsf {
 	void qsf::framework::hide_cursor() {
 		this->window.setMouseCursorVisible(false);
 	}
+	void qsf::framework::set_cursor_hand() {
+		sf::Cursor cursor;
+		cursor.loadFromSystem(sf::Cursor::Hand);
+		this->window.setMouseCursor(cursor);
+	}
+	void qsf::framework::set_cursor_arrow() {
+		sf::Cursor cursor;
+		cursor.loadFromSystem(sf::Cursor::Arrow);
+		this->window.setMouseCursor(cursor);
+	}
 	void qsf::framework::set_window_position(qpl::vector2u position) {
 		this->window.setPosition(sf::Vector2i(position));
 	}
@@ -563,6 +573,12 @@ namespace qsf {
 	}
 	void qsf::base_state::show_cursor() {
 		this->framework->show_cursor();
+	}
+	void qsf::base_state::set_cursor_hand() {
+		this->framework->set_cursor_hand();
+	}
+	void qsf::base_state::set_cursor_arrow() {
+		this->framework->set_cursor_arrow();
 	}
 	void qsf::base_state::set_cursor_position(qpl::vector2i position) {
 		this->framework->set_cursor_position(position);

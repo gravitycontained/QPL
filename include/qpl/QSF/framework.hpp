@@ -163,6 +163,8 @@ namespace qsf {
 		QPLDLL void set_style(qpl::u32 style);
 		QPLDLL void set_antialiasing_level(qpl::u32 level);
 		QPLDLL void hide_cursor();
+		QPLDLL void set_cursor_hand();
+		QPLDLL void set_cursor_arrow();
 		QPLDLL void set_window_position(qpl::vector2u position);
 		QPLDLL qpl::vector2u get_window_position() const;
 		QPLDLL void show_cursor();
@@ -553,6 +555,8 @@ namespace qsf {
 		QPLDLL void update_close_window();
 		QPLDLL void hide_cursor();
 		QPLDLL void show_cursor();
+		QPLDLL void set_cursor_hand();
+		QPLDLL void set_cursor_arrow();
 		QPLDLL void set_cursor_position(qpl::vector2i position);
 		QPLDLL void set_window_position(qpl::vector2u position);
 		QPLDLL qpl::vector2u get_window_position() const;

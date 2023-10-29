@@ -1226,9 +1226,6 @@ namespace qsf {
 	void qsf::polygon::resize(qpl::size size) {
 		this->shape.setPointCount(size);
 	}
-	void qsf::polygon::add(qpl::vector2f point) {
-		this->shape.setPointCount(this->size() + 1);
-	}
 	bool qsf::polygon::contains(qpl::vector2f point, qpl::size increment) const {
 
 		bool flag = false;
