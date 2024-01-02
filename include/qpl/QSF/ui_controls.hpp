@@ -1336,6 +1336,7 @@ namespace qsf {
 		qpl::size input_history_index = 0u;
 
 		bool accept_input = false;
+		bool hidden_input = false;
 		bool text_entered = false;
 		bool line_entered = false;
 		bool text_dragging = false;
@@ -1344,6 +1345,8 @@ namespace qsf {
 		bool border_texture_set = false;
 		bool enter_to_continue = false;
 		bool exited_enter_to_continue = false;
+
+		QPLDLL void print();
 
 		QPLDLL void press_enter_to_continue_mode();
 		QPLDLL void reset_visible_range();
@@ -1396,6 +1399,7 @@ namespace qsf {
 		}
 		QPLDLL void add(const qpl::styled_string<qpl::u32_string>& string);
 		QPLDLL void create(const qpl::styled_string<qpl::u32_string>& string);
+		QPLDLL void paste_from_clipboard();
 		QPLDLL void update_key_input(const qsf::event_info& event);
 		QPLDLL void update_selection_rectangle(const qsf::event_info& event);
 		QPLDLL void update_cursor();

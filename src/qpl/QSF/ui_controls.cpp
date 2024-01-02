@@ -3,6 +3,7 @@
 #if defined QPL_INTERN_SFML_USE
 
 #include <qpl/QSF/utility.hpp>
+#include <qpl/system.hpp>
 
 namespace qsf {
 	namespace detail {
@@ -2622,6 +2623,58 @@ namespace qsf {
 		draw.draw(this->knob);
 	}
 
+	void qsf::console::print() {
+		qpl::use_default_print_functions();
+		qpl::println("string: ", this->string.string());
+		qpl::println("input string: ", this->input_string.string());
+		qpl::println("string and input: ", this->string_and_input.string());
+		qpl::println("string split: ", this->string_split);
+		qpl::println("input string split: ", this->input_string_split);
+		qpl::println("string and input split: ", this->string_and_input_split);
+		qpl::println("selection rectangle: ", this->selection_rectangle.size());
+		qpl::println("selection rectangle start: ", this->selection_rectangle_start);
+		qpl::println("selection rectangle end: ", this->selection_rectangle_end);
+		qpl::println("view: ", this->view.position, " ", this->view.scale);
+		qpl::println("dimension: ", this->dimension);
+		qpl::println("zooms: ", this->zooms);
+		qpl::println("view row: ", this->view_row);
+		qpl::println("visible rows: ", this->visible_rows);
+		qpl::println("scroll bar: ", this->scroll_bar.get_progress());
+		qpl::println("cursor interval duration: ", this->cursor_interval_duration);
+		qpl::println("cursor: ", this->cursor.get_position());
+		qpl::println("scroll transition start: ", this->scroll_transition_start);
+		qpl::println("scroll transition end: ", this->scroll_transition_end);
+		qpl::println("scroll bar transition start: ", this->scroll_bar_transition_start);
+		qpl::println("scroll bar transition end: ", this->scroll_bar_transition_end);
+		qpl::println("selection rectangle color: ", this->selection_rectangle_color);
+		qpl::println("shadow border color: ", this->shadow_border_color);
+		qpl::println("visible y min: ", this->visible_y_min);
+		qpl::println("visible y max: ", this->visible_y_max);
+		qpl::println("visible buffer: ", this->visible_buffer);
+		qpl::println("before input vertices size: ", this->before_input_vertices_size);
+		qpl::println("before input outline vertices size: ", this->before_input_outline_vertices_size);
+		qpl::println("before input unicode vertices size: ", this->before_input_unicode_vertices_size);
+		qpl::println("before input unicode outline vertices size: ", this->before_input_unicode_outline_vertices_size);
+		qpl::println("before input text rows: ", this->before_input_text_rows);
+		qpl::println("before input text position: ", this->before_input_text_position);
+		qpl::println("cursor position: ", this->cursor_position);
+		qpl::println("clicked mouse position: ", this->clicked_mouse_position);
+		qpl::println("character size: ", this->character_size);
+		qpl::println("input history: ", this->input_history);
+		qpl::println("input history index: ", this->input_history_index);
+		qpl::println("accept input: ", this->accept_input);
+		qpl::println("hidden input: ", this->hidden_input);
+		qpl::println("text entered: ", this->text_entered);
+		qpl::println("line entered: ", this->line_entered);
+		qpl::println("text dragging: ", this->text_dragging);
+		qpl::println("allow text dragging: ", this->allow_text_dragging);
+		qpl::println("allow going up with cursor: ", this->allow_going_up_with_cursor);
+		qpl::println("border texture set: ", this->border_texture_set);
+		
+		qpl::use_custom_print_functions();
+
+
+	}
 	void qsf::console::press_enter_to_continue_mode() {
 		this->enter_to_continue = true;
 	}
@@ -2644,6 +2697,7 @@ namespace qsf {
 		this->view_row = 0u;
 		this->view.position.y = 0;
 		this->visible_rows = 0u;
+
 		this->process_text();
 	}
 	void qsf::console::init() {
@@ -2699,7 +2753,7 @@ namespace qsf {
 		this->accept_input = true;
 		this->track_before_input_values();
 		this->cursor_position = { 0, 0 };
-		this->update_cursor_position(true); 
+		this->update_cursor_position(true);
 		this->move_to_input();
 	}
 	void qsf::console::stop_accepting_input() {
@@ -2763,7 +2817,15 @@ namespace qsf {
 	}
 	void qsf::console::update_string_and_input_split() {
 		this->string_and_input = this->string;
-		this->string_and_input << this->input_string;
+
+		if (this->hidden_input) {
+			auto element = this->input_string.elements.back();
+			element.text = qpl::to_basic_string<qpl::u32>(qpl::to_wstring_repeat(L'*', element.text.length()));
+			this->string_and_input << element.text;
+		}
+		else {
+			this->string_and_input << this->input_string;
+		}
 		this->string_and_input_split = qpl::string_split_allow_empty(qpl::to_basic_string<wchar_t>(this->string_and_input.string()), L'\n');
 	}
 	void qsf::console::update_string_split() {
@@ -2779,6 +2841,7 @@ namespace qsf {
 			auto count = qpl::count(this->input_string_split[this->cursor_position.y].substr(0u, this->cursor_position.x), L'\t');
 			cursor_pos_with_tabs.x += count * 3u;
 		}
+
 		auto off = cursor_pos_with_tabs * this->character_size;
 
 		this->cursor.set_position(this->before_input_text_position + off - qpl::vec(0.0f, this->colored_text.character_size));
@@ -2803,7 +2866,17 @@ namespace qsf {
 		}
 
 		this->colored_text.rows = this->before_input_text_rows;
-		this->colored_text.add(this->input_string);
+
+		if (this->hidden_input) {
+			auto element = this->input_string.elements.back();
+			element.text = qpl::to_basic_string<qpl::u32>(qpl::to_wstring_repeat(L'*', element.text.length()));
+			qpl::styled_string<qpl::u32_string> string;
+			string.add(element);
+			this->colored_text.add(string);
+		}
+		else {
+			this->colored_text.add(this->input_string);
+		}
 		//this->reset_visible_range();
 		this->update_cursor_position(false);
 	}
@@ -2883,7 +2956,12 @@ namespace qsf {
 		this->reset_visible_range();
 
 		if (this->accept_input) {
-			this->colored_text.add(this->input_string);
+			if (this->hidden_input) {
+				this->input_string_split = qpl::string_split_allow_empty(qpl::to_basic_string<wchar_t>(qpl::to_string_repeat('*', this->input_string.string().length())), L'\n');
+			}
+			else {
+				this->input_string_split = qpl::string_split_allow_empty(qpl::to_basic_string<wchar_t>(this->input_string.string()), L'\n');
+			}
 		}
 
 		auto text_pos_before = this->before_input_text_position / this->character_size;
@@ -2952,7 +3030,7 @@ namespace qsf {
 		}
 
 		auto min = qpl::vec2is{ std::round(fmin.x), fmin.y };
-		auto max = qpl::vec2is{ std::round(fmax.x), qpl::min(qpl::size_cast(fmax.y), this->get_text_height() ? this->get_text_height() - 1 : 0ull)};
+		auto max = qpl::vec2is{ std::round(fmax.x), qpl::min(qpl::size_cast(fmax.y), this->get_text_height() ? this->get_text_height() - 1 : 0ull) };
 		return std::make_pair(min, max);
 	}
 	std::wstring qsf::console::get_selection_rectangle_string() const {
@@ -3072,6 +3150,14 @@ namespace qsf {
 		this->add(string);
 		this->update_cursor_position(true);
 	}
+	void qsf::console::paste_from_clipboard() {
+		this->clear_selection_rectangles_if_visible();
+		this->add_text_input(qpl::to_u32_string(qsf::copy_from_clipboard()));
+		this->text_entered = true;
+		this->update_visible_rows_count();
+		this->clear_selection_rectangles_if_visible();
+
+	}
 	void qsf::console::update_key_input(const qsf::event_info& event) {
 		this->line_entered = false;
 		this->text_entered = false;
@@ -3085,11 +3171,7 @@ namespace qsf {
 			if (event.key_holding(sf::Keyboard::LControl)) {
 				special_input = true;
 				if (event.key_pressed(sf::Keyboard::V)) {
-					this->clear_selection_rectangles_if_visible();
-					this->add_text_input(qpl::to_u32_string(qsf::copy_from_clipboard()));
-					this->text_entered = true;
-					this->update_visible_rows_count();
-					this->clear_selection_rectangles_if_visible();
+					this->paste_from_clipboard();
 				}
 				if (event.key_pressed(sf::Keyboard::C)) {
 					qsf::copy_to_clipboard(this->get_selection_rectangle_string());
@@ -3320,6 +3402,11 @@ namespace qsf {
 
 		if (event.key_pressed(sf::Keyboard::End)) {
 			this->move_to_input();
+		}
+
+
+		if (event.right_mouse_clicked()) {
+			this->paste_from_clipboard();
 		}
 
 		this->update_key_input(event);

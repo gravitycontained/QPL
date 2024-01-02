@@ -3436,14 +3436,14 @@ namespace qpl {
 		qpl::u32 start;
 		qpl::u32 size;
 
-		bool operator<(const character_range& value) const {
+		constexpr bool operator<(const character_range& value) const {
 			return this->start < (value.start + this->size);
 		}
-		bool operator==(const character_range& value) const {
+		constexpr bool operator==(const character_range& value) const {
 			return value.start >= this->start && value.start <= (this->start + this->size);
 		}
 	};
-	constexpr auto unicode_long_ranges = std::array<character_range, 453u>{
+	constexpr auto unicode_long_ranges = std::array<character_range, 455u>{
 		character_range{ 0, 31}, character_range{ 127, 32}, character_range{ 173, 0}, character_range{ 847, 0}, character_range{ 888, 1}, character_range{ 896, 3}, character_range{ 907, 0}, character_range{ 909, 0}, character_range{ 930, 0}, character_range{ 1322, 1},
 		character_range{ 1328, 0}, character_range{ 1367, 1}, character_range{ 1419, 3}, character_range{ 1424, 0}, character_range{ 1480, 7}, character_range{ 1515, 3}, character_range{ 1525, 19}, character_range{ 1547, 0}, character_range{ 1550, 1},
 		character_range{ 1564, 0}, character_range{ 1566, 0}, character_range{ 1706, 0}, character_range{ 1757, 1}, character_range{ 1769, 0}, character_range{ 1792, 16}, character_range{ 1810, 29}, character_range{ 1867, 4}, character_range{ 1936, 0},
@@ -3491,7 +3491,7 @@ namespace qpl {
 		character_range{ 42962, 0}, character_range{ 42964, 0}, character_range{ 42970, 23}, character_range{ 43007, 2}, character_range{ 43011, 2}, character_range{ 43015, 3}, character_range{ 43020, 22}, character_range{ 43050, 1}, character_range{ 43053, 82}, character_range{ 43138, 49},
 		character_range{ 43206, 25}, character_range{ 43250, 12}, character_range{ 43264, 37}, character_range{ 43310, 24}, character_range{ 43348, 43}, character_range{ 43396, 46}, character_range{ 43457, 35}, character_range{ 43494, 66}, character_range{ 43575, 11},
 		character_range{ 43588, 7}, character_range{ 43598, 44}, character_range{ 43646, 49}, character_range{ 43697, 0}, character_range{ 43701, 1}, character_range{ 43705, 4}, character_range{ 43712, 0}, character_range{ 43714, 40}, character_range{ 43760, 4}, character_range{ 43767, 56},
-		character_range{ 43884, 3}, character_range{ 43968, 34}, character_range{ 44011, 0}, character_range{ 44014, 5115}, character_range{ 44032, 11182 },
+		character_range{ 43884, 3}, character_range{ 43968, 34}, character_range{ 44011, 0}, character_range{ 44014, 5115}, character_range{ 44032, 11182 }, character_range{ 65281, 95 }, character_range{ 65504, 7 }
 	};
 
 	template<typename T>
@@ -3500,7 +3500,7 @@ namespace qpl {
 	}
 
 	template<typename T>
-	qpl::size unicode_character_length(const T& c) {
+	constexpr qpl::size unicode_character_length(const T& c) {
 		auto range = character_range{ qpl::u32_cast(c), 0u };
 		auto find = std::find(qpl::unicode_long_ranges.cbegin(), qpl::unicode_long_ranges.cend(), range);
 		return find == qpl::unicode_long_ranges.cend() ? 1u : *find == range ? 2u : 1u;

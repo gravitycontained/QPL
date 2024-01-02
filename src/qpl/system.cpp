@@ -176,16 +176,16 @@ namespace qpl {
             }
             else if (c == (char)8) {
                 if (!result.empty()) {
-                    qpl::print("\b \b");
+                    qpl::ios_print("\b \b");
                     result.pop_back();
                 }
             }
             else {
-                qpl::print(replace);
+                qpl::ios_print(replace);
                 result += c;
             }
         }
-        qpl::println();
+        qpl::ios_print('\n');
         return result;
     }
 
