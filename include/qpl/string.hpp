@@ -2561,10 +2561,18 @@ namespace qpl {
 	QPLDLL qpl::size string_levenshtein_distance(const std::string_view& a, const std::string_view& b);
 	QPLDLL qpl::size string_levenshtein_distance(const std::wstring_view& a, const std::wstring_view& b);
 
-	QPLDLL void string_trim_whitespace(std::wstring& string);
-	QPLDLL void string_trim_whitespace(std::string& string);
+	QPLDLL void string_trim_whitespace_start(std::wstring& string);
+	QPLDLL void string_trim_whitespace_start(std::string& string);
 	QPLDLL void string_trim_whitespace_end(std::wstring& string);
 	QPLDLL void string_trim_whitespace_end(std::string& string);
+	QPLDLL void string_trim_whitespace(std::wstring& string);
+	QPLDLL void string_trim_whitespace(std::string& string);
+	QPLDLL std::wstring string_trimmed_whitespace_start(std::wstring string);
+	QPLDLL std::string string_trimmed_whitespace_start(std::string string);
+	QPLDLL std::wstring string_trimmed_whitespace_end(std::wstring string);
+	QPLDLL std::string string_trimmed_whitespace_end(std::string string);
+	QPLDLL std::wstring string_trimmed_whitespace(std::wstring string);
+	QPLDLL std::string string_trimmed_whitespace(std::string string);
 
 	QPLDLL bool string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b);
 	QPLDLL bool string_starts_with(const std::string_view& a, const std::string_view& b);

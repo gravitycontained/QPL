@@ -2249,7 +2249,7 @@ namespace qpl {
 		}
 		return matrix[a.length()][b.length()];
 	}
-	void qpl::string_trim_whitespace(std::wstring& string) {
+	void qpl::string_trim_whitespace_start(std::wstring& string) {
 		qpl::size index = 0u;
 		while (index < string.length() && qpl::is_character_whitespace(qpl::u8_cast(string[index]))) {
 			++index;
@@ -2261,7 +2261,7 @@ namespace qpl {
 			string.clear();
 		}
 	}
-	void qpl::string_trim_whitespace(std::string& string) {
+	void qpl::string_trim_whitespace_start(std::string& string) {
 		qpl::size index = 0u;
 		while (index < string.length() && qpl::is_character_whitespace(qpl::u8_cast(string[index]))) {
 			++index;
@@ -2286,6 +2286,38 @@ namespace qpl {
 			--index;
 		}
 		string = string.substr(0ull, index + 1);
+	}
+	void qpl::string_trim_whitespace(std::wstring& string) {
+		qpl::string_trim_whitespace_start(string);
+		qpl::string_trim_whitespace_end(string);
+	}
+	void qpl::string_trim_whitespace(std::string& string) {
+		qpl::string_trim_whitespace_start(string);
+		qpl::string_trim_whitespace_end(string);
+	}
+	std::wstring qpl::string_trimmed_whitespace_start(std::wstring string) {
+		qpl::string_trim_whitespace_start(string);
+		return string;
+	}
+	std::string qpl::string_trimmed_whitespace_start(std::string string) {
+		qpl::string_trim_whitespace_start(string);
+		return string;
+	}
+	std::wstring qpl::string_trimmed_whitespace_end(std::wstring string) {
+		qpl::string_trim_whitespace_end(string);
+		return string;
+	}
+	std::string qpl::string_trimmed_whitespace_end(std::string string) {
+		qpl::string_trim_whitespace_end(string);
+		return string;
+	}
+	std::wstring qpl::string_trimmed_whitespace(std::wstring string) {
+		qpl::string_trim_whitespace(string);
+		return string;
+	}
+	std::string qpl::string_trimmed_whitespace(std::string string) {
+		qpl::string_trim_whitespace(string);
+		return string;
 	}
 	bool qpl::string_starts_with_ignore_case(const std::string_view& a, const std::string_view& b) {
 		if (b.length() > a.length()) {
