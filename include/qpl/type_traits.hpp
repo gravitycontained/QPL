@@ -175,7 +175,6 @@ namespace qpl {
 	using rename_variadic = qpl::rename_variadic_identity<A, B>::type;
 
 
-
 	template<typename T>
 	concept is_read_container_c = requires(const T a) {
 		a.cbegin();
@@ -892,8 +891,33 @@ namespace qpl {
 	template<typename... Ts>
 	using variadic_type_front = std::tuple_element_t<0, std::tuple<Ts...>>;
 
+	template <bool expr, typename T>
+	constexpr auto conditional_reference_value(T&& value)
+	{
+		if constexpr (expr)
+			return std::ref(value);
+		else
+			return std::forward<T>(value);
+	}
 
+	template <qpl::size front, qpl::size back = qpl::size_max, bool flip = false, typename... Args>
+	constexpr auto conditional_reference_tie(Args&&... values)
+	{
+		auto&& tuple = std::forward_as_tuple(std::forward<Args>(values)...);
 
+		constexpr auto size = qpl::variadic_size<Args...>();
+		auto unpack = [&]<qpl::size... i>(std::index_sequence<i...>) {
+			return std::make_tuple(
+				conditional_reference_value<
+				(
+					(front != 0 && i < front) ||
+					(back != qpl::size_max && ((size - 1 - i) < back))
+					) == flip
+					>(std::get<i>(tuple))
+				...);
+		};
+		return unpack(std::make_index_sequence<size>());
+	}
 
 	namespace detail {
 		template<auto flags, typename... types>

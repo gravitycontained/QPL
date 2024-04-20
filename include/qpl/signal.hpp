@@ -129,13 +129,12 @@ namespace qpl {
     qpl::is_callable<qpl::variadic_type_back<Args...>>()
   )
   {
-    auto&& tuple = std::tie(std::forward<Args>(objects)...);
-    auto&& back = qpl::variadic_value_back(std::forward<Args>(objects)...);
+    constexpr auto size = qpl::variadic_size<Args...>();
+    auto&& back = std::get<size - 1>(std::make_tuple(std::forward<Args>(objects)...));
 
-    constexpr auto size = qpl::tuple_size<std::tuple<Args...>>();
     qpl::constexpr_iterate<size - 1>([&](auto i)
     {
-      qpl::tuple_value<i>(tuple).addListener(back);
+      std::get<i>(qpl::conditional_reference_tie<0, 1>(std::forward<Args>(objects)...)).addListener(back);
     });
   }
 }
