@@ -39,17 +39,13 @@ namespace qpl {
 	using error_type = std::enable_if<false, void>;
 	using default_error = error_type;
 
+	template<typename T>
+	struct signal;
 
 	template<typename T>
 	constexpr auto declval() {
-		//if constexpr (!std::is_copy_constructible_v<T>) {
-		//	return std::declval<T>();
-		//	//return T{};
-		//}
-		//else {
-			using pointer = std::decay_t<T>*;
-			return *(pointer{});
-		//}
+		using pointer = std::decay_t<T>*;
+		return *(pointer{});
 	}
 
 	template<class T, class... Ignored>
@@ -137,13 +133,6 @@ namespace qpl {
 		unpack(std::make_index_sequence<N>());
 	}
 
-	template<qpl::size N, typename F>
-	constexpr auto constexpr_unpack(F&& function) {
-		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
-			return std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}...);
-		};
-		return unpack(std::make_index_sequence<N>());
-	}
 	template<typename T>
 	std::string type_name(T value) {
 		return std::string(typeid(T).name());
@@ -831,6 +820,15 @@ namespace qpl {
 		constexpr auto pair_signature(T) {
 			return std::false_type{};
 		}
+
+		template<typename T>
+		constexpr auto signal_signature(qpl::signal<T>) {
+			return std::true_type{};
+		}
+		template<typename T>
+		constexpr auto signal_signature(T) {
+			return std::false_type{};
+		}
 	}
 
 	template<typename T>
@@ -841,6 +839,16 @@ namespace qpl {
 	constexpr bool is_tuple(T tuple) {
 		return qpl::is_tuple<T>();
 	}
+
+	template<typename T>
+	constexpr bool is_signal() {
+		return decltype(qpl::impl::signal_signature(qpl::declval<T>())){};
+	}
+	template<typename T>
+	constexpr bool is_signal(T signal) {
+		return qpl::is_signal<T>();
+	}
+
 	template<typename T>
 	concept is_tuple_c = (qpl::is_tuple<T>());
 
@@ -926,7 +934,7 @@ namespace qpl {
 		constexpr auto variadic_type_splice_back() {
 			using tuple = std::tuple<Ts...>;
 			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
-				return std::tuple<std::tuple_element_t<Ints, Tuple>...>();
+				return qpl::declval<std::tuple<std::tuple_element_t<Ints, Tuple>...>>();
 			};
 			return unpack_tuple.template operator()<tuple>(std::make_index_sequence<qpl::tuple_size<tuple>() - N>());
 		}
@@ -935,7 +943,7 @@ namespace qpl {
 		constexpr auto variadic_type_splice_front() {
 			using tuple = std::tuple<Ts...>;
 			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
-				return std::tuple<std::tuple_element_t<Ints + N, Tuple>...>();
+				return std::tuple<std::tuple_element_t<Ints + N, Tuple>...>{};
 			};
 			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<qpl::tuple_size<tuple>() - N>());
 		}
@@ -943,7 +951,7 @@ namespace qpl {
 		constexpr auto variadic_type_splice_front_back() {
 			using tuple = std::tuple<Ts...>;
 			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
-				return std::tuple<std::tuple_element_t<Ints + front, Tuple>...>();
+				return std::tuple<std::tuple_element_t<Ints + front, Tuple>...>{};
 			};
 			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<qpl::tuple_size<tuple>() - (front + back)>());
 		}
@@ -951,7 +959,7 @@ namespace qpl {
 		constexpr auto variadic_type_splice() {
 			using tuple = std::tuple<Ts...>;
 			auto unpack_tuple = [&]<typename Tuple, size_t... Ints>(std::index_sequence<Ints...>) {
-				return std::tuple<std::tuple_element_t<Ints + offset, Tuple>...>();
+				return std::tuple<std::tuple_element_t<Ints + offset, Tuple>...>{};
 			};
 			return unpack_tuple.template operator() < tuple > (std::make_index_sequence<size>());
 		}
@@ -972,54 +980,50 @@ namespace qpl {
 
 
 	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
-		constexpr const auto& tuple_value(const T& tuple) {
-		return std::get<N>(tuple);
+	constexpr const auto& tuple_value(const T& tuple) {
+		return std::get<N>(std::forward<T>(tuple));
 	}
 	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
-		constexpr auto& tuple_value(T& tuple) {
-		return std::get<N>(tuple);
-	}
-	template<qpl::size N, typename... Ts>
-	constexpr auto tuple_value(Ts&&... args) {
-		return std::get<N>(std::make_tuple(args...));
+	constexpr auto& tuple_value(T&& tuple) {
+		return std::get<N>(std::forward<T>(tuple));
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-		constexpr const auto& tuple_value_front(const T& tuple) {
-		return qpl::tuple_value<0u>(tuple);
+	constexpr const auto& tuple_value_front(const T& tuple) {
+		return qpl::tuple_value<0u>(std::move(tuple));
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-		constexpr auto& tuple_value_front(T& tuple) {
-		return qpl::tuple_value<0u>(tuple);
+	constexpr auto& tuple_value_front(T&& tuple) {
+		return qpl::tuple_value<0u>(std::move(tuple));
 	}
 	template<typename T> requires(qpl::is_tuple<T>())
-		constexpr const auto& tuple_value_back(const T& tuple) {
-		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(tuple);
-	}
-	template<typename T> requires(qpl::is_tuple<T>())
-		constexpr auto& tuple_value_back(T& tuple) {
-		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(tuple);
-	}
-	template<qpl::size N, typename... Ts>
-	constexpr auto variadic_value(Ts&&... args) {
-		return std::get<N>(std::make_tuple(args...));
-	}
-	template<typename... Ts>
-	constexpr auto variadic_value_front(Ts&&... args) {
-		return qpl::variadic_value<0u>(args...);
-	}
-	template<typename... Ts>
-	constexpr auto variadic_value_back(Ts&&... args) {
-		return qpl::variadic_value<qpl::variadic_size<Ts...>() - 1>(args...);
+	constexpr auto& tuple_value_back(T&& tuple) {
+		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(std::move(tuple));
 	}
 
+
+	template<qpl::size N, typename... Args>
+	constexpr auto& variadic_value(Args&&... args) {
+		return qpl::tuple_value<N>(std::tie(std::forward<Args>(args)...));
+	}
+	template<typename... Args>
+	constexpr auto& variadic_value_front(Args&&... args) {
+		return qpl::variadic_value<0>(std::forward<Args>(args)...);
+	}
+	template<typename... Args>
+	constexpr auto& variadic_value_back(Args&&... args) {
+		return qpl::variadic_value<qpl::variadic_size<Args...>() - 1>(std::forward<Args>(args)...);
+	}
+
+	/*
 	template<typename... Ts>
 	constexpr auto tuple_value_front(Ts&&... args) {
-		return qpl::variadic_value<0u>(args...);
+		return qpl::variadic_value<0u>(std::forward<Ts>(args)...);
 	}
 	template<typename... Ts>
 	constexpr auto tuple_value_back(Ts&&... args) {
-		return qpl::variadic_value<qpl::variadic_size<Ts...>() - 1>(args...);
+		return qpl::variadic_value<qpl::variadic_size<Ts...>() - 1>(std::forward<Ts>(args)...);
 	}
+	*/
 
 	template<typename T> requires(qpl::is_tuple<T>())
 		constexpr auto tuple_reverse(T tuple) {
@@ -1068,10 +1072,12 @@ namespace qpl {
 	}
 	template<typename T> requires (qpl::is_tuple<T>())
 	constexpr bool is_default_constructible() {
-		return qpl::constexpr_unpack<qpl::tuple_size<T>()>([&](auto... pack) {
-			return qpl::is_default_constructible<qpl::tuple_type<pack.i, T>...>();
-		});
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			return (qpl::is_default_constructible<qpl::tuple_type<Ints, T>>() && ...);
+		};
+		return unpack(std::make_index_sequence<qpl::tuple_size<T>()>());
 	}
+
 
 
 	template<typename T, typename U>

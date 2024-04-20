@@ -70,7 +70,7 @@ namespace qpl {
     QPLDLL void system_pause(const std::string_view& message, qpl::u32 max_keyboard_latency_hz = 50'000u);
     QPLDLL void system_pause_clear_console(qpl::u32 max_keyboard_latency_hz = 50'000u);
 
-
+    QPLDLL std::string get_environment_variable(std::string const& key);
 }
 
 #endif

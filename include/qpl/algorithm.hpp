@@ -660,6 +660,9 @@ namespace qpl {
 
 	template<typename C> requires (qpl::is_container<C>())
 	constexpr auto container_sum(const C& data) {
+		if (data.size() == 0) {
+			return qpl::container_subtype<C>{};
+		}
 		auto sum = data[0];
 		for (qpl::u32 i = 1u; i < data.size(); ++i) {
 			sum += data[i];

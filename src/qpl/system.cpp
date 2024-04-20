@@ -222,4 +222,11 @@ namespace qpl {
         qpl::system_pause(max_keyboard_latency_hz);
         qpl::clear_console();
     }
+    std::string qpl::get_environment_variable(std::string const& key) {
+#pragma warning( push )
+#pragma warning( disable : 4996)
+      char* val = getenv(key.c_str());
+#pragma warning( pop )
+      return val == NULL ? std::string("") : std::string(val);
+    }
 }

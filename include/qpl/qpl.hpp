@@ -58,6 +58,7 @@ freely, subject to the following restrictions:
 #include <qpl/pictures.hpp>
 #include <qpl/random.hpp>
 #include <qpl/smooth.hpp>
+#include <qpl/signal.hpp>
 #include <qpl/string.hpp>
 #include <qpl/system.hpp>
 #include <qpl/time.hpp>

@@ -148,7 +148,7 @@ namespace qpl {
 		return result;
 	}
 	colored_text_get_position_type qpl::colored_text_get_position;
-	std::function<void(std::string, qpl::vec2, std::wstring)> qpl::colored_text_get_position_callback = [](const std::string& name, qpl::vec2 position, const std::wstring& information) {};
+	std::function<void(std::string, qpl::vec2, std::vector<std::wstring>)> qpl::colored_text_get_position_callback = [](const std::string& name, qpl::vec2 position, const std::vector<std::wstring>& informations) {};
 
 	std::function<void(std::wstring)> qpl::default_output_function_w = [](const std::wstring& string) {
 		std::wprintf(L"%s", string.c_str());
@@ -1492,7 +1492,7 @@ namespace qpl {
 		}
 		return result;
 	}
-	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quotes) {
+	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quotes, bool keep_quotes) {
 		std::vector<std::wstring> result;
 
 		qpl::size before = 0;
@@ -1506,7 +1506,12 @@ namespace qpl {
 				while (i < string.length() && string[i] != quotes) {
 					++i;
 				}
-				result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+				if (keep_quotes) {
+					result.emplace_back(std::wstring{ string.substr(begin - 1, i - begin + 2) });
+				}
+				else {
+					result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+				}
 				++i;
 				before = i;
 			}
@@ -1536,7 +1541,7 @@ namespace qpl {
 		}
 		return filtered;
 	}
-	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, std::wstring quotes) {
+	std::vector<std::wstring> qpl::string_split_whitespace_consider_quotes(const std::wstring_view& string, std::wstring quotes, bool keep_quotes) {
 		std::vector<std::wstring> result;
 
 		qpl::size before = 0;
@@ -1554,7 +1559,12 @@ namespace qpl {
 					while (i < string.length() && string[i] != quote) {
 						++i;
 					}
-					result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+					if (keep_quotes) {
+						result.emplace_back(std::wstring{ string.substr(begin - 1, i - begin + 2) });
+					}
+					else {
+						result.emplace_back(std::wstring{ string.substr(begin, i - begin) });
+					}
 					++i;
 					before = i;
 				}

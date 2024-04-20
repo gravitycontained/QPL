@@ -5907,7 +5907,7 @@ namespace qsf {
 		for (auto& element : string) {
 			if (!element.get_position.name.empty() && !element.get_position.done) {
 				element.get_position.done = true;
-				qpl::colored_text_get_position_callback(element.get_position.name, this->text_position, element.get_position.information);
+				qpl::colored_text_get_position_callback(element.get_position.name, this->text_position, element.get_position.informations);
 			}
 
 			bool is_bold = element.style & sf::Text::Style::Bold;

@@ -2884,12 +2884,7 @@ namespace qsf {
 		auto size = this->string_split.size();
 		auto pos = this->cursor_position;
 
-		if (end_of_line) {
-			pos.x = this->string_and_input_split[pos.y].length() - 1;
-		}
-		else {
-			pos.x = qpl::max(0ll, qpl::signed_cast(pos.x));
-		}
+		pos.x = qpl::max(0ll, qpl::signed_cast(pos.x));
 
 		auto count = qpl::count(qpl::to_basic_string<wchar_t>(string), L'\n');
 		if (count) {
@@ -2905,7 +2900,6 @@ namespace qsf {
 		else {
 			this->cursor_position.x += string.length();
 		}
-
 		this->input_string.add_text_at(pos, string);
 
 		this->update_input_text_graphics();
@@ -3285,8 +3279,10 @@ namespace qsf {
 			}
 		}
 		if (event.key_pressed(sf::Keyboard::Enter)) {
+
 			this->add_text_input(qpl::to_u32_string('\n'), !this->allow_going_up_with_cursor);
 			special_input = true;
+
 
 			if (this->enter_to_continue) {
 				this->enter_to_continue = false;

@@ -248,6 +248,58 @@ namespace qpl {
 		return stream.str();
 	}
 
+
+	template<typename... Args> requires (qpl::is_printable<Args...>())
+		std::wstring to_wstring(Args&&... args) {
+
+		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::wstring>()) {
+			return qpl::variadic_value<0u>(args...);
+		}
+
+		std::wostringstream stream;
+		auto add_to_stream = [&]<typename T>(T value) {
+			if constexpr (qpl::is_container<T>() && !qpl::is_long_string_type<T>()) {
+				stream << L'{';
+				bool first = true;
+				for (auto& i : value) {
+					if (!first) {
+						stream << L", ";
+					}
+					stream << qpl::to_wstring(i);
+					first = false;
+				}
+				stream << L'}';
+			}
+			else if constexpr (qpl::is_tuple<T>()) {
+				stream << L'{';
+				if constexpr (qpl::tuple_size<T>() > 1) {
+					auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+						((stream << qpl::to_wstring(std::get<Ints>(value)) << L", "), ...);
+					};
+					unpack(std::make_index_sequence<qpl::tuple_size<T>() - 1>());
+				}
+				stream << qpl::to_wstring(qpl::tuple_value_back(value)) << L'}';
+			}
+			else if constexpr (qpl::is_pair<T>()) {
+				stream << L'{' << qpl::to_wstring(value.first) << L", " << qpl::to_wstring(value.second) << L'}';
+			}
+			else if constexpr (qpl::is_standard_string_type<T>()) {
+				stream << qpl::string_to_wstring(qpl::to_string(value));
+			}
+			else {
+				stream << value;
+			}
+		};
+
+		(add_to_stream(args), ...);
+
+		return stream.str();
+	}
+
+	template<typename... Args>
+	std::wstring to_wstringln(Args&&... args) {
+		return qpl::to_wstring(args..., '\n');
+	}
 	template<typename char_type, typename... Args> requires (!qpl::is_long_string_type<char_type>() && qpl::is_printable<Args...>())
 	std::basic_string<char_type> to_basic_string(Args&&... args) {
 		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::basic_string<char_type>>()) {
@@ -383,22 +435,22 @@ namespace qpl {
 
 	struct colored_text_get_position_type {
 		std::string name = "";
-		std::wstring information = L"";
+		std::vector<std::wstring> informations;
 		mutable bool done = false;
 
-		colored_text_get_position_type(const std::string& name = "", const std::wstring& information = L"") {
+		colored_text_get_position_type(const std::string& name = "", const std::vector<std::wstring>& informations = {}) {
 			this->name = name;
-			this->information = information;
+			this->informations = informations;
 		}
-		colored_text_get_position_type operator()(const std::string& name, const std::wstring& information = L"") const {
-			return colored_text_get_position_type(name, information);
+		colored_text_get_position_type operator()(const std::string& name, const std::vector<std::wstring>& informations) const {
+			return colored_text_get_position_type(name, informations);
 		}
 		bool operator==(const colored_text_get_position_type& other) const {
-			return this->name == other.name && this->information == other.information;
+			return this->name == other.name && this->informations == other.informations;
 		}
 	};
 	QPLDLL extern colored_text_get_position_type colored_text_get_position;
-	QPLDLL extern std::function<void(std::string, qpl::vec2, std::wstring)> colored_text_get_position_callback;
+	QPLDLL extern std::function<void(std::string, qpl::vec2, std::vector<std::wstring>)> colored_text_get_position_callback;
 
 
 	QPLDLL extern std::function<void(std::wstring)> default_output_function_w;
@@ -481,20 +533,6 @@ namespace qpl {
 				detail::stream_wstr << first;
 			}
 		}
-	}
-
-	template<typename T, typename... Args> requires (qpl::is_wcout_printable<T, Args...>())
-	std::wstring to_wstring(T&& first, Args&&... args) {
-		detail::stream_wstr.str(L"");
-
-		detail::add_to_wstream(first);
-		(detail::add_to_wstream(args), ...);
-
-		return detail::stream_wstr.str();
-	}
-	template<typename... Args>
-	std::wstring to_wstringln(Args&&... args) {
-		return qpl::to_wstring(args..., '\n');
 	}
 
 	QPLDLL std::string to_string(const std::string& first);
@@ -2307,8 +2345,8 @@ namespace qpl {
 	QPLDLL std::vector<std::wstring> string_split_whitespace(const std::wstring_view& string);
 	QPLDLL std::vector<std::wstring> string_split_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
 	QPLDLL std::vector<std::wstring> string_split_allow_empty_consider_quotes(const std::wstring_view& string, wchar_t by_what, wchar_t quote = L'\'');
-	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quote = L'\'');
-	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, std::wstring quotes);
+	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, wchar_t quote = L'\'', bool keep_quotes = false);
+	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes(const std::wstring_view& string, std::wstring quotes, bool keep_quotes = false);
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_quotes_and_extra_quotes(const std::wstring_view& string, wchar_t quote = L'\'', wchar_t additional_quote = L'"');
 	QPLDLL std::vector<std::wstring> string_split_whitespace_consider_parantheses_and_extra_quotes(const std::wstring_view& string, std::vector<std::wstring> paras = { L"()", L"[]", L"{}" }, std::wstring additional_quotes = L"\"'");
 	QPLDLL std::vector<std::pair<std::wstring, qpl::size>> string_split_whitespace_with_indices(const std::wstring_view& string);

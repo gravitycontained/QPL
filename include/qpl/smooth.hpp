@@ -1,5 +1,5 @@
 #ifndef QPL_SMOOTH_HPP
-#define QPL_SMOOTH_CPP
+#define QPL_SMOOTH_HPP
 #pragma once
 
 #include <qpl/qpldeclspec.hpp>

@@ -942,7 +942,10 @@ namespace qpl {
 				return qpl::f64_cast(std::sqrt(this->dot(*this)));
 			}
 		}
-		constexpr auto normalized() const {
+		constexpr vectorN normalized() const {
+			if (this->length() == 0)
+				return vectorN{};
+
 			return *this / this->length();
 		}
 		constexpr auto angle() const requires (N == 2) {

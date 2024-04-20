@@ -41,19 +41,13 @@ namespace qpl {
 			if (!i.get_position.name.empty()) {
 				qpl::print(i.get_position);
 			}
-			bool set = false;
 			if (cc.foreground != i.foreground) {
 				cc.foreground = i.foreground;
-				set = true;
 			}
 			if (cc.background != i.background) {
 				cc.background = i.background;
-				set = true;
 			}
-			if (set) {
-				qpl::print(cc);
-			}
-			qpl::print(i.text);
+			qpl::print(cc, i.text);
 		}
 		qpl::print(qpl::cc{});
 	}
