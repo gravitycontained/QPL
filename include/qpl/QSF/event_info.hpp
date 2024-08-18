@@ -205,6 +205,14 @@ namespace qsf {
 
 		qpl::f64 m_fast_double_click_duration = 0.2;
 		qpl::f64 m_fast_click_duration = 0.15;
+
+		//bool m_joystick_connect;
+		//bool m_joystick_disconnect;
+		//qpl::vec2 m_joystick_left_direction;
+		//qpl::vec2 m_joystick_right_direction;
+		//std::unordered_set<sf::Joystick::Axis> m_joystick_axis_pressed;
+		//std::unordered_set<sf::Joystick::Axis> m_joystick_axis_released;
+		//std::unordered_set<sf::Joystick::Axis> m_joystick_axis_holding;
 	};
 
 }

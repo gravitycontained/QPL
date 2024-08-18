@@ -7,8 +7,8 @@ namespace qpl {
   struct signal {
     T value;
 
-    std::vector<std::function<void(const T&)>> listeners;
-    std::vector<std::function<void(void)>> voidListeners;
+    mutable std::vector<std::function<void(const T&)>> listeners;
+    mutable std::vector<std::function<void(void)>> voidListeners;
 
     constexpr signal(){}
     constexpr signal(const T& value)
@@ -26,7 +26,7 @@ namespace qpl {
       return this->value;
     }
 
-    constexpr void runListeners()
+    constexpr void runListeners() const
     {
       for (const auto& listener : this->voidListeners)
         listener();
@@ -102,39 +102,45 @@ namespace qpl {
       return *this;
     }
 
-    void addListener(const std::function<void(const T&)>& listener)
+    void addListener(const std::function<void(const T&)>& listener) const
     {
       this->listeners.push_back(listener);
     }
-    void addListener(const std::function<void(void)>& listener)
+    void addListener(const std::function<void(void)>& listener) const
     {
       this->voidListeners.push_back(listener);
     }
   };
 
-  template <typename T> requires (qpl::is_tuple<T>())
+  template <typename ... Args> 
   constexpr auto are_signals()
   {
-    auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
-      return (qpl::is_signal<qpl::tuple_type<Ints, T>>() && ...);
-    };
-    return unpack(std::make_index_sequence<qpl::tuple_size<T>()>());
+    return qpl::all_true(qpl::constexpr_apply<qpl::variadic_size<Args...>() - 1>([&](auto i)
+      {
+        return qpl::is_signal<qpl::variadic_type<i, Args...>>();
+      }
+    ));
   }
 
   template <typename ... Args>
   constexpr void effect(Args&&... objects)
   requires
   (
-    are_signals<qpl::variadic_type_splice_back<1, Args...>>() &&
+    are_signals<Args...>() &&
     qpl::is_callable<qpl::variadic_type_back<Args...>>()
+
+    /*
+    * use this when the active error is no longer hallucinated:
+
+    */
   )
   {
-    constexpr auto size = qpl::variadic_size<Args...>();
-    auto&& back = std::get<size - 1>(std::make_tuple(std::forward<Args>(objects)...));
+    auto&& function = qpl::variadic_value_back(std::forward<Args>(objects)...);
 
+    constexpr auto size = qpl::variadic_size<Args...>();
     qpl::constexpr_iterate<size - 1>([&](auto i)
     {
-      std::get<i>(qpl::conditional_reference_tie<0, 1>(std::forward<Args>(objects)...)).addListener(back);
+      qpl::tuple_value<i>(qpl::auto_tie(std::forward<Args>(objects)...)).addListener(function);
     });
   }
 }

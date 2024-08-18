@@ -1154,7 +1154,10 @@ namespace qpl {
 		template<typename C, typename C2> requires (qpl::is_container<C>() && qpl::is_container<C2>())
 		constexpr void combine(C& container, const C2& value) {
 			if constexpr (qpl::has_insert<C>()) {
-				container.insert(qpl::cend(container), value.cbegin(), value.cend());
+				if constexpr (qpl::is_std_unordered_set_type<C>())
+					container.insert(value.cbegin(), value.cend());
+				else
+					container.insert(qpl::cend(container), value.cbegin(), value.cend());
 			}
 			else if constexpr (qpl::has_resize_and_access<C>()) {
 				auto size = container.size();
@@ -1271,7 +1274,7 @@ namespace qpl {
 	}
 	template<typename C, typename It> requires (qpl::is_container<C>() && qpl::is_iterator<It>())
 	constexpr C combined(const C& container, It begin, It end) {
-		C result;
+		auto result = container;
 		impl::combine(result, begin, end);
 		return result;
 	}
@@ -1289,7 +1292,7 @@ namespace qpl {
 	}
 	template<typename C> requires (qpl::is_container<C>())
 	constexpr C removed_duplicates(const C& container, bool recursive = false) {
-		C result;
+		auto result = container;
 		qpl::remove_duplicates(result, recursive);
 		return result;
 	}

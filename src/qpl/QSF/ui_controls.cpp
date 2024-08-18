@@ -2483,7 +2483,7 @@ namespace qsf {
 		this->update_positions();
 	}
 	void qsf::scroll_bar::set_visible_knob_progress(qpl::f64 progress) {
-		this->visible_knob_progress = progress;
+		this->visible_knob_progress = qpl::f32_cast(progress);
 		auto height = this->hitbox.get_height() - this->knob.get_dimension().y;
 		this->knob.set_position(this->hitbox.position + qpl::vec2f(0.0f, height * this->visible_knob_progress));
 	}
@@ -2521,7 +2521,7 @@ namespace qsf {
 		return qpl::size_cast(std::round(this->knob_progress * (this->integer_step)));
 	}
 	void qsf::scroll_bar::set_progress_integer_step(qpl::size step, qpl::size knob_steps) {
-		this->knob_range = qpl::max(0.05, qpl::f64_cast(knob_steps) / step);
+		this->knob_range = qpl::max(0.05f, qpl::f32_cast(knob_steps) / step);
 		this->integer_step = step - knob_steps;
 	}
 	void qsf::scroll_bar::set_progress(qpl::f32 progress) {
@@ -2800,18 +2800,18 @@ namespace qsf {
 	}
 	void qsf::console::prepare_scroll() {
 		this->scroll_bar_transition_start = this->scroll_bar.visible_knob_progress;
-		this->scroll_bar.set_progress(this->view_row / qpl::f64_cast(this->colored_text.rows - this->visible_rows));
+		this->scroll_bar.set_progress(this->view_row / qpl::f32_cast(this->colored_text.rows - this->visible_rows));
 		this->scroll_bar_transition_end = this->scroll_bar.get_progress();
 
 		this->clamp_view_y();
 	}
 	void qsf::console::update_visible_rows_count() {
-		this->visible_rows = std::floor(this->dimension.y / this->colored_text.get_line_spacing_pixels());
+		this->visible_rows = qpl::size_cast(std::floor(this->dimension.y / this->colored_text.get_line_spacing_pixels()));
 		this->scroll_bar.set_progress_integer_step(this->colored_text.rows + 1, this->visible_rows);
 	}
 	void qsf::console::end_animation() {
 		this->scroll_transition_start = this->scroll_transition_end;
-		this->view.position.y = this->scroll_transition_end;
+		this->view.position.y = qpl::f32_cast(this->scroll_transition_end);
 		this->scroll_bar.set_visible_knob_progress(this->scroll_bar_transition_end);
 		this->scroll_transition_animation.reset();
 	}
@@ -2936,8 +2936,8 @@ namespace qsf {
 		auto max_y = y + this->visible_rows;
 
 		if (min_y < this->visible_y_min || max_y > this->visible_y_max) {
-			this->visible_y_min = min_y - visible_buffer;
-			this->visible_y_max = max_y + visible_buffer;
+			this->visible_y_min = qpl::isize_cast(min_y - visible_buffer);
+			this->visible_y_max = qpl::isize_cast(max_y + visible_buffer);
 
 			auto a = this->visible_y_min * this->character_size.y;
 			auto b = this->visible_y_max * this->character_size.y;
@@ -2960,7 +2960,7 @@ namespace qsf {
 
 		auto text_pos_before = this->before_input_text_position / this->character_size;
 
-		this->scroll_bar.set_progress(this->view_row / qpl::f64_cast(this->colored_text.rows - this->visible_rows));
+		this->scroll_bar.set_progress(this->view_row / qpl::f32_cast(this->colored_text.rows - this->visible_rows));
 		this->scroll_bar.set_visible_knob_progress(this->view_row / qpl::f64_cast(this->scroll_bar.integer_step));
 		this->view.position.y = this->view_row * this->colored_text.get_line_spacing_pixels();
 		this->calculate_default_character_size();
@@ -3032,21 +3032,21 @@ namespace qsf {
 
 		auto [min, max] = this->get_selection_rectangle_bounds();
 
-		for (qpl::size y = min.y; y <= max.y; ++y) {
+		for (qpl::isize y = min.y; y <= max.y; ++y) {
 			if (min.y == max.y) {
-				if (min.x <= this->string_and_input_split[y].length()) {
+				if (min.x <= qpl::signed_cast(this->string_and_input_split[y].length())) {
 					auto size = max.x - min.x;
 					result += this->string_and_input_split[y].substr(min.x, size);
 				}
 			}
 			else if (y == min.y) {
-				if (min.x <= this->string_and_input_split[y].length()) {
+				if (min.x <= qpl::signed_cast(this->string_and_input_split[y].length())) {
 					result += this->string_and_input_split[y].substr(min.x);
 				}
 				result += L'\n';
 			}
 			else if (y == max.y) {
-				if (max.x && max.x <= this->string_and_input_split[y].length()) {
+				if (max.x && max.x <= qpl::signed_cast(this->string_and_input_split[y].length())) {
 					result += this->string_and_input_split[y].substr(0u, max.x);
 				}
 			}
@@ -3077,21 +3077,21 @@ namespace qsf {
 				min.x = qpl::min(min.x, qpl::signed_cast(text_width));
 				max.x = qpl::min(max.x, qpl::signed_cast(text_width));
 				pos.x = min.x;
-				width = (max.x - min.x) * this->colored_text.get_white_space_width();
+				width = qpl::size_cast((max.x - min.x) * this->colored_text.get_white_space_width());
 			}
 			else if (i == min.y) {
 				auto text_width = this->get_text_width(min.y);
 				min.x = qpl::min(min.x, qpl::signed_cast(text_width));
 				pos.x = min.x;
-				width = this->dimension.x - (pos.x * this->character_size.x);
+				width = qpl::size_cast(this->dimension.x - (pos.x * this->character_size.x));
 			}
 			else if (i == max.y) {
 				auto text_width = this->get_text_width(max.y);
 				max.x = qpl::min(max.x, qpl::signed_cast(text_width));
-				width = max.x * this->colored_text.get_white_space_width();
+				width = qpl::size_cast(max.x * this->colored_text.get_white_space_width());
 			}
 			else {
-				width = this->dimension.x;
+				width = qpl::size_cast(this->dimension.x);
 			}
 
 			auto offset_y = this->colored_text.get_chracter_top_offset() - this->colored_text.get_character_size() / 10.f;
@@ -3103,7 +3103,7 @@ namespace qsf {
 	void qsf::console::move_to_input() {
 		auto input_pos = qpl::isize_cast(this->colored_text.rows - this->visible_rows) + 1;
 		auto input_pos_end = qpl::isize_cast(this->colored_text.rows);
-		if (input_pos_end < this->visible_rows) {
+		if (input_pos_end < qpl::signed_cast(this->visible_rows)) {
 			input_pos_end = 0;
 		}
 		if (this->view_row < input_pos) {
@@ -3126,7 +3126,7 @@ namespace qsf {
 	}
 	void qsf::console::process_text() {
 		this->update_visible_rows_count();
-		this->scroll_bar.set_progress(this->view_row / qpl::f64_cast(this->scroll_bar.integer_step));
+		this->scroll_bar.set_progress(this->view_row / qpl::f32_cast(this->scroll_bar.integer_step));
 		this->update_cursor_position();
 
 		auto size = this->colored_text.vertices.size() + this->colored_text.outline_vertices.size();
@@ -3336,7 +3336,7 @@ namespace qsf {
 			auto time = (f - 0.5) / this->cursor_interval_duration;
 			progress = 1.0 - qpl::triangle_progression(std::fmod(time, 1.0));
 		}
-		this->cursor.set_color(this->cursor.get_color().with_alpha(progress * 255));
+		this->cursor.set_color(this->cursor.get_color().with_alpha(qpl::u8_cast(progress * 255)));
 	}
 	void qsf::console::update(const qsf::event_info& event) {
 		this->scroll_bar.allow_dragging = !this->text_dragging;
@@ -3418,7 +3418,7 @@ namespace qsf {
 		if (this->scroll_transition_animation.is_running()) {
 			auto p = this->scroll_transition_animation.get_progress();
 			auto curve = qpl::smooth_slope(p);
-			this->view.position.y = qpl::linear_interpolation(this->scroll_transition_start, this->scroll_transition_end, curve);
+			this->view.position.y = qpl::f32_cast(qpl::linear_interpolation(this->scroll_transition_start, this->scroll_transition_end, curve));
 
 			if (!this->scroll_bar.dragging) {
 				this->scroll_bar.set_visible_knob_progress(qpl::linear_interpolation(this->scroll_bar_transition_start, this->scroll_bar_transition_end, curve));

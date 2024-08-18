@@ -20,9 +20,6 @@
 #endif
 
 namespace qpl {
-
-
-
 	struct sha256 {
 		using utype = qpl::u32;
 
@@ -988,9 +985,9 @@ namespace qpl {
 		constexpr auto check_if_mds(const std::array<T, MS>& M) {
 			constexpr auto N = qpl::size_cast(qpl::sqrt(MS));
 
-			return qpl::constexpr_unpack<N - 2>([&](auto... i) {
+			return qpl::all_true(qpl::constexpr_apply<N - 2>([&](auto... i) {
 				return (check_if_mds<i + 2>(M) && ...);
-				});
+			}));
 		}
 
 		template<qpl::size N, typename T>
@@ -1303,8 +1300,8 @@ namespace qpl {
 		qpl::u8 state_byte = 0u;
 
 		lookup_table<config> table;
-	public:
 
+	public:
 
 		void input_cipher_state() {
 			auto index = this->state_ctr * this->state_size;
@@ -1626,7 +1623,6 @@ namespace qpl {
 			const auto& sbox = this->table.sbox[0xE % this->table_size];
 			this->state_byte = sbox[this->last_state[0]];
 		}
-
 
 		void print_decipher_state(std::string message) {
 			qpl::print(message, "DECIPHER state_ctr = ", this->state_ctr, " ");
@@ -1953,9 +1949,9 @@ namespace qpl {
 	};
 
 	using cipher_ultra_fast		= qpl::cipherN<qpl::cipher_config{ 4u,  1u, 16u, 64u, 0.9,   false, true, true, true }>;
-	using cipher_fast			= qpl::cipherN<qpl::cipher_config{ 4u,  1u, 16u, 64u, 0.01,  false, true, true, true }>;
-	using cipher_mid			= qpl::cipherN<qpl::cipher_config{ 4u,  3u, 16u, 64u, 0.001, false, true, true, true }>;
-	using cipher_secure			= qpl::cipherN<qpl::cipher_config{ 4u,  3u, 16u, 64u, 0.001, true,  true, true, true }>;
+	using cipher_fast					= qpl::cipherN<qpl::cipher_config{ 4u,  1u, 16u, 64u, 0.01,  false, true, true, true }>;
+	using cipher_mid					= qpl::cipherN<qpl::cipher_config{ 4u,  3u, 16u, 64u, 0.001, false, true, true, true }>;
+	using cipher_secure				= qpl::cipherN<qpl::cipher_config{ 4u,  3u, 16u, 64u, 0.001, true,  true, true, true }>;
 	using cipher_very_secure	= qpl::cipherN<qpl::cipher_config{ 4u, 12u, 16u, 64u, 0.001, true,  true, true, true }>;
 
 	namespace cipher {

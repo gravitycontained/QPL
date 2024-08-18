@@ -133,6 +133,44 @@ namespace qpl {
 		unpack(std::make_index_sequence<N>());
 	}
 
+	template<size N, typename F>
+	constexpr auto constexpr_apply(F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			return std::make_tuple(std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{})...);
+		};
+		return unpack(std::make_index_sequence<N>());
+	}
+
+	enum class operation {
+		add, sub, mul, div, and_, or_, xor_, lshift, rshift,
+	};
+
+
+	template<operation op, size N, typename F>
+	constexpr auto constexpr_chain(F&& function) {
+		auto unpack = [&]<qpl::size... Ints>(std::index_sequence<Ints...>) {
+			if constexpr (op == operation::add)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) + ...);
+			else if constexpr (op == operation::sub)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) - ...);
+			else if constexpr (op == operation::mul)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) * ...);
+			else if constexpr (op == operation::div)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) / ...);
+			else if constexpr (op == operation::and_)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) && ...);
+			else if constexpr (op == operation::or_)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) || ...);
+			else if constexpr (op == operation::xor_)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) ^ ...);
+			else if constexpr (op == operation::lshift)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) << ...);
+			else if constexpr (op == operation::rshift)
+				return (std::forward<F>(function)(qpl::detail::constexpr_index<Ints, N>{}) >> ...);
+		};
+		return unpack(std::make_index_sequence<N>());
+	}
+
 	template<typename T>
 	std::string type_name(T value) {
 		return std::string(typeid(T).name());
@@ -891,30 +929,27 @@ namespace qpl {
 	template<typename... Ts>
 	using variadic_type_front = std::tuple_element_t<0, std::tuple<Ts...>>;
 
-	template <bool expr, typename T>
-	constexpr auto conditional_reference_value(T&& value)
+
+	template <typename T>
+	constexpr auto reference_if_lvalue(auto&& value)
 	{
-		if constexpr (expr)
+		if constexpr (std::is_lvalue_reference_v<T>)
 			return std::ref(value);
 		else
 			return std::forward<T>(value);
 	}
 
-	template <qpl::size front, qpl::size back = qpl::size_max, bool flip = false, typename... Args>
-	constexpr auto conditional_reference_tie(Args&&... values)
+
+	template <typename... Args>
+	constexpr auto auto_tie(Args&&... values)
 	{
-		auto&& tuple = std::forward_as_tuple(std::forward<Args>(values)...);
+		auto&& tupleRef = std::forward_as_tuple(std::forward<Args>(values)...);
+		using tuple = std::tuple<Args...>;
 
 		constexpr auto size = qpl::variadic_size<Args...>();
-		auto unpack = [&]<qpl::size... i>(std::index_sequence<i...>) {
-			return std::make_tuple(
-				conditional_reference_value<
-				(
-					(front != 0 && i < front) ||
-					(back != qpl::size_max && ((size - 1 - i) < back))
-					) == flip
-					>(std::get<i>(tuple))
-				...);
+		auto unpack = [&]<qpl::size... i>(std::index_sequence<i...>)
+		{
+			return std::make_tuple(reference_if_lvalue<qpl::tuple_type<i, tuple>>(std::get<i>(tupleRef))...);
 		};
 		return unpack(std::make_index_sequence<size>());
 	}
@@ -1002,52 +1037,106 @@ namespace qpl {
 	template<qpl::size front, qpl::size back, typename... Ts>
 	using variadic_type_splice_front_back = decltype(qpl::detail::variadic_type_splice_front_back<front, back, Ts...>());
 
+	template<typename T>
+	concept lvalue = std::is_lvalue_reference_v<T>;
+	template<typename T>
+	concept rvalue = std::is_rvalue_reference_v<T>;
+	template<typename T>
+	concept no_reference = !std::is_lvalue_reference_v<T> && !std::is_rvalue_reference_v<T>;
 
-	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
-	constexpr const auto& tuple_value(const T& tuple) {
-		return std::get<N>(std::forward<T>(tuple));
-	}
-	template<qpl::size N, typename T> requires(qpl::is_tuple<T>())
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>() && qpl::lvalue<qpl::tuple_type<N, T>>)
 	constexpr auto& tuple_value(T&& tuple) {
 		return std::get<N>(std::forward<T>(tuple));
 	}
-	template<typename T> requires(qpl::is_tuple<T>())
-	constexpr const auto& tuple_value_front(const T& tuple) {
-		return qpl::tuple_value<0u>(std::move(tuple));
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>() && qpl::rvalue<qpl::tuple_type<N, T>>)
+	constexpr auto&& tuple_value(T&& tuple) {
+		return std::get<N>(std::forward<T>(tuple));
 	}
-	template<typename T> requires(qpl::is_tuple<T>())
+	template<qpl::size N, typename T> requires(qpl::is_tuple<T>() && qpl::no_reference<qpl::tuple_type<N, T>>)
+	constexpr auto tuple_value(T&& tuple) {
+		return std::get<N>(std::forward<T>(tuple));
+	}
+
+	template<typename T> requires(qpl::is_tuple<T>() && qpl::lvalue<qpl::tuple_type<0, T>>)
 	constexpr auto& tuple_value_front(T&& tuple) {
-		return qpl::tuple_value<0u>(std::move(tuple));
+		return qpl::tuple_value<0u>(std::forward<T>(tuple));
 	}
-	template<typename T> requires(qpl::is_tuple<T>())
+	template<typename T> requires(qpl::is_tuple<T>() && qpl::rvalue<qpl::tuple_type<0, T>>)
+	constexpr auto&& tuple_value_front(T&& tuple) {
+		return qpl::tuple_value<0u>(std::forward<T>(tuple));
+	}
+	template<typename T> requires(qpl::is_tuple<T>() && qpl::no_reference<qpl::tuple_type<0, T>>)
+	constexpr auto tuple_value_front(T&& tuple) {
+		return qpl::tuple_value<0u>(std::forward<T>(tuple));
+	}
+
+	template<typename T> requires(qpl::is_tuple<T>() && qpl::lvalue<qpl::tuple_type<qpl::tuple_size<T>() - 1, T>>)
 	constexpr auto& tuple_value_back(T&& tuple) {
-		return qpl::tuple_value<(qpl::tuple_size<T>() - 1)>(std::move(tuple));
+		return qpl::tuple_value<qpl::tuple_size<T>() - 1>(std::forward<T>(tuple));
+	}
+	template<typename T> requires(qpl::is_tuple<T>() && qpl::rvalue<qpl::tuple_type<qpl::tuple_size<T>() - 1, T>>)
+	constexpr auto&& tuple_value_back(T&& tuple) {
+		return qpl::tuple_value<qpl::tuple_size<T>() - 1>(std::forward<T>(tuple));
+	}
+	template<typename T> requires(qpl::is_tuple<T>() && qpl::no_reference<qpl::tuple_type<qpl::tuple_size<T>() - 1, T>>)
+	constexpr auto tuple_value_back(T&& tuple) {
+		return qpl::tuple_value<qpl::tuple_size<T>() - 1>(std::forward<T>(tuple));
 	}
 
-
-	template<qpl::size N, typename... Args>
+	template<qpl::size N, typename... Args> requires(qpl::lvalue<qpl::variadic_type<N, Args...>>)
 	constexpr auto& variadic_value(Args&&... args) {
-		return qpl::tuple_value<N>(std::tie(std::forward<Args>(args)...));
+		return qpl::tuple_value<N>(qpl::auto_tie(std::forward<Args>(args)...));
 	}
-	template<typename... Args>
+	template<qpl::size N, typename... Args> requires(qpl::rvalue<qpl::variadic_type<N, Args...>>)
+	constexpr auto&& variadic_value(Args&&... args) {
+		return qpl::tuple_value<N>(qpl::auto_tie(std::forward<Args>(args)...));
+	}
+	template<qpl::size N, typename... Args> requires(qpl::no_reference<qpl::variadic_type<N, Args...>>)
+	constexpr auto variadic_value(Args&&... args) {
+		return qpl::tuple_value<N>(qpl::auto_tie(std::forward<Args>(args)...));
+	}
+
+	template<typename... Args> requires(qpl::lvalue<qpl::variadic_type<0, Args...>>)
 	constexpr auto& variadic_value_front(Args&&... args) {
-		return qpl::variadic_value<0>(std::forward<Args>(args)...);
+		return qpl::variadic_value<0u>(std::forward<Args>(args)...);
 	}
-	template<typename... Args>
+	template<typename... Args> requires(qpl::rvalue<qpl::variadic_type<0, Args...>>)
+	constexpr auto&& variadic_value_front(Args&&... args) {
+		return qpl::variadic_value<0u>(std::forward(args...));
+	}
+	template<typename... Args> requires(qpl::no_reference<qpl::variadic_type<0, Args...>>)
+	constexpr auto variadic_value_front(Args&&... args) {
+		return qpl::variadic_value<0u>(std::forward<Args>(args)...);
+	}
+
+	template<typename... Args> requires(qpl::lvalue<qpl::variadic_type<qpl::variadic_size<Args...>() - 1, Args...>>)
 	constexpr auto& variadic_value_back(Args&&... args) {
 		return qpl::variadic_value<qpl::variadic_size<Args...>() - 1>(std::forward<Args>(args)...);
 	}
+	template<typename... Args> requires(qpl::rvalue<qpl::variadic_type<qpl::variadic_size<Args...>() - 1, Args...>>)
+	constexpr auto&& variadic_value_back(Args&&... args) {
+		return qpl::variadic_value<qpl::variadic_size<Args...>() - 1>(std::forward(args...));
+	}
+	template<typename... Args> requires(qpl::no_reference<qpl::variadic_type<qpl::variadic_size<Args...>() - 1, Args...>>)
+	constexpr auto variadic_value_back(Args&&... args) {
+		return qpl::variadic_value<qpl::variadic_size<Args...>() - 1>(std::forward<Args>(args)...);
+	}
 
-	/*
-	template<typename... Ts>
-	constexpr auto tuple_value_front(Ts&&... args) {
-		return qpl::variadic_value<0u>(std::forward<Ts>(args)...);
+
+	template<typename T>
+	constexpr bool is_true_type() {
+		return std::is_same_v<T, bool> || std::is_same_v<T, std::true_type>;
 	}
-	template<typename... Ts>
-	constexpr auto tuple_value_back(Ts&&... args) {
-		return qpl::variadic_value<qpl::variadic_size<Ts...>() - 1>(std::forward<Ts>(args)...);
+
+	template<typename T> requires (qpl::is_tuple<T>())
+		constexpr bool all_true(const T& tuple) {
+		return qpl::constexpr_chain<qpl::operation::and_, qpl::tuple_size<T>()>([&](auto i)
+			{
+				using type = qpl::tuple_type<i, T>;
+				return qpl::is_same<type, qpl::true_type>() || std::get<i>(tuple);
+				//return qpl::is_same<type, qpl::true_type>() || qpl::tuple_value<i>(tuple);
+			});
 	}
-	*/
 
 	template<typename T> requires(qpl::is_tuple<T>())
 		constexpr auto tuple_reverse(T tuple) {
@@ -1648,6 +1737,7 @@ namespace qpl {
 	constexpr bool is_derived() {
 		return std::is_base_of_v<T, U>;
 	}
+
 
 	template<class Truth, class T, typename... Args>
 	struct conditional_impl;
@@ -2325,7 +2415,7 @@ namespace qpl {
 		}
 		template<typename F>
 		constexpr auto return_type(F) {
-			return return_type(std::function{ F{} });
+			return return_type(std::function{ qpl::declval<F>()});
 		}
 
 		template<typename C, typename R, typename... A>

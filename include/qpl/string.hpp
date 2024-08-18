@@ -204,8 +204,8 @@ namespace qpl {
 	template<typename... Args> requires (qpl::is_printable<Args...>())
 	std::string to_string(Args&&... args) {
 
-		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::string>()) {
-			return qpl::variadic_value<0u>(args...);
+		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::variadic_type<0u, Args...>, std::string>()) {
+			return qpl::variadic_value<0u>(std::forward<Args>(args)...);
 		}
 
 		std::ostringstream stream;
@@ -250,10 +250,10 @@ namespace qpl {
 
 
 	template<typename... Args> requires (qpl::is_printable<Args...>())
-		std::wstring to_wstring(Args&&... args) {
+	std::wstring to_wstring(Args&&... args) {
 
-		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::tuple_type<0u, std::tuple<Args...>>, std::wstring>()) {
-			return qpl::variadic_value<0u>(args...);
+		if constexpr (sizeof...(Args) == 1u && qpl::is_same<qpl::variadic_type<0u, Args...>, std::wstring>()) {
+			return qpl::variadic_value<0u>(std::forward<Args>(args)...);
 		}
 
 		std::wostringstream stream;

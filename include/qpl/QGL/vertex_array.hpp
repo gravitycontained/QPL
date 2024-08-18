@@ -482,7 +482,7 @@ namespace qgl {
 			}
 			else {
 				if constexpr (is_static_primitive_type()) {
-					qpl::constexpr_unpack<qpl::tuple_size<vertex_tuple_type>()>([&](auto&&... pack) {
+					qpl::constexpr_iterate<qpl::tuple_size<vertex_tuple_type>()>([&](auto&&... pack) {
 						qgl::check_shader<qpl::tuple_type<pack.i, vertex_tuple_type>...>();
 						qgl::bind_shader<qpl::tuple_type<pack.i, vertex_tuple_type>...>();
 						qgl::get_shader<qpl::tuple_type<pack.i, vertex_tuple_type>...>().set_pvm(view);

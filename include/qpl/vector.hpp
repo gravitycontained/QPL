@@ -22,6 +22,7 @@
 #include <array>
 #include <tuple>
 #include <string>
+#include <iomanip>
 #include <sstream>
 
 namespace qpl {
@@ -1166,6 +1167,21 @@ namespace qpl {
 				}
 				first = false;
 				stream << i;
+			}
+			stream << ')';
+			return stream.str();
+		}
+		constexpr std::string precisionString(qpl::size precision) const {
+			std::ostringstream stream;
+			stream << '(';
+			bool first = true;
+			for (auto& i : this->data)
+			{
+				if (!first)
+					stream << ", ";
+
+				first = false;
+				stream << std::fixed << std::setprecision(precision) << i;
 			}
 			stream << ')';
 			return stream.str();

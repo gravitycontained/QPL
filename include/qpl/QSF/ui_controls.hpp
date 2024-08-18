@@ -1345,6 +1345,7 @@ namespace qsf {
 		bool border_texture_set = false;
 		bool enter_to_continue = false;
 		bool exited_enter_to_continue = false;
+		bool add_new_line_on_enter = true;
 
 		QPLDLL void print();
 

@@ -226,6 +226,14 @@ namespace qsf {
 
 		this->m_delta_mouse_position = this->m_mouse_position_screen - this->m_mouse_position_screen_before;
 		this->m_mouse_position_screen_before = this->m_mouse_position_screen;
+
+		//this->m_joystick_connect = false;
+		//this->m_joystick_disconnect = false;
+		//this->m_joystick_left_direction.clear();
+		//this->m_joystick_right_direction.clear();
+		//this->m_joystick_axis_holding.clear();
+		//this->m_joystick_axis_pressed.clear();
+		//this->m_joystick_axis_released.clear();
 	}
 	void qsf::event_info::update(const sf::Event& event) {
 		if (event.type == sf::Event::TextEntered) {

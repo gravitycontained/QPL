@@ -605,10 +605,10 @@ namespace qpl {
 				qpl::winsys::point* screenSize = reinterpret_cast<qpl::winsys::point*>(dwData);
 
 				// Update maximum width (X dimension)
-				screenSize->x = std::max(qpl::size_cast(screenSize->x), qpl::size_cast(mi.rcMonitor.right));
+				screenSize->x = std::max(screenSize->x, qpl::i32_cast(mi.rcMonitor.right));
 
 				// Update maximum height (Y dimension)
-				screenSize->y = std::max(qpl::size_cast(screenSize->y), qpl::size_cast(mi.rcMonitor.bottom));
+				screenSize->y = std::max(screenSize->y, qpl::i32_cast(mi.rcMonitor.bottom));
 			}
 			return true;
 		}
