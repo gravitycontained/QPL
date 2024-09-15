@@ -228,6 +228,9 @@ namespace qpl {
       file << qpl::utf8_to_wstring(data);
       file.close();
     }
+    void qpl::filesys::path::writeUtf8(const std::string& data) const {
+      qpl::filesys::write_to_file(data, qpl::wstring_to_utf8(this->wstring()));
+    }
     std::filesystem::file_time_type qpl::filesys::path::last_write_time() const {
       return std::filesystem::last_write_time(this->wstring());
     }

@@ -420,7 +420,7 @@ namespace qpl {
 	//	auto local_field = *std::gmtime(&tm);
 	//	return std::chrono::system_clock::from_time_t(std::mktime(&local_field));
 	//}
-	QPLDLL std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format = "%F %T");
+	QPLDLL std::optional<std::chrono::system_clock::time_point> utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format = "%F %T");
 	template <typename C> requires (qpl::is_container<C>())
 	auto data_ymdhm_to_timepoint(const C& values) {
 		std::tm tm = {

@@ -1372,7 +1372,7 @@ namespace qsf {
 		QPLDLL void update_input_string_split();
 		QPLDLL void update_cursor_position(bool reset_timer = false);
 		QPLDLL void update_input_text_graphics();
-		QPLDLL void add_text_input(const qpl::u32_string& string, bool end_of_line = false);
+		QPLDLL void add_text_input(const qpl::u32_string& string, bool at_end = false);
 		QPLDLL void pop_character_at_cursor();
 		QPLDLL void update_cursor_dimension();
 		QPLDLL void update_text_range();
@@ -1388,7 +1388,7 @@ namespace qsf {
 		QPLDLL void make_selection_rectangles();
 		QPLDLL void move_to_input();
 		QPLDLL auto get_input_text() const;
-		QPLDLL std::wstring get_last_input_line() const;
+		QPLDLL std::wstring get_last_input_line(bool consider_new_line = true) const;
 		QPLDLL void process_text();
 
 		template<typename T> requires (!qpl::is_same<qpl::styled_string<qpl::u32_string>, T>())

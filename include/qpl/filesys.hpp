@@ -86,6 +86,7 @@ namespace qpl {
       QPLDLL std::string read() const;
       QPLDLL std::wstring wread() const;
       QPLDLL void write(const std::string& data) const;
+      QPLDLL void writeUtf8(const std::string& data) const;
 
       QPLDLL std::filesystem::file_time_type last_write_time() const;
       QPLDLL qpl::u64 file_size() const;
@@ -690,7 +691,7 @@ namespace qpl {
         }
       }
       else {
-        encrypted_path.write(str);
+        encrypted_path.writeUtf8(str);
       }
 
       return this->paths;

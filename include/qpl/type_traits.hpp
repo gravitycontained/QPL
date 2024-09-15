@@ -2398,20 +2398,32 @@ namespace qpl {
 		}
 
 		template<typename R, typename... A>
-		constexpr R return_type(R(*)(A...)) {
-			return qpl::declval<R>();
+		constexpr auto return_type(R(*)(A...)) {
+			if constexpr (qpl::is_same_decayed<R, void>())
+				return qpl::empty_type{};
+			else
+				return qpl::declval<R>();
 		}
 		template<typename R, typename... A>
-		constexpr R return_type(std::function<R(A...)>) {
-			return qpl::declval<R>();
+		constexpr auto return_type(std::function<R(A...)>) {
+			if constexpr (qpl::is_same_decayed<R, void>())
+				return qpl::empty_type{};
+			else
+				return qpl::declval<R>();
 		}
 		template<typename C, typename R, typename... A>
-		constexpr R return_type(R(C::*)(A...)) {
-			return qpl::declval<R>();
+		constexpr auto return_type(R(C::*)(A...)) {
+			if constexpr (qpl::is_same_decayed<R, void>())
+				return qpl::empty_type{};
+			else
+				return qpl::declval<R>();
 		}
 		template<typename C, typename R, typename... A>
-		constexpr R return_type(R(C::*)(A...) const) {
-			return qpl::declval<R>();
+		constexpr auto return_type(R(C::*)(A...) const) {
+			if constexpr (qpl::is_same_decayed<R, void>())
+				return qpl::empty_type{};
+			else
+				return qpl::declval<R>();
 		}
 		template<typename F>
 		constexpr auto return_type(F) {
@@ -3043,6 +3055,16 @@ namespace qpl {
 	template<typename F>
 	constexpr qpl::size return_size(F) {
 		return qpl::tuple_size<qpl::return_type<F>>();
+	}
+	template<typename F>
+	constexpr qpl::size return_size() {
+		if constexpr (qpl::is_same<qpl::return_type<F>, qpl::empty_type>())
+		{
+			return 0ull;
+		}
+		else {
+			return qpl::tuple_size<qpl::return_type<F>>();
+		}
 	}
 	template<typename F>
 	constexpr qpl::size parameter_size(F) {

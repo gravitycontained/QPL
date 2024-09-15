@@ -684,7 +684,7 @@ namespace qpl {
 		return result;
 	}
 	template<typename... Args>
-	auto tuple_to_vector(std::tuple<Args...> tuple) -> std::vector<std::tuple_element_t<0, decltype(tuple)>> {
+	constexpr auto tuple_to_vector(std::tuple<Args...> tuple) -> std::vector<std::tuple_element_t<0, decltype(tuple)>> {
 		std::vector<std::tuple_element_t<0, decltype(tuple)>> result(std::tuple_size_v<decltype(tuple)>);
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 			((result[Ints] = qpl::type_cast<std::tuple_element_t<0, decltype(tuple)>>(std::get<Ints>(tuple))), ...);
@@ -693,7 +693,7 @@ namespace qpl {
 		return result;
 	}
 	template<typename T, typename... Args>
-	std::vector<T> tuple_to_vector(std::tuple<Args...> tuple) {
+	constexpr std::vector<T> tuple_to_vector(std::tuple<Args...> tuple) {
 		std::vector<T> result(std::tuple_size_v<decltype(tuple)>);
 		auto unpack = [&]<typename Tuple, qpl::size... Ints>(Tuple tuple, std::index_sequence<Ints...>) {
 			((result[Ints] = qpl::type_cast<T>(std::get<Ints>(tuple))), ...);
@@ -708,6 +708,65 @@ namespace qpl {
 	template<typename... Args>
 	auto to_vector(Args... args) {
 		return qpl::tuple_to_vector(std::make_tuple(args...));
+	}
+
+	template<typename T>
+	auto duplicate(T&& value, qpl::size amount)
+	{
+		return std::vector<qpl::full_decay<T>>(amount, value);
+	}
+
+
+	template<typename C, typename F>
+	requires
+	(
+		qpl::is_container<C>() &&
+		std::is_invocable_v<F, qpl::container_subtype<C>>&&
+		qpl::return_size<F>() == 1
+	)
+	constexpr C map(C container, F&& func)
+	{
+		for (auto& i : container)
+		{
+			i = func(i);
+		}
+		return container;
+	}
+
+	template<typename C, typename F>
+	requires
+	(
+		qpl::is_container<C>() &&
+		std::is_invocable_v<F, qpl::container_subtype<C>>&&
+		qpl::return_size<F>() == 0
+	)
+	constexpr void map(C container, F&& func)
+	{
+		for (auto& i : container)
+		{
+			func(i);
+		}
+	}
+
+	template<typename C, typename F>
+	requires
+	(
+		qpl::is_container<C>() &&
+		std::is_invocable_v<F, qpl::container_subtype<C>>&&
+		qpl::return_size<F>() == 1 &&
+		qpl::is_same<qpl::return_type<F>, bool>()
+	)
+	constexpr C filter(C container, F&& func)
+	{
+		C result;
+		for (auto& i : container)
+		{
+			if (func(i))
+			{
+				result.push_back(i);
+			}
+		}
+		return result;
 	}
 
 	template<typename T> requires (qpl::is_tuple<T>())
@@ -1163,7 +1222,8 @@ namespace qpl {
 				auto size = container.size();
 				container.resize(container.size() + value.size());
 				if constexpr (qpl::is_same_decayed<qpl::container_subtype<C>, qpl::container_subtype<C2>>() && qpl::is_contiguous_container<C>()) {
-					memcpy(container.data() + size, value.data(), value.size() * qpl::bytes_in_type<qpl::container_subtype<C2>>());
+					std::copy(value.begin(), value.end(), container.begin() + size);
+					//memcpy(container.data() + size, value.data(), value.size() * qpl::bytes_in_type<qpl::container_subtype<C2>>());
 				}
 				else if constexpr (qpl::has_square_brackets<C>()) {
 					for (qpl::size i = size; i < container.size(); ++i) {
@@ -2635,6 +2695,48 @@ namespace qpl {
 		return result;
 	}
 
+}
+
+
+// map
+template<typename C, typename F>
+requires
+(
+	qpl::is_container<C>() &&
+	std::is_invocable_v<F, qpl::container_subtype<C>> &&
+	qpl::return_size<F>() == 1
+)
+constexpr C operator+(C container, F&& func)
+{
+	return qpl::map(container, func);
+}
+
+// map
+template<typename C, typename F>
+requires
+(
+	qpl::is_container<C>() &&
+	std::is_invocable_v<F, qpl::container_subtype<C> >&&
+	qpl::return_size<F>() == 0
+)
+constexpr void operator+(C container, F&& func)
+{
+	return qpl::map(container, func);
+}
+
+
+template<typename C, typename F>
+requires
+(
+	qpl::is_container<C>() &&
+	std::is_invocable_v<F, qpl::container_subtype<C>>&&
+	qpl::return_size<F>() == 1 &&
+	qpl::is_same<qpl::return_type<F>, bool>()
+)
+	// filter
+	constexpr C operator-(C container, F&& func)
+{
+	return qpl::filter(container, func);
 }
 
 #endif

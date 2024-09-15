@@ -905,11 +905,12 @@ namespace qpl {
 		return result;
 	}
 	*/
-	std::chrono::system_clock::time_point utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format) {
+	std::optional<std::chrono::system_clock::time_point> utc_data_ymdhm_to_utc_timepoint(std::string date, std::string format) {
 		std::istringstream stream{ date };
 		std::chrono::system_clock::time_point result;
 		if (!std::chrono::from_stream(stream, format.c_str(), result)) {
-			throw qpl::exception("utc_data_ymdhm_to_utc_timepoint error : cannot parse date ", date);
+			//throw qpl::exception("utc_data_ymdhm_to_utc_timepoint error : cannot parse date ", date);
+			return std::nullopt;
 		}
 		return result;
 	}

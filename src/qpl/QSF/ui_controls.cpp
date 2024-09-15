@@ -2880,9 +2880,16 @@ namespace qsf {
 		//this->reset_visible_range();
 		this->update_cursor_position(false);
 	}
-	void qsf::console::add_text_input(const qpl::u32_string& string, bool end_of_line) {
+	void qsf::console::add_text_input(const qpl::u32_string& string, bool at_end) {
 		auto size = this->string_split.size();
 		auto pos = this->cursor_position;
+
+		if (at_end) {
+			pos.y = this->get_input_text_height() - 1;
+			pos.x = this->get_input_text_width(pos.y);
+
+			this->cursor_position = pos;
+		}
 
 		pos.x = qpl::max(0ll, qpl::signed_cast(pos.x));
 
@@ -3118,11 +3125,11 @@ namespace qsf {
 	auto qsf::console::get_input_text() const {
 		return this->input_string.string();
 	}
-	std::wstring qsf::console::get_last_input_line() const {
+	std::wstring qsf::console::get_last_input_line(bool consider_new_line) const {
 		if (this->input_string_split.empty()) {
 			return L"";
 		}
-		return this->input_string_split[this->input_string_split.size() - 2u];
+		return this->input_string_split[this->input_string_split.size() - (consider_new_line ? 2u : 1u)];
 	}
 	void qsf::console::process_text() {
 		this->update_visible_rows_count();
@@ -3162,6 +3169,9 @@ namespace qsf {
 		bool special_input = false;
 
 		if (!this->enter_to_continue) {
+			if (event.mouse_button_clicked(sf::Mouse::Middle)) {
+				this->paste_from_clipboard();
+			}
 			if (event.key_holding(sf::Keyboard::LControl)) {
 				special_input = true;
 				if (event.key_pressed(sf::Keyboard::V)) {
@@ -3280,7 +3290,9 @@ namespace qsf {
 		}
 		if (event.key_pressed(sf::Keyboard::Enter)) {
 
-			this->add_text_input(qpl::to_u32_string('\n'), !this->allow_going_up_with_cursor);
+			auto new_line = this->add_new_line_on_enter || event.key_holding(sf::Keyboard::LShift);
+			this->add_text_input(qpl::to_u32_string('\n'), !new_line && !this->allow_going_up_with_cursor);
+
 			special_input = true;
 
 
@@ -3290,9 +3302,11 @@ namespace qsf {
 			}
 			this->line_entered = true;
 			this->text_entered = true;
+
 			auto last_input = this->get_last_input_line();
+
 			if (!last_input.empty()) {
-				this->input_history.push_back(this->get_last_input_line());
+				this->input_history.push_back(last_input);
 				this->input_history_index = this->input_history.size();
 			}
 		}
